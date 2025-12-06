@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Zap, Brain, Shield, ArrowRight, X } from "lucide-react";
+import heroPremium from "@/assets/hero-premium.png";
 
 const plans = [
   {
@@ -63,8 +64,11 @@ export default function PremiumUpgrade() {
       <Header />
 
       <main className="container mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
+        {/* Hero Section with Image */}
+        <div className="text-center mb-16 relative">
+          <div className="absolute inset-0 -z-10 overflow-hidden rounded-3xl opacity-20">
+            <img src={heroPremium} alt="" className="w-full h-full object-cover" />
+          </div>
           <Badge variant="secondary" className="mb-4">
             <Zap className="mr-1 h-3 w-3" />
             Upgrade Your Experience

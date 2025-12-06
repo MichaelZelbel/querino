@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, TrendingUp, Clock, Star, Filter } from "lucide-react";
+import heroDiscover from "@/assets/hero-discover.png";
 
 export default function PublicPromptDiscovery() {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -32,14 +33,21 @@ export default function PublicPromptDiscovery() {
       <Header />
 
       <main className="container mx-auto px-4 py-12">
-        {/* Page Header */}
-        <div className="mb-12 text-center">
-          <h1 className="font-display text-display-lg text-foreground mb-4">
-            Discover Prompts
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Browse thousands of curated AI prompts created by the community. Find the perfect prompt for your needs and copy it instantly.
-          </p>
+        {/* Page Header with Hero Image */}
+        <div className="mb-12 relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 p-8">
+          <div className="relative z-10 text-center max-w-2xl mx-auto">
+            <h1 className="font-display text-display-lg text-foreground mb-4">
+              Discover Prompts
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Browse thousands of curated AI prompts created by the community. Find the perfect prompt for your needs and copy it instantly.
+            </p>
+          </div>
+          <img 
+            src={heroDiscover} 
+            alt="Discover Prompts"
+            className="absolute inset-0 w-full h-full object-cover opacity-30"
+          />
         </div>
 
         {/* Search and Filters */}
