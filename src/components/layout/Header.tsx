@@ -33,11 +33,11 @@ export function Header() {
               Features
             </Button>
           </a>
-          <a href="#pricing">
+          <Link to="/pricing">
             <Button variant="ghost" size="sm">
               Pricing
             </Button>
-          </a>
+          </Link>
         </nav>
 
         {/* Desktop CTA */}
@@ -80,11 +80,11 @@ export function Header() {
                 Features
               </Button>
             </a>
-            <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>
+            <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start">
                 Pricing
               </Button>
-            </a>
+            </Link>
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
               <Button variant="outline" className="w-full">
                 Sign In
