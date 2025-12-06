@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
-import { mockPrompts, categories } from "@/data/mockPrompts";
+import { usePrompts } from "@/hooks/usePrompts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Search, TrendingUp, Clock, Star, Filter } from "lucide-react";
 import heroDiscover from "@/assets/hero-discover.png";
 
@@ -15,18 +15,26 @@ export default function PublicPromptDiscovery() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"trending" | "recent" | "rating">("trending");
 
-  const filteredPrompts = mockPrompts.filter((prompt) => {
-    const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
-    const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const { data: prompts, isLoading, error } = usePrompts();
 
-  const sortedPrompts = [...filteredPrompts].sort((a, b) => {
-    if (sortBy === "rating") return b.rating - a.rating;
-    if (sortBy === "recent") return b.id.localeCompare(a.id);
-    return b.copies - a.copies; // trending
-  });
+  const filteredPrompts = useMemo(() => {
+    if (!prompts) return [];
+    
+    return prompts.filter((prompt) => {
+      const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
+      const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prompt.short_description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [prompts, selectedCategory, searchQuery]);
+
+  const sortedPrompts = useMemo(() => {
+    return [...filteredPrompts].sort((a, b) => {
+      if (sortBy === "rating") return Number(b.rating_avg) - Number(a.rating_avg);
+      if (sortBy === "recent") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return b.copies_count - a.copies_count; // trending
+    });
+  }, [filteredPrompts, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,14 +120,40 @@ export default function PublicPromptDiscovery() {
           </div>
         </div>
 
-        {/* Prompts Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedPrompts.map((prompt) => (
-            <PromptCard key={prompt.id} prompt={prompt} />
-          ))}
-        </div>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        {sortedPrompts.length === 0 && (
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-16">
+            <p className="text-destructive text-lg mb-4">Failed to load prompts. Please try again later.</p>
+          </div>
+        )}
+
+        {/* Prompts Grid */}
+        {!isLoading && !error && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedPrompts.map((prompt) => (
+              <PromptCard key={prompt.id} prompt={prompt} />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && !error && sortedPrompts.length === 0 && (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">No prompts found matching your criteria.</p>
             <Button variant="outline" className="mt-4" onClick={() => {

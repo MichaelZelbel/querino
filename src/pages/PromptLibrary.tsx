@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { PromptCard } from "@/components/prompts/PromptCard";
+import { LegacyPromptCard } from "@/components/prompts/LegacyPromptCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,7 +178,7 @@ export default function PromptLibrary() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPrompts.map((prompt) => (
               <div key={prompt.id} className="relative group">
-                <PromptCard prompt={prompt} />
+                <LegacyPromptCard prompt={prompt} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

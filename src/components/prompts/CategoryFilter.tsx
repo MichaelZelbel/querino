@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { categories } from "@/data/mockPrompts";
+import { categories } from "@/types/prompt";
 import { 
   Sparkles, 
   PenTool, 

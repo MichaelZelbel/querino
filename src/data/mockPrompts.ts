@@ -1,4 +1,5 @@
-export interface Prompt {
+// Legacy types for mock data (used in dashboard/library pages until they're connected to Supabase)
+export interface LegacyPrompt {
   id: string;
   title: string;
   description: string;
@@ -22,7 +23,7 @@ export const categories = [
   { id: "education", label: "Education", icon: "GraduationCap" },
 ] as const;
 
-export const mockPrompts: Prompt[] = [
+export const mockPrompts: LegacyPrompt[] = [
   {
     id: "1",
     title: "Expert Code Reviewer",
