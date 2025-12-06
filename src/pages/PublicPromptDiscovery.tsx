@@ -1,138 +1,82 @@
-import { useState } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { PromptCard } from "@/components/prompts/PromptCard";
-import { CategoryFilter } from "@/components/prompts/CategoryFilter";
-import { mockPrompts, categories } from "@/data/mockPrompts";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, TrendingUp, Clock, Star, Filter } from "lucide-react";
-import heroDiscover from "@/assets/hero-discover.png";
+import { PromptGallery } from "@/components/prompts/PromptGallery";
+import { Prompt } from "@/types/prompt";
+
+// Mock Data (Temporary, will be replaced by API in future cycles)
+const MOCK_PROMPTS: Prompt[] = [
+  {
+    id: "1",
+    title: "SEO Blog Post Generator",
+    description: "Create high-ranking SEO blog posts with this comprehensive prompt. Includes keyword integration and meta descriptions.",
+    content: "Act as an SEO expert. Write a blog post about...",
+    rating_avg: 4.8,
+    rating_count: 124,
+    category: "Marketing",
+    tags: ["SEO", "Writing", "Blog"],
+    created_at: "2023-11-01T12:00:00Z",
+    is_trending: true
+  },
+  {
+    id: "2",
+    title: "Python Code Refactorer",
+    description: "Clean up your spaghetti code. This prompt helps you refactor Python scripts for better readability and performance.",
+    content: "Refactor the following Python code...",
+    rating_avg: 4.9,
+    rating_count: 89,
+    category: "Coding",
+    tags: ["Python", "Refactoring", "Clean Code"],
+    created_at: "2023-10-15T10:00:00Z",
+    is_trending: false
+  },
+  {
+    id: "3",
+    title: "Midjourney Photorealism",
+    description: "Generate stunningly realistic images with Midjourney v6 using this detailed prompt structure.",
+    content: "/imagine prompt: A cinematic shot of...",
+    rating_avg: 4.5,
+    rating_count: 342,
+    category: "Art",
+    tags: ["Midjourney", "Image Gen", "Art"],
+    created_at: "2023-12-01T09:00:00Z",
+    is_trending: true
+  },
+  {
+    id: "4",
+    title: "Cold Email Outreach",
+    description: "Get more replies with this cold email template that focuses on value proposition and personalization.",
+    content: "Write a cold email to...",
+    rating_avg: 4.2,
+    rating_count: 56,
+    category: "Sales",
+    tags: ["Email", "Sales", "Outreach"],
+    created_at: "2023-09-20T14:00:00Z",
+    is_trending: false
+  },
+  {
+    id: "5",
+    title: "React Component Generator",
+    description: "Quickly scaffold React components with Tailwind CSS using this efficient prompt.",
+    content: "Create a React component using Tailwind CSS...",
+    rating_avg: 4.7,
+    rating_count: 210,
+    category: "Coding",
+    tags: ["React", "Tailwind", "Frontend"],
+    created_at: "2023-12-05T16:00:00Z", // Newest
+    is_trending: true
+  }
+];
 
 export default function PublicPromptDiscovery() {
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"trending" | "recent" | "rating">("trending");
-
-  const filteredPrompts = mockPrompts.filter((prompt) => {
-    const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
-    const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const sortedPrompts = [...filteredPrompts].sort((a, b) => {
-    if (sortBy === "rating") return b.rating - a.rating;
-    if (sortBy === "recent") return b.id.localeCompare(a.id);
-    return b.copies - a.copies; // trending
-  });
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="container mx-auto py-12 px-4">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold tracking-tight mb-4">Discover Top Prompts</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Browse the best AI prompts curated by the community.
+          Use filters to find exactly what you need for your next project.
+        </p>
+      </div>
 
-      <main className="container mx-auto px-4 py-12">
-        {/* Page Header with Hero Image */}
-        <div className="mb-12 relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/5 to-primary/10 p-8">
-          <div className="relative z-10 text-center max-w-2xl mx-auto">
-            <h1 className="font-display text-display-lg text-foreground mb-4">
-              Discover Prompts
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Browse thousands of curated AI prompts created by the community. Find the perfect prompt for your needs and copy it instantly.
-            </p>
-          </div>
-          <img 
-            src={heroDiscover} 
-            alt="Discover Prompts"
-            className="absolute inset-0 w-full h-full object-cover opacity-30"
-          />
-        </div>
-
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search prompts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={sortBy === "trending" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortBy("trending")}
-                className="gap-2"
-              >
-                <TrendingUp className="h-4 w-4" />
-                Trending
-              </Button>
-              <Button
-                variant={sortBy === "recent" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortBy("recent")}
-                className="gap-2"
-              >
-                <Clock className="h-4 w-4" />
-                Recent
-              </Button>
-              <Button
-                variant={sortBy === "rating" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortBy("rating")}
-                className="gap-2"
-              >
-                <Star className="h-4 w-4" />
-                Top Rated
-              </Button>
-            </div>
-          </div>
-
-          <CategoryFilter
-            selected={selectedCategory}
-            onSelect={setSelectedCategory}
-          />
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{sortedPrompts.length}</span> prompts
-          </p>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Sorted by {sortBy === "trending" ? "popularity" : sortBy === "recent" ? "newest" : "rating"}
-            </span>
-          </div>
-        </div>
-
-        {/* Prompts Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedPrompts.map((prompt) => (
-            <PromptCard key={prompt.id} prompt={prompt} />
-          ))}
-        </div>
-
-        {sortedPrompts.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg">No prompts found matching your criteria.</p>
-            <Button variant="outline" className="mt-4" onClick={() => {
-              setSelectedCategory("all");
-              setSearchQuery("");
-            }}>
-              Clear Filters
-            </Button>
-          </div>
-        )}
-      </main>
-
-      <Footer />
+      <PromptGallery prompts={MOCK_PROMPTS} />
     </div>
   );
 }
