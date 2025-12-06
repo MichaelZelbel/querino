@@ -13,6 +13,7 @@ import PremiumUpgrade from "./pages/PremiumUpgrade";
 import PromptCreation from "./pages/PromptCreation";
 import PromptRefinement from "./pages/PromptRefinement";
 import PromptLibrary from "./pages/PromptLibrary";
+import Pricing from "./pages/Pricing";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Cookies from "./pages/Cookies";
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/prompt-creation-publishing-premium-free-" element={<PromptCreation />} />
           <Route path="/prompt-refinement-with-ai-tools-premium-" element={<PromptRefinement />} />
           <Route path="/organizing-managing-prompt-library-free-premium-" element={<PromptLibrary />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />

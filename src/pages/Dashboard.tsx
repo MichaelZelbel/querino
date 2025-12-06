@@ -126,16 +126,18 @@ const Dashboard = () => {
                   <Crown className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Unlock Pro Features</h3>
+                  <h3 className="font-semibold text-foreground">Unlock Premium Features</h3>
                   <p className="text-sm text-muted-foreground">
                     Get AI refinement tools, unlimited storage, and GitHub sync
                   </p>
                 </div>
               </div>
-              <Button variant="hero" className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                Upgrade to Pro
-              </Button>
+              <Link to="/pricing?from=dashboard">
+                <Button variant="hero" className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Upgrade to Premium
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
