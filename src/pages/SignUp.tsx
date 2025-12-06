@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
+import heroSignup from "@/assets/hero-signup.png";
 
 const features = [
   "Access to 1000+ curated prompts",

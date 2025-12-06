@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { categories } from "@/data/mockPrompts";
 import { toast } from "sonner";
+import heroCreate from "@/assets/hero-create.png";
 
 export default function PromptCreation() {
   const [title, setTitle] = useState("");

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { User, Bell, Shield, CreditCard, Palette, LogOut } from "lucide-react";
+import heroSettings from "@/assets/hero-settings.png";
 
 export default function Settings() {
   return (
@@ -14,9 +15,16 @@ export default function Settings() {
       <Header />
       
       <main className="container mx-auto px-4 py-12">
-        <div className="mb-12">
-          <h1 className="font-display text-display-lg text-foreground mb-2">Settings</h1>
-          <p className="text-muted-foreground text-lg">Manage your account preferences and settings.</p>
+        <div className="mb-12 flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-display-lg text-foreground mb-2">Settings</h1>
+            <p className="text-muted-foreground text-lg">Manage your account preferences and settings.</p>
+          </div>
+          <img 
+            src={heroSettings} 
+            alt="Settings" 
+            className="hidden md:block w-48 h-24 object-cover rounded-lg opacity-80"
+          />
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[240px_1fr]">

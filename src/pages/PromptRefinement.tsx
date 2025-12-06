@@ -24,6 +24,7 @@ import {
   Lock
 } from "lucide-react";
 import { toast } from "sonner";
+import heroRefine from "@/assets/hero-refine.png";
 
 const refinementTools = [
   {

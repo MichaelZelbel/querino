@@ -29,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import heroLibrary from "@/assets/hero-library.png";
 
 export default function PromptLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
