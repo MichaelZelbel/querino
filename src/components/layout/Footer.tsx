@@ -55,15 +55,15 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-foreground">Legal</h4>
             <nav className="flex flex-col gap-2">
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/privacy" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Privacy Policy
-              </a>
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              </Link>
+              <Link to="/terms" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Terms of Service
-              </a>
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              </Link>
+              <Link to="/cookies" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Cookie Policy
-              </a>
+              </Link>
             </nav>
           </div>
         </div>

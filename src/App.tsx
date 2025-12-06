@@ -13,6 +13,9 @@ import PremiumUpgrade from "./pages/PremiumUpgrade";
 import PromptCreation from "./pages/PromptCreation";
 import PromptRefinement from "./pages/PromptRefinement";
 import PromptLibrary from "./pages/PromptLibrary";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Cookies from "./pages/Cookies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,9 @@ const App = () => (
           <Route path="/prompt-creation-publishing-premium-free-" element={<PromptCreation />} />
           <Route path="/prompt-refinement-with-ai-tools-premium-" element={<PromptRefinement />} />
           <Route path="/organizing-managing-prompt-library-free-premium-" element={<PromptLibrary />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/cookies" element={<Cookies />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
