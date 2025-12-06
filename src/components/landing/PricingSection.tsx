@@ -19,7 +19,7 @@ const plans = [
     popular: false,
   },
   {
-    name: "Pro",
+    name: "Premium",
     price: "$12",
     period: "/month",
     description: "For serious prompt engineers",
@@ -31,7 +31,7 @@ const plans = [
       "GitHub sync",
       "Priority support",
     ],
-    cta: "Upgrade to Pro",
+    cta: "Upgrade to Premium",
     variant: "hero" as const,
     popular: true,
   },

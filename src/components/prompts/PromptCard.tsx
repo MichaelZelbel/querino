@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Star, Crown } from "lucide-react";
+import { Copy, Check, Star } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/data/mockPrompts";
 
@@ -29,17 +29,9 @@ export function PromptCard({ prompt }: PromptCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold leading-tight text-foreground group-hover:text-primary transition-colors">
-                {prompt.title}
-              </h3>
-              {prompt.isPremium && (
-                <Badge variant="secondary" className="gap-1 bg-warning/10 text-warning border-warning/20">
-                  <Crown className="h-3 w-3" />
-                  Pro
-                </Badge>
-              )}
-            </div>
+            <h3 className="font-semibold leading-tight text-foreground group-hover:text-primary transition-colors">
+              {prompt.title}
+            </h3>
             <p className="text-sm text-muted-foreground line-clamp-2">
               {prompt.description}
             </p>
