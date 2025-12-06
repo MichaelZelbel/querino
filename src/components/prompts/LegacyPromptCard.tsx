@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Star } from "lucide-react";
 import { toast } from "sonner";
-import type { Prompt } from "@/types/prompt";
+import type { LegacyPrompt } from "@/data/mockPrompts";
 
-interface PromptCardProps {
-  prompt: Prompt;
+interface LegacyPromptCardProps {
+  prompt: LegacyPrompt;
 }
 
-export function PromptCard({ prompt }: PromptCardProps) {
+export function LegacyPromptCard({ prompt }: LegacyPromptCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -33,7 +33,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
               {prompt.title}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {prompt.short_description}
+              {prompt.description}
             </p>
           </div>
         </div>
@@ -62,10 +62,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-            <span className="font-medium">{Number(prompt.rating_avg).toFixed(1)}</span>
+            <span className="font-medium">{prompt.rating.toFixed(1)}</span>
           </div>
           <span className="text-border">•</span>
-          <span>{prompt.copies_count.toLocaleString()} copies</span>
+          <span>{prompt.copies.toLocaleString()} copies</span>
         </div>
 
         <Button

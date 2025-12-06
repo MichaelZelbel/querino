@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PromptCard } from "@/components/prompts/PromptCard";
+import { LegacyPromptCard } from "@/components/prompts/LegacyPromptCard";
 import { mockPrompts } from "@/data/mockPrompts";
 import heroDashboard from "@/assets/hero-dashboard.png";
 import { 
@@ -154,7 +154,7 @@ const Dashboard = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {pinnedPrompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
+                <LegacyPromptCard key={prompt.id} prompt={prompt} />
               ))}
             </div>
           </section>
@@ -180,7 +180,7 @@ const Dashboard = () => {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredPrompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
+                <LegacyPromptCard key={prompt.id} prompt={prompt} />
               ))}
             </div>
 
