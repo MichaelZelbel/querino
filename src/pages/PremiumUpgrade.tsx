@@ -10,7 +10,7 @@ import heroPremium from "@/assets/hero-premium.png";
 
 const plans = [
   {
-    name: "Pro",
+    name: "Premium",
     price: "$9",
     period: "/month",
     description: "For serious prompt engineers",
@@ -45,15 +45,15 @@ const plans = [
 ];
 
 const comparisonFeatures = [
-  { name: "Prompt storage", free: "50 prompts", pro: "Unlimited", team: "Unlimited" },
-  { name: "Copy public prompts", free: true, pro: true, team: true },
-  { name: "Create & publish prompts", free: true, pro: true, team: true },
-  { name: "AI Prompt Improvement", free: false, pro: true, team: true },
-  { name: "In-Dashboard LLM Chat", free: false, pro: true, team: true },
-  { name: "Version control", free: false, pro: true, team: true },
-  { name: "Team collaboration", free: false, pro: false, team: true },
-  { name: "GitHub sync", free: false, pro: false, team: true },
-  { name: "API access", free: false, pro: false, team: true },
+  { name: "Prompt storage", free: "50 prompts", premium: "Unlimited", team: "Unlimited" },
+  { name: "Copy public prompts", free: true, premium: true, team: true },
+  { name: "Create & publish prompts", free: true, premium: true, team: true },
+  { name: "AI Prompt Improvement", free: false, premium: true, team: true },
+  { name: "In-Dashboard LLM Chat", free: false, premium: true, team: true },
+  { name: "Version control", free: false, premium: true, team: true },
+  { name: "Team collaboration", free: false, premium: false, team: true },
+  { name: "GitHub sync", free: false, premium: false, team: true },
+  { name: "API access", free: false, premium: false, team: true },
 ];
 
 export default function PremiumUpgrade() {
@@ -160,7 +160,7 @@ export default function PremiumUpgrade() {
                   <tr className="border-b border-border">
                     <th className="text-left p-4 font-medium text-foreground">Feature</th>
                     <th className="text-center p-4 font-medium text-foreground">Free</th>
-                    <th className="text-center p-4 font-medium text-foreground">Pro</th>
+                    <th className="text-center p-4 font-medium text-foreground">Premium</th>
                     <th className="text-center p-4 font-medium text-foreground">Team</th>
                   </tr>
                 </thead>
@@ -180,14 +180,14 @@ export default function PremiumUpgrade() {
                         )}
                       </td>
                       <td className="p-4 text-center">
-                        {typeof feature.pro === "boolean" ? (
-                          feature.pro ? (
+                        {typeof feature.premium === "boolean" ? (
+                          feature.premium ? (
                             <Check className="h-4 w-4 text-success mx-auto" />
                           ) : (
                             <X className="h-4 w-4 text-muted-foreground mx-auto" />
                           )
                         ) : (
-                          <span className="text-sm text-foreground">{feature.pro}</span>
+                          <span className="text-sm text-foreground">{feature.premium}</span>
                         )}
                       </td>
                       <td className="p-4 text-center">
