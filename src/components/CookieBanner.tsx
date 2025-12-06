@@ -35,13 +35,13 @@ export const CookieBanner = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
             <h3 className="font-display text-base font-semibold text-foreground sm:text-lg">
-              We value your privacy
+              Our site uses cookies.
             </h3>
             <p className="mt-1 font-sans text-sm text-muted-foreground">
-              We use cookies to enhance your browsing experience and analyze our traffic. 
-              By clicking "Accept", you consent to our use of cookies.{" "}
+              Think of them as harmless little prompts that help us remember what you like.
+              Tap Accept to let the algorithm treat you right.{" "}
               <a 
-                href="/privacy" 
+                href="/cookies" 
                 className="text-primary underline-offset-4 hover:underline"
               >
                 Learn more
