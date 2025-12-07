@@ -72,11 +72,11 @@ export function Header() {
               My Library
             </Button>
           </Link>
-          <a href="#features">
+          <Link to="/#features">
             <Button variant="ghost" size="sm">
               Features
             </Button>
-          </a>
+          </Link>
           <Link to="/pricing">
             <Button 
               variant={isActive("/pricing") ? "secondary" : "ghost"} 
@@ -176,11 +176,11 @@ export function Header() {
                 My Library
               </Button>
             </Link>
-            <a href="#features" onClick={() => setMobileMenuOpen(false)}>
+            <Link to="/#features" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start">
                 Features
               </Button>
-            </a>
+            </Link>
             <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
               <Button 
                 variant={isActive("/pricing") ? "secondary" : "ghost"} 
