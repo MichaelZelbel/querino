@@ -6,7 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PromptsSection() {
+interface PromptsSectionProps {
+  showHeader?: boolean;
+}
+
+export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -28,14 +32,16 @@ export function PromptsSection() {
   return (
     <section className="bg-muted/30 py-20 md:py-28">
       <div className="container mx-auto px-4">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
-          <h2 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">
-            Explore Prompts
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Browse our curated collection of high-quality prompts. Copy instantly.
-          </p>
-        </div>
+        {showHeader && (
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">
+              Explore Prompts
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Browse our curated collection of high-quality prompts. Copy instantly.
+            </p>
+          </div>
+        )}
 
         {/* Search and Filter */}
         <div className="mb-8 space-y-4">

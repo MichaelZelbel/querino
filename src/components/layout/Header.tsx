@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -12,11 +12,15 @@ import { Sparkles, Menu, X, Library, Settings, LogOut, User } from "lucide-react
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, loading, signOut } = useAuthContext();
+
+  const isActive = (path: string) => location.pathname === path;
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -51,12 +55,20 @@ export function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 md:flex">
           <Link to="/discover">
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant={isActive("/discover") ? "secondary" : "ghost"} 
+              size="sm"
+              className={cn(isActive("/discover") && "bg-secondary font-medium")}
+            >
               Discover
             </Button>
           </Link>
           <Link to="/library">
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant={isActive("/library") ? "secondary" : "ghost"} 
+              size="sm"
+              className={cn(isActive("/library") && "bg-secondary font-medium")}
+            >
               My Library
             </Button>
           </Link>
@@ -66,7 +78,11 @@ export function Header() {
             </Button>
           </a>
           <Link to="/pricing">
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant={isActive("/pricing") ? "secondary" : "ghost"} 
+              size="sm"
+              className={cn(isActive("/pricing") && "bg-secondary font-medium")}
+            >
               Pricing
             </Button>
           </Link>
@@ -145,12 +161,18 @@ export function Header() {
         <div className="border-t border-border bg-background md:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-4 py-4">
             <Link to="/discover" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button 
+                variant={isActive("/discover") ? "secondary" : "ghost"} 
+                className={cn("w-full justify-start", isActive("/discover") && "font-medium")}
+              >
                 Discover
               </Button>
             </Link>
             <Link to="/library" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button 
+                variant={isActive("/library") ? "secondary" : "ghost"} 
+                className={cn("w-full justify-start", isActive("/library") && "font-medium")}
+              >
                 My Library
               </Button>
             </Link>
@@ -160,7 +182,10 @@ export function Header() {
               </Button>
             </a>
             <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button 
+                variant={isActive("/pricing") ? "secondary" : "ghost"} 
+                className={cn("w-full justify-start", isActive("/pricing") && "font-medium")}
+              >
                 Pricing
               </Button>
             </Link>
