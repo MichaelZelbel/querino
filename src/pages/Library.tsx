@@ -134,6 +134,7 @@ export default function Library() {
                         prompt={prompt}
                         showAuthorBadge
                         currentUserId={user?.id}
+                        editPath="library"
                       />
                     ))}
                   </div>

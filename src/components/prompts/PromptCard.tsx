@@ -11,11 +11,13 @@ interface PromptCardProps {
   prompt: Prompt;
   showAuthorBadge?: boolean;
   currentUserId?: string;
+  editPath?: "library" | "prompts";
 }
 
-export function PromptCard({ prompt, showAuthorBadge, currentUserId }: PromptCardProps) {
+export function PromptCard({ prompt, showAuthorBadge, currentUserId, editPath = "prompts" }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
+  const editUrl = editPath === "library" ? `/library/${prompt.id}/edit` : `/prompts/${prompt.id}/edit`;
 
   const handleCopy = async () => {
     try {
@@ -88,7 +90,7 @@ export function PromptCard({ prompt, showAuthorBadge, currentUserId }: PromptCar
 
         <div className="flex items-center gap-2">
           {isAuthor && (
-            <Link to={`/prompts/${prompt.id}/edit`}>
+            <Link to={editUrl}>
               <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

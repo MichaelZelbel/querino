@@ -47,6 +47,44 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_versions: {
+        Row: {
+          change_notes: string | null
+          content: string
+          created_at: string
+          id: string
+          prompt_id: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          change_notes?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          prompt_id: string
+          title: string
+          version_number?: number
+        }
+        Update: {
+          change_notes?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          prompt_id?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_versions_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompts: {
         Row: {
           author_id: string | null
@@ -61,6 +99,7 @@ export type Database = {
           short_description: string
           tags: string[] | null
           title: string
+          updated_at: string | null
         }
         Insert: {
           author_id?: string | null
@@ -75,6 +114,7 @@ export type Database = {
           short_description: string
           tags?: string[] | null
           title: string
+          updated_at?: string | null
         }
         Update: {
           author_id?: string | null
@@ -89,6 +129,7 @@ export type Database = {
           short_description?: string
           tags?: string[] | null
           title?: string
+          updated_at?: string | null
         }
         Relationships: [
           {

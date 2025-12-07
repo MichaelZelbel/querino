@@ -24,6 +24,7 @@ import Library from "./pages/Library";
 import PromptDetail from "./pages/PromptDetail";
 import PromptNew from "./pages/PromptNew";
 import PromptEdit from "./pages/PromptEdit";
+import LibraryPromptEdit from "./pages/LibraryPromptEdit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/prompts/new" element={<PromptNew />} />
             <Route path="/prompts/:id" element={<PromptDetail />} />
             <Route path="/prompts/:id/edit" element={<PromptEdit />} />
+            <Route path="/library/:id/edit" element={<LibraryPromptEdit />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
