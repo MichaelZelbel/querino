@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Copy, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuthContext } from "@/contexts/AuthContext";
 import heroLanding from "@/assets/hero-landing.png";
 
 export function HeroSection() {
+  const { user, loading } = useAuthContext();
+
   return (
     <section className="relative overflow-hidden py-20 md:py-28">
       {/* Background decoration */}
@@ -40,7 +43,7 @@ export function HeroSection() {
                 Start Exploring
                 <ArrowRight className="h-5 w-5" />
               </Button>
-              <Link to="/dashboard">
+              <Link to={user ? "/library" : "/auth?redirect=/library"}>
                 <Button variant="hero-outline" size="xl">
                   View Your Library
                 </Button>
