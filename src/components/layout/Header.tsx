@@ -54,6 +54,17 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 md:flex">
+          {user && (
+            <Link to="/library">
+              <Button 
+                variant={isActive("/library") ? "secondary" : "ghost"} 
+                size="sm"
+                className={cn(isActive("/library") && "bg-secondary font-medium")}
+              >
+                My Library
+              </Button>
+            </Link>
+          )}
           <Link to="/discover">
             <Button 
               variant={isActive("/discover") ? "secondary" : "ghost"} 
@@ -63,29 +74,24 @@ export function Header() {
               Discover
             </Button>
           </Link>
-          <Link to="/library">
-            <Button 
-              variant={isActive("/library") ? "secondary" : "ghost"} 
-              size="sm"
-              className={cn(isActive("/library") && "bg-secondary font-medium")}
-            >
-              My Library
-            </Button>
-          </Link>
-          <Link to="/#features">
-            <Button variant="ghost" size="sm">
-              Features
-            </Button>
-          </Link>
-          <Link to="/pricing">
-            <Button 
-              variant={isActive("/pricing") ? "secondary" : "ghost"} 
-              size="sm"
-              className={cn(isActive("/pricing") && "bg-secondary font-medium")}
-            >
-              Pricing
-            </Button>
-          </Link>
+          {!user && (
+            <>
+              <a href="/#features">
+                <Button variant="ghost" size="sm">
+                  Features
+                </Button>
+              </a>
+              <Link to="/pricing">
+                <Button 
+                  variant={isActive("/pricing") ? "secondary" : "ghost"} 
+                  size="sm"
+                  className={cn(isActive("/pricing") && "bg-secondary font-medium")}
+                >
+                  Pricing
+                </Button>
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Desktop CTA / User Menu */}
@@ -160,6 +166,16 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="border-t border-border bg-background md:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-4 py-4">
+            {user && (
+              <Link to="/library" onClick={() => setMobileMenuOpen(false)}>
+                <Button 
+                  variant={isActive("/library") ? "secondary" : "ghost"} 
+                  className={cn("w-full justify-start", isActive("/library") && "font-medium")}
+                >
+                  My Library
+                </Button>
+              </Link>
+            )}
             <Link to="/discover" onClick={() => setMobileMenuOpen(false)}>
               <Button 
                 variant={isActive("/discover") ? "secondary" : "ghost"} 
@@ -168,27 +184,23 @@ export function Header() {
                 Discover
               </Button>
             </Link>
-            <Link to="/library" onClick={() => setMobileMenuOpen(false)}>
-              <Button 
-                variant={isActive("/library") ? "secondary" : "ghost"} 
-                className={cn("w-full justify-start", isActive("/library") && "font-medium")}
-              >
-                My Library
-              </Button>
-            </Link>
-            <Link to="/#features" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start">
-                Features
-              </Button>
-            </Link>
-            <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
-              <Button 
-                variant={isActive("/pricing") ? "secondary" : "ghost"} 
-                className={cn("w-full justify-start", isActive("/pricing") && "font-medium")}
-              >
-                Pricing
-              </Button>
-            </Link>
+            {!user && (
+              <>
+                <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    Features
+                  </Button>
+                </a>
+                <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
+                  <Button 
+                    variant={isActive("/pricing") ? "secondary" : "ghost"} 
+                    className={cn("w-full justify-start", isActive("/pricing") && "font-medium")}
+                  >
+                    Pricing
+                  </Button>
+                </Link>
+              </>
+            )}
             
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
               {user ? (
