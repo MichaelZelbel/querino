@@ -30,7 +30,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
   }, [prompts, category, searchQuery]);
 
   return (
-    <section className="bg-muted/30 py-20 md:py-28">
+    <section className={`bg-muted/30 ${showHeader ? 'py-20 md:py-28' : 'py-8 md:py-12'}`}>
       <div className="container mx-auto px-4">
         {showHeader && (
           <div className="mx-auto mb-12 max-w-2xl text-center">
