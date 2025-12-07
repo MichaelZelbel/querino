@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Star, Pencil } from "lucide-react";
+import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 
@@ -15,6 +16,7 @@ interface PromptCardProps {
   currentUserId?: string;
   editPath?: "library" | "prompts";
   userRating?: number;
+  showSendToLLM?: boolean;
 }
 
 export function PromptCard({ 
@@ -24,6 +26,7 @@ export function PromptCard({
   currentUserId, 
   editPath = "prompts",
   userRating,
+  showSendToLLM = false,
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
@@ -156,13 +159,20 @@ export function PromptCard({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {isAuthor && (
             <Link to={editUrl}>
               <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             </Link>
+          )}
+          {showSendToLLM && (
+            <SendToLLMButtons
+              title={prompt.title}
+              content={prompt.content}
+              variant="compact"
+            />
           )}
           <Button
             size="sm"
