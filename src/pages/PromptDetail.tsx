@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Star, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users } from "lucide-react";
+import { ReviewSection } from "@/components/prompts/ReviewSection";
+import { StarRating } from "@/components/prompts/StarRating";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -112,29 +114,6 @@ export default function PromptDetail() {
     } else {
       toast.success("Saved to library!");
     }
-  };
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(
-          <Star key={i} className="h-5 w-5 fill-warning text-warning" />
-        );
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(
-          <Star key={i} className="h-5 w-5 fill-warning/50 text-warning" />
-        );
-      } else {
-        stars.push(
-          <Star key={i} className="h-5 w-5 text-muted-foreground/30" />
-        );
-      }
-    }
-    return stars;
   };
 
   const getAuthorInitials = () => {
@@ -362,39 +341,18 @@ export default function PromptDetail() {
             )}
           </div>
 
-          {/* Ratings Section - Placeholder for future */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold text-foreground">
-              Rating
-            </h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                {renderStars(prompt.rating_avg)}
-              </div>
-              <span className="text-2xl font-bold text-foreground">
-                {Number(prompt.rating_avg).toFixed(1)}
-              </span>
-              <span className="text-muted-foreground">
-                ({prompt.rating_count} {prompt.rating_count === 1 ? "rating" : "ratings"})
-              </span>
-            </div>
-            
-            <div className="mt-4">
-              <Button variant="secondary" disabled className="gap-2">
-                <Star className="h-4 w-4" />
-                Rate this prompt
-              </Button>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Rating feature coming soon
-              </p>
-            </div>
-          </div>
+          {/* Ratings & Reviews Section */}
+          <ReviewSection
+            promptId={prompt.id}
+            userId={user?.id}
+            ratingAvg={prompt.rating_avg}
+            ratingCount={prompt.rating_count}
+          />
 
           {/* Future Features Placeholder */}
           <div className="mt-8 rounded-xl border border-dashed border-border bg-muted/20 p-6">
             <h3 className="mb-2 text-sm font-medium text-muted-foreground">Coming Soon</h3>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="text-muted-foreground">Reviews</Badge>
               <Badge variant="outline" className="text-muted-foreground">Usage Analytics</Badge>
               <Badge variant="outline" className="text-muted-foreground">Similar Prompts</Badge>
             </div>
