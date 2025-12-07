@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
+import Discover from "./pages/Discover";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import PublicPromptDiscovery from "./pages/PublicPromptDiscovery";
@@ -33,6 +34,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/discover" element={<Discover />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/library" element={<Library />} />
             <Route path="/dashboard" element={<Dashboard />} />
