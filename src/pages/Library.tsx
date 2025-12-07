@@ -9,11 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Library as LibraryIcon, Sparkles, Plus } from "lucide-react";
 import type { Prompt } from "@/types/prompt";
 
+interface UserRatings {
+  [promptId: string]: number;
+}
+
 export default function Library() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuthContext();
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([]);
   const [myPrompts, setMyPrompts] = useState<Prompt[]>([]);
+  const [userRatings, setUserRatings] = useState<UserRatings>({});
   const [loading, setLoading] = useState(true);
 
   // Redirect to auth if not logged in
@@ -65,6 +70,23 @@ export default function Library() {
             console.error("Error fetching prompts:", promptsError);
           } else {
             setSavedPrompts((promptsData as Prompt[]) || []);
+          }
+
+          // Fetch user's ratings for saved prompts
+          const { data: ratingsData, error: ratingsError } = await supabase
+            .from("prompt_reviews")
+            .select("prompt_id, rating")
+            .eq("user_id", user.id)
+            .in("prompt_id", promptIds);
+
+          if (ratingsError) {
+            console.error("Error fetching ratings:", ratingsError);
+          } else if (ratingsData) {
+            const ratings: UserRatings = {};
+            ratingsData.forEach((r) => {
+              ratings[r.prompt_id] = r.rating;
+            });
+            setUserRatings(ratings);
           }
         } else {
           setSavedPrompts([]);
@@ -171,6 +193,7 @@ export default function Library() {
                         key={prompt.id}
                         prompt={prompt}
                         currentUserId={user?.id}
+                        userRating={userRatings[prompt.id]}
                       />
                     ))}
                   </div>

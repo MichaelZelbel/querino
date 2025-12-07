@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Star, Pencil, User } from "lucide-react";
+import { Copy, Check, Star, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 
@@ -14,6 +14,7 @@ interface PromptCardProps {
   showAuthorInfo?: boolean;
   currentUserId?: string;
   editPath?: "library" | "prompts";
+  userRating?: number;
 }
 
 export function PromptCard({ 
@@ -21,7 +22,8 @@ export function PromptCard({
   showAuthorBadge, 
   showAuthorInfo = false,
   currentUserId, 
-  editPath = "prompts" 
+  editPath = "prompts",
+  userRating,
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
@@ -98,7 +100,27 @@ export function PromptCard({
         )}
       </CardContent>
 
-      <CardFooter className="flex items-center justify-between border-t border-border/50 pt-4">
+      <CardFooter className="flex flex-col gap-2 border-t border-border/50 pt-4">
+        {/* User's own rating (if present and not author) */}
+        {userRating && !isAuthor && (
+          <Link to={`/prompts/${prompt.id}`} className="w-full">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <span>Your rating:</span>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-3 w-3 ${
+                    star <= userRating
+                      ? "fill-warning text-warning"
+                      : "text-muted-foreground/30"
+                  }`}
+                />
+              ))}
+            </div>
+          </Link>
+        )}
+        
+        <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           {/* Author Info */}
           {showAuthorInfo && prompt.author && (
@@ -116,12 +138,17 @@ export function PromptCard({
           )}
           
           {/* Rating */}
-          <div className="flex items-center gap-1">
-            <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-            <span className="font-medium">{Number(prompt.rating_avg).toFixed(1)}</span>
-          </div>
+          {prompt.rating_count > 0 ? (
+            <div className="flex items-center gap-1">
+              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+              <span className="font-medium">{Number(prompt.rating_avg).toFixed(1)}</span>
+              <span className="text-muted-foreground">({prompt.rating_count})</span>
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground">No ratings yet</span>
+          )}
           
-          {!showAuthorInfo && (
+          {!showAuthorInfo && prompt.rating_count > 0 && (
             <>
               <span className="text-border">•</span>
               <span>{prompt.copies_count.toLocaleString()} copies</span>
@@ -155,6 +182,7 @@ export function PromptCard({
               </>
             )}
           </Button>
+        </div>
         </div>
       </CardFooter>
     </Card>
