@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, Mail, Github, Sparkles } from "lucide-react";
 import { z } from "zod";
+import { storeRedirectPath, getAndClearRedirectPath, getRedirectFromParams } from "@/lib/authRedirect";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -19,7 +20,7 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+  const hasRedirected = useRef(false);
   
   const { user, loading: authLoading, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithGithub } = useAuthContext();
   
@@ -29,12 +30,18 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Redirect if already logged in
+  // Redirect if already logged in (handles OAuth return)
   useEffect(() => {
-    if (!authLoading && user) {
-      navigate(redirect, { replace: true });
+    if (!authLoading && user && !hasRedirected.current) {
+      hasRedirected.current = true;
+      // Check localStorage first (for OAuth return), then URL params
+      const storedPath = getAndClearRedirectPath();
+      const urlRedirect = getRedirectFromParams(searchParams);
+      // Prefer stored path if it exists and isn't the default, otherwise use URL param
+      const redirectTo = storedPath !== "/library" ? storedPath : urlRedirect;
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, authLoading, navigate, redirect]);
+  }, [user, authLoading, navigate, searchParams]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -71,7 +78,8 @@ export default function Auth() {
           }
         } else {
           toast.success("Welcome back!");
-          navigate(redirect, { replace: true });
+          const redirectTo = getRedirectFromParams(searchParams);
+          navigate(redirectTo, { replace: true });
         }
       } else {
         const { error } = await signUpWithEmail(email, password);
@@ -92,6 +100,10 @@ export default function Auth() {
   };
 
   const handleGoogleAuth = async () => {
+    // Store redirect path before OAuth redirect
+    const redirectTo = getRedirectFromParams(searchParams);
+    storeRedirectPath(redirectTo);
+    
     setLoading(true);
     const { error } = await signInWithGoogle();
     if (error) {
@@ -101,6 +113,10 @@ export default function Auth() {
   };
 
   const handleGithubAuth = async () => {
+    // Store redirect path before OAuth redirect
+    const redirectTo = getRedirectFromParams(searchParams);
+    storeRedirectPath(redirectTo);
+    
     setLoading(true);
     const { error } = await signInWithGithub();
     if (error) {
