@@ -8,7 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Check, Star, Bookmark, BookmarkCheck, ArrowLeft } from "lucide-react";
+import { Copy, Check, Star, Bookmark, BookmarkCheck, ArrowLeft, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 import { format } from "date-fns";
@@ -23,8 +23,8 @@ export default function PromptDetail() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const isSaved = id ? isPromptSaved(id) : false;
+  const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
 
   useEffect(() => {
     async function fetchPrompt() {
@@ -35,12 +35,13 @@ export default function PromptDetail() {
       }
 
       try {
-        const { data, error } = await supabase
+        // Try to fetch as public first, or if user owns it
+        let query = supabase
           .from("prompts")
           .select("*")
-          .eq("id", id)
-          .eq("is_public", true)
-          .maybeSingle();
+          .eq("id", id);
+        
+        const { data, error } = await query.maybeSingle();
 
         if (error) {
           console.error("Error fetching prompt:", error);
@@ -265,6 +266,15 @@ export default function PromptDetail() {
                 </>
               )}
             </Button>
+
+            {isAuthor && (
+              <Link to={`/prompts/${id}/edit`}>
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Ratings Section */}

@@ -3,16 +3,19 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Star } from "lucide-react";
+import { Copy, Check, Star, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 
 interface PromptCardProps {
   prompt: Prompt;
+  showAuthorBadge?: boolean;
+  currentUserId?: string;
 }
 
-export function PromptCard({ prompt }: PromptCardProps) {
+export function PromptCard({ prompt, showAuthorBadge, currentUserId }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
+  const isAuthor = currentUserId && prompt.author_id === currentUserId;
 
   const handleCopy = async () => {
     try {
@@ -31,9 +34,21 @@ export function PromptCard({ prompt }: PromptCardProps) {
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5">
-              <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
-                {prompt.title}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
+                  {prompt.title}
+                </h3>
+                {showAuthorBadge && isAuthor && (
+                  <Badge variant="secondary" className="text-xs">
+                    Your prompt
+                  </Badge>
+                )}
+                {!prompt.is_public && (
+                  <Badge variant="outline" className="text-xs">
+                    Private
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {prompt.short_description}
               </p>
@@ -71,24 +86,33 @@ export function PromptCard({ prompt }: PromptCardProps) {
           <span>{prompt.copies_count.toLocaleString()} copies</span>
         </div>
 
-        <Button
-          size="sm"
-          variant={copied ? "success" : "default"}
-          onClick={handleCopy}
-          className="gap-1.5"
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5" />
-              Copied
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              Copy
-            </>
+        <div className="flex items-center gap-2">
+          {isAuthor && (
+            <Link to={`/prompts/${prompt.id}/edit`}>
+              <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
           )}
-        </Button>
+          <Button
+            size="sm"
+            variant={copied ? "success" : "default"}
+            onClick={handleCopy}
+            className="gap-1.5"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                Copy
+              </>
+            )}
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

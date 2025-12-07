@@ -11,6 +11,7 @@ export interface Prompt {
   copies_count: number;
   is_public: boolean;
   created_at: string;
+  author_id: string | null;
 }
 
 export const categories = [
@@ -22,3 +23,5 @@ export const categories = [
   { id: "research", label: "Research", icon: "Search" },
   { id: "education", label: "Education", icon: "GraduationCap" },
 ] as const;
+
+export const categoryOptions = categories.filter(c => c.id !== "all");

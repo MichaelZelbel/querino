@@ -49,6 +49,7 @@ export type Database = {
       }
       prompts: {
         Row: {
+          author_id: string | null
           category: string
           content: string
           copies_count: number | null
@@ -62,6 +63,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          author_id?: string | null
           category: string
           content: string
           copies_count?: number | null
@@ -75,6 +77,7 @@ export type Database = {
           title: string
         }
         Update: {
+          author_id?: string | null
           category?: string
           content?: string
           copies_count?: number | null
@@ -87,7 +90,15 @@ export type Database = {
           tags?: string[] | null
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_saved_prompts: {
         Row: {
