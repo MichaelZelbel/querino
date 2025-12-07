@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,18 +27,20 @@ export function PromptCard({ prompt }: PromptCardProps) {
 
   return (
     <Card variant="prompt" className="flex h-full flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1.5">
-            <h3 className="font-semibold leading-tight text-foreground group-hover:text-primary transition-colors">
-              {prompt.title}
-            </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {prompt.short_description}
-            </p>
+      <Link to={`/prompts/${prompt.id}`} className="block">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1.5">
+              <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
+                {prompt.title}
+              </h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {prompt.short_description}
+              </p>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+      </Link>
 
       <CardContent className="flex-1 pb-3">
         <div className="relative rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
