@@ -13,6 +13,16 @@ export interface Prompt {
   created_at: string;
   updated_at?: string;
   author_id: string | null;
+  published_at?: string | null;
+  summary?: string | null;
+  example_output?: string | null;
+}
+
+// Author info for display
+export interface PromptAuthor {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
 }
 
 export const categories = [

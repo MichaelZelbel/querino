@@ -1,14 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Prompt } from "@/types/prompt";
+import type { Prompt, PromptAuthor } from "@/types/prompt";
+
+export interface PromptWithAuthor extends Prompt {
+  author?: PromptAuthor | null;
+}
 
 export function usePrompts() {
   return useQuery({
     queryKey: ["prompts", "public"],
-    queryFn: async (): Promise<Prompt[]> => {
+    queryFn: async (): Promise<PromptWithAuthor[]> => {
       const { data, error } = await supabase
         .from("prompts")
-        .select("*")
+        .select(`
+          *,
+          profiles:author_id (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
         .eq("is_public", true)
         .order("rating_avg", { ascending: false })
         .order("rating_count", { ascending: false })
@@ -18,7 +29,12 @@ export function usePrompts() {
         throw new Error(error.message);
       }
 
-      return data as Prompt[];
+      // Transform the data to match our interface
+      return (data as any[]).map((item) => ({
+        ...item,
+        author: item.profiles || null,
+        profiles: undefined,
+      }));
     },
   });
 }

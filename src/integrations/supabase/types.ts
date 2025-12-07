@@ -92,11 +92,14 @@ export type Database = {
           content: string
           copies_count: number | null
           created_at: string | null
+          example_output: string | null
           id: string
           is_public: boolean | null
+          published_at: string | null
           rating_avg: number | null
           rating_count: number | null
           short_description: string
+          summary: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
@@ -107,11 +110,14 @@ export type Database = {
           content: string
           copies_count?: number | null
           created_at?: string | null
+          example_output?: string | null
           id?: string
           is_public?: boolean | null
+          published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
           short_description: string
+          summary?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
@@ -122,11 +128,14 @@ export type Database = {
           content?: string
           copies_count?: number | null
           created_at?: string | null
+          example_output?: string | null
           id?: string
           is_public?: boolean | null
+          published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
           short_description?: string
+          summary?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null

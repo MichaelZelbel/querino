@@ -8,17 +8,22 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Check, Star, Bookmark, BookmarkCheck, ArrowLeft, Pencil } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Copy, Check, Star, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users } from "lucide-react";
 import { toast } from "sonner";
-import type { Prompt } from "@/types/prompt";
+import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
+
+interface PromptWithAuthor extends Prompt {
+  author?: PromptAuthor | null;
+}
 
 export default function PromptDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [prompt, setPrompt] = useState<PromptWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -35,13 +40,18 @@ export default function PromptDetail() {
       }
 
       try {
-        // Try to fetch as public first, or if user owns it
-        let query = supabase
+        const { data, error } = await supabase
           .from("prompts")
-          .select("*")
-          .eq("id", id);
-        
-        const { data, error } = await query.maybeSingle();
+          .select(`
+            *,
+            profiles:author_id (
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq("id", id)
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching prompt:", error);
@@ -49,7 +59,12 @@ export default function PromptDetail() {
         } else if (!data) {
           setNotFound(true);
         } else {
-          setPrompt(data as Prompt);
+          // Transform the data
+          const promptData: PromptWithAuthor = {
+            ...(data as any),
+            author: (data as any).profiles || null,
+          };
+          setPrompt(promptData);
         }
       } catch (err) {
         console.error("Error fetching prompt:", err);
@@ -78,7 +93,6 @@ export default function PromptDetail() {
   const handleSaveToLibrary = async () => {
     if (!id) return;
     
-    // Redirect to auth if not logged in
     if (!user) {
       navigate(`/auth?redirect=/prompts/${id}`);
       return;
@@ -121,6 +135,18 @@ export default function PromptDetail() {
       }
     }
     return stars;
+  };
+
+  const getAuthorInitials = () => {
+    if (prompt?.author?.display_name) {
+      return prompt.author.display_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "U";
   };
 
   if (loading) {
@@ -186,6 +212,12 @@ export default function PromptDetail() {
               <Badge variant="secondary" className="text-sm capitalize">
                 {prompt.category}
               </Badge>
+              {!prompt.is_public && isAuthor && (
+                <Badge variant="outline" className="gap-1 text-sm">
+                  <Lock className="h-3 w-3" />
+                  Private
+                </Badge>
+              )}
               {prompt.tags && prompt.tags.length > 0 && (
                 <>
                   {prompt.tags.slice(0, 5).map((tag) => (
@@ -204,15 +236,54 @@ export default function PromptDetail() {
             <p className="text-lg text-muted-foreground">
               {prompt.short_description}
             </p>
-            
-            <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-              <span>
-                Created {format(new Date(prompt.created_at), "MMM d, yyyy")}
-              </span>
-              <span className="text-border">•</span>
-              <span>{prompt.copies_count.toLocaleString()} copies</span>
+
+            {/* Author & Meta Info */}
+            <div className="mt-6 flex flex-wrap items-center gap-6">
+              {/* Author */}
+              {prompt.author && (
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={prompt.author.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {prompt.author.display_name || "Anonymous"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Author</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Published Date */}
+              {prompt.published_at && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>Published {format(new Date(prompt.published_at), "MMM d, yyyy")}</span>
+                </div>
+              )}
+
+              {/* Copies */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>{prompt.copies_count.toLocaleString()} copies</span>
+              </div>
             </div>
           </div>
+
+          {/* Summary Section (if published with summary) */}
+          {prompt.summary && (
+            <div className="mb-8 rounded-xl border border-border bg-card p-6">
+              <h2 className="mb-3 text-lg font-semibold text-foreground">
+                Summary
+              </h2>
+              <p className="text-muted-foreground">
+                {prompt.summary}
+              </p>
+            </div>
+          )}
 
           {/* Prompt Content */}
           <div className="mb-8">
@@ -225,6 +296,20 @@ export default function PromptDetail() {
               </pre>
             </div>
           </div>
+
+          {/* Example Output Section */}
+          {prompt.example_output && (
+            <div className="mb-8">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
+                Example Output
+              </h2>
+              <div className="rounded-xl border border-border bg-card p-6">
+                <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground leading-relaxed">
+                  {prompt.example_output}
+                </pre>
+              </div>
+            </div>
+          )}
 
           {/* Action Bar */}
           <div className="mb-12 flex flex-wrap gap-3">
@@ -268,16 +353,16 @@ export default function PromptDetail() {
             </Button>
 
             {isAuthor && (
-              <Link to={`/prompts/${id}/edit`}>
+              <Link to={`/library/${id}/edit`}>
                 <Button size="lg" variant="outline" className="gap-2">
                   <Pencil className="h-4 w-4" />
-                  Edit
+                  Manage Prompt
                 </Button>
               </Link>
             )}
           </div>
 
-          {/* Ratings Section */}
+          {/* Ratings Section - Placeholder for future */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="mb-4 text-lg font-semibold text-foreground">
               Rating
@@ -302,6 +387,16 @@ export default function PromptDetail() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Rating feature coming soon
               </p>
+            </div>
+          </div>
+
+          {/* Future Features Placeholder */}
+          <div className="mt-8 rounded-xl border border-dashed border-border bg-muted/20 p-6">
+            <h3 className="mb-2 text-sm font-medium text-muted-foreground">Coming Soon</h3>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-muted-foreground">Reviews</Badge>
+              <Badge variant="outline" className="text-muted-foreground">Usage Analytics</Badge>
+              <Badge variant="outline" className="text-muted-foreground">Similar Prompts</Badge>
             </div>
           </div>
         </div>
