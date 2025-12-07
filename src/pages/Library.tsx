@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { Button } from "@/components/ui/button";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2 } from "lucide-react";
 import type { Prompt } from "@/types/prompt";
 
 interface UserRatings {
@@ -129,12 +129,20 @@ export default function Library() {
                 Welcome back{profile?.display_name ? `, ${profile.display_name}` : ""}!
               </p>
             </div>
-            <Link to="/prompts/new">
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Prompt
-              </Button>
-            </Link>
+            <div className="flex gap-3">
+              <Link to="/prompts/wizard">
+                <Button variant="outline" className="gap-2">
+                  <Wand2 className="h-4 w-4" />
+                  Prompt Wizard
+                </Button>
+              </Link>
+              <Link to="/prompts/new">
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Prompt
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {loading ? (
