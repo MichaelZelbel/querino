@@ -26,6 +26,7 @@ import PromptNew from "./pages/PromptNew";
 import PromptEdit from "./pages/PromptEdit";
 import LibraryPromptEdit from "./pages/LibraryPromptEdit";
 import VersionHistory from "./pages/VersionHistory";
+import PromptWizard from "./pages/PromptWizard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/cookies" element={<Cookies />} />
             <Route path="/prompts/new" element={<PromptNew />} />
+            <Route path="/prompts/wizard" element={<PromptWizard />} />
             <Route path="/prompts/:id" element={<PromptDetail />} />
             <Route path="/prompts/:id/edit" element={<PromptEdit />} />
             <Route path="/library/:id/edit" element={<LibraryPromptEdit />} />
