@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,17 +26,17 @@ export function ReviewSection({
   const navigate = useNavigate();
   const { reviews, userReview, loading, submitting, submitReview, deleteReview } =
     usePromptReviews(promptId, userId);
-  const [selectedRating, setSelectedRating] = useState(userReview?.rating || 0);
-  const [comment, setComment] = useState(userReview?.comment || "");
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [comment, setComment] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   // Update local state when userReview loads
-  useState(() => {
+  useEffect(() => {
     if (userReview) {
       setSelectedRating(userReview.rating);
       setComment(userReview.comment || "");
     }
-  });
+  }, [userReview]);
 
   const handleRatingClick = (rating: number) => {
     if (!userId) {
