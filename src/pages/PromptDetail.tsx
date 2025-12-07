@@ -1,24 +1,30 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Check, Star, Bookmark, ArrowLeft } from "lucide-react";
+import { Copy, Check, Star, Bookmark, BookmarkCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 import { format } from "date-fns";
 
 export default function PromptDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { isPromptSaved, toggleSave } = useSavedPrompts();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const isSaved = id ? isPromptSaved(id) : false;
 
   useEffect(() => {
     async function fetchPrompt() {
@@ -68,9 +74,29 @@ export default function PromptDetail() {
     }
   };
 
-  const handleSaveToLibrary = () => {
-    // Placeholder for save functionality
-    toast.info("Save to library feature coming soon!");
+  const handleSaveToLibrary = async () => {
+    if (!id) return;
+    
+    // Redirect to auth if not logged in
+    if (!user) {
+      navigate(`/auth?redirect=/prompts/${id}`);
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await toggleSave(id);
+    setSaving(false);
+
+    if (error) {
+      toast.error("Failed to update library");
+      return;
+    }
+
+    if (isSaved) {
+      toast.success("Removed from library");
+    } else {
+      toast.success("Saved to library!");
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -220,17 +246,25 @@ export default function PromptDetail() {
               )}
             </Button>
             
-            {user && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={handleSaveToLibrary}
-                className="gap-2"
-              >
-                <Bookmark className="h-4 w-4" />
-                Save to My Library
-              </Button>
-            )}
+            <Button
+              size="lg"
+              variant={isSaved ? "secondary" : "outline"}
+              onClick={handleSaveToLibrary}
+              disabled={saving}
+              className="gap-2"
+            >
+              {isSaved ? (
+                <>
+                  <BookmarkCheck className="h-4 w-4" />
+                  Saved ✓
+                </>
+              ) : (
+                <>
+                  <Bookmark className="h-4 w-4" />
+                  Save to My Library
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Ratings Section */}
