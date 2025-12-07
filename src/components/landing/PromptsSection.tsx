@@ -3,8 +3,12 @@ import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { usePrompts } from "@/hooks/usePrompts";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, TrendingUp, Clock, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+type SortOption = "trending" | "newest" | "rating";
 
 interface PromptsSectionProps {
   showHeader?: boolean;
@@ -13,13 +17,14 @@ interface PromptsSectionProps {
 export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("trending");
   
   const { data: prompts, isLoading, error } = usePrompts();
 
-  const filteredPrompts = useMemo(() => {
+  const filteredAndSortedPrompts = useMemo(() => {
     if (!prompts) return [];
     
-    return prompts.filter((prompt) => {
+    const filtered = prompts.filter((prompt) => {
       const matchesCategory = category === "all" || prompt.category === category;
       const matchesSearch = 
         prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -27,7 +32,29 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
         (prompt.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ?? false);
       return matchesCategory && matchesSearch;
     });
-  }, [prompts, category, searchQuery]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "trending":
+          // Trending = combination of copies and rating
+          const trendingA = (a.copies_count || 0) + (a.rating_avg || 0) * 10;
+          const trendingB = (b.copies_count || 0) + (b.rating_avg || 0) * 10;
+          return trendingB - trendingA;
+        case "newest":
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        case "rating":
+          return (b.rating_avg || 0) - (a.rating_avg || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [prompts, category, searchQuery, sortBy]);
+
+  const sortOptions: { value: SortOption; label: string; icon: typeof TrendingUp }[] = [
+    { value: "trending", label: "Trending", icon: TrendingUp },
+    { value: "newest", label: "Newest", icon: Clock },
+    { value: "rating", label: "Top Rated", icon: Star },
+  ];
 
   return (
     <section className={`bg-muted/30 ${showHeader ? 'py-20 md:py-28' : 'py-8 md:py-12'}`}>
@@ -43,7 +70,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
           </div>
         )}
 
-        {/* Search and Filter */}
+        {/* Search, Sort, and Filter */}
         <div className="mb-8 space-y-4">
           <div className="relative mx-auto max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -54,6 +81,22 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
+          </div>
+
+          {/* Sort Options */}
+          <div className="flex justify-center gap-2">
+            {sortOptions.map(({ value, label, icon: Icon }) => (
+              <Button
+                key={value}
+                variant={sortBy === value ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setSortBy(value)}
+                className={cn("gap-1.5", sortBy === value && "font-medium")}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Button>
+            ))}
           </div>
           
           <div className="flex justify-center">
@@ -90,7 +133,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
         {/* Prompts Grid */}
         {!isLoading && !error && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPrompts.map((prompt, index) => (
+            {filteredAndSortedPrompts.map((prompt, index) => (
               <div 
                 key={prompt.id}
                 className="animate-fade-in-up"
@@ -102,7 +145,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
           </div>
         )}
 
-        {!isLoading && !error && filteredPrompts.length === 0 && (
+        {!isLoading && !error && filteredAndSortedPrompts.length === 0 && (
           <div className="py-12 text-center">
             <p className="text-lg text-muted-foreground">
               No prompts found. Try adjusting your search or filters.
