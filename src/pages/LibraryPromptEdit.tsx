@@ -39,6 +39,7 @@ import {
   Calendar,
   Clock,
   Layers,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
@@ -403,6 +404,12 @@ export default function LibraryPromptEdit() {
             </Link>
 
             <div className="flex items-center gap-2">
+              <Link to={`/library/${id}/versions`}>
+                <Button variant="outline" className="gap-2">
+                  <History className="h-4 w-4" />
+                  Version History
+                </Button>
+              </Link>
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSaving || isSavingVersion}
