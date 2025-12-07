@@ -40,11 +40,14 @@ import {
   Clock,
   Layers,
   History,
+  Globe,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
+import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
 
 interface PromptVersion {
   id: string;
@@ -68,6 +71,8 @@ export default function LibraryPromptEdit() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -320,6 +325,78 @@ export default function LibraryPromptEdit() {
     }
   };
 
+  const handlePublish = async (data: { summary: string; exampleOutput: string }) => {
+    if (!id || !user) return;
+
+    setIsPublishing(true);
+    try {
+      const { error } = await supabase
+        .from("prompts")
+        .update({
+          is_public: true,
+          published_at: new Date().toISOString(),
+          summary: data.summary,
+          example_output: data.exampleOutput || null,
+        })
+        .eq("id", id)
+        .eq("author_id", user.id);
+
+      if (error) {
+        console.error("Error publishing prompt:", error);
+        toast.error("Failed to publish prompt. Please try again.");
+        return;
+      }
+
+      // Update local state
+      setPrompt((prev) => prev ? {
+        ...prev,
+        is_public: true,
+        published_at: new Date().toISOString(),
+        summary: data.summary,
+        example_output: data.exampleOutput || null,
+      } : null);
+      setIsPublic(true);
+      setShowPublishModal(false);
+      toast.success("Prompt published successfully!");
+      navigate(`/prompts/${id}`);
+    } catch (err) {
+      console.error("Error publishing:", err);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!id || !user) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("prompts")
+        .update({
+          is_public: false,
+        })
+        .eq("id", id)
+        .eq("author_id", user.id);
+
+      if (error) {
+        console.error("Error unpublishing prompt:", error);
+        toast.error("Failed to unpublish prompt. Please try again.");
+        return;
+      }
+
+      setPrompt((prev) => prev ? { ...prev, is_public: false } : null);
+      setIsPublic(false);
+      toast.success("Prompt unpublished. It's now private.");
+    } catch (err) {
+      console.error("Error unpublishing:", err);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (authLoading || (loading && user)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -403,7 +480,37 @@ export default function LibraryPromptEdit() {
               Back to Library
             </Link>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* View/Publish buttons */}
+              {prompt?.is_public ? (
+                <>
+                  <Link to={`/prompts/${id}`}>
+                    <Button variant="outline" className="gap-2">
+                      <Eye className="h-4 w-4" />
+                      View Public Page
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleUnpublish}
+                    disabled={isSaving}
+                    className="gap-2"
+                  >
+                    <Globe className="h-4 w-4" />
+                    Unpublish
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPublishModal(true)}
+                  className="gap-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  Publish
+                </Button>
+              )}
+
               <Link to={`/library/${id}/versions`}>
                 <Button variant="outline" className="gap-2">
                   <History className="h-4 w-4" />
@@ -716,6 +823,14 @@ export default function LibraryPromptEdit() {
       </main>
 
       <Footer />
+
+      {/* Publish Modal */}
+      <PublishPromptModal
+        open={showPublishModal}
+        onOpenChange={setShowPublishModal}
+        onPublish={handlePublish}
+        isPublishing={isPublishing}
+      />
     </div>
   );
 }

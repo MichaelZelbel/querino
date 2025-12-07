@@ -3,18 +3,26 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Star, Pencil } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Copy, Check, Star, Pencil, User } from "lucide-react";
 import { toast } from "sonner";
-import type { Prompt } from "@/types/prompt";
+import type { Prompt, PromptAuthor } from "@/types/prompt";
 
 interface PromptCardProps {
-  prompt: Prompt;
+  prompt: Prompt & { author?: PromptAuthor | null };
   showAuthorBadge?: boolean;
+  showAuthorInfo?: boolean;
   currentUserId?: string;
   editPath?: "library" | "prompts";
 }
 
-export function PromptCard({ prompt, showAuthorBadge, currentUserId, editPath = "prompts" }: PromptCardProps) {
+export function PromptCard({ 
+  prompt, 
+  showAuthorBadge, 
+  showAuthorInfo = false,
+  currentUserId, 
+  editPath = "prompts" 
+}: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
   const editUrl = editPath === "library" ? `/library/${prompt.id}/edit` : `/prompts/${prompt.id}/edit`;
@@ -30,13 +38,25 @@ export function PromptCard({ prompt, showAuthorBadge, currentUserId, editPath = 
     }
   };
 
+  const getAuthorInitials = () => {
+    if (prompt.author?.display_name) {
+      return prompt.author.display_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "U";
+  };
+
   return (
     <Card variant="prompt" className="flex h-full flex-col">
       <Link to={`/prompts/${prompt.id}`} className="block">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+            <div className="space-y-1.5 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
                   {prompt.title}
                 </h3>
@@ -52,7 +72,7 @@ export function PromptCard({ prompt, showAuthorBadge, currentUserId, editPath = 
                 )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
-                {prompt.short_description}
+                {prompt.summary || prompt.short_description}
               </p>
             </div>
           </div>
@@ -80,12 +100,33 @@ export function PromptCard({ prompt, showAuthorBadge, currentUserId, editPath = 
 
       <CardFooter className="flex items-center justify-between border-t border-border/50 pt-4">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          {/* Author Info */}
+          {showAuthorInfo && prompt.author && (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={prompt.author.avatar_url || undefined} />
+                <AvatarFallback className="text-[10px] bg-muted">
+                  {getAuthorInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs truncate max-w-[80px]">
+                {prompt.author.display_name || "Anonymous"}
+              </span>
+            </div>
+          )}
+          
+          {/* Rating */}
           <div className="flex items-center gap-1">
             <Star className="h-3.5 w-3.5 fill-warning text-warning" />
             <span className="font-medium">{Number(prompt.rating_avg).toFixed(1)}</span>
           </div>
-          <span className="text-border">•</span>
-          <span>{prompt.copies_count.toLocaleString()} copies</span>
+          
+          {!showAuthorInfo && (
+            <>
+              <span className="text-border">•</span>
+              <span>{prompt.copies_count.toLocaleString()} copies</span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

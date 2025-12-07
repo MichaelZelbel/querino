@@ -139,7 +139,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
                 className="animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <PromptCard prompt={prompt} />
+                <PromptCard prompt={prompt} showAuthorInfo />
               </div>
             ))}
           </div>
