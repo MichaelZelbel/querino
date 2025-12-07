@@ -165,6 +165,7 @@ export default function Library() {
                         showAuthorBadge
                         currentUserId={user?.id}
                         editPath="library"
+                        showSendToLLM
                       />
                     ))}
                   </div>
@@ -202,6 +203,7 @@ export default function Library() {
                         prompt={prompt}
                         currentUserId={user?.id}
                         userRating={userRatings[prompt.id]}
+                        showSendToLLM
                       />
                     ))}
                   </div>

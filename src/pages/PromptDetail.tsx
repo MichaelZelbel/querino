@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
 import { StarRating } from "@/components/prompts/StarRating";
 import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users } from "lucide-react";
+import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -291,7 +292,7 @@ export default function PromptDetail() {
           )}
 
           {/* Action Bar */}
-          <div className="mb-12 flex flex-wrap gap-3">
+          <div className="mb-8 flex flex-wrap gap-3">
             <Button
               size="lg"
               variant={copied ? "success" : "default"}
@@ -339,6 +340,11 @@ export default function PromptDetail() {
                 </Button>
               </Link>
             )}
+          </div>
+
+          {/* Send to LLM */}
+          <div className="mb-12 rounded-xl border border-border bg-card p-6">
+            <SendToLLMButtons title={prompt.title} content={prompt.content} />
           </div>
 
           {/* Ratings & Reviews Section */}
