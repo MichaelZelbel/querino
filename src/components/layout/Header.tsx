@@ -50,7 +50,7 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 md:flex">
-          <Link to="/">
+          <Link to="/discover">
             <Button variant="ghost" size="sm">
               Discover
             </Button>
@@ -144,7 +144,7 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="border-t border-border bg-background md:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-4 py-4">
-            <Link to="/" onClick={() => setMobileMenuOpen(false)}>
+            <Link to="/discover" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start">
                 Discover
               </Button>
