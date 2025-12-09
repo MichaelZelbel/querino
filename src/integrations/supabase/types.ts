@@ -135,6 +135,8 @@ export type Database = {
           created_at: string
           id: string
           prompt_id: string
+          short_description: string | null
+          tags: string[] | null
           title: string
           version_number: number
         }
@@ -144,6 +146,8 @@ export type Database = {
           created_at?: string
           id?: string
           prompt_id: string
+          short_description?: string | null
+          tags?: string[] | null
           title: string
           version_number?: number
         }
@@ -153,6 +157,8 @@ export type Database = {
           created_at?: string
           id?: string
           prompt_id?: string
+          short_description?: string | null
+          tags?: string[] | null
           title?: string
           version_number?: number
         }

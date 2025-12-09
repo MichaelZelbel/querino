@@ -58,7 +58,9 @@ interface PromptVersion {
   prompt_id: string;
   version_number: number;
   title: string;
+  short_description: string | null;
   content: string;
+  tags: string[] | null;
   change_notes: string | null;
   created_at: string;
 }
@@ -256,14 +258,16 @@ export default function LibraryPromptEdit() {
       // Get the next version number
       const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
 
-      // Insert new version
+      // Insert new version with all fields
       const { error: versionError } = await supabase
         .from("prompt_versions")
         .insert({
           prompt_id: id,
           version_number: nextVersionNumber,
           title: title.trim(),
+          short_description: shortDescription.trim(),
           content: content.trim(),
+          tags: tags.length > 0 ? tags : null,
           change_notes: changeNotes.trim() || null,
         });
 
