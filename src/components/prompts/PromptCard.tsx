@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Star, Pencil, Files } from "lucide-react";
+import { Copy, Check, Star, Pencil, Files, Pin } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ interface PromptCardProps {
   editPath?: "library" | "prompts";
   userRating?: number;
   showSendToLLM?: boolean;
+  isPinned?: boolean;
 }
 
 export function PromptCard({ 
@@ -28,6 +29,7 @@ export function PromptCard({
   editPath = "prompts",
   userRating,
   showSendToLLM = false,
+  isPinned = false,
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
@@ -64,6 +66,9 @@ export function PromptCard({
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
+                {isPinned && (
+                  <Pin className="h-3.5 w-3.5 text-warning fill-warning" />
+                )}
                 <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
                   {prompt.title}
                 </h3>
