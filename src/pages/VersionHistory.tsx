@@ -40,7 +40,9 @@ interface PromptVersion {
   prompt_id: string;
   version_number: number;
   title: string;
+  short_description: string | null;
   content: string;
+  tags: string[] | null;
   change_notes: string | null;
   created_at: string;
 }
@@ -147,7 +149,9 @@ export default function VersionHistory() {
           prompt_id: id,
           version_number: nextVersionNumber,
           title: restoringVersion.title,
+          short_description: restoringVersion.short_description,
           content: restoringVersion.content,
+          tags: restoringVersion.tags,
           change_notes: `Restored from version v${restoringVersion.version_number}`,
         });
 
@@ -162,7 +166,9 @@ export default function VersionHistory() {
         .from("prompts")
         .update({
           title: restoringVersion.title,
+          short_description: restoringVersion.short_description || "",
           content: restoringVersion.content,
+          tags: restoringVersion.tags,
         })
         .eq("id", id)
         .eq("author_id", user.id);
@@ -388,6 +394,13 @@ export default function VersionHistory() {
               </div>
             )}
 
+            {viewingVersion?.short_description && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-foreground">Description</h4>
+                <p className="text-sm text-muted-foreground">{viewingVersion.short_description}</p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-foreground">
                 Prompt Content
@@ -398,6 +411,17 @@ export default function VersionHistory() {
                 </pre>
               </div>
             </div>
+
+            {viewingVersion?.tags && viewingVersion.tags.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-foreground">Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {viewingVersion.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="text-sm text-muted-foreground">
               <Clock className="inline-block h-4 w-4 mr-1" />
