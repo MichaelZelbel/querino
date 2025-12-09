@@ -19,6 +19,10 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           display_name: string | null
+          github_branch: string | null
+          github_folder: string | null
+          github_repo: string | null
+          github_sync_enabled: boolean | null
           id: string
           plan_source: string | null
           plan_type: string | null
@@ -29,6 +33,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
+          github_branch?: string | null
+          github_folder?: string | null
+          github_repo?: string | null
+          github_sync_enabled?: boolean | null
           id: string
           plan_source?: string | null
           plan_type?: string | null
@@ -39,6 +47,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
+          github_branch?: string | null
+          github_folder?: string | null
+          github_repo?: string | null
+          github_sync_enabled?: boolean | null
           id?: string
           plan_source?: string | null
           plan_type?: string | null

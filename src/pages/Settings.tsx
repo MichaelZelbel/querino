@@ -1,3 +1,7 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +10,102 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, CreditCard, Palette, LogOut } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import heroSettings from "@/assets/hero-settings.png";
 
 export default function Settings() {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuthContext();
+  
+  // GitHub Sync state
+  const [githubRepo, setGithubRepo] = useState("");
+  const [githubBranch, setGithubBranch] = useState("main");
+  const [githubFolder, setGithubFolder] = useState("");
+  const [githubSyncEnabled, setGithubSyncEnabled] = useState(false);
+  const [savingGithub, setSavingGithub] = useState(false);
+  const [loadingGithub, setLoadingGithub] = useState(true);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth?redirect=/settings", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
+  // Load GitHub sync settings
+  useEffect(() => {
+    async function loadGithubSettings() {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("github_repo, github_branch, github_folder, github_sync_enabled")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error loading GitHub settings:", error);
+      } else if (data) {
+        setGithubRepo(data.github_repo || "");
+        setGithubBranch(data.github_branch || "main");
+        setGithubFolder(data.github_folder || "");
+        setGithubSyncEnabled(data.github_sync_enabled || false);
+      }
+      setLoadingGithub(false);
+    }
+    
+    if (user) {
+      loadGithubSettings();
+    }
+  }, [user]);
+
+  const handleSaveGithubSettings = async () => {
+    if (!user) return;
+    
+    // Validate repo format
+    if (githubRepo && !githubRepo.includes("/")) {
+      toast.error("Repository must be in format owner/repo");
+      return;
+    }
+    
+    setSavingGithub(true);
+    
+    // Clean folder path - strip leading/trailing slashes
+    const cleanFolder = githubFolder.replace(/^\/+|\/+$/g, "");
+    
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        github_repo: githubRepo || null,
+        github_branch: githubBranch || "main",
+        github_folder: cleanFolder || null,
+        github_sync_enabled: githubSyncEnabled,
+      })
+      .eq("id", user.id);
+    
+    setSavingGithub(false);
+    
+    if (error) {
+      console.error("Error saving GitHub settings:", error);
+      toast.error("Failed to save GitHub settings");
+    } else {
+      toast.success("GitHub sync settings saved");
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -144,6 +240,79 @@ export default function Settings() {
                   </div>
                   <Switch />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* GitHub Sync Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display flex items-center gap-2">
+                  <Github className="h-5 w-5" />
+                  GitHub Sync
+                </CardTitle>
+                <CardDescription>Sync your prompts to a GitHub repository.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingGithub ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="githubRepo">Repository (owner/name)</Label>
+                      <Input
+                        id="githubRepo"
+                        placeholder="yourname/your-repo"
+                        value={githubRepo}
+                        onChange={(e) => setGithubRepo(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="githubBranch">Branch</Label>
+                        <Input
+                          id="githubBranch"
+                          placeholder="main"
+                          value={githubBranch}
+                          onChange={(e) => setGithubBranch(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="githubFolder">Folder path</Label>
+                        <Input
+                          id="githubFolder"
+                          placeholder="querino-prompts"
+                          value={githubFolder}
+                          onChange={(e) => setGithubFolder(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Enable GitHub Sync</p>
+                        <p className="text-sm text-muted-foreground">
+                          Allow syncing your prompts to GitHub.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={githubSyncEnabled}
+                        onCheckedChange={setGithubSyncEnabled}
+                      />
+                    </div>
+                    <Button onClick={handleSaveGithubSettings} disabled={savingGithub}>
+                      {savingGithub ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save GitHub Settings"
+                      )}
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

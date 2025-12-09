@@ -7,12 +7,20 @@ import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 
 interface UserRatings {
   [promptId: string]: number;
+}
+
+interface GithubSyncSettings {
+  github_repo: string | null;
+  github_branch: string | null;
+  github_folder: string | null;
+  github_sync_enabled: boolean | null;
 }
 
 export default function Library() {
@@ -24,6 +32,8 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   // Filter prompts based on search query
   const filteredMyPrompts = useMemo(() => {
@@ -56,6 +66,80 @@ export default function Library() {
       navigate("/auth?redirect=/library", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  // Load GitHub sync settings
+  useEffect(() => {
+    async function loadGithubSettings() {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("github_repo, github_branch, github_folder, github_sync_enabled")
+        .eq("id", user.id)
+        .single();
+      
+      if (!error && data) {
+        setGithubSettings(data);
+      }
+    }
+    
+    if (user) {
+      loadGithubSettings();
+    }
+  }, [user]);
+
+  const handleSyncToGithub = async () => {
+    if (!user || !githubSettings?.github_repo) return;
+    
+    const syncUrl = import.meta.env.VITE_GITHUB_SYNC_URL;
+    if (!syncUrl) {
+      toast.error("GitHub sync is not configured");
+      return;
+    }
+    
+    setSyncing(true);
+    
+    try {
+      const payload = {
+        userId: user.id,
+        githubRepo: githubSettings.github_repo,
+        githubBranch: githubSettings.github_branch || "main",
+        githubFolder: githubSettings.github_folder || "",
+        prompts: myPrompts.map((p) => ({
+          id: p.id,
+          title: p.title,
+          description: p.short_description,
+          content: p.content,
+          tags: p.tags,
+          createdAt: p.created_at,
+          updatedAt: p.updated_at,
+          isPublic: p.is_public,
+          rating: p.rating_avg,
+        })),
+      };
+      
+      const response = await fetch(syncUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Sync failed");
+      }
+      
+      toast.success("Successfully sent prompts to GitHub sync backend.");
+    } catch (error) {
+      console.error("GitHub sync error:", error);
+      toast.error("GitHub sync failed. Please check your settings or try again later.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const canSyncToGithub = 
+    githubSettings?.github_sync_enabled && 
+    githubSettings?.github_repo;
 
   // Fetch saved prompts and user's own prompts
   useEffect(() => {
@@ -158,7 +242,22 @@ export default function Library() {
                 Welcome back{profile?.display_name ? `, ${profile.display_name}` : ""}!
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              {canSyncToGithub && (
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleSyncToGithub}
+                  disabled={syncing || myPrompts.length === 0}
+                >
+                  {syncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Github className="h-4 w-4" />
+                  )}
+                  {syncing ? "Syncing..." : "Sync to GitHub"}
+                </Button>
+              )}
               <Link to="/prompts/wizard">
                 <Button variant="outline" className="gap-2">
                   <Wand2 className="h-4 w-4" />
