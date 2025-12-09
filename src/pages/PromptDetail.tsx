@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
+import { TestPromptModal } from "@/components/prompts/TestPromptModal";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -34,6 +35,7 @@ export default function PromptDetail() {
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
   const isSaved = id ? isPromptSaved(id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
 
@@ -374,12 +376,33 @@ export default function PromptDetail() {
                 Refine with AI
               </Button>
             )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowTestModal(true)}
+                className="gap-2"
+              >
+                <FlaskConical className="h-4 w-4" />
+                Test Prompt
+              </Button>
+            )}
           </div>
 
           {/* Refine Prompt Modal */}
           <RefinePromptModal
             isOpen={showRefineModal}
             onClose={() => setShowRefineModal(false)}
+            promptContent={prompt.content}
+            promptTitle={prompt.title}
+            userId={user?.id}
+          />
+
+          {/* Test Prompt Modal */}
+          <TestPromptModal
+            isOpen={showTestModal}
+            onClose={() => setShowTestModal(false)}
             promptContent={prompt.content}
             promptTitle={prompt.title}
             userId={user?.id}

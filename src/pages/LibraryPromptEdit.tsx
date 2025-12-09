@@ -43,6 +43,7 @@ import {
   Globe,
   Eye,
   Sparkles,
+  FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
@@ -50,6 +51,7 @@ import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
+import { TestPromptModal } from "@/components/prompts/TestPromptModal";
 
 interface PromptVersion {
   id: string;
@@ -76,6 +78,7 @@ export default function LibraryPromptEdit() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -524,6 +527,15 @@ export default function LibraryPromptEdit() {
                 </Button>
               )}
 
+              <Button
+                variant="outline"
+                onClick={() => setShowTestModal(true)}
+                className="gap-2"
+              >
+                <FlaskConical className="h-4 w-4" />
+                Test Prompt
+              </Button>
+
               <Link to={`/library/${id}/versions`}>
                 <Button variant="outline" className="gap-2">
                   <History className="h-4 w-4" />
@@ -864,6 +876,15 @@ export default function LibraryPromptEdit() {
         promptContent={content}
         promptTitle={title}
         onApplyRefinedPrompt={(refinedPrompt) => setContent(refinedPrompt)}
+        userId={user?.id}
+      />
+
+      {/* Test Prompt Modal */}
+      <TestPromptModal
+        isOpen={showTestModal}
+        onClose={() => setShowTestModal(false)}
+        promptContent={content}
+        promptTitle={title}
         userId={user?.id}
       />
     </div>
