@@ -156,10 +156,20 @@ export default function LibraryPromptEdit() {
     }
   }, [id, user]);
 
+  const normalizeTag = (tag: string): string => {
+    return tag
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\-\s]/g, '') // Remove special chars except hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Remove consecutive hyphens
+      .replace(/^-|-$/g, ''); // Trim leading/trailing hyphens
+  };
+
   const handleAddTag = () => {
-    const trimmedTag = tagInput.trim().toLowerCase();
-    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
-      setTags([...tags, trimmedTag]);
+    const normalizedTag = normalizeTag(tagInput);
+    if (normalizedTag && !tags.includes(normalizedTag) && tags.length < 10) {
+      setTags([...tags, normalizedTag]);
       setTagInput("");
     }
   };

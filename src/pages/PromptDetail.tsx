@@ -10,8 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
-import { StarRating } from "@/components/prompts/StarRating";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { toast } from "sonner";
@@ -203,9 +202,15 @@ export default function PromptDetail() {
               {prompt.tags && prompt.tags.length > 0 && (
                 <>
                   {prompt.tags.slice(0, 5).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-sm">
-                      {tag}
-                    </Badge>
+                    <Link key={tag} to={`/discover?tag=${encodeURIComponent(tag)}`}>
+                      <Badge 
+                        variant="outline" 
+                        className="text-sm gap-1 cursor-pointer hover:bg-accent transition-colors"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </Badge>
+                    </Link>
                   ))}
                 </>
               )}

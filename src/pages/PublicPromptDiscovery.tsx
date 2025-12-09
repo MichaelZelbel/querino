@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
@@ -6,16 +7,66 @@ import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { usePrompts } from "@/hooks/usePrompts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, TrendingUp, Clock, Star, Filter } from "lucide-react";
+import { Search, TrendingUp, Clock, Star, Filter, Tag, X } from "lucide-react";
 import heroDiscover from "@/assets/hero-discover.png";
 
 export default function PublicPromptDiscovery() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"trending" | "recent" | "rating">("trending");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const { data: prompts, isLoading, error } = usePrompts();
+
+  // Extract all unique tags from prompts for the tag filter
+  const allTags = useMemo(() => {
+    if (!prompts) return [];
+    const tagSet = new Set<string>();
+    prompts.forEach((prompt) => {
+      if (prompt.tags && Array.isArray(prompt.tags)) {
+        prompt.tags.forEach((tag) => tagSet.add(tag));
+      }
+    });
+    return Array.from(tagSet).sort();
+  }, [prompts]);
+
+  // Initialize selected tags from URL query param
+  useEffect(() => {
+    const tagParam = searchParams.get("tag");
+    if (tagParam) {
+      setSelectedTags([tagParam]);
+    }
+  }, []);
+
+  // Update URL when tags change
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) => {
+      const newTags = prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag];
+      
+      // Update URL
+      if (newTags.length === 0) {
+        searchParams.delete("tag");
+      } else if (newTags.length === 1) {
+        searchParams.set("tag", newTags[0]);
+      } else {
+        searchParams.delete("tag"); // For multiple tags, don't persist to URL
+      }
+      setSearchParams(searchParams, { replace: true });
+      
+      return newTags;
+    });
+  };
+
+  const clearTags = () => {
+    setSelectedTags([]);
+    searchParams.delete("tag");
+    setSearchParams(searchParams, { replace: true });
+  };
 
   const filteredPrompts = useMemo(() => {
     if (!prompts) return [];
@@ -24,9 +75,14 @@ export default function PublicPromptDiscovery() {
       const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
       const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         prompt.short_description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      
+      // Tag filter with OR logic
+      const matchesTags = selectedTags.length === 0 || 
+        (prompt.tags && prompt.tags.some((tag) => selectedTags.includes(tag)));
+      
+      return matchesCategory && matchesSearch && matchesTags;
     });
-  }, [prompts, selectedCategory, searchQuery]);
+  }, [prompts, selectedCategory, searchQuery, selectedTags]);
 
   const sortedPrompts = useMemo(() => {
     return [...filteredPrompts].sort((a, b) => {
@@ -105,6 +161,44 @@ export default function PublicPromptDiscovery() {
             selected={selectedCategory}
             onSelect={setSelectedCategory}
           />
+
+          {/* Tag Filter */}
+          {allTags.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Filter by Tags</span>
+                </div>
+                {selectedTags.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearTags}
+                    className="h-7 text-xs gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    Clear tags
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {allTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => handleTagToggle(tag)}
+                  >
+                    {tag}
+                    {selectedTags.includes(tag) && (
+                      <X className="h-3 w-3 ml-1" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Results Count */}
@@ -159,6 +253,7 @@ export default function PublicPromptDiscovery() {
             <Button variant="outline" className="mt-4" onClick={() => {
               setSelectedCategory("all");
               setSearchQuery("");
+              clearTags();
             }}>
               Clear Filters
             </Button>
