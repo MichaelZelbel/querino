@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -6,32 +6,106 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { LegacyPromptCard } from "@/components/prompts/LegacyPromptCard";
-import { mockPrompts } from "@/data/mockPrompts";
+import { PromptCard } from "@/components/prompts/PromptCard";
+import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import heroDashboard from "@/assets/hero-dashboard.png";
 import { 
   Plus, 
   Search, 
   FolderOpen, 
-  Star, 
+  Pin, 
   Clock, 
   TrendingUp,
   Library,
   Sparkles,
   Crown
 } from "lucide-react";
+import type { Prompt, PromptAuthor } from "@/types/prompt";
+
+interface PromptWithAuthor extends Prompt {
+  author?: PromptAuthor | null;
+}
 
 const Dashboard = () => {
+  const { user } = useAuthContext();
+  const { pinnedPrompts, loading: pinnedLoading, refetch: refetchPinned, isPromptPinned } = usePinnedPrompts();
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Simulated user's saved prompts (subset of mock data)
-  const userPrompts = mockPrompts.slice(0, 4);
-  const pinnedPrompts = mockPrompts.slice(0, 2);
-  
+  const [userPrompts, setUserPrompts] = useState<PromptWithAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalPrompts: 0,
+    pinnedCount: 0,
+    totalCopies: 0,
+    recentEdits: 0,
+  });
+
+  useEffect(() => {
+    refetchPinned();
+  }, [refetchPinned]);
+
+  useEffect(() => {
+    async function fetchUserPrompts() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("prompts")
+          .select(`
+            *,
+            profiles:author_id (
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq("author_id", user.id)
+          .order("updated_at", { ascending: false });
+
+        if (error) {
+          console.error("Error fetching user prompts:", error);
+          return;
+        }
+
+        const prompts = (data || []).map((p: any) => ({
+          ...p,
+          author: p.profiles || null,
+        }));
+
+        setUserPrompts(prompts);
+
+        // Calculate stats
+        const totalCopies = prompts.reduce((sum, p) => sum + (p.copies_count || 0), 0);
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const recentEdits = prompts.filter(
+          (p) => new Date(p.updated_at) > oneWeekAgo
+        ).length;
+
+        setStats({
+          totalPrompts: prompts.length,
+          pinnedCount: pinnedPrompts.length,
+          totalCopies,
+          recentEdits,
+        });
+      } catch (err) {
+        console.error("Error fetching user prompts:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserPrompts();
+  }, [user, pinnedPrompts.length]);
+
   const filteredPrompts = userPrompts.filter(
     (prompt) =>
       prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prompt.description.toLowerCase().includes(searchQuery.toLowerCase())
+      prompt.short_description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -58,7 +132,7 @@ const Dashboard = () => {
               />
             </div>
             <div className="flex gap-3">
-              <Link to="/prompt-creation-publishing-premium-free-">
+              <Link to="/prompts/new">
                 <Button variant="hero" className="gap-2">
                   <Plus className="h-4 w-4" />
                   Create Prompt
@@ -75,7 +149,7 @@ const Dashboard = () => {
                   <Library className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">24</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalPrompts}</p>
                   <p className="text-sm text-muted-foreground">Total Prompts</p>
                 </div>
               </CardContent>
@@ -84,10 +158,10 @@ const Dashboard = () => {
             <Card variant="elevated">
               <CardContent className="flex items-center gap-4 p-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10">
-                  <Star className="h-6 w-6 text-warning" />
+                  <Pin className="h-6 w-6 text-warning" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">8</p>
+                  <p className="text-2xl font-bold text-foreground">{pinnedPrompts.length}</p>
                   <p className="text-sm text-muted-foreground">Pinned</p>
                 </div>
               </CardContent>
@@ -99,7 +173,7 @@ const Dashboard = () => {
                   <TrendingUp className="h-6 w-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">156</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalCopies}</p>
                   <p className="text-sm text-muted-foreground">Total Copies</p>
                 </div>
               </CardContent>
@@ -111,7 +185,7 @@ const Dashboard = () => {
                   <Clock className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">3</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.recentEdits}</p>
                   <p className="text-sm text-muted-foreground">Recent Edits</p>
                 </div>
               </CardContent>
@@ -145,18 +219,47 @@ const Dashboard = () => {
           <section className="mb-10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <Star className="h-5 w-5 text-warning" />
+                <Pin className="h-5 w-5 text-warning" />
                 Pinned Prompts
               </h2>
-              <Button variant="ghost" size="sm">
-                View All
-              </Button>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {pinnedPrompts.map((prompt) => (
-                <LegacyPromptCard key={prompt.id} prompt={prompt} />
-              ))}
-            </div>
+            {pinnedLoading ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="h-48 animate-pulse bg-muted/50" />
+                ))}
+              </div>
+            ) : pinnedPrompts.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {pinnedPrompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    currentUserId={user?.id}
+                    editPath="library"
+                    showAuthorInfo
+                    isPinned
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card variant="default" className="py-8 text-center">
+                <CardContent>
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <Pin className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="mb-2 font-semibold text-foreground">No pinned prompts yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Pin your favorite prompts to access them quickly!
+                  </p>
+                  <Link to="/discover" className="mt-4 inline-block">
+                    <Button variant="outline" size="sm" className="gap-2">
+                      Discover Prompts
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
           </section>
 
           {/* All Prompts */}
@@ -164,7 +267,7 @@ const Dashboard = () => {
             <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                All Prompts
+                My Prompts
               </h2>
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -178,13 +281,51 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredPrompts.map((prompt) => (
-                <LegacyPromptCard key={prompt.id} prompt={prompt} />
-              ))}
-            </div>
-
-            {filteredPrompts.length === 0 && (
+            {loading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="h-48 animate-pulse bg-muted/50" />
+                ))}
+              </div>
+            ) : filteredPrompts.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredPrompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    currentUserId={user?.id}
+                    editPath="library"
+                    showAuthorBadge
+                    isPinned={isPromptPinned(prompt.id)}
+                  />
+                ))}
+              </div>
+            ) : userPrompts.length === 0 ? (
+              <Card variant="default" className="py-12 text-center">
+                <CardContent>
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <Library className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="mb-2 font-semibold text-foreground">No prompts yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create your first prompt or explore the community
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    <Link to="/prompts/new">
+                      <Button variant="default" size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create Prompt
+                      </Button>
+                    </Link>
+                    <Link to="/discover">
+                      <Button variant="outline" size="sm">
+                        Discover Prompts
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
               <Card variant="default" className="py-12 text-center">
                 <CardContent>
                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">

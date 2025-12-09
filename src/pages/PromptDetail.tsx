@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
+import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { TestPromptModal } from "@/components/prompts/TestPromptModal";
@@ -29,14 +30,17 @@ export default function PromptDetail() {
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
   const { clonePrompt, cloning } = useClonePrompt();
+  const { isPromptPinned, togglePin } = usePinnedPrompts();
   const [prompt, setPrompt] = useState<PromptWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [showTestModal, setShowTestModal] = useState(false);
   const isSaved = id ? isPromptSaved(id) : false;
+  const isPinned = id ? isPromptPinned(id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
 
   useEffect(() => {
@@ -119,6 +123,30 @@ export default function PromptDetail() {
       toast.success("Removed from library");
     } else {
       toast.success("Saved to library!");
+    }
+  };
+
+  const handleTogglePin = async () => {
+    if (!id) return;
+    
+    if (!user) {
+      navigate(`/auth?redirect=/prompts/${id}`);
+      return;
+    }
+
+    setPinning(true);
+    const { error } = await togglePin(id);
+    setPinning(false);
+
+    if (error) {
+      toast.error("Failed to update pin");
+      return;
+    }
+
+    if (isPinned) {
+      toast.success("Unpinned from dashboard");
+    } else {
+      toast.success("Pinned to dashboard!");
     }
   };
 
@@ -342,6 +370,28 @@ export default function PromptDetail() {
                 </>
               )}
             </Button>
+
+            {user && (
+              <Button
+                size="lg"
+                variant={isPinned ? "secondary" : "outline"}
+                onClick={handleTogglePin}
+                disabled={pinning}
+                className="gap-2"
+              >
+                {isPinned ? (
+                  <>
+                    <PinOff className="h-4 w-4" />
+                    Unpin
+                  </>
+                ) : (
+                  <>
+                    <Pin className="h-4 w-4" />
+                    Pin to Dashboard
+                  </>
+                )}
+              </Button>
+            )}
 
             {isAuthor && (
               <Link to={`/library/${id}/edit`}>
