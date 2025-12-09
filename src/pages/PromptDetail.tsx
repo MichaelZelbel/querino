@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
+import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ export default function PromptDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
+  const { clonePrompt, cloning } = useClonePrompt();
   const [prompt, setPrompt] = useState<PromptWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -346,6 +348,19 @@ export default function PromptDetail() {
                   Manage Prompt
                 </Button>
               </Link>
+            )}
+
+            {user && !isAuthor && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => clonePrompt(prompt, user.id)}
+                disabled={cloning}
+                className="gap-2"
+              >
+                <Files className="h-4 w-4" />
+                {cloning ? "Cloning..." : "Clone Prompt"}
+              </Button>
             )}
 
             {user && (

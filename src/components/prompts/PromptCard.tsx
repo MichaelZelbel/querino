@@ -4,8 +4,9 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Star, Pencil } from "lucide-react";
+import { Copy, Check, Star, Pencil, Files } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
+import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 
@@ -29,6 +30,7 @@ export function PromptCard({
   showSendToLLM = false,
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
+  const { clonePrompt, cloning } = useClonePrompt();
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
   const editUrl = editPath === "library" ? `/library/${prompt.id}/edit` : `/prompts/${prompt.id}/edit`;
 
@@ -166,6 +168,18 @@ export function PromptCard({
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             </Link>
+          )}
+          {currentUserId && !isAuthor && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => clonePrompt(prompt, currentUserId)}
+              disabled={cloning}
+              className="gap-1.5 h-8 px-2"
+              title="Clone to my library"
+            >
+              <Files className="h-3.5 w-3.5" />
+            </Button>
           )}
           {showSendToLLM && (
             <SendToLLMButtons
