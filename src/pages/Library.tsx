@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { Button } from "@/components/ui/button";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { Prompt } from "@/types/prompt";
 
 interface UserRatings {
@@ -20,6 +22,33 @@ export default function Library() {
   const [myPrompts, setMyPrompts] = useState<Prompt[]>([]);
   const [userRatings, setUserRatings] = useState<UserRatings>({});
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Filter prompts based on search query
+  const filteredMyPrompts = useMemo(() => {
+    if (!debouncedSearch.trim()) return myPrompts;
+    const search = debouncedSearch.toLowerCase();
+    return myPrompts.filter(
+      (prompt) =>
+        prompt.title.toLowerCase().includes(search) ||
+        prompt.short_description.toLowerCase().includes(search) ||
+        prompt.content.toLowerCase().includes(search) ||
+        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [myPrompts, debouncedSearch]);
+
+  const filteredSavedPrompts = useMemo(() => {
+    if (!debouncedSearch.trim()) return savedPrompts;
+    const search = debouncedSearch.toLowerCase();
+    return savedPrompts.filter(
+      (prompt) =>
+        prompt.title.toLowerCase().includes(search) ||
+        prompt.short_description.toLowerCase().includes(search) ||
+        prompt.content.toLowerCase().includes(search) ||
+        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [savedPrompts, debouncedSearch]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -122,7 +151,7 @@ export default function Library() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12">
           {/* Page Header */}
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h1 className="text-display-md font-bold text-foreground">My Library</h1>
               <p className="mt-1 text-muted-foreground">
@@ -145,6 +174,18 @@ export default function Library() {
             </div>
           </div>
 
+          {/* Search Bar */}
+          <div className="relative mb-8 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search your prompts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -155,27 +196,33 @@ export default function Library() {
               {myPrompts.length > 0 && (
                 <section>
                   <h2 className="mb-4 text-xl font-semibold text-foreground">
-                    My Prompts ({myPrompts.length})
+                    My Prompts ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
                   </h2>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {myPrompts.map((prompt) => (
-                      <PromptCard
-                        key={prompt.id}
-                        prompt={prompt}
-                        showAuthorBadge
-                        currentUserId={user?.id}
-                        editPath="library"
-                        showSendToLLM
-                      />
-                    ))}
-                  </div>
+                  {filteredMyPrompts.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No prompts match your search.
+                    </p>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredMyPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          showAuthorBadge
+                          currentUserId={user?.id}
+                          editPath="library"
+                          showSendToLLM
+                        />
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
 
               {/* Saved Prompts Section */}
               <section>
                 <h2 className="mb-4 text-xl font-semibold text-foreground">
-                  Saved Prompts ({savedPrompts.length})
+                  Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
                 </h2>
                 {savedPrompts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
@@ -195,9 +242,13 @@ export default function Library() {
                       </Button>
                     </Link>
                   </div>
+                ) : filteredSavedPrompts.length === 0 ? (
+                  <p className="py-8 text-center text-muted-foreground">
+                    No saved prompts match your search.
+                  </p>
                 ) : (
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {savedPrompts.map((prompt) => (
+                    {filteredSavedPrompts.map((prompt) => (
                       <PromptCard
                         key={prompt.id}
                         prompt={prompt}

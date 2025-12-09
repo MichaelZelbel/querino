@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
-import { usePrompts } from "@/hooks/usePrompts";
+import { useSearchPrompts } from "@/hooks/useSearchPrompts";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, TrendingUp, Clock, Star } from "lucide-react";
@@ -19,24 +20,36 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("trending");
   
-  const { data: prompts, isLoading, error } = usePrompts();
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const { data: prompts, isLoading, error } = useSearchPrompts({ 
+    searchQuery: debouncedSearch,
+    isPublic: true 
+  });
+
+  // When searching, disable client-side sorting (server returns relevance-ranked results)
+  const isSearching = debouncedSearch.trim().length > 0;
 
   const filteredAndSortedPrompts = useMemo(() => {
     if (!prompts) return [];
     
+    // Filter by category (and tags if searching)
     const filtered = prompts.filter((prompt) => {
       const matchesCategory = category === "all" || prompt.category === category;
-      const matchesSearch = 
-        prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prompt.short_description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (prompt.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ?? false);
-      return matchesCategory && matchesSearch;
+      // Also filter by tags when searching
+      const matchesTags = !isSearching || 
+        prompt.tags?.some(tag => tag.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+        true; // Allow through if no tag match needed
+      return matchesCategory;
     });
+
+    // Skip sorting when searching (server provides relevance-ranked results)
+    if (isSearching) {
+      return filtered;
+    }
 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "trending":
-          // Trending = combination of copies and rating
           const trendingA = (a.copies_count || 0) + (a.rating_avg || 0) * 10;
           const trendingB = (b.copies_count || 0) + (b.rating_avg || 0) * 10;
           return trendingB - trendingA;
@@ -48,7 +61,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
           return 0;
       }
     });
-  }, [prompts, category, searchQuery, sortBy]);
+  }, [prompts, category, sortBy, isSearching, debouncedSearch]);
 
   const sortOptions: { value: SortOption; label: string; icon: typeof TrendingUp }[] = [
     { value: "trending", label: "Trending", icon: TrendingUp },
@@ -83,21 +96,31 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
             />
           </div>
 
-          {/* Sort Options */}
+          {/* Sort Options - disabled when searching */}
           <div className="flex justify-center gap-2">
             {sortOptions.map(({ value, label, icon: Icon }) => (
               <Button
                 key={value}
-                variant={sortBy === value ? "secondary" : "ghost"}
+                variant={sortBy === value && !isSearching ? "secondary" : "ghost"}
                 size="sm"
                 onClick={() => setSortBy(value)}
-                className={cn("gap-1.5", sortBy === value && "font-medium")}
+                disabled={isSearching}
+                className={cn(
+                  "gap-1.5", 
+                  sortBy === value && !isSearching && "font-medium",
+                  isSearching && "opacity-50 cursor-not-allowed"
+                )}
               >
                 <Icon className="h-4 w-4" />
                 {label}
               </Button>
             ))}
           </div>
+          {isSearching && (
+            <p className="text-center text-sm text-muted-foreground">
+              Showing results by relevance
+            </p>
+          )}
           
           <div className="flex justify-center">
             <CategoryFilter selected={category} onSelect={setCategory} />
