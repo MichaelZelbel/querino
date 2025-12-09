@@ -14,9 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Wand2, Copy, ArrowRight, Loader2, Check } from "lucide-react";
+import { Wand2, Copy, ArrowRight, Loader2, Check, Info } from "lucide-react";
 import { toast } from "sonner";
-import { generatePromptFromWizard, type WizardFormData } from "@/lib/promptGenerator";
+import {
+  generatePromptFromWizard,
+  FRAMEWORK_OPTIONS,
+  getFrameworkDisplayName,
+  type WizardFormData,
+  type PromptFramework,
+} from "@/lib/promptGenerator";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -39,9 +45,11 @@ export default function PromptWizard() {
   const [outputFormat, setOutputFormat] = useState("");
   const [constraints, setConstraints] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
+  const [framework, setFramework] = useState<PromptFramework>("auto");
 
   // Generated prompt
   const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [usedFramework, setUsedFramework] = useState<PromptFramework | null>(null);
   const [copied, setCopied] = useState(false);
   const [goalError, setGoalError] = useState("");
 
@@ -51,6 +59,8 @@ export default function PromptWizard() {
       navigate("/auth?redirect=/prompts/wizard", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  const selectedFrameworkOption = FRAMEWORK_OPTIONS.find((f) => f.value === framework);
 
   const handleGenerate = () => {
     // Validate goal
@@ -70,10 +80,12 @@ export default function PromptWizard() {
       outputFormat: outputFormat.trim(),
       constraints: constraints.trim(),
       additionalNotes: additionalNotes.trim(),
+      framework,
     };
 
-    const prompt = generatePromptFromWizard(formData);
-    setGeneratedPrompt(prompt);
+    const result = generatePromptFromWizard(formData);
+    setGeneratedPrompt(result.prompt);
+    setUsedFramework(result.usedFramework);
     toast.success("Prompt generated!");
   };
 
@@ -140,6 +152,29 @@ export default function PromptWizard() {
               />
               {goalError && (
                 <p className="text-sm text-destructive">{goalError}</p>
+              )}
+            </div>
+
+            {/* Prompt Framework Selector */}
+            <div className="space-y-2">
+              <Label htmlFor="framework">Prompt Framework</Label>
+              <Select value={framework} onValueChange={(v) => setFramework(v as PromptFramework)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FRAMEWORK_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedFrameworkOption && (
+                <div className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+                  <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{selectedFrameworkOption.description}</span>
+                </div>
               )}
             </div>
 
@@ -248,9 +283,17 @@ export default function PromptWizard() {
           {/* Generated Prompt Section */}
           {generatedPrompt && (
             <div className="mt-8 rounded-xl border border-border bg-card p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">
-                Generated Prompt
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Generated Prompt
+                </h2>
+                {usedFramework && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                    Framework: {getFrameworkDisplayName(usedFramework)}
+                    {framework === "auto" && " (auto-selected)"}
+                  </span>
+                )}
+              </div>
               <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm font-mono text-foreground overflow-x-auto">
                 {generatedPrompt}
               </pre>
