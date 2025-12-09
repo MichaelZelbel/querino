@@ -42,12 +42,14 @@ import {
   History,
   Globe,
   Eye,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
+import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 
 interface PromptVersion {
   id: string;
@@ -73,6 +75,7 @@ export default function LibraryPromptEdit() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showRefineModal, setShowRefineModal] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -688,7 +691,19 @@ export default function LibraryPromptEdit() {
 
                   {/* Prompt Content */}
                   <div className="space-y-2">
-                    <Label htmlFor="content">Prompt Content *</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="content">Prompt Content *</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowRefineModal(true)}
+                        className="gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Refine with AI
+                      </Button>
+                    </div>
                     <Textarea
                       id="content"
                       value={content}
@@ -830,6 +845,16 @@ export default function LibraryPromptEdit() {
         onOpenChange={setShowPublishModal}
         onPublish={handlePublish}
         isPublishing={isPublishing}
+      />
+
+      {/* Refine Prompt Modal */}
+      <RefinePromptModal
+        isOpen={showRefineModal}
+        onClose={() => setShowRefineModal(false)}
+        promptContent={content}
+        promptTitle={title}
+        onApplyRefinedPrompt={(refinedPrompt) => setContent(refinedPrompt)}
+        userId={user?.id}
       />
     </div>
   );
