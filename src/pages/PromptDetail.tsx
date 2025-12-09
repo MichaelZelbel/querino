@@ -11,8 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
 import { StarRating } from "@/components/prompts/StarRating";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
+import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -31,6 +32,7 @@ export default function PromptDetail() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showRefineModal, setShowRefineModal] = useState(false);
   const isSaved = id ? isPromptSaved(id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
 
@@ -340,7 +342,28 @@ export default function PromptDetail() {
                 </Button>
               </Link>
             )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowRefineModal(true)}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Refine with AI
+              </Button>
+            )}
           </div>
+
+          {/* Refine Prompt Modal */}
+          <RefinePromptModal
+            isOpen={showRefineModal}
+            onClose={() => setShowRefineModal(false)}
+            promptContent={prompt.content}
+            promptTitle={prompt.title}
+            userId={user?.id}
+          />
 
           {/* Send to LLM */}
           <div className="mb-12 rounded-xl border border-border bg-card p-6">
