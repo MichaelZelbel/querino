@@ -14,6 +14,7 @@ interface SkillCardProps {
   showAuthorBadge?: boolean;
   showAuthorInfo?: boolean;
   currentUserId?: string;
+  showEditButton?: boolean;
 }
 
 export function SkillCard({
@@ -21,6 +22,7 @@ export function SkillCard({
   showAuthorBadge,
   showAuthorInfo = false,
   currentUserId,
+  showEditButton = false,
 }: SkillCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
@@ -118,7 +120,7 @@ export function SkillCard({
           </div>
 
           <div className="flex items-center gap-1">
-            {isAuthor && (
+            {(isAuthor || showEditButton) && (
               <Link to={`/skills/${skill.id}/edit`}>
                 <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                   <Pencil className="h-3.5 w-3.5" />

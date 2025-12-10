@@ -5,10 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
+import { SkillCard } from "@/components/skills/SkillCard";
+import { WorkflowCard } from "@/components/workflows/WorkflowCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useSkills } from "@/hooks/useSkills";
+import { useWorkflows } from "@/hooks/useWorkflows";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 
@@ -35,6 +39,14 @@ export default function Library() {
   const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
   const [syncing, setSyncing] = useState(false);
 
+  // Fetch user's skills and workflows
+  const { data: mySkills, isLoading: skillsLoading } = useSkills({ 
+    authorId: user?.id 
+  });
+  const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({ 
+    authorId: user?.id 
+  });
+
   // Filter prompts based on search query
   const filteredMyPrompts = useMemo(() => {
     if (!debouncedSearch.trim()) return myPrompts;
@@ -59,6 +71,29 @@ export default function Library() {
         (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
   }, [savedPrompts, debouncedSearch]);
+
+  const filteredMySkills = useMemo(() => {
+    if (!debouncedSearch.trim() || !mySkills) return mySkills || [];
+    const search = debouncedSearch.toLowerCase();
+    return mySkills.filter(
+      (skill) =>
+        skill.title.toLowerCase().includes(search) ||
+        (skill.description?.toLowerCase().includes(search) ?? false) ||
+        skill.content.toLowerCase().includes(search) ||
+        (skill.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [mySkills, debouncedSearch]);
+
+  const filteredMyWorkflows = useMemo(() => {
+    if (!debouncedSearch.trim() || !myWorkflows) return myWorkflows || [];
+    const search = debouncedSearch.toLowerCase();
+    return myWorkflows.filter(
+      (workflow) =>
+        workflow.title.toLowerCase().includes(search) ||
+        (workflow.description?.toLowerCase().includes(search) ?? false) ||
+        (workflow.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [myWorkflows, debouncedSearch]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -116,6 +151,26 @@ export default function Library() {
           isPublic: p.is_public,
           rating: p.rating_avg,
         })),
+        skills: (mySkills || []).map((s) => ({
+          id: s.id,
+          title: s.title,
+          description: s.description,
+          content: s.content,
+          tags: s.tags,
+          createdAt: s.created_at,
+          updatedAt: s.updated_at,
+          published: s.published,
+        })),
+        workflows: (myWorkflows || []).map((w) => ({
+          id: w.id,
+          title: w.title,
+          description: w.description,
+          json: w.json,
+          tags: w.tags,
+          createdAt: w.created_at,
+          updatedAt: w.updated_at,
+          published: w.published,
+        })),
       };
       
       const response = await fetch(syncUrl, {
@@ -128,7 +183,7 @@ export default function Library() {
         throw new Error("Sync failed");
       }
       
-      toast.success("Successfully sent prompts to GitHub sync backend.");
+      toast.success("Successfully sent data to GitHub sync backend.");
     } catch (error) {
       console.error("GitHub sync error:", error);
       toast.error("GitHub sync failed. Please check your settings or try again later.");
@@ -140,6 +195,8 @@ export default function Library() {
   const canSyncToGithub = 
     githubSettings?.github_sync_enabled && 
     githubSettings?.github_repo;
+
+  const hasContent = myPrompts.length > 0 || (mySkills?.length || 0) > 0 || (myWorkflows?.length || 0) > 0;
 
   // Fetch saved prompts and user's own prompts
   useEffect(() => {
@@ -228,6 +285,8 @@ export default function Library() {
     return null; // Will redirect
   }
 
+  const isLoading = loading || skillsLoading || workflowsLoading;
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
@@ -248,7 +307,7 @@ export default function Library() {
                   variant="outline"
                   className="gap-2"
                   onClick={handleSyncToGithub}
-                  disabled={syncing || myPrompts.length === 0}
+                  disabled={syncing || !hasContent}
                 >
                   {syncing ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -278,14 +337,14 @@ export default function Library() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search your prompts..."
+              placeholder="Search your library..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -294,9 +353,12 @@ export default function Library() {
               {/* My Prompts Section */}
               {myPrompts.length > 0 && (
                 <section>
-                  <h2 className="mb-4 text-xl font-semibold text-foreground">
-                    My Prompts ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
-                  </h2>
+                  <div className="mb-4 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      My Prompts ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
+                    </h2>
+                  </div>
                   {filteredMyPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No prompts match your search.
@@ -318,11 +380,76 @@ export default function Library() {
                 </section>
               )}
 
+              {/* My Skills Section */}
+              {(mySkills?.length || 0) > 0 && (
+                <section>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <h2 className="text-xl font-semibold text-foreground">
+                        My Skills ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
+                      </h2>
+                    </div>
+                    <Link to="/skills/new">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        New Skill
+                      </Button>
+                    </Link>
+                  </div>
+                  {filteredMySkills.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No skills match your search.
+                    </p>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredMySkills.map((skill) => (
+                        <SkillCard key={skill.id} skill={skill} showEditButton />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* My Workflows Section */}
+              {(myWorkflows?.length || 0) > 0 && (
+                <section>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Workflow className="h-5 w-5 text-primary" />
+                      <h2 className="text-xl font-semibold text-foreground">
+                        My Workflows ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
+                      </h2>
+                    </div>
+                    <Link to="/workflows/new">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        New Workflow
+                      </Button>
+                    </Link>
+                  </div>
+                  {filteredMyWorkflows.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No workflows match your search.
+                    </p>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredMyWorkflows.map((workflow) => (
+                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
               {/* Saved Prompts Section */}
               <section>
-                <h2 className="mb-4 text-xl font-semibold text-foreground">
-                  Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
-                </h2>
+                <div className="mb-4 flex items-center gap-2">
+                  <LibraryIcon className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold text-foreground">
+                    Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
+                  </h2>
+                </div>
                 {savedPrompts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">

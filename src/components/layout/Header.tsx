@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Menu, X, Library, Settings, LogOut, User } from "lucide-react";
+import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -99,42 +99,75 @@ export function Header() {
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || "User"} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {getInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none">{profile?.display_name || "User"}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/library" className="flex items-center gap-2 cursor-pointer">
-                    <Library className="h-4 w-4" />
-                    My Library
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                    <Settings className="h-4 w-4" />
-                    Account
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              {/* Create Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/prompts/new" className="flex items-center gap-2 cursor-pointer">
+                      <Sparkles className="h-4 w-4" />
+                      New Prompt
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/skills/new" className="flex items-center gap-2 cursor-pointer">
+                      <FileText className="h-4 w-4" />
+                      New Skill
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/workflows/new" className="flex items-center gap-2 cursor-pointer">
+                      <Workflow className="h-4 w-4" />
+                      New Workflow
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                        {getInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex flex-col space-y-1 p-2">
+                    <p className="text-sm font-medium leading-none">{profile?.display_name || "User"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/library" className="flex items-center gap-2 cursor-pointer">
+                      <Library className="h-4 w-4" />
+                      My Library
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+                      <Settings className="h-4 w-4" />
+                      Account
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <>
               <Link to="/auth">
@@ -200,6 +233,31 @@ export function Header() {
                   </Button>
                 </Link>
               </>
+            )}
+            
+            {/* Mobile Create Section */}
+            {user && (
+              <div className="mt-3 border-t border-border pt-3">
+                <p className="px-3 py-2 text-sm font-medium text-muted-foreground">Create</p>
+                <Link to="/prompts/new" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    New Prompt
+                  </Button>
+                </Link>
+                <Link to="/skills/new" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <FileText className="h-4 w-4" />
+                    New Skill
+                  </Button>
+                </Link>
+                <Link to="/workflows/new" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Workflow className="h-4 w-4" />
+                    New Workflow
+                  </Button>
+                </Link>
+              </div>
             )}
             
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
