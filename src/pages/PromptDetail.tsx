@@ -256,11 +256,14 @@ export default function PromptDetail() {
               {prompt.short_description}
             </p>
 
-            {/* Author & Meta Info */}
+          {/* Author & Meta Info */}
             <div className="mt-6 flex flex-wrap items-center gap-6">
               {/* Author */}
               {prompt.author && (
-                <div className="flex items-center gap-3">
+                <Link 
+                  to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={prompt.author.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary">
@@ -268,12 +271,12 @@ export default function PromptDetail() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                       {prompt.author.display_name || "Anonymous"}
                     </p>
                     <p className="text-xs text-muted-foreground">Author</p>
                   </div>
-                </div>
+                </Link>
               )}
 
               {/* Published Date */}

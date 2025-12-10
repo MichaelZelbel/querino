@@ -33,6 +33,8 @@ import SkillEdit from "./pages/SkillEdit";
 import WorkflowNew from "./pages/WorkflowNew";
 import WorkflowDetail from "./pages/WorkflowDetail";
 import WorkflowEdit from "./pages/WorkflowEdit";
+import UserProfile from "./pages/UserProfile";
+import EditProfile from "./pages/EditProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +75,8 @@ const App = () => (
             <Route path="/workflows/new" element={<WorkflowNew />} />
             <Route path="/workflows/:id" element={<WorkflowDetail />} />
             <Route path="/workflows/:id/edit" element={<WorkflowEdit />} />
+            <Route path="/u/:username" element={<UserProfile />} />
+            <Route path="/profile/edit" element={<EditProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

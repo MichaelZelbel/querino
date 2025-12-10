@@ -104,17 +104,21 @@ export function WorkflowCard({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {showAuthorInfo && workflow.author && (
-              <div className="flex items-center gap-2">
+              <Link 
+                to={`/u/${encodeURIComponent(workflow.author.display_name || "")}`}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Avatar className="h-5 w-5">
                   <AvatarImage src={workflow.author.avatar_url || undefined} />
                   <AvatarFallback className="text-[10px] bg-muted">
                     {getAuthorInitials()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xs truncate max-w-[80px]">
+                <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
                   {workflow.author.display_name || "Anonymous"}
                 </span>
-              </div>
+              </Link>
             )}
             <Badge variant="secondary" className="text-xs">Workflow</Badge>
           </div>
