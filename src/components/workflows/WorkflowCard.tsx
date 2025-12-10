@@ -14,6 +14,7 @@ interface WorkflowCardProps {
   showAuthorBadge?: boolean;
   showAuthorInfo?: boolean;
   currentUserId?: string;
+  showEditButton?: boolean;
 }
 
 export function WorkflowCard({
@@ -21,6 +22,7 @@ export function WorkflowCard({
   showAuthorBadge,
   showAuthorInfo = false,
   currentUserId,
+  showEditButton = false,
 }: WorkflowCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
@@ -118,7 +120,7 @@ export function WorkflowCard({
           </div>
 
           <div className="flex items-center gap-1">
-            {isAuthor && (
+            {(isAuthor || showEditButton) && (
               <Link to={`/workflows/${workflow.id}/edit`}>
                 <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                   <Pencil className="h-3.5 w-3.5" />
