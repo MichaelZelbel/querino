@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,24 +15,20 @@ import { Badge } from "@/components/ui/badge";
 import { X, Loader2, Sparkles } from "lucide-react";
 import { categoryOptions } from "@/types/prompt";
 
+export interface PromptFormData {
+  title: string;
+  short_description: string;
+  content: string;
+  category: string;
+  tags: string[];
+  is_public: boolean;
+}
+
 interface PromptFormProps {
-  initialData?: {
-    title: string;
-    short_description: string;
-    content: string;
-    category: string;
-    tags: string[];
-    is_public: boolean;
-  };
-  onSubmit: (data: {
-    title: string;
-    short_description: string;
-    content: string;
-    category: string;
-    tags: string[];
-    is_public: boolean;
-  }) => Promise<void>;
+  initialData?: PromptFormData;
+  onSubmit: (data: PromptFormData) => Promise<void>;
   onCancel: () => void;
+  onChange?: (data: PromptFormData) => void;
   submitLabel: string;
   isSubmitting: boolean;
 }
@@ -41,6 +37,7 @@ export function PromptForm({
   initialData,
   onSubmit,
   onCancel,
+  onChange,
   submitLabel,
   isSubmitting,
 }: PromptFormProps) {
@@ -59,6 +56,18 @@ export function PromptForm({
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [tagSuggestionError, setTagSuggestionError] = useState<string | null>(null);
+
+  // Notify parent of changes
+  useEffect(() => {
+    onChange?.({
+      title,
+      short_description: shortDescription,
+      content,
+      category,
+      tags,
+      is_public: isPublic,
+    });
+  }, [title, shortDescription, content, category, tags, isPublic, onChange]);
 
   const normalizeTag = (tag: string): string => {
     return tag

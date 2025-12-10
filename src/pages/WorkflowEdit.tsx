@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +10,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, Save, Send, ArrowLeft, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, X, Save, Send, ArrowLeft, Trash2, CheckCircle, AlertCircle, GitCompare } from "lucide-react";
 import { toast } from "sonner";
+import { useAutosave } from "@/hooks/useAutosave";
+import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
+import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import type { Workflow } from "@/types/workflow";
+
+interface WorkflowFormData {
+  title: string;
+  description: string;
+  jsonContent: string;
+  tags: string[];
+  published: boolean;
+}
 
 export default function WorkflowEdit() {
   const { id } = useParams<{ id: string }>();
@@ -21,14 +32,51 @@ export default function WorkflowEdit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
   
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [jsonContent, setJsonContent] = useState("");
+  const [formData, setFormData] = useState<WorkflowFormData>({
+    title: "",
+    description: "",
+    jsonContent: "",
+    tags: [],
+    published: false,
+  });
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [published, setPublished] = useState(false);
   const [jsonValid, setJsonValid] = useState<boolean | null>(null);
+
+  // Autosave handler
+  const handleAutosave = useCallback(async (data: WorkflowFormData) => {
+    if (!user || !id) return;
+
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(data.jsonContent);
+    } catch {
+      // Don't autosave invalid JSON
+      return;
+    }
+
+    const { error } = await (supabase.from("workflows") as any)
+      .update({
+        title: data.title.trim(),
+        description: data.description.trim() || null,
+        json: parsedJson,
+        tags: data.tags.length > 0 ? data.tags : null,
+        published: data.published,
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+  }, [id, user]);
+
+  const isOwner = workflow?.author_id === user?.id;
+
+  const { status, lastSaved, hasChanges, resetLastSaved } = useAutosave({
+    data: formData,
+    onSave: handleAutosave,
+    delay: 2000,
+    enabled: isOwner && !loading,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -60,11 +108,15 @@ export default function WorkflowEdit() {
         }
 
         setWorkflow(data);
-        setTitle(data.title);
-        setDescription(data.description || "");
-        setJsonContent(JSON.stringify(data.json, null, 2));
-        setTags(data.tags || []);
-        setPublished(data.published);
+        const initialData: WorkflowFormData = {
+          title: data.title,
+          description: data.description || "",
+          jsonContent: JSON.stringify(data.json, null, 2),
+          tags: data.tags || [],
+          published: data.published,
+        };
+        setFormData(initialData);
+        resetLastSaved(initialData);
       } catch (err) {
         console.error("Error fetching workflow:", err);
         toast.error("Failed to load workflow");
@@ -77,7 +129,7 @@ export default function WorkflowEdit() {
     if (user) {
       fetchWorkflow();
     }
-  }, [id, user, navigate]);
+  }, [id, user, navigate, resetLastSaved]);
 
   const normalizeTag = (tag: string) => {
     return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -87,24 +139,24 @@ export default function WorkflowEdit() {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       const normalized = normalizeTag(tagInput);
-      if (normalized && !tags.includes(normalized)) {
-        setTags([...tags, normalized]);
+      if (normalized && !formData.tags.includes(normalized)) {
+        setFormData({ ...formData, tags: [...formData.tags, normalized] });
       }
       setTagInput("");
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
+    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
   };
 
   const validateJson = () => {
-    if (!jsonContent.trim()) {
+    if (!formData.jsonContent.trim()) {
       setJsonValid(null);
       return false;
     }
     try {
-      JSON.parse(jsonContent);
+      JSON.parse(formData.jsonContent);
       setJsonValid(true);
       toast.success("Valid JSON!");
       return true;
@@ -116,26 +168,26 @@ export default function WorkflowEdit() {
   };
 
   const handleJsonChange = (value: string) => {
-    setJsonContent(value);
+    setFormData({ ...formData, jsonContent: value });
     setJsonValid(null);
   };
 
   const handleSubmit = async (shouldPublish?: boolean) => {
     if (!user || !id) return;
 
-    if (!title.trim()) {
+    if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
     }
 
-    if (!jsonContent.trim()) {
+    if (!formData.jsonContent.trim()) {
       toast.error("Workflow JSON is required");
       return;
     }
 
     let parsedJson;
     try {
-      parsedJson = JSON.parse(jsonContent);
+      parsedJson = JSON.parse(formData.jsonContent);
     } catch {
       toast.error("Invalid JSON format");
       return;
@@ -144,15 +196,16 @@ export default function WorkflowEdit() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await (supabase
-        .from("workflows") as any)
-        .update({
-          title: title.trim(),
-          description: description.trim() || null,
-          json: parsedJson,
-          tags: tags.length > 0 ? tags : null,
-          published: shouldPublish !== undefined ? shouldPublish : published,
-        })
+      const updateData = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        json: parsedJson,
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        published: shouldPublish !== undefined ? shouldPublish : formData.published,
+      };
+
+      const { error } = await (supabase.from("workflows") as any)
+        .update(updateData)
         .eq("id", id);
 
       if (error) {
@@ -161,6 +214,7 @@ export default function WorkflowEdit() {
         return;
       }
 
+      resetLastSaved({ ...formData, published: updateData.published });
       toast.success("Workflow updated!");
       navigate(`/workflows/${id}`);
     } catch (err) {
@@ -175,8 +229,7 @@ export default function WorkflowEdit() {
     if (!id || !confirm("Are you sure you want to delete this workflow?")) return;
 
     try {
-      const { error } = await (supabase
-        .from("workflows") as any)
+      const { error } = await (supabase.from("workflows") as any)
         .delete()
         .eq("id", id);
 
@@ -189,6 +242,28 @@ export default function WorkflowEdit() {
       toast.error("Failed to delete workflow");
     }
   };
+
+  // Diff content - pretty-print JSON for comparison
+  const diffContent = useMemo(() => {
+    if (!lastSaved) return { original: "", current: "" };
+    
+    // Try to pretty-print both for fair comparison
+    let originalPretty = lastSaved.jsonContent;
+    let currentPretty = formData.jsonContent;
+    
+    try {
+      originalPretty = JSON.stringify(JSON.parse(lastSaved.jsonContent), null, 2);
+    } catch {}
+    
+    try {
+      currentPretty = JSON.stringify(JSON.parse(formData.jsonContent), null, 2);
+    } catch {}
+    
+    return {
+      original: originalPretty,
+      current: currentPretty,
+    };
+  }, [lastSaved, formData.jsonContent]);
 
   if (authLoading || loading) {
     return (
@@ -225,15 +300,28 @@ export default function WorkflowEdit() {
                 Update your workflow configuration.
               </p>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
+            <div className="flex items-center gap-3">
+              <AutosaveIndicator status={status} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDiff(true)}
+                disabled={!hasChanges}
+                className="gap-2"
+              >
+                <GitCompare className="h-4 w-4" />
+                View Changes
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
@@ -241,8 +329,8 @@ export default function WorkflowEdit() {
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g., Email Automation Pipeline"
               />
             </div>
@@ -251,8 +339,8 @@ export default function WorkflowEdit() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Brief description of what this workflow does..."
                 rows={2}
               />
@@ -275,7 +363,7 @@ export default function WorkflowEdit() {
               </div>
               <Textarea
                 id="json"
-                value={jsonContent}
+                value={formData.jsonContent}
                 onChange={(e) => handleJsonChange(e.target.value)}
                 placeholder='{"nodes": [], "connections": {}}'
                 rows={12}
@@ -294,9 +382,9 @@ export default function WorkflowEdit() {
                 onKeyDown={handleAddTag}
                 placeholder="Press Enter to add tags..."
               />
-              {tags.length > 0 && (
+              {formData.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag) => (
+                  {formData.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="gap-1">
                       {tag}
                       <button
@@ -316,10 +404,10 @@ export default function WorkflowEdit() {
               <div className="flex items-center gap-2">
                 <Switch
                   id="published"
-                  checked={published}
-                  onCheckedChange={setPublished}
+                  checked={formData.published}
+                  onCheckedChange={(checked) => setFormData({ ...formData, published: checked })}
                 />
-                <Label htmlFor="published">{published ? "Published" : "Draft"}</Label>
+                <Label htmlFor="published">{formData.published ? "Published" : "Draft"}</Label>
               </div>
 
               <div className="flex gap-3">
@@ -342,7 +430,7 @@ export default function WorkflowEdit() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  {published ? "Update" : "Publish"}
+                  {formData.published ? "Update" : "Publish"}
                 </Button>
               </div>
             </div>
@@ -351,6 +439,15 @@ export default function WorkflowEdit() {
       </main>
 
       <Footer />
+
+      <DiffViewerModal
+        open={showDiff}
+        onOpenChange={setShowDiff}
+        title={formData.title || "Workflow"}
+        original={diffContent.original}
+        current={diffContent.current}
+        showVersionButton={false}
+      />
     </div>
   );
 }

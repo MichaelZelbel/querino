@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { PromptForm } from "@/components/prompts/PromptForm";
+import { PromptForm, type PromptFormData } from "@/components/prompts/PromptForm";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ShieldAlert } from "lucide-react";
+import { Loader2, ArrowLeft, ShieldAlert, GitCompare } from "lucide-react";
 import { toast } from "sonner";
+import { useAutosave } from "@/hooks/useAutosave";
+import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
+import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import type { Prompt } from "@/types/prompt";
 
 export default function PromptEdit() {
@@ -19,6 +22,46 @@ export default function PromptEdit() {
   const [notFound, setNotFound] = useState(false);
   const [notAuthorized, setNotAuthorized] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
+  const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+
+  const [formData, setFormData] = useState<PromptFormData>({
+    title: "",
+    short_description: "",
+    content: "",
+    category: "writing",
+    tags: [],
+    is_public: false,
+  });
+
+  // Autosave
+  const handleAutosave = useCallback(async (data: PromptFormData) => {
+    if (!user || !id) return;
+
+    const { error } = await supabase
+      .from("prompts")
+      .update({
+        title: data.title,
+        short_description: data.short_description,
+        content: data.content,
+        category: data.category,
+        tags: data.tags.length > 0 ? data.tags : null,
+        is_public: data.is_public,
+      })
+      .eq("id", id)
+      .eq("author_id", user.id);
+
+    if (error) throw error;
+  }, [id, user]);
+
+  const isOwner = prompt?.author_id === user?.id;
+
+  const { status, lastSaved, hasChanges, resetLastSaved } = useAutosave({
+    data: formData,
+    onSave: handleAutosave,
+    delay: 2000,
+    enabled: isOwner && !loading,
+  });
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -48,6 +91,16 @@ export default function PromptEdit() {
           setNotAuthorized(true);
         } else {
           setPrompt(data as Prompt);
+          const initialData: PromptFormData = {
+            title: data.title,
+            short_description: data.short_description,
+            content: data.content,
+            category: data.category,
+            tags: data.tags || [],
+            is_public: data.is_public,
+          };
+          setFormData(initialData);
+          resetLastSaved(initialData);
         }
       } catch (err) {
         console.error("Error fetching prompt:", err);
@@ -60,16 +113,9 @@ export default function PromptEdit() {
     if (user) {
       fetchPrompt();
     }
-  }, [id, user]);
+  }, [id, user, resetLastSaved]);
 
-  const handleSubmit = async (data: {
-    title: string;
-    short_description: string;
-    content: string;
-    category: string;
-    tags: string[];
-    is_public: boolean;
-  }) => {
+  const handleSubmit = async (data: PromptFormData) => {
     if (!user || !id) return;
 
     setIsSubmitting(true);
@@ -94,6 +140,7 @@ export default function PromptEdit() {
         return;
       }
 
+      resetLastSaved(data);
       toast.success("Prompt updated successfully!");
       navigate(`/prompts/${id}`);
     } catch (err) {
@@ -108,6 +155,57 @@ export default function PromptEdit() {
     navigate(`/prompts/${id}`);
   };
 
+  const handleFormChange = useCallback((data: PromptFormData) => {
+    setFormData(data);
+  }, []);
+
+  const handleCreateVersion = async () => {
+    if (!user || !id || !prompt) return;
+
+    setIsCreatingVersion(true);
+    try {
+      // Get the current max version number
+      const { data: versions } = await supabase
+        .from("prompt_versions")
+        .select("version_number")
+        .eq("prompt_id", id)
+        .order("version_number", { ascending: false })
+        .limit(1);
+
+      const nextVersion = (versions?.[0]?.version_number || 0) + 1;
+
+      // Create a new version
+      const { error } = await supabase.from("prompt_versions").insert({
+        prompt_id: id,
+        version_number: nextVersion,
+        title: formData.title,
+        content: formData.content,
+        short_description: formData.short_description,
+        tags: formData.tags,
+        change_notes: `Version ${nextVersion} created from diff viewer`,
+      });
+
+      if (error) throw error;
+
+      toast.success(`Version ${nextVersion} created!`);
+      setShowDiff(false);
+    } catch (err) {
+      console.error("Error creating version:", err);
+      toast.error("Failed to create version");
+    } finally {
+      setIsCreatingVersion(false);
+    }
+  };
+
+  // Compute diff content
+  const diffContent = useMemo(() => {
+    if (!lastSaved) return { original: "", current: "" };
+    return {
+      original: lastSaved.content,
+      current: formData.content,
+    };
+  }, [lastSaved, formData.content]);
+
   if (authLoading || (loading && user)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -117,7 +215,7 @@ export default function PromptEdit() {
   }
 
   if (!user) {
-    return null; // Will redirect
+    return null;
   }
 
   if (notFound) {
@@ -190,9 +288,24 @@ export default function PromptEdit() {
           </Link>
 
           <div className="mb-8">
-            <h1 className="text-display-md font-bold text-foreground">
-              Edit Prompt
-            </h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-display-md font-bold text-foreground">
+                Edit Prompt
+              </h1>
+              <div className="flex items-center gap-4">
+                <AutosaveIndicator status={status} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDiff(true)}
+                  disabled={!hasChanges}
+                  className="gap-2"
+                >
+                  <GitCompare className="h-4 w-4" />
+                  View Changes
+                </Button>
+              </div>
+            </div>
             <p className="mt-2 text-muted-foreground">
               Make changes to your prompt below.
             </p>
@@ -201,16 +314,10 @@ export default function PromptEdit() {
           {prompt && (
             <div className="rounded-xl border border-border bg-card p-6">
               <PromptForm
-                initialData={{
-                  title: prompt.title,
-                  short_description: prompt.short_description,
-                  content: prompt.content,
-                  category: prompt.category,
-                  tags: prompt.tags || [],
-                  is_public: prompt.is_public,
-                }}
+                initialData={formData}
                 onSubmit={handleSubmit}
                 onCancel={handleCancel}
+                onChange={handleFormChange}
                 submitLabel="Save Changes"
                 isSubmitting={isSubmitting}
               />
@@ -220,6 +327,16 @@ export default function PromptEdit() {
       </main>
 
       <Footer />
+
+      <DiffViewerModal
+        open={showDiff}
+        onOpenChange={setShowDiff}
+        title={formData.title || "Prompt"}
+        original={diffContent.original}
+        current={diffContent.current}
+        onCreateVersion={handleCreateVersion}
+        isCreatingVersion={isCreatingVersion}
+      />
     </div>
   );
 }

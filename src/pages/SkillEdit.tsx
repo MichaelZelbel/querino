@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +10,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, Save, Send, ArrowLeft, Trash2 } from "lucide-react";
+import { Loader2, X, Save, Send, ArrowLeft, Trash2, GitCompare } from "lucide-react";
 import { toast } from "sonner";
+import { useAutosave } from "@/hooks/useAutosave";
+import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
+import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import type { Skill } from "@/types/skill";
+
+interface SkillFormData {
+  title: string;
+  description: string;
+  content: string;
+  tags: string[];
+  published: boolean;
+}
 
 export default function SkillEdit() {
   const { id } = useParams<{ id: string }>();
@@ -21,13 +32,42 @@ export default function SkillEdit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [skill, setSkill] = useState<Skill | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
   
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
+  const [formData, setFormData] = useState<SkillFormData>({
+    title: "",
+    description: "",
+    content: "",
+    tags: [],
+    published: false,
+  });
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [published, setPublished] = useState(false);
+
+  // Autosave handler
+  const handleAutosave = useCallback(async (data: SkillFormData) => {
+    if (!user || !id) return;
+
+    const { error } = await (supabase.from("skills") as any)
+      .update({
+        title: data.title.trim(),
+        description: data.description.trim() || null,
+        content: data.content.trim(),
+        tags: data.tags.length > 0 ? data.tags : null,
+        published: data.published,
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+  }, [id, user]);
+
+  const isOwner = skill?.author_id === user?.id;
+
+  const { status, lastSaved, hasChanges, resetLastSaved } = useAutosave({
+    data: formData,
+    onSave: handleAutosave,
+    delay: 2000,
+    enabled: isOwner && !loading,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -59,11 +99,15 @@ export default function SkillEdit() {
         }
 
         setSkill(data);
-        setTitle(data.title);
-        setDescription(data.description || "");
-        setContent(data.content);
-        setTags(data.tags || []);
-        setPublished(data.published);
+        const initialData: SkillFormData = {
+          title: data.title,
+          description: data.description || "",
+          content: data.content,
+          tags: data.tags || [],
+          published: data.published,
+        };
+        setFormData(initialData);
+        resetLastSaved(initialData);
       } catch (err) {
         console.error("Error fetching skill:", err);
         toast.error("Failed to load skill");
@@ -76,7 +120,7 @@ export default function SkillEdit() {
     if (user) {
       fetchSkill();
     }
-  }, [id, user, navigate]);
+  }, [id, user, navigate, resetLastSaved]);
 
   const normalizeTag = (tag: string) => {
     return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -86,26 +130,26 @@ export default function SkillEdit() {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       const normalized = normalizeTag(tagInput);
-      if (normalized && !tags.includes(normalized)) {
-        setTags([...tags, normalized]);
+      if (normalized && !formData.tags.includes(normalized)) {
+        setFormData({ ...formData, tags: [...formData.tags, normalized] });
       }
       setTagInput("");
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
+    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
   };
 
   const handleSubmit = async (shouldPublish?: boolean) => {
     if (!user || !id) return;
 
-    if (!title.trim()) {
+    if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
     }
 
-    if (!content.trim()) {
+    if (!formData.content.trim()) {
       toast.error("Content is required");
       return;
     }
@@ -113,15 +157,16 @@ export default function SkillEdit() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await (supabase
-        .from("skills") as any)
-        .update({
-          title: title.trim(),
-          description: description.trim() || null,
-          content: content.trim(),
-          tags: tags.length > 0 ? tags : null,
-          published: shouldPublish !== undefined ? shouldPublish : published,
-        })
+      const updateData = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        content: formData.content.trim(),
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        published: shouldPublish !== undefined ? shouldPublish : formData.published,
+      };
+
+      const { error } = await (supabase.from("skills") as any)
+        .update(updateData)
         .eq("id", id);
 
       if (error) {
@@ -130,6 +175,7 @@ export default function SkillEdit() {
         return;
       }
 
+      resetLastSaved({ ...formData, published: updateData.published });
       toast.success("Skill updated!");
       navigate(`/skills/${id}`);
     } catch (err) {
@@ -144,8 +190,7 @@ export default function SkillEdit() {
     if (!id || !confirm("Are you sure you want to delete this skill?")) return;
 
     try {
-      const { error } = await (supabase
-        .from("skills") as any)
+      const { error } = await (supabase.from("skills") as any)
         .delete()
         .eq("id", id);
 
@@ -158,6 +203,15 @@ export default function SkillEdit() {
       toast.error("Failed to delete skill");
     }
   };
+
+  // Diff content
+  const diffContent = useMemo(() => {
+    if (!lastSaved) return { original: "", current: "" };
+    return {
+      original: lastSaved.content,
+      current: formData.content,
+    };
+  }, [lastSaved, formData.content]);
 
   if (authLoading || loading) {
     return (
@@ -194,15 +248,28 @@ export default function SkillEdit() {
                 Update your skill file.
               </p>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
+            <div className="flex items-center gap-3">
+              <AutosaveIndicator status={status} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDiff(true)}
+                disabled={!hasChanges}
+                className="gap-2"
+              >
+                <GitCompare className="h-4 w-4" />
+                View Changes
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
@@ -210,8 +277,8 @@ export default function SkillEdit() {
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g., Expert Content Writer"
               />
             </div>
@@ -220,8 +287,8 @@ export default function SkillEdit() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Brief description of what this skill does..."
                 rows={2}
               />
@@ -231,8 +298,8 @@ export default function SkillEdit() {
               <Label htmlFor="content">Skill Content *</Label>
               <Textarea
                 id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Enter the skill file content..."
                 rows={12}
                 className="font-mono text-sm"
@@ -248,9 +315,9 @@ export default function SkillEdit() {
                 onKeyDown={handleAddTag}
                 placeholder="Press Enter to add tags..."
               />
-              {tags.length > 0 && (
+              {formData.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag) => (
+                  {formData.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="gap-1">
                       {tag}
                       <button
@@ -270,10 +337,10 @@ export default function SkillEdit() {
               <div className="flex items-center gap-2">
                 <Switch
                   id="published"
-                  checked={published}
-                  onCheckedChange={setPublished}
+                  checked={formData.published}
+                  onCheckedChange={(checked) => setFormData({ ...formData, published: checked })}
                 />
-                <Label htmlFor="published">{published ? "Published" : "Draft"}</Label>
+                <Label htmlFor="published">{formData.published ? "Published" : "Draft"}</Label>
               </div>
 
               <div className="flex gap-3">
@@ -296,7 +363,7 @@ export default function SkillEdit() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  {published ? "Update" : "Publish"}
+                  {formData.published ? "Update" : "Publish"}
                 </Button>
               </div>
             </div>
@@ -305,6 +372,15 @@ export default function SkillEdit() {
       </main>
 
       <Footer />
+
+      <DiffViewerModal
+        open={showDiff}
+        onOpenChange={setShowDiff}
+        title={formData.title || "Skill"}
+        original={diffContent.original}
+        current={diffContent.current}
+        showVersionButton={false}
+      />
     </div>
   );
 }
