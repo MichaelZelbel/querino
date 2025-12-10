@@ -56,6 +56,7 @@ export type Database = {
           id: string
           is_public: boolean | null
           owner_id: string
+          team_id: string | null
           title: string
           updated_at: string | null
         }
@@ -65,6 +66,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           owner_id: string
+          team_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -74,6 +76,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           owner_id?: string
+          team_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -83,6 +86,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -285,6 +295,7 @@ export type Database = {
           short_description: string
           summary: string | null
           tags: string[] | null
+          team_id: string | null
           title: string
           updated_at: string | null
         }
@@ -303,6 +314,7 @@ export type Database = {
           short_description: string
           summary?: string | null
           tags?: string[] | null
+          team_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -321,6 +333,7 @@ export type Database = {
           short_description?: string
           summary?: string | null
           tags?: string[] | null
+          team_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -330,6 +343,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -343,6 +363,7 @@ export type Database = {
           id: string
           published: boolean | null
           tags: string[] | null
+          team_id: string | null
           title: string
           updated_at: string | null
         }
@@ -354,6 +375,7 @@ export type Database = {
           id?: string
           published?: boolean | null
           tags?: string[] | null
+          team_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -365,6 +387,7 @@ export type Database = {
           id?: string
           published?: boolean | null
           tags?: string[] | null
+          team_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -372,6 +395,90 @@ export type Database = {
           {
             foreignKeyName: "skills_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skills_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          github_branch: string | null
+          github_folder: string | null
+          github_repo: string | null
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          github_branch?: string | null
+          github_folder?: string | null
+          github_repo?: string | null
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string | null
+          github_branch?: string | null
+          github_folder?: string | null
+          github_repo?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -423,6 +530,7 @@ export type Database = {
           json: Json
           published: boolean | null
           tags: string[] | null
+          team_id: string | null
           title: string
           updated_at: string | null
         }
@@ -434,6 +542,7 @@ export type Database = {
           json?: Json
           published?: boolean | null
           tags?: string[] | null
+          team_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -445,6 +554,7 @@ export type Database = {
           json?: Json
           published?: boolean | null
           tags?: string[] | null
+          team_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -454,6 +564,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]

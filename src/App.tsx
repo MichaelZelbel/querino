@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import Index from "./pages/Index";
 import Discover from "./pages/Discover";
 import Dashboard from "./pages/Dashboard";
@@ -39,6 +40,7 @@ import Collections from "./pages/Collections";
 import CollectionNew from "./pages/CollectionNew";
 import CollectionDetail from "./pages/CollectionDetail";
 import CollectionEdit from "./pages/CollectionEdit";
+import TeamSettings from "./pages/TeamSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <WorkspaceProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/discover" element={<Discover />} />
@@ -85,10 +88,12 @@ const App = () => (
             <Route path="/collections/new" element={<CollectionNew />} />
             <Route path="/collections/:id" element={<CollectionDetail />} />
             <Route path="/collections/:id/edit" element={<CollectionEdit />} />
+            <Route path="/team/:id/settings" element={<TeamSettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieBanner />
+          </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -11,6 +11,7 @@ import {
 import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -45,12 +46,21 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-foreground">Querino</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-foreground">Querino</span>
+          </Link>
+          
+          {/* Workspace Picker - Desktop */}
+          {user && (
+            <div className="hidden md:block border-l border-border pl-2 ml-2">
+              <WorkspacePicker />
+            </div>
+          )}
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 md:flex">
@@ -216,6 +226,14 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="border-t border-border bg-background md:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-4 py-4">
+            {/* Mobile Workspace Picker */}
+            {user && (
+              <div className="mb-3 pb-3 border-b border-border">
+                <p className="px-3 py-2 text-sm font-medium text-muted-foreground">Workspace</p>
+                <WorkspacePicker />
+              </div>
+            )}
+            
             {user && (
               <Link to="/library" onClick={() => setMobileMenuOpen(false)}>
                 <Button 
