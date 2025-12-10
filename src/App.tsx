@@ -27,6 +27,12 @@ import PromptEdit from "./pages/PromptEdit";
 import LibraryPromptEdit from "./pages/LibraryPromptEdit";
 import VersionHistory from "./pages/VersionHistory";
 import PromptWizard from "./pages/PromptWizard";
+import SkillNew from "./pages/SkillNew";
+import SkillDetail from "./pages/SkillDetail";
+import SkillEdit from "./pages/SkillEdit";
+import WorkflowNew from "./pages/WorkflowNew";
+import WorkflowDetail from "./pages/WorkflowDetail";
+import WorkflowEdit from "./pages/WorkflowEdit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +67,12 @@ const App = () => (
             <Route path="/prompts/:id/edit" element={<PromptEdit />} />
             <Route path="/library/:id/edit" element={<LibraryPromptEdit />} />
             <Route path="/library/:id/versions" element={<VersionHistory />} />
+            <Route path="/skills/new" element={<SkillNew />} />
+            <Route path="/skills/:id" element={<SkillDetail />} />
+            <Route path="/skills/:id/edit" element={<SkillEdit />} />
+            <Route path="/workflows/new" element={<WorkflowNew />} />
+            <Route path="/workflows/:id" element={<WorkflowDetail />} />
+            <Route path="/workflows/:id/edit" element={<WorkflowEdit />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,0 +1,19 @@
+// Types for skills from Supabase
+export interface Skill {
+  id: string;
+  title: string;
+  description: string | null;
+  content: string;
+  tags: string[] | null;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+  author_id: string | null;
+}
+
+// Author info for display
+export interface SkillAuthor {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
