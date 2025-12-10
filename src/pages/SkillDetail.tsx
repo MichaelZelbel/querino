@@ -193,7 +193,10 @@ export default function SkillDetail() {
 
             <div className="mt-6 flex flex-wrap items-center gap-6">
               {skill.author && (
-                <div className="flex items-center gap-3">
+                <Link 
+                  to={`/u/${encodeURIComponent(skill.author.display_name || "")}`}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={skill.author.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary">
@@ -201,12 +204,12 @@ export default function SkillDetail() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                       {skill.author.display_name || "Anonymous"}
                     </p>
                     <p className="text-xs text-muted-foreground">Author</p>
                   </div>
-                </div>
+                </Link>
               )}
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
