@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus } from "lucide-react";
+import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -27,6 +28,7 @@ export default function SkillDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
 
   useEffect(() => {
@@ -271,7 +273,27 @@ export default function SkillDetail() {
                 {cloning ? "Cloning..." : "Clone Skill"}
               </Button>
             )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowCollectionModal(true)}
+                className="gap-2"
+              >
+                <FolderPlus className="h-4 w-4" />
+                Add to Collection
+              </Button>
+            )}
           </div>
+
+          {/* Add to Collection Modal */}
+          <AddToCollectionModal
+            open={showCollectionModal}
+            onOpenChange={setShowCollectionModal}
+            itemType="skill"
+            itemId={skill.id}
+          />
         </div>
       </main>
       <Footer />

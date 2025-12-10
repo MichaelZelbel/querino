@@ -35,6 +35,10 @@ import WorkflowDetail from "./pages/WorkflowDetail";
 import WorkflowEdit from "./pages/WorkflowEdit";
 import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
+import Collections from "./pages/Collections";
+import CollectionNew from "./pages/CollectionNew";
+import CollectionDetail from "./pages/CollectionDetail";
+import CollectionEdit from "./pages/CollectionEdit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +81,10 @@ const App = () => (
             <Route path="/workflows/:id/edit" element={<WorkflowEdit />} />
             <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
+            <Route path="/collections" element={<Collections />} />
+            <Route path="/collections/new" element={<CollectionNew />} />
+            <Route path="/collections/:id" element={<CollectionDetail />} />
+            <Route path="/collections/:id/edit" element={<CollectionEdit />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

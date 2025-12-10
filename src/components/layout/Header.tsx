@@ -74,6 +74,17 @@ export function Header() {
               Discover
             </Button>
           </Link>
+          {user && (
+            <Link to="/collections">
+              <Button 
+                variant={isActive("/collections") ? "secondary" : "ghost"} 
+                size="sm"
+                className={cn(isActive("/collections") && "bg-secondary font-medium")}
+              >
+                Collections
+              </Button>
+            </Link>
+          )}
           {!user && (
             <>
               <a href="/#features">
@@ -223,6 +234,16 @@ export function Header() {
                 Discover
               </Button>
             </Link>
+            {user && (
+              <Link to="/collections" onClick={() => setMobileMenuOpen(false)}>
+                <Button 
+                  variant={isActive("/collections") ? "secondary" : "ghost"} 
+                  className={cn("w-full justify-start", isActive("/collections") && "font-medium")}
+                >
+                  Collections
+                </Button>
+              </Link>
+            )}
             {!user && (
               <>
                 <a href="/#features" onClick={() => setMobileMenuOpen(false)}>

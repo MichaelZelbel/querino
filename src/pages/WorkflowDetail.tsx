@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink, FolderPlus } from "lucide-react";
+import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -29,6 +30,7 @@ export default function WorkflowDetail() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isJsonOpen, setIsJsonOpen] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
 
   useEffect(() => {
@@ -291,7 +293,27 @@ export default function WorkflowDetail() {
               <ExternalLink className="h-4 w-4" />
               Open in Antigravity
             </Button>
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowCollectionModal(true)}
+                className="gap-2"
+              >
+                <FolderPlus className="h-4 w-4" />
+                Add to Collection
+              </Button>
+            )}
           </div>
+
+          {/* Add to Collection Modal */}
+          <AddToCollectionModal
+            open={showCollectionModal}
+            onOpenChange={setShowCollectionModal}
+            itemType="workflow"
+            itemId={workflow.id}
+          />
         </div>
       </main>
       <Footer />

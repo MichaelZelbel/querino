@@ -12,10 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { TestPromptModal } from "@/components/prompts/TestPromptModal";
+import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -39,6 +40,7 @@ export default function PromptDetail() {
   const [pinning, setPinning] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [showTestModal, setShowTestModal] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
   const isSaved = id ? isPromptSaved(id) : false;
   const isPinned = id ? isPromptPinned(id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
@@ -441,6 +443,18 @@ export default function PromptDetail() {
                 Test Prompt
               </Button>
             )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowCollectionModal(true)}
+                className="gap-2"
+              >
+                <FolderPlus className="h-4 w-4" />
+                Add to Collection
+              </Button>
+            )}
           </div>
 
           {/* Refine Prompt Modal */}
@@ -459,6 +473,14 @@ export default function PromptDetail() {
             promptContent={prompt.content}
             promptTitle={prompt.title}
             userId={user?.id}
+          />
+
+          {/* Add to Collection Modal */}
+          <AddToCollectionModal
+            open={showCollectionModal}
+            onOpenChange={setShowCollectionModal}
+            itemType="prompt"
+            itemId={prompt.id}
           />
 
           {/* Send to LLM */}
