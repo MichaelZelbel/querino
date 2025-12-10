@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -9,7 +10,8 @@ import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow, Building2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
@@ -30,6 +32,7 @@ interface GithubSyncSettings {
 export default function Library() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuthContext();
+  const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([]);
   const [myPrompts, setMyPrompts] = useState<Prompt[]>([]);
   const [userRatings, setUserRatings] = useState<UserRatings>({});
@@ -39,12 +42,14 @@ export default function Library() {
   const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  // Fetch user's skills and workflows
+  // Fetch user's skills and workflows - filtered by workspace
   const { data: mySkills, isLoading: skillsLoading } = useSkills({ 
-    authorId: user?.id 
+    authorId: isTeamWorkspace ? undefined : user?.id,
+    teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
   const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({ 
-    authorId: user?.id 
+    authorId: isTeamWorkspace ? undefined : user?.id,
+    teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
 
   // Filter prompts based on search query
@@ -102,26 +107,37 @@ export default function Library() {
     }
   }, [user, authLoading, navigate]);
 
-  // Load GitHub sync settings
+  // Load GitHub sync settings - use team settings if in team workspace
   useEffect(() => {
     async function loadGithubSettings() {
       if (!user) return;
       
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("github_repo, github_branch, github_folder, github_sync_enabled")
-        .eq("id", user.id)
-        .single();
-      
-      if (!error && data) {
-        setGithubSettings(data);
+      if (isTeamWorkspace && currentTeam) {
+        // Use team GitHub settings
+        setGithubSettings({
+          github_repo: currentTeam.github_repo,
+          github_branch: currentTeam.github_branch,
+          github_folder: currentTeam.github_folder,
+          github_sync_enabled: !!currentTeam.github_repo,
+        });
+      } else {
+        // Use personal GitHub settings
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("github_repo, github_branch, github_folder, github_sync_enabled")
+          .eq("id", user.id)
+          .single();
+        
+        if (!error && data) {
+          setGithubSettings(data);
+        }
       }
     }
     
     if (user) {
       loadGithubSettings();
     }
-  }, [user]);
+  }, [user, isTeamWorkspace, currentTeam]);
 
   const handleSyncToGithub = async () => {
     if (!user || !githubSettings?.github_repo) return;
@@ -198,35 +214,92 @@ export default function Library() {
 
   const hasContent = myPrompts.length > 0 || (mySkills?.length || 0) > 0 || (myWorkflows?.length || 0) > 0;
 
-  // Fetch saved prompts and user's own prompts
+  // Fetch prompts - filtered by workspace
   useEffect(() => {
     async function fetchLibraryData() {
       if (!user) return;
 
       setLoading(true);
       try {
-        // Fetch saved prompt IDs
-        const { data: savedData, error: savedError } = await supabase
-          .from("user_saved_prompts")
-          .select("prompt_id")
-          .eq("user_id", user.id);
-
-        if (savedError) {
-          console.error("Error fetching saved prompts:", savedError);
+        // Fetch prompts based on workspace
+        let promptsQuery = supabase.from("prompts").select("*");
+        
+        if (isTeamWorkspace) {
+          // Team workspace: get prompts with this team_id
+          promptsQuery = promptsQuery.eq("team_id", currentWorkspace);
+        } else {
+          // Personal workspace: get prompts with author_id = user and team_id = null
+          promptsQuery = promptsQuery
+            .eq("author_id", user.id)
+            .is("team_id", null);
         }
-
-        // Fetch user's own prompts
-        const { data: ownPrompts, error: ownError } = await supabase
-          .from("prompts")
-          .select("*")
-          .eq("author_id", user.id)
-          .order("created_at", { ascending: false });
+        
+        const { data: ownPrompts, error: ownError } = await promptsQuery.order("created_at", { ascending: false });
 
         if (ownError) {
-          console.error("Error fetching own prompts:", ownError);
+          console.error("Error fetching prompts:", ownError);
         } else {
           setMyPrompts((ownPrompts as Prompt[]) || []);
         }
+
+        // Fetch saved prompts (only in personal workspace)
+        if (!isTeamWorkspace) {
+          const { data: savedData, error: savedError } = await supabase
+            .from("user_saved_prompts")
+            .select("prompt_id")
+            .eq("user_id", user.id);
+
+          if (savedError) {
+            console.error("Error fetching saved prompts:", savedError);
+          }
+
+          if (savedData && savedData.length > 0) {
+            const promptIds = savedData.map((s) => s.prompt_id);
+            const { data: promptsData, error: promptsError } = await supabase
+              .from("prompts")
+              .select("*")
+              .in("id", promptIds);
+
+            if (promptsError) {
+              console.error("Error fetching prompts:", promptsError);
+            } else {
+              setSavedPrompts((promptsData as Prompt[]) || []);
+            }
+
+            // Fetch user's ratings for saved prompts
+            const { data: ratingsData, error: ratingsError } = await supabase
+              .from("prompt_reviews")
+              .select("prompt_id, rating")
+              .eq("user_id", user.id)
+              .in("prompt_id", promptIds);
+
+            if (ratingsError) {
+              console.error("Error fetching ratings:", ratingsError);
+            } else if (ratingsData) {
+              const ratings: UserRatings = {};
+              ratingsData.forEach((r) => {
+                ratings[r.prompt_id] = r.rating;
+              });
+              setUserRatings(ratings);
+            }
+          } else {
+            setSavedPrompts([]);
+          }
+        } else {
+          // Clear saved prompts in team workspace
+          setSavedPrompts([]);
+        }
+      } catch (err) {
+        console.error("Error fetching library data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (user) {
+      fetchLibraryData();
+    }
+  }, [user, currentWorkspace, isTeamWorkspace]);
 
         // Fetch saved prompts details
         if (savedData && savedData.length > 0) {
@@ -296,9 +369,23 @@ export default function Library() {
           {/* Page Header */}
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-display-md font-bold text-foreground">My Library</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-display-md font-bold text-foreground">
+                  {isTeamWorkspace ? currentTeam?.name : "My Library"}
+                </h1>
+                {isTeamWorkspace && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Building2 className="h-3 w-3" />
+                    Team
+                  </Badge>
+                )}
+              </div>
               <p className="mt-1 text-muted-foreground">
-                Welcome back{profile?.display_name ? `, ${profile.display_name}` : ""}!
+                {isTeamWorkspace 
+                  ? "Team shared prompts, skills, and workflows"
+                  : `Welcome back${profile?.display_name ? `, ${profile.display_name}` : ""}!`}
+              </p>
+            </div>
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -356,6 +443,10 @@ export default function Library() {
                   <div className="mb-4 flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
                     <h2 className="text-xl font-semibold text-foreground">
+                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
+                  <div className="mb-4 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">
                       My Prompts ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
                     </h2>
                   </div>
@@ -387,7 +478,7 @@ export default function Library() {
                     <div className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
                       <h2 className="text-xl font-semibold text-foreground">
-                        My Skills ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
+                        {isTeamWorkspace ? "Team Skills" : "My Skills"} ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
                       </h2>
                     </div>
                     <Link to="/skills/new">
@@ -418,7 +509,7 @@ export default function Library() {
                     <div className="flex items-center gap-2">
                       <Workflow className="h-5 w-5 text-primary" />
                       <h2 className="text-xl font-semibold text-foreground">
-                        My Workflows ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
+                        {isTeamWorkspace ? "Team Workflows" : "My Workflows"} ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
                       </h2>
                     </div>
                     <Link to="/workflows/new">
@@ -442,50 +533,52 @@ export default function Library() {
                 </section>
               )}
 
-              {/* Saved Prompts Section */}
-              <section>
-                <div className="mb-4 flex items-center gap-2">
-                  <LibraryIcon className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
-                  </h2>
-                </div>
-                {savedPrompts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                      <LibraryIcon className="h-8 w-8 text-primary" />
+              {/* Saved Prompts Section - only show in personal workspace */}
+              {!isTeamWorkspace && (
+                <section>
+                  <div className="mb-4 flex items-center gap-2">
+                    <LibraryIcon className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
+                    </h2>
+                  </div>
+                  {savedPrompts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                        <LibraryIcon className="h-8 w-8 text-primary" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        No saved prompts yet
+                      </h3>
+                      <p className="mb-6 max-w-md text-muted-foreground">
+                        Discover and save prompts you love to build your collection.
+                      </p>
+                      <Link to="/discover">
+                        <Button variant="secondary" className="gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          Discover prompts
+                        </Button>
+                      </Link>
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold text-foreground">
-                      No saved prompts yet
-                    </h3>
-                    <p className="mb-6 max-w-md text-muted-foreground">
-                      Discover and save prompts you love to build your collection.
+                  ) : filteredSavedPrompts.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No saved prompts match your search.
                     </p>
-                    <Link to="/discover">
-                      <Button variant="secondary" className="gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        Discover prompts
-                      </Button>
-                    </Link>
-                  </div>
-                ) : filteredSavedPrompts.length === 0 ? (
-                  <p className="py-8 text-center text-muted-foreground">
-                    No saved prompts match your search.
-                  </p>
-                ) : (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredSavedPrompts.map((prompt) => (
-                      <PromptCard
-                        key={prompt.id}
-                        prompt={prompt}
-                        currentUserId={user?.id}
-                        userRating={userRatings[prompt.id]}
-                        showSendToLLM
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredSavedPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          currentUserId={user?.id}
+                          userRating={userRatings[prompt.id]}
+                          showSendToLLM
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
             </div>
           )}
 
