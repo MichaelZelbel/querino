@@ -17,6 +17,7 @@ import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { TestPromptModal } from "@/components/prompts/TestPromptModal";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -495,6 +496,12 @@ export default function PromptDetail() {
             ratingAvg={prompt.rating_avg}
             ratingCount={prompt.rating_count}
           />
+
+          {/* Future Features Placeholder */}
+          {/* Activity Sidebar */}
+          <div className="mt-8">
+            <ActivitySidebar itemId={prompt.id} itemType="prompt" />
+          </div>
 
           {/* Future Features Placeholder */}
           <div className="mt-8 rounded-xl border border-dashed border-border bg-muted/20 p-6">

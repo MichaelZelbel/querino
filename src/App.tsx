@@ -41,6 +41,9 @@ import CollectionNew from "./pages/CollectionNew";
 import CollectionDetail from "./pages/CollectionDetail";
 import CollectionEdit from "./pages/CollectionEdit";
 import TeamSettings from "./pages/TeamSettings";
+import Activity from "./pages/Activity";
+import TeamActivity from "./pages/TeamActivity";
+import UserActivity from "./pages/UserActivity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +92,9 @@ const App = () => (
             <Route path="/collections/:id" element={<CollectionDetail />} />
             <Route path="/collections/:id/edit" element={<CollectionEdit />} />
             <Route path="/team/:id/settings" element={<TeamSettings />} />
+            <Route path="/team/:id/activity" element={<TeamActivity />} />
+            <Route path="/activity" element={<Activity />} />
+            <Route path="/u/:username/activity" element={<UserActivity />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
