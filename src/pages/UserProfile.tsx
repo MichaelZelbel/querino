@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
-import { Globe, Twitter, Github, UserPlus, Sparkles, BookOpen, Workflow } from "lucide-react";
+import { Globe, Twitter, Github, UserPlus, Sparkles, BookOpen, Workflow, Activity } from "lucide-react";
 import type { Prompt } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { Workflow as WorkflowType } from "@/types/workflow";
@@ -221,10 +221,18 @@ export default function UserProfile() {
               </div>
             </div>
 
-            <Button variant="outline" className="gap-2" disabled>
-              <UserPlus className="h-4 w-4" />
-              Follow (coming soon)
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="gap-2" disabled>
+                <UserPlus className="h-4 w-4" />
+                Follow (coming soon)
+              </Button>
+              <Link to={`/u/${encodeURIComponent(username || "")}/activity`}>
+                <Button variant="outline" className="gap-2">
+                  <Activity className="h-4 w-4" />
+                  Activity
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Tabs */}

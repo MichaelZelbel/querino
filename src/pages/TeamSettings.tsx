@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, UserPlus, Crown, Shield, User as UserIcon } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, Trash2, UserPlus, Crown, Shield, User as UserIcon, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -166,7 +166,15 @@ export default function TeamSettings() {
         Back
       </Button>
 
-      <h1 className="text-3xl font-bold mb-8">Team Settings</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Team Settings</h1>
+        <Link to={`/team/${teamId}/activity`}>
+          <Button variant="outline" className="gap-2">
+            <Activity className="h-4 w-4" />
+            View Activity
+          </Button>
+        </Link>
+      </div>
 
       <div className="space-y-8">
         {/* Team Info */}

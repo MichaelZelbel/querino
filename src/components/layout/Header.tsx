@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User } from "lucide-react";
+import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
@@ -95,6 +95,15 @@ export function Header() {
               </Button>
             </Link>
           )}
+          <Link to="/activity">
+            <Button 
+              variant={isActive("/activity") ? "secondary" : "ghost"} 
+              size="sm"
+              className={cn(isActive("/activity") && "bg-secondary font-medium")}
+            >
+              Activity
+            </Button>
+          </Link>
           {!user && (
             <>
               <a href="/#features">
@@ -262,6 +271,15 @@ export function Header() {
                 </Button>
               </Link>
             )}
+            <Link to="/activity" onClick={() => setMobileMenuOpen(false)}>
+              <Button 
+                variant={isActive("/activity") ? "secondary" : "ghost"} 
+                className={cn("w-full justify-start", isActive("/activity") && "font-medium")}
+              >
+                <Activity className="h-4 w-4 mr-2" />
+                Activity
+              </Button>
+            </Link>
             {!user && (
               <>
                 <a href="/#features" onClick={() => setMobileMenuOpen(false)}>

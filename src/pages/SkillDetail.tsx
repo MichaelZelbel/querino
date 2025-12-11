@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -294,6 +295,11 @@ export default function SkillDetail() {
             itemType="skill"
             itemId={skill.id}
           />
+
+          {/* Activity Sidebar */}
+          <div className="mt-8">
+            <ActivitySidebar itemId={skill.id} itemType="skill" />
+          </div>
         </div>
       </main>
       <Footer />

@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink, FolderPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -314,6 +315,11 @@ export default function WorkflowDetail() {
             itemType="workflow"
             itemId={workflow.id}
           />
+
+          {/* Activity Sidebar */}
+          <div className="mt-8">
+            <ActivitySidebar itemId={workflow.id} itemType="workflow" />
+          </div>
         </div>
       </main>
       <Footer />
