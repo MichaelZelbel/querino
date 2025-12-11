@@ -334,6 +334,7 @@ export type Database = {
           content: string
           copies_count: number | null
           created_at: string | null
+          embedding: string | null
           example_output: string | null
           id: string
           is_public: boolean | null
@@ -353,6 +354,7 @@ export type Database = {
           content: string
           copies_count?: number | null
           created_at?: string | null
+          embedding?: string | null
           example_output?: string | null
           id?: string
           is_public?: boolean | null
@@ -372,6 +374,7 @@ export type Database = {
           content?: string
           copies_count?: number | null
           created_at?: string | null
+          embedding?: string | null
           example_output?: string | null
           id?: string
           is_public?: boolean | null
@@ -408,6 +411,7 @@ export type Database = {
           content: string
           created_at: string | null
           description: string | null
+          embedding: string | null
           id: string
           published: boolean | null
           tags: string[] | null
@@ -420,6 +424,7 @@ export type Database = {
           content: string
           created_at?: string | null
           description?: string | null
+          embedding?: string | null
           id?: string
           published?: boolean | null
           tags?: string[] | null
@@ -432,6 +437,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           description?: string | null
+          embedding?: string | null
           id?: string
           published?: boolean | null
           tags?: string[] | null
@@ -574,6 +580,7 @@ export type Database = {
           author_id: string | null
           created_at: string | null
           description: string | null
+          embedding: string | null
           id: string
           json: Json
           published: boolean | null
@@ -586,6 +593,7 @@ export type Database = {
           author_id?: string | null
           created_at?: string | null
           description?: string | null
+          embedding?: string | null
           id?: string
           json?: Json
           published?: boolean | null
@@ -598,6 +606,7 @@ export type Database = {
           author_id?: string | null
           created_at?: string | null
           description?: string | null
+          embedding?: string | null
           id?: string
           json?: Json
           published?: boolean | null
@@ -628,7 +637,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_prompts_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          author_id: string
+          category: string
+          content: string
+          copies_count: number
+          created_at: string
+          id: string
+          is_public: boolean
+          rating_avg: number
+          rating_count: number
+          short_description: string
+          similarity: number
+          tags: string[]
+          title: string
+        }[]
+      }
+      search_skills_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          author_id: string
+          content: string
+          created_at: string
+          description: string
+          id: string
+          published: boolean
+          similarity: number
+          tags: string[]
+          title: string
+        }[]
+      }
+      search_workflows_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          author_id: string
+          created_at: string
+          description: string
+          id: string
+          published: boolean
+          similarity: number
+          tags: string[]
+          title: string
+          workflow_json: Json
+        }[]
+      }
+      update_embedding: {
+        Args: { p_embedding: string; p_item_id: string; p_item_type: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
