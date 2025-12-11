@@ -301,51 +301,6 @@ export default function Library() {
     }
   }, [user, currentWorkspace, isTeamWorkspace]);
 
-        // Fetch saved prompts details
-        if (savedData && savedData.length > 0) {
-          const promptIds = savedData.map((s) => s.prompt_id);
-          const { data: promptsData, error: promptsError } = await supabase
-            .from("prompts")
-            .select("*")
-            .in("id", promptIds);
-
-          if (promptsError) {
-            console.error("Error fetching prompts:", promptsError);
-          } else {
-            setSavedPrompts((promptsData as Prompt[]) || []);
-          }
-
-          // Fetch user's ratings for saved prompts
-          const { data: ratingsData, error: ratingsError } = await supabase
-            .from("prompt_reviews")
-            .select("prompt_id, rating")
-            .eq("user_id", user.id)
-            .in("prompt_id", promptIds);
-
-          if (ratingsError) {
-            console.error("Error fetching ratings:", ratingsError);
-          } else if (ratingsData) {
-            const ratings: UserRatings = {};
-            ratingsData.forEach((r) => {
-              ratings[r.prompt_id] = r.rating;
-            });
-            setUserRatings(ratings);
-          }
-        } else {
-          setSavedPrompts([]);
-        }
-      } catch (err) {
-        console.error("Error fetching library data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (user) {
-      fetchLibraryData();
-    }
-  }, [user]);
-
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -384,8 +339,6 @@ export default function Library() {
                 {isTeamWorkspace 
                   ? "Team shared prompts, skills, and workflows"
                   : `Welcome back${profile?.display_name ? `, ${profile.display_name}` : ""}!`}
-              </p>
-            </div>
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -444,10 +397,6 @@ export default function Library() {
                     <Sparkles className="h-5 w-5 text-primary" />
                     <h2 className="text-xl font-semibold text-foreground">
                       {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
-                  <div className="mb-4 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      My Prompts ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
                     </h2>
                   </div>
                   {filteredMyPrompts.length === 0 ? (

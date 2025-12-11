@@ -6,13 +6,14 @@ interface UseWorkflowsOptions {
   searchQuery?: string;
   published?: boolean;
   authorId?: string;
+  teamId?: string;
 }
 
 export function useWorkflows(options: UseWorkflowsOptions = {}) {
-  const { searchQuery = "", published, authorId } = options;
+  const { searchQuery = "", published, authorId, teamId } = options;
 
   return useQuery({
-    queryKey: ["workflows", searchQuery, published, authorId],
+    queryKey: ["workflows", searchQuery, published, authorId, teamId],
     queryFn: async () => {
       let query = (supabase
         .from("workflows") as any)
@@ -30,8 +31,10 @@ export function useWorkflows(options: UseWorkflowsOptions = {}) {
         query = query.eq("published", published);
       }
 
-      if (authorId) {
-        query = query.eq("author_id", authorId);
+      if (teamId) {
+        query = query.eq("team_id", teamId);
+      } else if (authorId) {
+        query = query.eq("author_id", authorId).is("team_id", null);
       }
 
       if (searchQuery.trim()) {
