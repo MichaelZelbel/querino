@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export type EmbeddingItemType = "prompt" | "skill" | "workflow";
 
 interface UseEmbeddingsReturn {
-  generateEmbedding: (text: string) => Promise<number[] | null>;
+  generateEmbedding: (text: string, itemType?: EmbeddingItemType, itemId?: string) => Promise<number[] | null>;
   updateEmbedding: (itemType: EmbeddingItemType, itemId: string, embedding: number[]) => Promise<boolean>;
   refreshEmbedding: (itemType: EmbeddingItemType, itemId: string, text: string) => Promise<boolean>;
   isGenerating: boolean;
@@ -14,22 +14,50 @@ interface UseEmbeddingsReturn {
 export function useEmbeddings(): UseEmbeddingsReturn {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateEmbedding = async (text: string): Promise<number[] | null> => {
+  const generateEmbedding = async (
+    text: string,
+    itemType?: EmbeddingItemType,
+    itemId?: string
+  ): Promise<number[] | null> => {
+    const url = import.meta.env.VITE_EMBEDDING_URL;
+    
+    if (!url) {
+      console.warn("VITE_EMBEDDING_URL is not configured, skipping embedding generation");
+      return null;
+    }
+
     try {
-      const { data, error } = await supabase.functions.invoke("generate-embedding", {
-        body: { text },
+      const payload: Record<string, string> = {
+        text: text.slice(0, 8000), // Limit text length
+      };
+      
+      // Include itemType and itemId if provided (for artefact embeddings)
+      if (itemType) payload.itemType = itemType;
+      if (itemId) payload.itemId = itemId;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
-      if (error) {
-        console.error("Error generating embedding:", error);
-        throw new Error(error.message);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Embedding API error:", response.status, errorText);
+        throw new Error(`Embedding API error: ${response.status}`);
       }
 
-      if (data?.error) {
-        throw new Error(data.error);
+      const data = await response.json();
+      const embedding = data?.embedding;
+
+      if (!embedding || !Array.isArray(embedding)) {
+        throw new Error("Invalid embedding response from backend");
       }
 
-      return data?.embedding || null;
+      console.log(`Generated embedding with ${embedding.length} dimensions`);
+      return embedding;
     } catch (error) {
       console.error("Failed to generate embedding:", error);
       throw error;
@@ -70,7 +98,7 @@ export function useEmbeddings(): UseEmbeddingsReturn {
   ): Promise<boolean> => {
     setIsGenerating(true);
     try {
-      const embedding = await generateEmbedding(text);
+      const embedding = await generateEmbedding(text, itemType, itemId);
       if (!embedding) {
         throw new Error("Failed to generate embedding");
       }

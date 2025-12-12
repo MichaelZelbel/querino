@@ -1,4 +1,4 @@
 project_id = "zvuwkffneqxqsihlnfsd"
 
-[functions.generate-embedding]
-verify_jwt = false
+[api]
+enabled = true
