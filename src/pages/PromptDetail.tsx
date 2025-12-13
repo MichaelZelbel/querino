@@ -5,6 +5,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
+import { useSimilarPrompts } from "@/hooks/useSimilarArtefacts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
+import { SimilarPromptsSection } from "@/components/similar/SimilarArtefactsSection";
 import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -42,6 +44,7 @@ export default function PromptDetail() {
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [showTestModal, setShowTestModal] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(id);
   const isSaved = id ? isPromptSaved(id) : false;
   const isPinned = id ? isPromptPinned(id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
@@ -497,19 +500,12 @@ export default function PromptDetail() {
             ratingCount={prompt.rating_count}
           />
 
-          {/* Future Features Placeholder */}
+          {/* Similar Prompts */}
+          <SimilarPromptsSection items={similarPrompts} loading={loadingSimilar} />
+
           {/* Activity Sidebar */}
           <div className="mt-8">
             <ActivitySidebar itemId={prompt.id} itemType="prompt" />
-          </div>
-
-          {/* Future Features Placeholder */}
-          <div className="mt-8 rounded-xl border border-dashed border-border bg-muted/20 p-6">
-            <h3 className="mb-2 text-sm font-medium text-muted-foreground">Coming Soon</h3>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="text-muted-foreground">Usage Analytics</Badge>
-              <Badge variant="outline" className="text-muted-foreground">Similar Prompts</Badge>
-            </div>
           </div>
         </div>
       </main>

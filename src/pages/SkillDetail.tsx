@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
+import { useSimilarSkills } from "@/hooks/useSimilarArtefacts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
+import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -30,6 +32,7 @@ export default function SkillDetail() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(id);
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
 
   useEffect(() => {
@@ -295,6 +298,9 @@ export default function SkillDetail() {
             itemType="skill"
             itemId={skill.id}
           />
+
+          {/* Similar Skills */}
+          <SimilarSkillsSection items={similarSkills} loading={loadingSimilar} />
 
           {/* Activity Sidebar */}
           <div className="mt-8">
