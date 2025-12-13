@@ -637,6 +637,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_similar_prompts: {
+        Args: { match_limit?: number; target_id: string }
+        Returns: {
+          author_id: string
+          category: string
+          copies_count: number
+          id: string
+          rating_avg: number
+          rating_count: number
+          short_description: string
+          similarity: number
+          tags: string[]
+          team_id: string
+          title: string
+        }[]
+      }
+      get_similar_skills: {
+        Args: { match_limit?: number; target_id: string }
+        Returns: {
+          author_id: string
+          description: string
+          id: string
+          similarity: number
+          tags: string[]
+          team_id: string
+          title: string
+        }[]
+      }
+      get_similar_workflows: {
+        Args: { match_limit?: number; target_id: string }
+        Returns: {
+          author_id: string
+          description: string
+          id: string
+          similarity: number
+          tags: string[]
+          team_id: string
+          title: string
+        }[]
+      }
       search_prompts_semantic: {
         Args: {
           match_count?: number

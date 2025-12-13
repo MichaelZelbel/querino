@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
+import { useSimilarWorkflows } from "@/hooks/useSimilarArtefacts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink, FolderPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
+import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -32,6 +34,7 @@ export default function WorkflowDetail() {
   const [copied, setCopied] = useState(false);
   const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(id);
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
 
   useEffect(() => {
@@ -315,6 +318,9 @@ export default function WorkflowDetail() {
             itemType="workflow"
             itemId={workflow.id}
           />
+
+          {/* Similar Workflows */}
+          <SimilarWorkflowsSection items={similarWorkflows} loading={loadingSimilar} />
 
           {/* Activity Sidebar */}
           <div className="mt-8">
