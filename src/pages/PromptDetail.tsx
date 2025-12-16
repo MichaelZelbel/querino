@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
 import { SimilarPromptsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
+import { AIInsightsPanel } from "@/components/insights";
 import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -215,8 +216,9 @@ export default function PromptDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 py-12">
-        <div className="container mx-auto max-w-4xl px-4">
+      <div className="flex flex-1">
+        <main className="flex-1 py-12">
+          <div className="container mx-auto max-w-4xl px-4">
           {/* Back Link */}
           <Link 
             to="/discover" 
@@ -512,7 +514,15 @@ export default function PromptDetail() {
             <ActivitySidebar itemId={prompt.id} itemType="prompt" />
           </div>
         </div>
-      </main>
+        </main>
+
+        {/* AI Insights Panel */}
+        <AIInsightsPanel 
+          itemType="prompt" 
+          itemId={prompt.id} 
+          teamId={(prompt as any).team_id} 
+        />
+      </div>
       <Footer />
     </div>
   );

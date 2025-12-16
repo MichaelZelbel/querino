@@ -1,0 +1,1 @@
+export { AIInsightsPanel } from './AIInsightsPanel';
