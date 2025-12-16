@@ -4,20 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { useSimilarWorkflows } from "@/hooks/useSimilarArtefacts";
+import { useSuggestions } from "@/hooks/useSuggestions";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink, FolderPlus } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink, FolderPlus, GitPullRequest } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
+import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -37,7 +40,15 @@ export default function WorkflowDetail() {
   const [copied, setCopied] = useState(false);
   const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
   const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(id);
+  const { 
+    suggestions, 
+    loading: loadingSuggestions, 
+    openCount,
+    createSuggestion,
+    reviewSuggestion
+  } = useSuggestions('workflow', id || '');
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
 
   useEffect(() => {
@@ -98,6 +109,40 @@ export default function WorkflowDetail() {
     }
   };
 
+  const handleApplySuggestion = async (suggestion: any) => {
+    if (!workflow) return;
+    
+    // For workflows, the content is the JSON string - parse it back
+    let jsonContent = workflow.json;
+    try {
+      jsonContent = JSON.parse(suggestion.content);
+    } catch {
+      // If not valid JSON, wrap it
+      jsonContent = { content: suggestion.content };
+    }
+    
+    const updates: any = { json: jsonContent };
+    if (suggestion.title) updates.title = suggestion.title;
+    if (suggestion.description) updates.description = suggestion.description;
+    
+    const { error } = await supabase
+      .from('workflows')
+      .update(updates)
+      .eq('id', workflow.id);
+    
+    if (error) throw error;
+    
+    const { data } = await (supabase
+      .from("workflows") as any)
+      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+      .eq("id", id)
+      .maybeSingle();
+    
+    if (data) {
+      setWorkflow({ ...data, author: data.profiles || null });
+    }
+  };
+
   const getAuthorInitials = () => {
     if (workflow?.author?.display_name) {
       return workflow.author.display_name
@@ -150,6 +195,9 @@ export default function WorkflowDetail() {
       </div>
     );
   }
+
+  // For workflows, the "content" for suggestions is the JSON stringified
+  const workflowContent = JSON.stringify(workflow.json, null, 2);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -242,7 +290,7 @@ export default function WorkflowDetail() {
               <CollapsibleContent>
                 <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
                   <pre className="whitespace-pre-wrap font-mono text-xs text-foreground leading-relaxed">
-                    {JSON.stringify(workflow.json, null, 2)}
+                    {workflowContent}
                   </pre>
                 </div>
               </CollapsibleContent>
@@ -279,16 +327,27 @@ export default function WorkflowDetail() {
             )}
 
             {user && !isAuthor && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => cloneWorkflow(workflow, user.id)}
-                disabled={cloning}
-                className="gap-2"
-              >
-                <Files className="h-4 w-4" />
-                {cloning ? "Cloning..." : "Clone Workflow"}
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => cloneWorkflow(workflow, user.id)}
+                  disabled={cloning}
+                  className="gap-2"
+                >
+                  <Files className="h-4 w-4" />
+                  {cloning ? "Cloning..." : "Clone Workflow"}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowSuggestModal(true)}
+                  className="gap-2"
+                >
+                  <GitPullRequest className="h-4 w-4" />
+                  Suggest Edit
+                </Button>
+              </>
             )}
 
             <Button
@@ -319,11 +378,11 @@ export default function WorkflowDetail() {
               type="workflow"
               description={workflow.description}
               tags={workflow.tags}
-              content={JSON.stringify(workflow.json, null, 2)}
+              content={workflowContent}
             />
           </div>
 
-          {/* Add to Collection Modal */}
+          {/* Modals */}
           <AddToCollectionModal
             open={showCollectionModal}
             onOpenChange={setShowCollectionModal}
@@ -331,16 +390,57 @@ export default function WorkflowDetail() {
             itemId={workflow.id}
           />
 
-          {/* Similar Workflows */}
-          <SimilarWorkflowsSection items={similarWorkflows} loading={loadingSimilar} />
+          <SuggestEditModal
+            open={showSuggestModal}
+            onOpenChange={setShowSuggestModal}
+            itemType="workflow"
+            currentTitle={workflow.title}
+            currentDescription={workflow.description || ''}
+            currentContent={workflowContent}
+            onSubmit={createSuggestion}
+          />
 
-          {/* Comments & Discussion */}
-          <CommentsSection itemType="workflow" itemId={workflow.id} teamId={(workflow as any).team_id} />
-
-          {/* Activity Sidebar */}
-          <div className="mt-8">
-            <ActivitySidebar itemId={workflow.id} itemType="workflow" />
-          </div>
+          {/* Tabbed Content Section */}
+          <Tabs defaultValue="details" className="mt-8">
+            <TabsList>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="suggestions" className="gap-2">
+                Suggestions
+                {openCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {openCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="mt-6">
+              <SimilarWorkflowsSection items={similarWorkflows} loading={loadingSimilar} />
+              <div className="mt-8">
+                <ActivitySidebar itemId={workflow.id} itemType="workflow" />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="comments" className="mt-6">
+              <CommentsSection itemType="workflow" itemId={workflow.id} teamId={(workflow as any).team_id} />
+            </TabsContent>
+            
+            <TabsContent value="suggestions" className="mt-6">
+              <SuggestionsTab
+                suggestions={suggestions}
+                loading={loadingSuggestions}
+                itemType="workflow"
+                itemId={workflow.id}
+                originalTitle={workflow.title}
+                originalDescription={workflow.description || ''}
+                originalContent={workflowContent}
+                isOwner={!!isAuthor}
+                onReviewSuggestion={reviewSuggestion}
+                onApplySuggestion={handleApplySuggestion}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
         </main>
 

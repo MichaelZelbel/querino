@@ -549,6 +549,66 @@ export type Database = {
           },
         ]
       }
+      suggestions: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          description: string | null
+          id: string
+          item_id: string
+          item_type: string
+          review_comment: string | null
+          reviewer_id: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          review_comment?: string | null
+          reviewer_id?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          review_comment?: string | null
+          reviewer_id?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestions_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string | null
@@ -763,6 +823,10 @@ export type Database = {
           team_id: string
           title: string
         }[]
+      }
+      is_item_owner: {
+        Args: { p_item_id: string; p_item_type: string; p_user_id: string }
+        Returns: boolean
       }
       is_item_public: {
         Args: { p_item_id: string; p_item_type: string }
