@@ -6,18 +6,21 @@ import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useSimilarPrompts } from "@/hooks/useSimilarArtefacts";
+import { useSuggestions } from "@/hooks/useSuggestions";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
 import { SimilarPromptsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus } from "lucide-react";
+import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus, GitPullRequest } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { TestPromptModal } from "@/components/prompts/TestPromptModal";
@@ -47,7 +50,17 @@ export default function PromptDetail() {
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [showTestModal, setShowTestModal] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
   const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(id);
+  const { 
+    suggestions, 
+    loading: loadingSuggestions, 
+    openCount,
+    createSuggestion,
+    reviewSuggestion,
+    refetch: refetchSuggestions
+  } = useSuggestions('prompt', id || '');
+  
   const isSaved = id ? isPromptSaved(id) : false;
   const isPinned = id ? isPromptPinned(id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
@@ -80,7 +93,6 @@ export default function PromptDetail() {
         } else if (!data) {
           setNotFound(true);
         } else {
-          // Transform the data
           const promptData: PromptWithAuthor = {
             ...(data as any),
             author: (data as any).profiles || null,
@@ -156,6 +168,35 @@ export default function PromptDetail() {
       toast.success("Unpinned from dashboard");
     } else {
       toast.success("Pinned to dashboard!");
+    }
+  };
+
+  const handleApplySuggestion = async (suggestion: any) => {
+    if (!prompt) return;
+    
+    const updates: any = { content: suggestion.content };
+    if (suggestion.title) updates.title = suggestion.title;
+    if (suggestion.description) updates.short_description = suggestion.description;
+    
+    const { error } = await supabase
+      .from('prompts')
+      .update(updates)
+      .eq('id', prompt.id);
+    
+    if (error) throw error;
+    
+    // Refresh the prompt data
+    const { data } = await supabase
+      .from("prompts")
+      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+      .eq("id", id)
+      .maybeSingle();
+    
+    if (data) {
+      setPrompt({
+        ...(data as any),
+        author: (data as any).profiles || null,
+      });
     }
   };
 
@@ -268,7 +309,6 @@ export default function PromptDetail() {
 
           {/* Author & Meta Info */}
             <div className="mt-6 flex flex-wrap items-center gap-6">
-              {/* Author */}
               {prompt.author && (
                 <Link 
                   to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
@@ -289,7 +329,6 @@ export default function PromptDetail() {
                 </Link>
               )}
 
-              {/* Published Date */}
               {prompt.published_at && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
@@ -297,7 +336,6 @@ export default function PromptDetail() {
                 </div>
               )}
 
-              {/* Copies */}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
                 <span>{prompt.copies_count.toLocaleString()} copies</span>
@@ -305,7 +343,7 @@ export default function PromptDetail() {
             </div>
           </div>
 
-          {/* Summary Section (if published with summary) */}
+          {/* Summary Section */}
           {prompt.summary && (
             <div className="mb-8 rounded-xl border border-border bg-card p-6">
               <h2 className="mb-3 text-lg font-semibold text-foreground">
@@ -416,16 +454,27 @@ export default function PromptDetail() {
             )}
 
             {user && !isAuthor && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => clonePrompt(prompt, user.id)}
-                disabled={cloning}
-                className="gap-2"
-              >
-                <Files className="h-4 w-4" />
-                {cloning ? "Cloning..." : "Clone Prompt"}
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => clonePrompt(prompt, user.id)}
+                  disabled={cloning}
+                  className="gap-2"
+                >
+                  <Files className="h-4 w-4" />
+                  {cloning ? "Cloning..." : "Clone Prompt"}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowSuggestModal(true)}
+                  className="gap-2"
+                >
+                  <GitPullRequest className="h-4 w-4" />
+                  Suggest Edit
+                </Button>
+              </>
             )}
 
             {user && (
@@ -473,7 +522,7 @@ export default function PromptDetail() {
             />
           </div>
 
-          {/* Refine Prompt Modal */}
+          {/* Modals */}
           <RefinePromptModal
             isOpen={showRefineModal}
             onClose={() => setShowRefineModal(false)}
@@ -482,7 +531,6 @@ export default function PromptDetail() {
             userId={user?.id}
           />
 
-          {/* Test Prompt Modal */}
           <TestPromptModal
             isOpen={showTestModal}
             onClose={() => setShowTestModal(false)}
@@ -491,12 +539,21 @@ export default function PromptDetail() {
             userId={user?.id}
           />
 
-          {/* Add to Collection Modal */}
           <AddToCollectionModal
             open={showCollectionModal}
             onOpenChange={setShowCollectionModal}
             itemType="prompt"
             itemId={prompt.id}
+          />
+
+          <SuggestEditModal
+            open={showSuggestModal}
+            onOpenChange={setShowSuggestModal}
+            itemType="prompt"
+            currentTitle={prompt.title}
+            currentDescription={prompt.short_description}
+            currentContent={prompt.content}
+            onSubmit={createSuggestion}
           />
 
           {/* Send to LLM */}
@@ -512,16 +569,50 @@ export default function PromptDetail() {
             ratingCount={prompt.rating_count}
           />
 
-          {/* Similar Prompts */}
-          <SimilarPromptsSection items={similarPrompts} loading={loadingSimilar} />
-
-          {/* Comments & Discussion */}
-          <CommentsSection itemType="prompt" itemId={prompt.id} teamId={(prompt as any).team_id} />
-
-          {/* Activity Sidebar */}
-          <div className="mt-8">
-            <ActivitySidebar itemId={prompt.id} itemType="prompt" />
-          </div>
+          {/* Tabbed Content Section */}
+          <Tabs defaultValue="details" className="mt-8">
+            <TabsList>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="suggestions" className="gap-2">
+                Suggestions
+                {openCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {openCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="mt-6">
+              {/* Similar Prompts */}
+              <SimilarPromptsSection items={similarPrompts} loading={loadingSimilar} />
+              
+              {/* Activity Sidebar */}
+              <div className="mt-8">
+                <ActivitySidebar itemId={prompt.id} itemType="prompt" />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="comments" className="mt-6">
+              <CommentsSection itemType="prompt" itemId={prompt.id} teamId={(prompt as any).team_id} />
+            </TabsContent>
+            
+            <TabsContent value="suggestions" className="mt-6">
+              <SuggestionsTab
+                suggestions={suggestions}
+                loading={loadingSuggestions}
+                itemType="prompt"
+                itemId={prompt.id}
+                originalTitle={prompt.title}
+                originalDescription={prompt.short_description}
+                originalContent={prompt.content}
+                isOwner={!!isAuthor}
+                onReviewSuggestion={reviewSuggestion}
+                onApplySuggestion={handleApplySuggestion}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
         </main>
 

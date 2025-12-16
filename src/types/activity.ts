@@ -20,7 +20,10 @@ export type ActivityAction =
   | 'ai_insights_refreshed'
   | 'comment'
   | 'comment_edit'
-  | 'comment_delete';
+  | 'comment_delete'
+  | 'suggestion_created'
+  | 'suggestion_accepted'
+  | 'suggestion_rejected';
 
 export interface ActivityEvent {
   id: string;

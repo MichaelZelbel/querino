@@ -4,19 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { useSimilarSkills } from "@/hooks/useSimilarArtefacts";
+import { useSuggestions } from "@/hooks/useSuggestions";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
+import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -35,7 +38,15 @@ export default function SkillDetail() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
   const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(id);
+  const { 
+    suggestions, 
+    loading: loadingSuggestions, 
+    openCount,
+    createSuggestion,
+    reviewSuggestion
+  } = useSuggestions('skill', id || '');
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
 
   useEffect(() => {
@@ -93,6 +104,31 @@ export default function SkillDetail() {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error("Failed to copy skill");
+    }
+  };
+
+  const handleApplySuggestion = async (suggestion: any) => {
+    if (!skill) return;
+    
+    const updates: any = { content: suggestion.content };
+    if (suggestion.title) updates.title = suggestion.title;
+    if (suggestion.description) updates.description = suggestion.description;
+    
+    const { error } = await supabase
+      .from('skills')
+      .update(updates)
+      .eq('id', skill.id);
+    
+    if (error) throw error;
+    
+    const { data } = await (supabase
+      .from("skills") as any)
+      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+      .eq("id", id)
+      .maybeSingle();
+    
+    if (data) {
+      setSkill({ ...data, author: data.profiles || null });
     }
   };
 
@@ -270,16 +306,27 @@ export default function SkillDetail() {
             )}
 
             {user && !isAuthor && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => cloneSkill(skill, user.id)}
-                disabled={cloning}
-                className="gap-2"
-              >
-                <Files className="h-4 w-4" />
-                {cloning ? "Cloning..." : "Clone Skill"}
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => cloneSkill(skill, user.id)}
+                  disabled={cloning}
+                  className="gap-2"
+                >
+                  <Files className="h-4 w-4" />
+                  {cloning ? "Cloning..." : "Clone Skill"}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowSuggestModal(true)}
+                  className="gap-2"
+                >
+                  <GitPullRequest className="h-4 w-4" />
+                  Suggest Edit
+                </Button>
+              </>
             )}
 
             {user && (
@@ -303,7 +350,7 @@ export default function SkillDetail() {
             />
           </div>
 
-          {/* Add to Collection Modal */}
+          {/* Modals */}
           <AddToCollectionModal
             open={showCollectionModal}
             onOpenChange={setShowCollectionModal}
@@ -311,16 +358,57 @@ export default function SkillDetail() {
             itemId={skill.id}
           />
 
-          {/* Similar Skills */}
-          <SimilarSkillsSection items={similarSkills} loading={loadingSimilar} />
+          <SuggestEditModal
+            open={showSuggestModal}
+            onOpenChange={setShowSuggestModal}
+            itemType="skill"
+            currentTitle={skill.title}
+            currentDescription={skill.description || ''}
+            currentContent={skill.content}
+            onSubmit={createSuggestion}
+          />
 
-          {/* Comments & Discussion */}
-          <CommentsSection itemType="skill" itemId={skill.id} teamId={(skill as any).team_id} />
-
-          {/* Activity Sidebar */}
-          <div className="mt-8">
-            <ActivitySidebar itemId={skill.id} itemType="skill" />
-          </div>
+          {/* Tabbed Content Section */}
+          <Tabs defaultValue="details" className="mt-8">
+            <TabsList>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="suggestions" className="gap-2">
+                Suggestions
+                {openCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {openCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="mt-6">
+              <SimilarSkillsSection items={similarSkills} loading={loadingSimilar} />
+              <div className="mt-8">
+                <ActivitySidebar itemId={skill.id} itemType="skill" />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="comments" className="mt-6">
+              <CommentsSection itemType="skill" itemId={skill.id} teamId={(skill as any).team_id} />
+            </TabsContent>
+            
+            <TabsContent value="suggestions" className="mt-6">
+              <SuggestionsTab
+                suggestions={suggestions}
+                loading={loadingSuggestions}
+                itemType="skill"
+                itemId={skill.id}
+                originalTitle={skill.title}
+                originalDescription={skill.description || ''}
+                originalContent={skill.content}
+                isOwner={!!isAuthor}
+                onReviewSuggestion={reviewSuggestion}
+                onApplySuggestion={handleApplySuggestion}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
         </main>
 
