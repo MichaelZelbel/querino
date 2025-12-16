@@ -45,7 +45,9 @@ export default function SkillDetail() {
     loading: loadingSuggestions, 
     openCount,
     createSuggestion,
-    reviewSuggestion
+    reviewSuggestion,
+    requestChanges,
+    updateSuggestionAfterChanges
   } = useSuggestions('skill', id || '');
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
 
@@ -405,6 +407,8 @@ export default function SkillDetail() {
                 originalContent={skill.content}
                 isOwner={!!isAuthor}
                 onReviewSuggestion={reviewSuggestion}
+                onRequestChanges={requestChanges}
+                onUpdateSuggestion={updateSuggestionAfterChanges}
                 onApplySuggestion={handleApplySuggestion}
               />
             </TabsContent>

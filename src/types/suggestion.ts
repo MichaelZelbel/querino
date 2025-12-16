@@ -1,4 +1,4 @@
-export type SuggestionStatus = 'open' | 'accepted' | 'rejected';
+export type SuggestionStatus = 'open' | 'changes_requested' | 'accepted' | 'rejected';
 export type SuggestionItemType = 'prompt' | 'skill' | 'workflow';
 
 export interface Suggestion {
@@ -14,6 +14,7 @@ export interface Suggestion {
   status: SuggestionStatus;
   reviewer_id: string | null;
   review_comment: string | null;
+  requested_changes: string[] | null;
 }
 
 export interface SuggestionWithAuthor extends Suggestion {

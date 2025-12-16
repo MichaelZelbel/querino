@@ -58,6 +58,8 @@ export default function PromptDetail() {
     openCount,
     createSuggestion,
     reviewSuggestion,
+    requestChanges,
+    updateSuggestionAfterChanges,
     refetch: refetchSuggestions
   } = useSuggestions('prompt', id || '');
   
@@ -609,6 +611,8 @@ export default function PromptDetail() {
                 originalContent={prompt.content}
                 isOwner={!!isAuthor}
                 onReviewSuggestion={reviewSuggestion}
+                onRequestChanges={requestChanges}
+                onUpdateSuggestion={updateSuggestionAfterChanges}
                 onApplySuggestion={handleApplySuggestion}
               />
             </TabsContent>

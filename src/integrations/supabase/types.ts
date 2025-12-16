@@ -558,6 +558,7 @@ export type Database = {
           id: string
           item_id: string
           item_type: string
+          requested_changes: Json | null
           review_comment: string | null
           reviewer_id: string | null
           status: string | null
@@ -572,6 +573,7 @@ export type Database = {
           id?: string
           item_id: string
           item_type: string
+          requested_changes?: Json | null
           review_comment?: string | null
           reviewer_id?: string | null
           status?: string | null
@@ -586,6 +588,7 @@ export type Database = {
           id?: string
           item_id?: string
           item_type?: string
+          requested_changes?: Json | null
           review_comment?: string | null
           reviewer_id?: string | null
           status?: string | null

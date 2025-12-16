@@ -88,7 +88,8 @@ export const useSuggestions = (itemType: SuggestionItemType, itemId: string) => 
       .update({
         status,
         reviewer_id: user.id,
-        review_comment: reviewComment || null
+        review_comment: reviewComment || null,
+        requested_changes: null
       })
       .eq('id', suggestionId);
 
@@ -98,6 +99,82 @@ export const useSuggestions = (itemType: SuggestionItemType, itemId: string) => 
     await supabase.from('activity_events').insert({
       actor_id: user.id,
       action: status === 'accepted' ? 'suggestion_accepted' : 'suggestion_rejected',
+      item_type: itemType,
+      item_id: itemId,
+      metadata: { suggestionId }
+    });
+
+    await fetchSuggestions();
+  };
+
+  const requestChanges = async (
+    suggestionId: string,
+    requestedChanges: string[],
+    reviewComment?: string
+  ) => {
+    if (!user) throw new Error('Must be logged in to request changes');
+
+    const { error: updateError } = await supabase
+      .from('suggestions')
+      .update({
+        status: 'changes_requested',
+        reviewer_id: user.id,
+        review_comment: reviewComment || null,
+        requested_changes: requestedChanges
+      })
+      .eq('id', suggestionId);
+
+    if (updateError) throw updateError;
+
+    // Log activity
+    await supabase.from('activity_events').insert({
+      actor_id: user.id,
+      action: 'suggestion_changes_requested',
+      item_type: itemType,
+      item_id: itemId,
+      metadata: { suggestionId, requestedChanges }
+    });
+
+    // Trigger notification placeholder
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('changes-requested', { 
+        detail: { suggestionId } 
+      }));
+    }
+
+    await fetchSuggestions();
+  };
+
+  const updateSuggestionAfterChanges = async (
+    suggestionId: string,
+    data: {
+      title?: string;
+      description?: string;
+      content: string;
+    }
+  ) => {
+    if (!user) throw new Error('Must be logged in to update suggestion');
+
+    const { error: updateError } = await supabase
+      .from('suggestions')
+      .update({
+        title: data.title || null,
+        description: data.description || null,
+        content: data.content,
+        status: 'open',
+        reviewer_id: null,
+        review_comment: null,
+        requested_changes: null
+      })
+      .eq('id', suggestionId)
+      .eq('author_id', user.id);
+
+    if (updateError) throw updateError;
+
+    // Log activity
+    await supabase.from('activity_events').insert({
+      actor_id: user.id,
+      action: 'suggestion_updated_after_changes_requested',
       item_type: itemType,
       item_id: itemId,
       metadata: { suggestionId }
@@ -120,14 +197,18 @@ export const useSuggestions = (itemType: SuggestionItemType, itemId: string) => 
   };
 
   const openCount = suggestions.filter(s => s.status === 'open').length;
+  const changesRequestedCount = suggestions.filter(s => s.status === 'changes_requested').length;
 
   return {
     suggestions,
     loading,
     error,
     openCount,
+    changesRequestedCount,
     createSuggestion,
     reviewSuggestion,
+    requestChanges,
+    updateSuggestionAfterChanges,
     deleteSuggestion,
     refetch: fetchSuggestions
   };
