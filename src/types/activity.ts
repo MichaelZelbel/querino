@@ -15,7 +15,12 @@ export type ActivityAction =
   | 'team_add_member'
   | 'team_remove_member'
   | 'team_promote_member'
-  | 'github_sync_triggered';
+  | 'github_sync_triggered'
+  | 'ai_insights_generated'
+  | 'ai_insights_refreshed'
+  | 'comment'
+  | 'comment_edit'
+  | 'comment_delete';
 
 export interface ActivityEvent {
   id: string;

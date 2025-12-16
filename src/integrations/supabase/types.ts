@@ -62,6 +62,42 @@ export type Database = {
           },
         ]
       }
+      ai_insights: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          quality: Json | null
+          recommendations: Json | null
+          summary: string | null
+          tags: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          quality?: Json | null
+          recommendations?: Json | null
+          summary?: string | null
+          tags?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          quality?: Json | null
+          recommendations?: Json | null
+          summary?: string | null
+          tags?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       collection_items: {
         Row: {
           collection_id: string

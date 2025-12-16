@@ -15,6 +15,7 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
+import { AIInsightsPanel } from "@/components/insights";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -150,9 +151,10 @@ export default function SkillDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 py-12">
-        <div className="container mx-auto max-w-4xl px-4">
-          <Link 
+      <div className="flex flex-1">
+        <main className="flex-1 py-12">
+          <div className="container mx-auto max-w-4xl px-4">
+          <Link
             to="/discover" 
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
@@ -311,7 +313,15 @@ export default function SkillDetail() {
             <ActivitySidebar itemId={skill.id} itemType="skill" />
           </div>
         </div>
-      </main>
+        </main>
+
+        {/* AI Insights Panel */}
+        <AIInsightsPanel 
+          itemType="skill" 
+          itemId={skill.id} 
+          teamId={(skill as any).team_id} 
+        />
+      </div>
       <Footer />
     </div>
   );
