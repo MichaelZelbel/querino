@@ -14,6 +14,7 @@ import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, F
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
+import { CommentsSection } from "@/components/comments";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -301,6 +302,9 @@ export default function SkillDetail() {
 
           {/* Similar Skills */}
           <SimilarSkillsSection items={similarSkills} loading={loadingSimilar} />
+
+          {/* Comments & Discussion */}
+          <CommentsSection itemType="skill" itemId={skill.id} teamId={(skill as any).team_id} />
 
           {/* Activity Sidebar */}
           <div className="mt-8">

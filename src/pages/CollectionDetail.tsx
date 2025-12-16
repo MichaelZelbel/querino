@@ -27,6 +27,7 @@ import { useWorkflows } from "@/hooks/useWorkflows";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
+import { CommentsSection } from "@/components/comments";
 
 export default function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -261,6 +262,9 @@ export default function CollectionDetail() {
             </Card>
           )}
         </div>
+
+        {/* Comments & Discussion */}
+        <CommentsSection itemType="collection" itemId={collection.id} teamId={(collection as any).team_id} />
       </main>
 
       <Footer />
