@@ -8,14 +8,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
+import { CommandPalette } from "@/components/CommandPalette";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function Header() {
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -126,6 +129,23 @@ export function Header() {
 
         {/* Desktop CTA / User Menu */}
         <div className="hidden items-center gap-3 md:flex">
+          {/* Command Palette Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setCommandPaletteOpen(true)}
+              >
+                <Command className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Search and Navigate (Ctrl+K)</p>
+            </TooltipContent>
+          </Tooltip>
+
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
@@ -380,6 +400,9 @@ export function Header() {
           </nav>
         </div>
       )}
+
+      {/* Command Palette */}
+      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
     </header>
   );
 }
