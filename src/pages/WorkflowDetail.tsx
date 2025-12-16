@@ -17,6 +17,7 @@ import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
+import { DownloadMarkdownButton } from "@/components/markdown";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -312,6 +313,14 @@ export default function WorkflowDetail() {
                 Add to Collection
               </Button>
             )}
+
+            <DownloadMarkdownButton
+              title={workflow.title}
+              type="workflow"
+              description={workflow.description}
+              tags={workflow.tags}
+              content={JSON.stringify(workflow.json, null, 2)}
+            />
           </div>
 
           {/* Add to Collection Modal */}

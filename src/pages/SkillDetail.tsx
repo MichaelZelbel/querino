@@ -16,6 +16,7 @@ import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
+import { DownloadMarkdownButton } from "@/components/markdown";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -292,6 +293,14 @@ export default function SkillDetail() {
                 Add to Collection
               </Button>
             )}
+
+            <DownloadMarkdownButton
+              title={skill.title}
+              type="skill"
+              description={skill.description}
+              tags={skill.tags}
+              content={skill.content}
+            />
           </div>
 
           {/* Add to Collection Modal */}

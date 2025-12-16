@@ -6,12 +6,14 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptForm, type PromptFormData } from "@/components/prompts/PromptForm";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ShieldAlert, GitCompare } from "lucide-react";
+import { Loader2, ArrowLeft, ShieldAlert, GitCompare, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
+import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { Prompt } from "@/types/prompt";
+import type { ParsedMarkdown } from "@/lib/markdown";
 
 export default function PromptEdit() {
   const { id } = useParams<{ id: string }>();
@@ -197,6 +199,17 @@ export default function PromptEdit() {
     }
   };
 
+  const handleImportMarkdown = (data: ParsedMarkdown) => {
+    setFormData({
+      title: data.frontmatter.title,
+      short_description: data.frontmatter.description || "",
+      content: data.content,
+      category: formData.category, // Keep existing category
+      tags: data.frontmatter.tags || [],
+      is_public: formData.is_public, // Keep existing visibility
+    });
+  };
+
   // Compute diff content
   const diffContent = useMemo(() => {
     if (!lastSaved) return { original: "", current: "" };
@@ -294,6 +307,23 @@ export default function PromptEdit() {
               </h1>
               <div className="flex items-center gap-4">
                 <AutosaveIndicator status={status} />
+                <ImportMarkdownButton
+                  type="prompt"
+                  size="sm"
+                  variant="outline"
+                  label="Import .md"
+                  onImport={handleImportMarkdown}
+                  isEditorMode
+                />
+                <DownloadMarkdownButton
+                  title={formData.title || "Untitled Prompt"}
+                  type="prompt"
+                  description={formData.short_description}
+                  tags={formData.tags}
+                  content={formData.content}
+                  size="sm"
+                  variant="outline"
+                />
                 <Button
                   variant="outline"
                   size="sm"

@@ -16,6 +16,7 @@ import { ReviewSection } from "@/components/prompts/ReviewSection";
 import { SimilarPromptsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
+import { DownloadMarkdownButton } from "@/components/markdown";
 import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -462,6 +463,14 @@ export default function PromptDetail() {
                 Add to Collection
               </Button>
             )}
+
+            <DownloadMarkdownButton
+              title={prompt.title}
+              type="prompt"
+              description={prompt.short_description}
+              tags={prompt.tags}
+              content={prompt.content}
+            />
           </div>
 
           {/* Refine Prompt Modal */}
