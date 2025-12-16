@@ -15,7 +15,9 @@ import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
+import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { Workflow } from "@/types/workflow";
+import type { ParsedMarkdown } from "@/lib/markdown";
 
 interface WorkflowFormData {
   title: string;
@@ -265,6 +267,28 @@ export default function WorkflowEdit() {
     };
   }, [lastSaved, formData.jsonContent]);
 
+  const handleImportMarkdown = (data: ParsedMarkdown) => {
+    // For workflows, the content could be JSON or text
+    let jsonContent = data.content;
+    
+    // Try to validate if it's JSON
+    try {
+      JSON.parse(data.content);
+    } catch {
+      // If not JSON, wrap it as a simple workflow structure
+      jsonContent = JSON.stringify({ content: data.content }, null, 2);
+    }
+
+    setFormData({
+      title: data.frontmatter.title,
+      description: data.frontmatter.description || "",
+      jsonContent,
+      tags: data.frontmatter.tags || [],
+      published: formData.published, // Keep existing published state
+    });
+    setJsonValid(null); // Reset validation state
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -302,6 +326,23 @@ export default function WorkflowEdit() {
             </div>
             <div className="flex items-center gap-3">
               <AutosaveIndicator status={status} />
+              <ImportMarkdownButton
+                type="workflow"
+                size="sm"
+                variant="outline"
+                label="Import .md"
+                onImport={handleImportMarkdown}
+                isEditorMode
+              />
+              <DownloadMarkdownButton
+                title={formData.title || "Untitled Workflow"}
+                type="workflow"
+                description={formData.description}
+                tags={formData.tags}
+                content={formData.jsonContent}
+                size="sm"
+                variant="outline"
+              />
               <Button
                 variant="outline"
                 size="sm"

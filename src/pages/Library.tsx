@@ -11,6 +11,7 @@ import { WorkflowCard } from "@/components/workflows/WorkflowCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ImportMarkdownButton } from "@/components/markdown";
 import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow, Building2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
@@ -363,6 +364,7 @@ export default function Library() {
                   Prompt Wizard
                 </Button>
               </Link>
+              <ImportMarkdownButton type="prompt" size="default" variant="outline" />
               <Link to="/prompts/new">
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -430,12 +432,15 @@ export default function Library() {
                         {isTeamWorkspace ? "Team Skills" : "My Skills"} ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
                       </h2>
                     </div>
-                    <Link to="/skills/new">
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        New Skill
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <ImportMarkdownButton type="skill" size="sm" variant="outline" />
+                      <Link to="/skills/new">
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          New Skill
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                   {filteredMySkills.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
@@ -461,12 +466,15 @@ export default function Library() {
                         {isTeamWorkspace ? "Team Workflows" : "My Workflows"} ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
                       </h2>
                     </div>
-                    <Link to="/workflows/new">
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        New Workflow
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <ImportMarkdownButton type="workflow" size="sm" variant="outline" />
+                      <Link to="/workflows/new">
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          New Workflow
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                   {filteredMyWorkflows.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">

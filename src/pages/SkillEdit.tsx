@@ -15,7 +15,9 @@ import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
+import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { Skill } from "@/types/skill";
+import type { ParsedMarkdown } from "@/lib/markdown";
 
 interface SkillFormData {
   title: string;
@@ -213,6 +215,16 @@ export default function SkillEdit() {
     };
   }, [lastSaved, formData.content]);
 
+  const handleImportMarkdown = (data: ParsedMarkdown) => {
+    setFormData({
+      title: data.frontmatter.title,
+      description: data.frontmatter.description || "",
+      content: data.content,
+      tags: data.frontmatter.tags || [],
+      published: formData.published, // Keep existing published state
+    });
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -250,6 +262,23 @@ export default function SkillEdit() {
             </div>
             <div className="flex items-center gap-3">
               <AutosaveIndicator status={status} />
+              <ImportMarkdownButton
+                type="skill"
+                size="sm"
+                variant="outline"
+                label="Import .md"
+                onImport={handleImportMarkdown}
+                isEditorMode
+              />
+              <DownloadMarkdownButton
+                title={formData.title || "Untitled Skill"}
+                type="skill"
+                description={formData.description}
+                tags={formData.tags}
+                content={formData.content}
+                size="sm"
+                variant="outline"
+              />
               <Button
                 variant="outline"
                 size="sm"
