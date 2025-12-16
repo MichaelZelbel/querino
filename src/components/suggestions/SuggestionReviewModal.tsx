@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, User } from 'lucide-react';
+import { Loader2, Check, X, User, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { SuggestionWithAuthor } from '@/types/suggestion';
 import { format } from 'date-fns';
@@ -61,8 +61,10 @@ interface SuggestionReviewModalProps {
   originalTitle: string;
   originalDescription: string;
   originalContent: string;
+  isOwner: boolean;
   onAccept: (reviewComment?: string) => Promise<void>;
   onReject: (reviewComment?: string) => Promise<void>;
+  onRequestChanges: (requestedChanges: string[], reviewComment?: string) => Promise<void>;
 }
 
 export function SuggestionReviewModal({
@@ -72,12 +74,17 @@ export function SuggestionReviewModal({
   originalTitle,
   originalDescription,
   originalContent,
+  isOwner,
   onAccept,
-  onReject
+  onReject,
+  onRequestChanges
 }: SuggestionReviewModalProps) {
   const [reviewComment, setReviewComment] = useState('');
+  const [requestedChangesText, setRequestedChangesText] = useState('');
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isRequestingChanges, setIsRequestingChanges] = useState(false);
+  const [showRequestChangesPanel, setShowRequestChangesPanel] = useState(false);
 
   const suggestedTitle = suggestion.title || originalTitle;
   const suggestedDescription = suggestion.description || originalDescription;
@@ -111,13 +118,37 @@ export function SuggestionReviewModal({
     }
   };
 
-  const isProcessing = isAccepting || isRejecting;
+  const handleRequestChanges = async () => {
+    if (!requestedChangesText.trim()) {
+      toast.error('Please specify what changes you would like');
+      return;
+    }
+
+    setIsRequestingChanges(true);
+    try {
+      // Parse textarea into array of changes (split by newlines, filter empty)
+      const changes = requestedChangesText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      await onRequestChanges(changes, reviewComment || undefined);
+      toast.success('Changes requested');
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to request changes');
+    } finally {
+      setIsRequestingChanges(false);
+    }
+  };
+
+  const isProcessing = isAccepting || isRejecting || isRequestingChanges;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Review Suggestion</DialogTitle>
+          <DialogTitle>{isOwner ? 'Review Suggestion' : 'View Suggestion'}</DialogTitle>
           <DialogDescription className="flex items-center gap-2">
             <Avatar className="h-5 w-5">
               <AvatarImage src={suggestion.author?.avatar_url || ''} />
@@ -160,10 +191,10 @@ export function SuggestionReviewModal({
           {/* Content Diff */}
           <div className="flex-1 overflow-hidden">
             <Label className="text-xs text-muted-foreground mb-2 block">Content Changes</Label>
-            <div className="grid grid-cols-2 gap-2 h-[300px]">
+            <div className="grid grid-cols-2 gap-2 h-[250px]">
               <div className="border rounded-lg overflow-hidden">
                 <div className="bg-muted px-3 py-1.5 text-xs font-medium border-b">Original</div>
-                <ScrollArea className="h-[268px]">
+                <ScrollArea className="h-[218px]">
                   <div className="p-2 font-mono text-xs">
                     {contentDiff.left.map((line, i) => (
                       <div
@@ -183,7 +214,7 @@ export function SuggestionReviewModal({
               </div>
               <div className="border rounded-lg overflow-hidden">
                 <div className="bg-muted px-3 py-1.5 text-xs font-medium border-b">Suggested</div>
-                <ScrollArea className="h-[268px]">
+                <ScrollArea className="h-[218px]">
                   <div className="p-2 font-mono text-xs">
                     {contentDiff.right.map((line, i) => (
                       <div
@@ -204,40 +235,86 @@ export function SuggestionReviewModal({
             </div>
           </div>
 
+          {/* Request Changes Panel */}
+          {isOwner && showRequestChangesPanel && (
+            <div className="space-y-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+              <Label htmlFor="requested-changes" className="text-sm font-medium">
+                Requested Changes (one per line)
+              </Label>
+              <Textarea
+                id="requested-changes"
+                value={requestedChangesText}
+                onChange={(e) => setRequestedChangesText(e.target.value)}
+                placeholder="Clarify the input/output section&#10;Add a role definition&#10;Remove redundant constraints"
+                rows={4}
+                className="font-mono text-sm"
+              />
+            </div>
+          )}
+
           {/* Review Comment */}
-          <div className="space-y-2">
-            <Label htmlFor="review-comment">Review Comment (optional)</Label>
-            <Textarea
-              id="review-comment"
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value)}
-              placeholder="Add a comment about your decision..."
-              rows={2}
-            />
-          </div>
+          {isOwner && (
+            <div className="space-y-2">
+              <Label htmlFor="review-comment">Review Comment (optional)</Label>
+              <Textarea
+                id="review-comment"
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Add a comment about your decision..."
+                rows={2}
+              />
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-wrap">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
-            Cancel
+            {isOwner ? 'Cancel' : 'Close'}
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleReject}
-            disabled={isProcessing}
-          >
-            {isRejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <X className="mr-1 h-4 w-4" />
-            Reject
-          </Button>
-          <Button
-            onClick={handleAccept}
-            disabled={isProcessing}
-          >
-            {isAccepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <Check className="mr-1 h-4 w-4" />
-            Accept & Apply
-          </Button>
+          
+          {isOwner && (
+            <>
+              {!showRequestChangesPanel ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRequestChangesPanel(true)}
+                  disabled={isProcessing}
+                  className="border-orange-500/50 text-orange-600 hover:bg-orange-500/10"
+                >
+                  <MessageSquare className="mr-1 h-4 w-4" />
+                  Request Changes
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={handleRequestChanges}
+                  disabled={isProcessing || !requestedChangesText.trim()}
+                  className="border-orange-500/50 text-orange-600 hover:bg-orange-500/10"
+                >
+                  {isRequestingChanges && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <MessageSquare className="mr-1 h-4 w-4" />
+                  Submit Change Request
+                </Button>
+              )}
+              <Button
+                variant="destructive"
+                onClick={handleReject}
+                disabled={isProcessing}
+              >
+                {isRejecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <X className="mr-1 h-4 w-4" />
+                Reject
+              </Button>
+              <Button
+                onClick={handleAccept}
+                disabled={isProcessing}
+              >
+                {isAccepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Check className="mr-1 h-4 w-4" />
+                Accept & Apply
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

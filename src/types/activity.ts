@@ -23,7 +23,9 @@ export type ActivityAction =
   | 'comment_delete'
   | 'suggestion_created'
   | 'suggestion_accepted'
-  | 'suggestion_rejected';
+  | 'suggestion_rejected'
+  | 'suggestion_changes_requested'
+  | 'suggestion_updated_after_changes_requested';
 
 export interface ActivityEvent {
   id: string;

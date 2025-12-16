@@ -47,7 +47,9 @@ export default function WorkflowDetail() {
     loading: loadingSuggestions, 
     openCount,
     createSuggestion,
-    reviewSuggestion
+    reviewSuggestion,
+    requestChanges,
+    updateSuggestionAfterChanges
   } = useSuggestions('workflow', id || '');
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
 
@@ -437,6 +439,8 @@ export default function WorkflowDetail() {
                 originalContent={workflowContent}
                 isOwner={!!isAuthor}
                 onReviewSuggestion={reviewSuggestion}
+                onRequestChanges={requestChanges}
+                onUpdateSuggestion={updateSuggestionAfterChanges}
                 onApplySuggestion={handleApplySuggestion}
               />
             </TabsContent>
