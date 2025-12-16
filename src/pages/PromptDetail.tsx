@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
 import { SimilarPromptsSection } from "@/components/similar/SimilarArtefactsSection";
+import { CommentsSection } from "@/components/comments";
 import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -502,6 +503,9 @@ export default function PromptDetail() {
 
           {/* Similar Prompts */}
           <SimilarPromptsSection items={similarPrompts} loading={loadingSimilar} />
+
+          {/* Comments & Discussion */}
+          <CommentsSection itemType="prompt" itemId={prompt.id} teamId={(prompt as any).team_id} />
 
           {/* Activity Sidebar */}
           <div className="mt-8">

@@ -145,6 +145,57 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          edited: boolean | null
+          id: string
+          item_id: string
+          item_type: string
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          edited?: boolean | null
+          id?: string
+          item_id: string
+          item_type: string
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          edited?: boolean | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -676,6 +727,14 @@ export type Database = {
           team_id: string
           title: string
         }[]
+      }
+      is_item_public: {
+        Args: { p_item_id: string; p_item_type: string }
+        Returns: boolean
+      }
+      is_team_member_for_item: {
+        Args: { p_item_id: string; p_item_type: string; p_user_id: string }
+        Returns: boolean
       }
       search_prompts_semantic: {
         Args: {

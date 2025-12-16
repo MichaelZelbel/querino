@@ -15,6 +15,7 @@ import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
+import { CommentsSection } from "@/components/comments";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -321,6 +322,9 @@ export default function WorkflowDetail() {
 
           {/* Similar Workflows */}
           <SimilarWorkflowsSection items={similarWorkflows} loading={loadingSimilar} />
+
+          {/* Comments & Discussion */}
+          <CommentsSection itemType="workflow" itemId={workflow.id} teamId={(workflow as any).team_id} />
 
           {/* Activity Sidebar */}
           <div className="mt-8">
