@@ -119,7 +119,7 @@ export function TestPromptModal({
           {/* Test Input */}
           <div>
             <Label htmlFor="test-input" className="text-sm font-medium mb-2 block">
-              Your test input
+              Additional prompt text (optional)
             </Label>
             <Textarea
               id="test-input"
