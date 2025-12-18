@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Copy, Zap } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import heroLanding from "@/assets/hero-landing.png";
+import { HomeStats } from "./HomeStats";
 
 export function HeroSection() {
   const { user, loading } = useAuthContext();
@@ -51,29 +52,7 @@ export function HeroSection() {
             </div>
 
             {/* Stats */}
-            <div className="mt-12 grid grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
-              <div className="text-center lg:text-left">
-                <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-                  <Copy className="h-5 w-5 text-primary" />
-                  10k+
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Prompts Available</p>
-              </div>
-              <div className="text-center lg:text-left">
-                <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-                  <Zap className="h-5 w-5 text-warning" />
-                  50k+
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Daily Copies</p>
-              </div>
-              <div className="text-center lg:text-left">
-                <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-                  <Sparkles className="h-5 w-5 text-success" />
-                  4.9
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Average Rating</p>
-              </div>
-            </div>
+            <HomeStats />
           </div>
 
           {/* Hero Image */}
