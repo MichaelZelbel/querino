@@ -44,6 +44,7 @@ import TeamSettings from "./pages/TeamSettings";
 import Activity from "./pages/Activity";
 import TeamActivity from "./pages/TeamActivity";
 import UserActivity from "./pages/UserActivity";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/team/:id/activity" element={<TeamActivity />} />
             <Route path="/activity" element={<Activity />} />
             <Route path="/u/:username/activity" element={<UserActivity />} />
+            <Route path="/admin" element={<Admin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
