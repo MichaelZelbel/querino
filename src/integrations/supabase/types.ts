@@ -787,6 +787,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      active_creators_last_7_days: { Args: never; Returns: number }
       get_similar_prompts: {
         Args: { match_limit?: number; target_id: string }
         Returns: {
