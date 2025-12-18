@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command } from "lucide-react";
+import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command, Shield } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
@@ -216,6 +216,17 @@ export function Header() {
                       Account
                     </Link>
                   </DropdownMenuItem>
+                  {profile?.role === "admin" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center gap-2 cursor-pointer text-primary">
+                          <Shield className="h-4 w-4" />
+                          Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
                     <LogOut className="h-4 w-4" />
@@ -370,6 +381,14 @@ export function Header() {
                       Account
                     </Button>
                   </Link>
+                  {profile?.role === "admin" && (
+                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start gap-2 text-primary">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </Button>
+                    </Link>
+                  )}
                   <Button 
                     variant="ghost" 
                     className="w-full justify-start gap-2 text-destructive hover:text-destructive"

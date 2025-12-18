@@ -828,6 +828,7 @@ export type Database = {
           title: string
         }[]
       }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
       is_item_owner: {
         Args: { p_item_id: string; p_item_type: string; p_user_id: string }
         Returns: boolean
