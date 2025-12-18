@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -10,13 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown } from "lucide-react";
 import { toast } from "sonner";
 import heroSettings from "@/assets/hero-settings.png";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuthContext();
+  const { user, profile, loading: authLoading } = useAuthContext();
+  
+  // Premium check
+  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
   
   // GitHub Sync state
   const [githubRepo, setGithubRepo] = useState("");
@@ -249,11 +253,33 @@ export default function Settings() {
                 <CardTitle className="font-display flex items-center gap-2">
                   <Github className="h-5 w-5" />
                   GitHub Sync
+                  {!isPremium && (
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5 bg-primary/10 text-primary border-0">
+                      <Crown className="h-2.5 w-2.5" />
+                      Premium
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>Sync your prompts to a GitHub repository.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {loadingGithub ? (
+                {!isPremium ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Lock className="h-8 w-8 text-primary" />
+                    </div>
+                    <h4 className="font-semibold text-foreground mb-2">Premium Feature</h4>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
+                      GitHub Sync is a Premium feature. Upgrade to sync your artefacts to any GitHub repository.
+                    </p>
+                    <Link to="/pricing">
+                      <Button className="gap-2">
+                        <Crown className="h-4 w-4" />
+                        Upgrade to Premium
+                      </Button>
+                    </Link>
+                  </div>
+                ) : loadingGithub ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
