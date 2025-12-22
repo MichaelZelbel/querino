@@ -74,7 +74,7 @@ export default function PublicPromptDiscovery() {
     return prompts.filter((prompt) => {
       const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
       const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prompt.short_description.toLowerCase().includes(searchQuery.toLowerCase());
+        prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Tag filter with OR logic
       const matchesTags = selectedTags.length === 0 || 

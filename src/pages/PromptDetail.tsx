@@ -178,7 +178,7 @@ export default function PromptDetail() {
     
     const updates: any = { content: suggestion.content };
     if (suggestion.title) updates.title = suggestion.title;
-    if (suggestion.description) updates.short_description = suggestion.description;
+    if (suggestion.description) updates.description = suggestion.description;
     
     const { error } = await supabase
       .from('prompts')
@@ -306,7 +306,7 @@ export default function PromptDetail() {
             </h1>
             
             <p className="text-lg text-muted-foreground">
-              {prompt.short_description}
+              {prompt.description}
             </p>
 
           {/* Author & Meta Info */}
@@ -518,7 +518,7 @@ export default function PromptDetail() {
             <DownloadMarkdownButton
               title={prompt.title}
               type="prompt"
-              description={prompt.short_description}
+              description={prompt.description}
               tags={prompt.tags}
               content={prompt.content}
             />
@@ -553,7 +553,7 @@ export default function PromptDetail() {
             onOpenChange={setShowSuggestModal}
             itemType="prompt"
             currentTitle={prompt.title}
-            currentDescription={prompt.short_description}
+            currentDescription={prompt.description}
             currentContent={prompt.content}
             onSubmit={createSuggestion}
           />
@@ -607,7 +607,7 @@ export default function PromptDetail() {
                 itemType="prompt"
                 itemId={prompt.id}
                 originalTitle={prompt.title}
-                originalDescription={prompt.short_description}
+                originalDescription={prompt.description}
                 originalContent={prompt.content}
                 isOwner={!!isAuthor}
                 onReviewSuggestion={reviewSuggestion}

@@ -375,9 +375,9 @@ export type Database = {
           change_notes: string | null
           content: string
           created_at: string
+          description: string | null
           id: string
           prompt_id: string
-          short_description: string | null
           tags: string[] | null
           title: string
           version_number: number
@@ -386,9 +386,9 @@ export type Database = {
           change_notes?: string | null
           content: string
           created_at?: string
+          description?: string | null
           id?: string
           prompt_id: string
-          short_description?: string | null
           tags?: string[] | null
           title: string
           version_number?: number
@@ -397,9 +397,9 @@ export type Database = {
           change_notes?: string | null
           content?: string
           created_at?: string
+          description?: string | null
           id?: string
           prompt_id?: string
-          short_description?: string | null
           tags?: string[] | null
           title?: string
           version_number?: number
@@ -421,6 +421,7 @@ export type Database = {
           content: string
           copies_count: number | null
           created_at: string | null
+          description: string
           embedding: string | null
           example_output: string | null
           id: string
@@ -428,7 +429,6 @@ export type Database = {
           published_at: string | null
           rating_avg: number | null
           rating_count: number | null
-          short_description: string
           summary: string | null
           tags: string[] | null
           team_id: string | null
@@ -441,6 +441,7 @@ export type Database = {
           content: string
           copies_count?: number | null
           created_at?: string | null
+          description: string
           embedding?: string | null
           example_output?: string | null
           id?: string
@@ -448,7 +449,6 @@ export type Database = {
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
-          short_description: string
           summary?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -461,6 +461,7 @@ export type Database = {
           content?: string
           copies_count?: number | null
           created_at?: string | null
+          description?: string
           embedding?: string | null
           example_output?: string | null
           id?: string
@@ -468,7 +469,6 @@ export type Database = {
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
-          short_description?: string
           summary?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -794,10 +794,10 @@ export type Database = {
           author_id: string
           category: string
           copies_count: number
+          description: string
           id: string
           rating_avg: number
           rating_count: number
-          short_description: string
           similarity: number
           tags: string[]
           team_id: string
@@ -853,11 +853,11 @@ export type Database = {
           content: string
           copies_count: number
           created_at: string
+          description: string
           id: string
           is_public: boolean
           rating_avg: number
           rating_count: number
-          short_description: string
           similarity: number
           tags: string[]
           title: string

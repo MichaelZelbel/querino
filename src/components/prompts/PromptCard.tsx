@@ -84,7 +84,7 @@ export function PromptCard({
                 )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
-                {prompt.summary || prompt.short_description}
+                {prompt.summary || prompt.description}
               </p>
             </div>
           </div>

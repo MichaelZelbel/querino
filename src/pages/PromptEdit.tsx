@@ -29,7 +29,7 @@ export default function PromptEdit() {
 
   const [formData, setFormData] = useState<PromptFormData>({
     title: "",
-    short_description: "",
+    description: "",
     content: "",
     category: "writing",
     tags: [],
@@ -44,7 +44,7 @@ export default function PromptEdit() {
       .from("prompts")
       .update({
         title: data.title,
-        short_description: data.short_description,
+        description: data.description,
         content: data.content,
         category: data.category,
         tags: data.tags.length > 0 ? data.tags : null,
@@ -95,7 +95,7 @@ export default function PromptEdit() {
           setPrompt(data as Prompt);
           const initialData: PromptFormData = {
             title: data.title,
-            short_description: data.short_description,
+            description: data.description,
             content: data.content,
             category: data.category,
             tags: data.tags || [],
@@ -127,7 +127,7 @@ export default function PromptEdit() {
         .from("prompts")
         .update({
           title: data.title,
-          short_description: data.short_description,
+          description: data.description,
           content: data.content,
           category: data.category,
           tags: data.tags.length > 0 ? data.tags : null,
@@ -182,7 +182,7 @@ export default function PromptEdit() {
         version_number: nextVersion,
         title: formData.title,
         content: formData.content,
-        short_description: formData.short_description,
+        description: formData.description,
         tags: formData.tags,
         change_notes: `Version ${nextVersion} created from diff viewer`,
       });
@@ -202,7 +202,7 @@ export default function PromptEdit() {
   const handleImportMarkdown = (data: ParsedMarkdown) => {
     setFormData({
       title: data.frontmatter.title,
-      short_description: data.frontmatter.description || "",
+      description: data.frontmatter.description || "",
       content: data.content,
       category: formData.category, // Keep existing category
       tags: data.frontmatter.tags || [],
@@ -318,7 +318,7 @@ export default function PromptEdit() {
                 <DownloadMarkdownButton
                   title={formData.title || "Untitled Prompt"}
                   type="prompt"
-                  description={formData.short_description}
+                  description={formData.description}
                   tags={formData.tags}
                   content={formData.content}
                   size="sm"

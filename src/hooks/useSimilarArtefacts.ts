@@ -6,7 +6,7 @@ export type SimilarArtefactType = "prompt" | "skill" | "workflow";
 export interface SimilarPrompt {
   id: string;
   title: string;
-  short_description: string;
+  description: string;
   category: string;
   rating_avg: number;
   rating_count: number;

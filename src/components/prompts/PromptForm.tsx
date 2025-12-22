@@ -17,7 +17,7 @@ import { categoryOptions } from "@/types/prompt";
 
 export interface PromptFormData {
   title: string;
-  short_description: string;
+  description: string;
   content: string;
   category: string;
   tags: string[];
@@ -42,8 +42,8 @@ export function PromptForm({
   isSubmitting,
 }: PromptFormProps) {
   const [title, setTitle] = useState(initialData?.title || "");
-  const [shortDescription, setShortDescription] = useState(
-    initialData?.short_description || ""
+  const [description, setDescription] = useState(
+    initialData?.description || ""
   );
   const [content, setContent] = useState(initialData?.content || "");
   const [category, setCategory] = useState(initialData?.category || "");
@@ -61,13 +61,13 @@ export function PromptForm({
   useEffect(() => {
     onChange?.({
       title,
-      short_description: shortDescription,
+      description,
       content,
       category,
       tags,
       is_public: isPublic,
     });
-  }, [title, shortDescription, content, category, tags, isPublic, onChange]);
+  }, [title, description, content, category, tags, isPublic, onChange]);
 
   const normalizeTag = (tag: string): string => {
     return tag
@@ -116,7 +116,7 @@ export function PromptForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
-          description: shortDescription.trim(),
+          description: description.trim(),
           content: content.trim(),
         }),
       });
@@ -158,10 +158,10 @@ export function PromptForm({
       newErrors.title = "Title must be less than 100 characters";
     }
 
-    if (!shortDescription.trim()) {
-      newErrors.shortDescription = "Short description is required";
-    } else if (shortDescription.length > 200) {
-      newErrors.shortDescription = "Description must be less than 200 characters";
+    if (!description.trim()) {
+      newErrors.description = "Description is required";
+    } else if (description.length > 2000) {
+      newErrors.description = "Description must be less than 2000 characters";
     }
 
     if (!content.trim()) {
@@ -183,7 +183,7 @@ export function PromptForm({
 
     await onSubmit({
       title: title.trim(),
-      short_description: shortDescription.trim(),
+      description: description.trim(),
       content: content.trim(),
       category,
       tags,
@@ -208,22 +208,22 @@ export function PromptForm({
         )}
       </div>
 
-      {/* Short Description */}
+      {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="shortDescription">Short Description *</Label>
+        <Label htmlFor="description">Description *</Label>
         <Textarea
-          id="shortDescription"
-          value={shortDescription}
-          onChange={(e) => setShortDescription(e.target.value)}
-          placeholder="Briefly describe what this prompt does"
-          rows={2}
-          className={errors.shortDescription ? "border-destructive" : ""}
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Describe what this prompt does and how to use it"
+          rows={4}
+          className={errors.description ? "border-destructive" : ""}
         />
-        {errors.shortDescription && (
-          <p className="text-sm text-destructive">{errors.shortDescription}</p>
+        {errors.description && (
+          <p className="text-sm text-destructive">{errors.description}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          {shortDescription.length}/200 characters
+          {description.length}/2000 characters
         </p>
       </div>
 

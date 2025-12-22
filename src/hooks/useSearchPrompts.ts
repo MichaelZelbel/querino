@@ -39,7 +39,7 @@ export function useSearchPrompts({ searchQuery, isPublic = true, userId }: UseSe
         const searchTerm = searchQuery.trim();
         // Use textSearch for full-text search
         query = query.textSearch(
-          "title,short_description,content",
+          "title,description,content",
           searchTerm,
           { type: "websearch", config: "english" }
         );

@@ -130,7 +130,7 @@ export function SimilarPromptsSection({ items, loading }: SimilarPromptsSectionP
                   {item.title}
                 </h3>
                 <p className="line-clamp-2 text-sm text-muted-foreground">
-                  {item.short_description}
+                  {item.description}
                 </p>
               </CardContent>
             </Card>
