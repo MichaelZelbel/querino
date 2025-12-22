@@ -44,8 +44,8 @@ export function useCommandPaletteSearch(query: string) {
         // Search prompts
         let promptQuery = supabase
           .from("prompts")
-          .select("id, title, short_description, is_public, team_id")
-          .or(`title.ilike.${searchTerm},short_description.ilike.${searchTerm},content.ilike.${searchTerm}`)
+          .select("id, title, description, is_public, team_id")
+          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},content.ilike.${searchTerm}`)
           .limit(10);
 
         if (currentWorkspace === "personal") {
@@ -60,7 +60,7 @@ export function useCommandPaletteSearch(query: string) {
             id: p.id,
             title: p.title,
             type: "prompt",
-            description: p.short_description,
+            description: p.description,
             isPublic: p.is_public,
             teamId: p.team_id,
             teamName: teams.find(t => t.id === p.team_id)?.name,
@@ -143,9 +143,9 @@ export function useCommandPaletteSearch(query: string) {
       try {
         const { data } = await supabase
           .from("prompts")
-          .select("id, title, short_description")
+          .select("id, title, description")
           .eq("is_public", true)
-          .or(`title.ilike.${searchTerm},short_description.ilike.${searchTerm}`)
+          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
           .order("rating_avg", { ascending: false })
           .limit(8);
 
@@ -154,7 +154,7 @@ export function useCommandPaletteSearch(query: string) {
             id: p.id,
             title: p.title,
             type: "prompt" as ArtefactType,
-            description: p.short_description,
+            description: p.description,
             isPublic: true,
           }))
         );

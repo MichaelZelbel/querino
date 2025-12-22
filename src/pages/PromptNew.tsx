@@ -26,7 +26,7 @@ export default function PromptNew() {
 
   const handleSubmit = async (data: {
     title: string;
-    short_description: string;
+    description: string;
     content: string;
     category: string;
     tags: string[];
@@ -41,7 +41,7 @@ export default function PromptNew() {
         .from("prompts")
         .insert({
           title: data.title,
-          short_description: data.short_description,
+          description: data.description,
           content: data.content,
           category: data.category,
           tags: data.tags.length > 0 ? data.tags : null,
@@ -112,11 +112,11 @@ export default function PromptNew() {
             <PromptForm
               initialData={draftContent ? { 
                 title: "", 
-                short_description: "", 
+                description: "", 
                 content: draftContent, 
                 category: "", 
                 tags: [], 
-                is_public: false 
+                is_public: false
               } : undefined}
               onSubmit={handleSubmit}
               onCancel={handleCancel}

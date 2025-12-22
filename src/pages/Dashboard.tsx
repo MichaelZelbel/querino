@@ -105,7 +105,7 @@ const Dashboard = () => {
   const filteredPrompts = userPrompts.filter(
     (prompt) =>
       prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prompt.short_description.toLowerCase().includes(searchQuery.toLowerCase())
+      prompt.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

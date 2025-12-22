@@ -11,7 +11,7 @@ export function useClonePrompt() {
     sourcePrompt: {
       id: string;
       title: string;
-      short_description: string;
+      description: string;
       content: string;
       category: string;
       tags?: string[] | null;
@@ -25,7 +25,7 @@ export function useClonePrompt() {
         .from("prompts")
         .insert({
           title: `Copy of ${sourcePrompt.title}`,
-          short_description: sourcePrompt.short_description,
+          description: sourcePrompt.description,
           content: sourcePrompt.content,
           category: sourcePrompt.category,
           tags: sourcePrompt.tags || [],

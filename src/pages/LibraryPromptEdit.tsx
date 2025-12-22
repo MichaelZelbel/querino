@@ -58,7 +58,7 @@ interface PromptVersion {
   prompt_id: string;
   version_number: number;
   title: string;
-  short_description: string | null;
+  description: string | null;
   content: string;
   tags: string[] | null;
   change_notes: string | null;
@@ -132,7 +132,7 @@ export default function LibraryPromptEdit() {
         const typedPrompt = promptData as Prompt;
         setPrompt(typedPrompt);
         setTitle(typedPrompt.title);
-        setShortDescription(typedPrompt.short_description);
+        setShortDescription(typedPrompt.description);
         setContent(typedPrompt.content);
         setCategory(typedPrompt.category);
         setTags(typedPrompt.tags || []);
@@ -226,7 +226,7 @@ export default function LibraryPromptEdit() {
         .from("prompts")
         .update({
           title: title.trim(),
-          short_description: shortDescription.trim(),
+          description: shortDescription.trim(),
           content: content.trim(),
           category,
           tags: tags.length > 0 ? tags : null,
@@ -265,7 +265,7 @@ export default function LibraryPromptEdit() {
           prompt_id: id,
           version_number: nextVersionNumber,
           title: title.trim(),
-          short_description: shortDescription.trim(),
+          description: shortDescription.trim(),
           content: content.trim(),
           tags: tags.length > 0 ? tags : null,
           change_notes: changeNotes.trim() || null,
@@ -282,7 +282,7 @@ export default function LibraryPromptEdit() {
         .from("prompts")
         .update({
           title: title.trim(),
-          short_description: shortDescription.trim(),
+          description: shortDescription.trim(),
           content: content.trim(),
           category,
           tags: tags.length > 0 ? tags : null,

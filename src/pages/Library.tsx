@@ -60,7 +60,7 @@ export default function Library() {
     return myPrompts.filter(
       (prompt) =>
         prompt.title.toLowerCase().includes(search) ||
-        prompt.short_description.toLowerCase().includes(search) ||
+        prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
         (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
@@ -72,7 +72,7 @@ export default function Library() {
     return savedPrompts.filter(
       (prompt) =>
         prompt.title.toLowerCase().includes(search) ||
-        prompt.short_description.toLowerCase().includes(search) ||
+        prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
         (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
@@ -160,7 +160,7 @@ export default function Library() {
         prompts: myPrompts.map((p) => ({
           id: p.id,
           title: p.title,
-          description: p.short_description,
+          description: p.description,
           content: p.content,
           tags: p.tags,
           createdAt: p.created_at,

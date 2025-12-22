@@ -40,7 +40,7 @@ interface PromptVersion {
   prompt_id: string;
   version_number: number;
   title: string;
-  short_description: string | null;
+  description: string | null;
   content: string;
   tags: string[] | null;
   change_notes: string | null;
@@ -149,7 +149,7 @@ export default function VersionHistory() {
           prompt_id: id,
           version_number: nextVersionNumber,
           title: restoringVersion.title,
-          short_description: restoringVersion.short_description,
+          description: restoringVersion.description,
           content: restoringVersion.content,
           tags: restoringVersion.tags,
           change_notes: `Restored from version v${restoringVersion.version_number}`,
@@ -166,7 +166,7 @@ export default function VersionHistory() {
         .from("prompts")
         .update({
           title: restoringVersion.title,
-          short_description: restoringVersion.short_description || "",
+          description: restoringVersion.description || "",
           content: restoringVersion.content,
           tags: restoringVersion.tags,
         })
@@ -394,10 +394,10 @@ export default function VersionHistory() {
               </div>
             )}
 
-            {viewingVersion?.short_description && (
+            {viewingVersion?.description && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-foreground">Description</h4>
-                <p className="text-sm text-muted-foreground">{viewingVersion.short_description}</p>
+                <p className="text-sm text-muted-foreground">{viewingVersion.description}</p>
               </div>
             )}
 

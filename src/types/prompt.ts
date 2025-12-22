@@ -2,7 +2,7 @@
 export interface Prompt {
   id: string;
   title: string;
-  short_description: string;
+  description: string;
   content: string;
   category: string;
   tags: string[] | null;

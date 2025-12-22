@@ -50,11 +50,11 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       if (itemType === 'prompt') {
         const { data, error } = await supabase
           .from('prompts')
-          .select('title, short_description, content')
+          .select('title, description, content')
           .eq('id', itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.short_description, content: data.content };
+        return { title: data.title, description: data.description, content: data.content };
       } else if (itemType === 'skill') {
         const { data, error } = await supabase
           .from('skills')
