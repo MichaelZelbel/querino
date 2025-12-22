@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Shield, Crown, Gift, Save, Users } from "lucide-react";
+import { Search, Shield, Save, Users } from "lucide-react";
 import { format } from "date-fns";
 
 interface UserProfile {
@@ -127,57 +127,6 @@ export default function Admin() {
     }
   };
 
-  const handleMakeMePremium = async () => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          plan_type: "premium",
-          plan_source: "gifted",
-        })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      // Update local state
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === user.id
-            ? { ...u, plan_type: "premium", plan_source: "gifted" }
-            : u
-        )
-      );
-
-      toast.success("Your plan has been upgraded to Premium (Gifted)");
-      // Reload to refresh profile in auth context
-      window.location.reload();
-    } catch (error) {
-      console.error("Error upgrading plan:", error);
-      toast.error("Failed to upgrade plan");
-    }
-  };
-
-  const handleMakeMeAdmin = async () => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role: "admin" })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      toast.success("Your role has been updated to Admin");
-      window.location.reload();
-    } catch (error) {
-      console.error("Error updating role:", error);
-      toast.error("Failed to update role");
-    }
-  };
-
   const filteredUsers = users.filter((u) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -231,24 +180,6 @@ export default function Admin() {
             <p className="text-muted-foreground">Manage users, plans, and roles</p>
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-            <CardDescription>Shortcuts for common admin tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            <Button onClick={handleMakeMePremium} variant="outline" className="gap-2">
-              <Gift className="h-4 w-4" />
-              Make me Premium (Gifted)
-            </Button>
-            <Button onClick={handleMakeMeAdmin} variant="outline" className="gap-2">
-              <Crown className="h-4 w-4" />
-              Make me Admin
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Users Management */}
         <Card>
