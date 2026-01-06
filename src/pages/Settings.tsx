@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useTeam, useUpdateTeam } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -11,24 +13,34 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info } from "lucide-react";
 import { toast } from "sonner";
 import heroSettings from "@/assets/hero-settings.png";
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuthContext();
+  const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
+  const { data: teamData } = useTeam(isTeamWorkspace ? currentWorkspace : undefined);
+  const updateTeam = useUpdateTeam();
   
   // Premium check
   const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
   
-  // GitHub Sync state
-  const [githubRepo, setGithubRepo] = useState("");
-  const [githubBranch, setGithubBranch] = useState("main");
-  const [githubFolder, setGithubFolder] = useState("");
-  const [githubSyncEnabled, setGithubSyncEnabled] = useState(false);
-  const [savingGithub, setSavingGithub] = useState(false);
-  const [loadingGithub, setLoadingGithub] = useState(true);
+  // Personal GitHub Sync state
+  const [personalGithubRepo, setPersonalGithubRepo] = useState("");
+  const [personalGithubBranch, setPersonalGithubBranch] = useState("main");
+  const [personalGithubFolder, setPersonalGithubFolder] = useState("");
+  const [personalGithubSyncEnabled, setPersonalGithubSyncEnabled] = useState(false);
+  const [savingPersonalGithub, setSavingPersonalGithub] = useState(false);
+  const [loadingPersonalGithub, setLoadingPersonalGithub] = useState(true);
+
+  // Team GitHub Sync state
+  const [teamGithubRepo, setTeamGithubRepo] = useState("");
+  const [teamGithubBranch, setTeamGithubBranch] = useState("main");
+  const [teamGithubFolder, setTeamGithubFolder] = useState("");
+  const [savingTeamGithub, setSavingTeamGithub] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -37,7 +49,7 @@ export default function Settings() {
     }
   }, [user, authLoading, navigate]);
 
-  // Load GitHub sync settings
+  // Load personal GitHub sync settings
   useEffect(() => {
     async function loadGithubSettings() {
       if (!user) return;
@@ -51,12 +63,12 @@ export default function Settings() {
       if (error) {
         console.error("Error loading GitHub settings:", error);
       } else if (data) {
-        setGithubRepo(data.github_repo || "");
-        setGithubBranch(data.github_branch || "main");
-        setGithubFolder(data.github_folder || "");
-        setGithubSyncEnabled(data.github_sync_enabled || false);
+        setPersonalGithubRepo(data.github_repo || "");
+        setPersonalGithubBranch(data.github_branch || "main");
+        setPersonalGithubFolder(data.github_folder || "");
+        setPersonalGithubSyncEnabled(data.github_sync_enabled || false);
       }
-      setLoadingGithub(false);
+      setLoadingPersonalGithub(false);
     }
     
     if (user) {
@@ -64,37 +76,72 @@ export default function Settings() {
     }
   }, [user]);
 
-  const handleSaveGithubSettings = async () => {
+  // Load team GitHub sync settings when team changes
+  useEffect(() => {
+    if (teamData) {
+      setTeamGithubRepo(teamData.github_repo || "");
+      setTeamGithubBranch(teamData.github_branch || "main");
+      setTeamGithubFolder(teamData.github_folder || "");
+    }
+  }, [teamData]);
+
+  const handleSavePersonalGithubSettings = async () => {
     if (!user) return;
     
-    // Validate repo format
-    if (githubRepo && !githubRepo.includes("/")) {
+    if (personalGithubRepo && !personalGithubRepo.includes("/")) {
       toast.error("Repository must be in format owner/repo");
       return;
     }
     
-    setSavingGithub(true);
-    
-    // Clean folder path - strip leading/trailing slashes
-    const cleanFolder = githubFolder.replace(/^\/+|\/+$/g, "");
+    setSavingPersonalGithub(true);
+    const cleanFolder = personalGithubFolder.replace(/^\/+|\/+$/g, "");
     
     const { error } = await supabase
       .from("profiles")
       .update({
-        github_repo: githubRepo || null,
-        github_branch: githubBranch || "main",
+        github_repo: personalGithubRepo || null,
+        github_branch: personalGithubBranch || "main",
         github_folder: cleanFolder || null,
-        github_sync_enabled: githubSyncEnabled,
+        github_sync_enabled: personalGithubSyncEnabled,
       })
       .eq("id", user.id);
     
-    setSavingGithub(false);
+    setSavingPersonalGithub(false);
     
     if (error) {
       console.error("Error saving GitHub settings:", error);
       toast.error("Failed to save GitHub settings");
     } else {
-      toast.success("GitHub sync settings saved");
+      toast.success("Personal GitHub sync settings saved");
+    }
+  };
+
+  const handleSaveTeamGithubSettings = async () => {
+    if (!currentTeam) return;
+    
+    if (teamGithubRepo && !teamGithubRepo.includes("/")) {
+      toast.error("Repository must be in format owner/repo");
+      return;
+    }
+    
+    setSavingTeamGithub(true);
+    const cleanFolder = teamGithubFolder.replace(/^\/+|\/+$/g, "");
+    
+    try {
+      await updateTeam.mutateAsync({
+        teamId: currentTeam.id,
+        updates: {
+          github_repo: teamGithubRepo || null,
+          github_branch: teamGithubBranch || "main",
+          github_folder: cleanFolder || null,
+        },
+      });
+      toast.success("Team GitHub sync settings saved");
+    } catch (error) {
+      console.error("Error saving team GitHub settings:", error);
+      toast.error("Failed to save team GitHub settings");
+    } finally {
+      setSavingTeamGithub(false);
     }
   };
 
@@ -110,12 +157,15 @@ export default function Settings() {
     return null;
   }
 
+  // Determine which GitHub settings to show based on workspace
+  const showTeamGithub = isTeamWorkspace && currentTeam;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
       <main className="container mx-auto px-4 py-12">
-        <div className="mb-12 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="font-display text-display-lg text-foreground mb-2">Settings</h1>
             <p className="text-muted-foreground text-lg">Manage your account preferences and settings.</p>
@@ -126,6 +176,32 @@ export default function Settings() {
             className="hidden md:block w-48 h-24 object-cover rounded-lg opacity-80"
           />
         </div>
+
+        {/* Workspace Indicator */}
+        <Alert className={`mb-8 ${isTeamWorkspace ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+          <div className="flex items-center gap-3">
+            {isTeamWorkspace ? (
+              <Building2 className="h-5 w-5 text-primary" />
+            ) : (
+              <User className="h-5 w-5 text-muted-foreground" />
+            )}
+            <AlertDescription className="flex-1">
+              <span className="font-medium">
+                {isTeamWorkspace ? `Team: ${currentTeam?.name}` : 'Personal Workspace'}
+              </span>
+              <span className="text-muted-foreground ml-2">
+                — {isTeamWorkspace 
+                  ? 'GitHub sync settings below apply to this team\'s artefacts.' 
+                  : 'GitHub sync settings below apply to your personal artefacts.'}
+              </span>
+            </AlertDescription>
+            {isTeamWorkspace && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
+                {currentTeam?.role}
+              </Badge>
+            )}
+          </div>
+        </Alert>
 
         <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
           {/* Sidebar Navigation */}
@@ -247,23 +323,32 @@ export default function Settings() {
               </CardContent>
             </Card>
 
-            {/* GitHub Sync Section */}
-            <Card>
+            {/* GitHub Sync Section - Workspace Aware */}
+            <Card className={showTeamGithub ? 'border-primary/30' : ''}>
               <CardHeader>
                 <CardTitle className="font-display flex items-center gap-2">
                   <Github className="h-5 w-5" />
                   GitHub Sync
-                  {!isPremium && (
+                  {showTeamGithub ? (
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5 bg-primary/10 text-primary border-0">
+                      <Building2 className="h-2.5 w-2.5" />
+                      Team
+                    </Badge>
+                  ) : !isPremium ? (
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5 bg-primary/10 text-primary border-0">
                       <Crown className="h-2.5 w-2.5" />
                       Premium
                     </Badge>
-                  )}
+                  ) : null}
                 </CardTitle>
-                <CardDescription>Sync your prompts to a GitHub repository.</CardDescription>
+                <CardDescription>
+                  {showTeamGithub 
+                    ? `Sync ${currentTeam?.name}'s artefacts to a shared GitHub repository.`
+                    : 'Sync your personal prompts to a GitHub repository.'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {!isPremium ? (
+                {!isPremium && !showTeamGithub ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                       <Lock className="h-8 w-8 text-primary" />
@@ -279,38 +364,89 @@ export default function Settings() {
                       </Button>
                     </Link>
                   </div>
-                ) : loadingGithub ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
+                ) : showTeamGithub ? (
+                  // Team GitHub Settings
                   <>
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+                      <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <p className="text-sm text-muted-foreground">
+                        These settings apply to all artefacts in the <strong>{currentTeam?.name}</strong> workspace. 
+                        Team members with editor+ access can sync to this repository.
+                      </p>
+                    </div>
                     <div className="space-y-2">
-                      <Label htmlFor="githubRepo">Repository (owner/name)</Label>
+                      <Label htmlFor="teamGithubRepo">Repository (owner/name)</Label>
                       <Input
-                        id="githubRepo"
-                        placeholder="yourname/your-repo"
-                        value={githubRepo}
-                        onChange={(e) => setGithubRepo(e.target.value)}
+                        id="teamGithubRepo"
+                        placeholder="organization/team-repo"
+                        value={teamGithubRepo}
+                        onChange={(e) => setTeamGithubRepo(e.target.value)}
                       />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="githubBranch">Branch</Label>
+                        <Label htmlFor="teamGithubBranch">Branch</Label>
                         <Input
-                          id="githubBranch"
+                          id="teamGithubBranch"
                           placeholder="main"
-                          value={githubBranch}
-                          onChange={(e) => setGithubBranch(e.target.value)}
+                          value={teamGithubBranch}
+                          onChange={(e) => setTeamGithubBranch(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="githubFolder">Folder path</Label>
+                        <Label htmlFor="teamGithubFolder">Folder path</Label>
                         <Input
-                          id="githubFolder"
+                          id="teamGithubFolder"
+                          placeholder="prompts"
+                          value={teamGithubFolder}
+                          onChange={(e) => setTeamGithubFolder(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveTeamGithubSettings} disabled={savingTeamGithub}>
+                      {savingTeamGithub ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Team GitHub Settings"
+                      )}
+                    </Button>
+                  </>
+                ) : loadingPersonalGithub ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  // Personal GitHub Settings
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="personalGithubRepo">Repository (owner/name)</Label>
+                      <Input
+                        id="personalGithubRepo"
+                        placeholder="yourname/your-repo"
+                        value={personalGithubRepo}
+                        onChange={(e) => setPersonalGithubRepo(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="personalGithubBranch">Branch</Label>
+                        <Input
+                          id="personalGithubBranch"
+                          placeholder="main"
+                          value={personalGithubBranch}
+                          onChange={(e) => setPersonalGithubBranch(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="personalGithubFolder">Folder path</Label>
+                        <Input
+                          id="personalGithubFolder"
                           placeholder="querino-prompts"
-                          value={githubFolder}
-                          onChange={(e) => setGithubFolder(e.target.value)}
+                          value={personalGithubFolder}
+                          onChange={(e) => setPersonalGithubFolder(e.target.value)}
                         />
                       </div>
                     </div>
@@ -323,12 +459,12 @@ export default function Settings() {
                         </p>
                       </div>
                       <Switch
-                        checked={githubSyncEnabled}
-                        onCheckedChange={setGithubSyncEnabled}
+                        checked={personalGithubSyncEnabled}
+                        onCheckedChange={setPersonalGithubSyncEnabled}
                       />
                     </div>
-                    <Button onClick={handleSaveGithubSettings} disabled={savingGithub}>
-                      {savingGithub ? (
+                    <Button onClick={handleSavePersonalGithubSettings} disabled={savingPersonalGithub}>
+                      {savingPersonalGithub ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Saving...

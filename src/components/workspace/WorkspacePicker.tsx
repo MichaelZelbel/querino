@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, ChevronDown, Plus, User, Settings } from "lucide-react";
+import { Building2, ChevronDown, Plus, User, Settings, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +18,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useCreateTeam } from "@/hooks/useTeams";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function WorkspacePicker() {
   const navigate = useNavigate();
-  const { currentWorkspace, currentTeam, teams, switchWorkspace, canManageTeam } = useWorkspace();
+  const { currentWorkspace, currentTeam, teams, switchWorkspace, canManageTeam, isTeamWorkspace } = useWorkspace();
   const createTeam = useCreateTeam();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
@@ -51,40 +53,67 @@ export function WorkspacePicker() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="gap-2 px-3">
-            {currentWorkspace === "personal" ? (
-              <User className="h-4 w-4" />
-            ) : (
-              <Building2 className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            className={cn(
+              "gap-2 px-3 h-9 border-dashed",
+              isTeamWorkspace && "border-primary/50 bg-primary/5"
             )}
-            <span className="max-w-[120px] truncate">{displayName}</span>
-            <ChevronDown className="h-4 w-4 opacity-50" />
+          >
+            {currentWorkspace === "personal" ? (
+              <User className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Building2 className="h-4 w-4 text-primary" />
+            )}
+            <span className="max-w-[140px] truncate font-medium">{displayName}</span>
+            {isTeamWorkspace && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-0">
+                Team
+              </Badge>
+            )}
+            <ChevronDown className="h-3.5 w-3.5 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuContent align="start" className="w-64">
+          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+            Switch Workspace
+          </div>
           <DropdownMenuItem
             onClick={() => switchWorkspace("personal")}
-            className="gap-2"
+            className="gap-2 py-2.5"
           >
             <User className="h-4 w-4" />
-            Personal Workspace
+            <div className="flex-1">
+              <p className="font-medium">Personal Workspace</p>
+              <p className="text-xs text-muted-foreground">Your private prompts & settings</p>
+            </div>
             {currentWorkspace === "personal" && (
-              <span className="ml-auto text-xs text-muted-foreground">✓</span>
+              <Check className="h-4 w-4 text-primary" />
             )}
           </DropdownMenuItem>
 
-          {teams.length > 0 && <DropdownMenuSeparator />}
+          {teams.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                Teams
+              </div>
+            </>
+          )}
 
           {teams.map((team) => (
             <DropdownMenuItem
               key={team.id}
               onClick={() => switchWorkspace(team.id)}
-              className="gap-2"
+              className="gap-2 py-2.5"
             >
               <Building2 className="h-4 w-4" />
-              <span className="flex-1 truncate">{team.name}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{team.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{team.role}</p>
+              </div>
               {currentWorkspace === team.id && (
-                <span className="text-xs text-muted-foreground">✓</span>
+                <Check className="h-4 w-4 text-primary" />
               )}
             </DropdownMenuItem>
           ))}
