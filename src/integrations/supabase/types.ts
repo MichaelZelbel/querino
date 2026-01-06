@@ -837,8 +837,20 @@ export type Database = {
         Args: { p_item_id: string; p_item_type: string }
         Returns: boolean
       }
+      is_team_admin_or_owner: {
+        Args: { p_team_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { p_team_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_team_member_for_item: {
         Args: { p_item_id: string; p_item_type: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_team_owner: {
+        Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
       }
       search_prompts_semantic: {
