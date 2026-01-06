@@ -12,8 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Loader2, Sparkles } from "lucide-react";
+import { X, Loader2, Sparkles, Lock } from "lucide-react";
 import { categoryOptions } from "@/types/prompt";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface PromptFormData {
   title: string;
@@ -41,6 +48,7 @@ export function PromptForm({
   submitLabel,
   isSubmitting,
 }: PromptFormProps) {
+  const { isPremium } = usePremiumCheck();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
     initialData?.description || ""
@@ -56,6 +64,10 @@ export function PromptForm({
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [tagSuggestionError, setTagSuggestionError] = useState<string | null>(null);
+  
+  // AI metadata suggestion state
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
 
   // Notify parent of changes
   useEffect(() => {
@@ -149,6 +161,83 @@ export function PromptForm({
     }
   };
 
+  const handleSuggestMetadata = async () => {
+    const insightsUrl = import.meta.env.VITE_AI_INSIGHTS_URL;
+    
+    if (!insightsUrl) {
+      setMetadataError("AI insights service is not configured.");
+      return;
+    }
+
+    if (!content.trim()) {
+      setMetadataError("Please add some prompt content first.");
+      return;
+    }
+
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+
+    try {
+      const response = await fetch(insightsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemType: "prompt",
+          title: "",
+          description: "",
+          content: content.trim(),
+          metadata: { id: "new" },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate suggestions");
+      }
+
+      const result = await response.json();
+      
+      // Populate form fields with suggestions
+      if (result.summary && !title.trim()) {
+        // Use summary as title (truncate if needed)
+        const suggestedTitle = result.summary.length > 100 
+          ? result.summary.substring(0, 97) + "..." 
+          : result.summary;
+        setTitle(suggestedTitle);
+      }
+      
+      if (result.summary && !description.trim()) {
+        setDescription(result.summary);
+      }
+      
+      // Try to infer category from tags or recommendations
+      if (result.tags && Array.isArray(result.tags) && !category) {
+        const tagLower = result.tags.map((t: string) => t.toLowerCase());
+        const matchedCategory = categoryOptions.find(cat => 
+          tagLower.some((t: string) => t.includes(cat.id.toLowerCase()) || cat.label.toLowerCase().includes(t))
+        );
+        if (matchedCategory) {
+          setCategory(matchedCategory.id);
+        }
+      }
+      
+      // Add suggested tags
+      if (result.tags && Array.isArray(result.tags)) {
+        const newTags = result.tags
+          .map((tag: string) => normalizeTag(tag))
+          .filter((tag: string) => tag && !tags.includes(tag))
+          .slice(0, 10 - tags.length);
+        if (newTags.length > 0) {
+          setTags([...tags, ...newTags]);
+        }
+      }
+    } catch (error) {
+      console.error("Error suggesting metadata:", error);
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
+    }
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
@@ -193,6 +282,64 @@ export function PromptForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Prompt Content - FIRST */}
+      <div className="space-y-2">
+        <Label htmlFor="content">Prompt Content *</Label>
+        <Textarea
+          id="content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Write your prompt here..."
+          rows={12}
+          className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
+        />
+        {errors.content && (
+          <p className="text-sm text-destructive">{errors.content}</p>
+        )}
+      </div>
+
+      {/* AI Metadata Suggestion Button */}
+      <div className="space-y-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSuggestMetadata}
+                  disabled={!isPremium || isGeneratingMetadata || !content.trim()}
+                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  {isGeneratingMetadata ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Generating…
+                    </>
+                  ) : (
+                    <>
+                      {!isPremium && <Lock className="h-3.5 w-3.5" />}
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Suggest title, description, category & tags
+                    </>
+                  )}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!isPremium && (
+              <TooltipContent>
+                <p>AI-assisted metadata is a Premium feature</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+        
+        {metadataError && (
+          <p className="text-sm text-destructive">{metadataError}</p>
+        )}
+      </div>
+
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Title *</Label>
@@ -333,22 +480,6 @@ export function PromptForm({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Prompt Content */}
-      <div className="space-y-2">
-        <Label htmlFor="content">Prompt Content *</Label>
-        <Textarea
-          id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Write your prompt here..."
-          rows={10}
-          className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
-        />
-        {errors.content && (
-          <p className="text-sm text-destructive">{errors.content}</p>
-        )}
       </div>
 
       {/* Visibility Toggle */}
