@@ -20,7 +20,8 @@ import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus, GitPullRequest } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus, GitPullRequest, History } from "lucide-react";
+import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { TestPromptModal } from "@/components/prompts/TestPromptModal";
@@ -51,6 +52,7 @@ export default function PromptDetail() {
   const [showTestModal, setShowTestModal] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(id);
   const { 
     suggestions, 
@@ -447,12 +449,23 @@ export default function PromptDetail() {
             )}
 
             {isAuthor && (
-              <Link to={`/library/${id}/edit`}>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Manage Prompt
+              <>
+                <Link to={`/library/${id}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Manage Prompt
+                  </Button>
+                </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowVersionHistory(true)}
+                  className="gap-2"
+                >
+                  <History className="h-4 w-4" />
+                  Version History
                 </Button>
-              </Link>
+              </>
             )}
 
             {user && !isAuthor && (
@@ -557,6 +570,21 @@ export default function PromptDetail() {
             currentContent={prompt.content}
             onSubmit={createSuggestion}
           />
+
+          {isAuthor && (
+            <VersionHistoryPanel
+              open={showVersionHistory}
+              onOpenChange={setShowVersionHistory}
+              promptId={prompt.id}
+              currentPrompt={{
+                id: prompt.id,
+                title: prompt.title,
+                description: prompt.description,
+                content: prompt.content,
+                tags: prompt.tags,
+              }}
+            />
+          )}
 
           {/* Send to LLM */}
           <div className="mb-12 rounded-xl border border-border bg-card p-6">
