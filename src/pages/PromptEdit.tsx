@@ -6,12 +6,13 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptForm, type PromptFormData } from "@/components/prompts/PromptForm";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ShieldAlert, GitCompare, Download, Upload } from "lucide-react";
+import { Loader2, ArrowLeft, ShieldAlert, GitCompare, Download, Upload, History } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import { VersionHistoryPanel } from "@/components/versions";
 import type { Prompt } from "@/types/prompt";
 import type { ParsedMarkdown } from "@/lib/markdown";
 
@@ -25,6 +26,7 @@ export default function PromptEdit() {
   const [notAuthorized, setNotAuthorized] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
 
   const [formData, setFormData] = useState<PromptFormData>({
@@ -334,6 +336,15 @@ export default function PromptEdit() {
                   <GitCompare className="h-4 w-4" />
                   View Changes
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowVersionHistory(true)}
+                  className="gap-2"
+                >
+                  <History className="h-4 w-4" />
+                  Version History
+                </Button>
               </div>
             </div>
             <p className="mt-2 text-muted-foreground">
@@ -367,6 +378,25 @@ export default function PromptEdit() {
         onCreateVersion={handleCreateVersion}
         isCreatingVersion={isCreatingVersion}
       />
+
+      {prompt && (
+        <VersionHistoryPanel
+          open={showVersionHistory}
+          onOpenChange={setShowVersionHistory}
+          promptId={prompt.id}
+          currentPrompt={{
+            id: prompt.id,
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+            tags: formData.tags,
+          }}
+          onRestoreComplete={() => {
+            // Refresh the prompt data after restore
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }
