@@ -104,12 +104,31 @@ export default function PromptWizard() {
         throw new Error(`Request failed: ${response.status}`);
       }
 
-      const promptText = await response.text();
-      if (!promptText.trim()) {
+      const text = await response.text();
+      if (!text.trim()) {
         throw new Error("Empty response from webhook");
       }
 
-      setGeneratedPrompt(promptText.trim());
+      let promptText = text.trim();
+      
+      // Try to parse as JSON if it looks like JSON
+      if (promptText.startsWith("[") || promptText.startsWith("{")) {
+        try {
+          let parsed = JSON.parse(promptText);
+          // Unwrap array: [{ output: "..." }] -> { output: "..." }
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            parsed = parsed[0];
+          }
+          // Extract output field
+          if (parsed && typeof parsed === "object" && parsed.output) {
+            promptText = parsed.output;
+          }
+        } catch {
+          // Not valid JSON, use as plain text
+        }
+      }
+
+      setGeneratedPrompt(promptText);
       toast.success("Prompt generated!");
     } catch (error) {
       console.error("Wizard error:", error);
