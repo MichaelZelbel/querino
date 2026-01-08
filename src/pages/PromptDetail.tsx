@@ -453,7 +453,7 @@ export default function PromptDetail() {
                 <Link to={`/library/${id}/edit`}>
                   <Button size="lg" variant="outline" className="gap-2">
                     <Pencil className="h-4 w-4" />
-                    Manage Prompt
+                    Edit Prompt
                   </Button>
                 </Link>
                 <Button
