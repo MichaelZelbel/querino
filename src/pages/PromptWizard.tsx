@@ -132,7 +132,11 @@ export default function PromptWizard() {
       toast.success("Prompt generated!");
     } catch (error) {
       console.error("Wizard error:", error);
-      toast.error("Failed to generate prompt");
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error("Network error - check if the webhook URL is accessible");
+      } else {
+        toast.error("Failed to generate prompt");
+      }
     } finally {
       setIsGenerating(false);
     }
