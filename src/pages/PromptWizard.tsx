@@ -101,24 +101,57 @@ export default function PromptWizard() {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Webhook error response:", errorText);
         throw new Error(`Request failed: ${response.status}`);
       }
 
-      const data = await response.json();
-      // Handle array response from n8n webhook - could be nested arrays
+      const text = await response.text();
+      console.log("Raw webhook response:", text);
+      
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Response might be plain text
+        if (text.trim()) {
+          setGeneratedPrompt(text.trim());
+          toast.success("Prompt generated!");
+          return;
+        }
+        throw new Error("Invalid response from webhook");
+      }
+
+      console.log("Parsed data:", JSON.stringify(data, null, 2));
+
+      // Unwrap arrays (n8n often returns [{ output: "..." }])
       let result = data;
-      while (Array.isArray(result)) {
+      while (Array.isArray(result) && result.length > 0) {
         result = result[0];
       }
-      const promptText = result?.output || result?.prompt || (typeof result === "string" ? result : "");
-      if (!promptText) {
-        throw new Error("No prompt returned from webhook");
+
+      console.log("Unwrapped result:", JSON.stringify(result, null, 2));
+
+      // Extract prompt text from various possible formats
+      let promptText = "";
+      if (typeof result === "string") {
+        promptText = result;
+      } else if (result && typeof result === "object") {
+        promptText = result.output || result.prompt || result.text || result.content || "";
       }
+
+      console.log("Extracted promptText:", promptText);
+
+      if (!promptText) {
+        console.error("Could not extract prompt from:", data);
+        throw new Error("No prompt found in webhook response");
+      }
+
       setGeneratedPrompt(promptText);
       toast.success("Prompt generated!");
     } catch (error) {
       console.error("Wizard error:", error);
-      toast.error("Failed to generate prompt");
+      toast.error(error instanceof Error ? error.message : "Failed to generate prompt");
     } finally {
       setIsGenerating(false);
     }
