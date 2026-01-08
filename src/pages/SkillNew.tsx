@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, Save, Send } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SkillNew() {
@@ -23,7 +23,7 @@ export default function SkillNew() {
   const [content, setContent] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [published, setPublished] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -50,7 +50,7 @@ export default function SkillNew() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleSubmit = async (shouldPublish: boolean) => {
+  const handleSubmit = async () => {
     if (!user) return;
 
     if (!title.trim()) {
@@ -74,7 +74,7 @@ export default function SkillNew() {
           content: content.trim(),
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
-          published: shouldPublish,
+          published: isPublic,
         })
         .select("id")
         .single();
@@ -85,7 +85,7 @@ export default function SkillNew() {
         return;
       }
 
-      toast.success(shouldPublish ? "Skill published!" : "Skill saved as draft!");
+      toast.success("Skill created!");
       navigate(`/skills/${newSkill.id}`);
     } catch (err) {
       console.error("Error creating skill:", err);
@@ -184,36 +184,34 @@ export default function SkillNew() {
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="published"
-                  checked={published}
-                  onCheckedChange={setPublished}
-                />
-                <Label htmlFor="published">Publish immediately</Label>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="isPublic"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                  />
+                  <Label htmlFor="isPublic">Make public</Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-9">
+                  Anyone can discover and use this
+                </p>
               </div>
 
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => handleSubmit(false)}
+                  onClick={() => navigate(-1)}
                   disabled={isSubmitting}
-                  className="gap-2"
                 >
-                  <Save className="h-4 w-4" />
-                  Save Draft
+                  Cancel
                 </Button>
                 <Button
-                  onClick={() => handleSubmit(true)}
+                  onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="gap-2"
                 >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  Publish
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create...
                 </Button>
               </div>
             </div>
