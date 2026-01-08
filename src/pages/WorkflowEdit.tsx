@@ -366,27 +366,7 @@ export default function WorkflowEdit() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Email Automation Pipeline"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of what this workflow does..."
-                rows={2}
-              />
-            </div>
-
+            {/* Workflow JSON - FIRST */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="json">Workflow JSON *</Label>
@@ -411,6 +391,27 @@ export default function WorkflowEdit() {
                 className={`font-mono text-sm ${
                   jsonValid === true ? "border-green-500" : jsonValid === false ? "border-destructive" : ""
                 }`}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g., Email Automation Pipeline"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description of what this workflow does..."
+                rows={2}
               />
             </div>
 
