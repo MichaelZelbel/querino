@@ -23,7 +23,8 @@ import {
   type WizardFormData,
   type PromptFramework,
 } from "@/lib/promptGenerator";
-import { supabase } from "@/integrations/supabase/client";
+
+const N8N_WEBHOOK_URL = "https://agentpool.app.n8n.cloud/webhook/prompt-wizard";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -64,7 +65,6 @@ export default function PromptWizard() {
   const selectedFrameworkOption = FRAMEWORK_OPTIONS.find((f) => f.value === framework);
 
   const handleGenerate = async () => {
-    // Validate goal
     if (!goal.trim()) {
       setGoalError("Please describe what you want the LLM to do");
       return;
@@ -88,19 +88,26 @@ export default function PromptWizard() {
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("prompt-wizard", {
-        body: { structured_input: structuredInput },
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ structured_input: structuredInput }),
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
       }
 
-      if (!data?.prompt) {
-        throw new Error("No prompt returned");
+      const data = await response.json();
+      // Webhook returns: [{ "output": "..." }]
+      const firstItem = Array.isArray(data) ? data[0] : data;
+      const promptText = firstItem?.output || firstItem?.prompt || "";
+      
+      if (!promptText) {
+        throw new Error("No prompt in response");
       }
 
-      setGeneratedPrompt(data.prompt);
+      setGeneratedPrompt(promptText);
       toast.success("Prompt generated!");
     } catch (error) {
       console.error("Wizard error:", error);
