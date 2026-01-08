@@ -105,13 +105,16 @@ export default function PromptWizard() {
       }
 
       const data = await response.json();
+      console.log("Webhook response:", JSON.stringify(data, null, 2));
       // Handle array response from n8n webhook
       const result = Array.isArray(data) ? data[0] : data;
-      const prompt = result?.output || result?.prompt || "";
-      if (!prompt) {
+      console.log("Parsed result:", JSON.stringify(result, null, 2));
+      const promptText = result?.output || result?.prompt || "";
+      console.log("Extracted prompt:", promptText);
+      if (!promptText) {
         throw new Error("No prompt returned from webhook");
       }
-      setGeneratedPrompt(prompt);
+      setGeneratedPrompt(promptText);
       toast.success("Prompt generated!");
     } catch (error) {
       console.error("Wizard error:", error);
