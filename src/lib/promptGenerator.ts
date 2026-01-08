@@ -321,6 +321,47 @@ function autoSelectFramework(data: WizardFormData): PromptFramework {
   return "race";
 }
 
+/**
+ * Formats wizard form data into a structured text for the n8n API.
+ * Only includes non-empty fields.
+ */
+export function formatWizardInputForApi(data: WizardFormData): string {
+  const llm = data.targetLlm === "other" ? data.customLlm || "General LLM" : data.targetLlm;
+  const frameworkLabel = getFrameworkDisplayName(data.framework);
+  
+  const lines: string[] = [];
+  
+  lines.push(`GOAL: ${data.goal}`);
+  lines.push(`FRAMEWORK: ${frameworkLabel}${data.framework === "auto" ? " (choose the most suitable)" : ""}`);
+  lines.push(`TARGET LLM: ${llm}`);
+  
+  if (data.audience?.trim()) {
+    lines.push(`AUDIENCE: ${data.audience.trim()}`);
+  }
+  
+  if (data.toneStyle?.trim()) {
+    lines.push(`TONE & STYLE: ${data.toneStyle.trim()}`);
+  }
+  
+  if (data.inputs?.trim()) {
+    lines.push(`EXPECTED INPUT: ${data.inputs.trim()}`);
+  }
+  
+  if (data.outputFormat?.trim()) {
+    lines.push(`DESIRED OUTPUT: ${data.outputFormat.trim()}`);
+  }
+  
+  if (data.constraints?.trim()) {
+    lines.push(`CONSTRAINTS: ${data.constraints.trim()}`);
+  }
+  
+  if (data.additionalNotes?.trim()) {
+    lines.push(`ADDITIONAL NOTES: ${data.additionalNotes.trim()}`);
+  }
+  
+  return lines.join("\n");
+}
+
 export function generatePromptFromWizard(data: WizardFormData): { prompt: string; usedFramework: PromptFramework } {
   let framework = data.framework;
   
