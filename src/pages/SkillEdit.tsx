@@ -362,39 +362,43 @@ export default function SkillEdit() {
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-border pt-6">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="isPublic"
-                    checked={formData.isPublic}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
-                  />
-                  <Label htmlFor="isPublic">Make public</Label>
-                </div>
-                <p className="text-xs text-muted-foreground ml-9">
-                  Anyone can discover and use this
+            {/* Visibility Toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div>
+                <Label htmlFor="visibility" className="text-base">
+                  Make this skill public
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {formData.isPublic
+                    ? "Anyone can discover and use this skill"
+                    : "Only you can see this skill"}
                 </p>
               </div>
+              <Switch
+                id="visibility"
+                checked={formData.isPublic}
+                onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
+              />
+            </div>
 
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(-1)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="gap-2"
-                >
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <Save className="h-4 w-4" />
-                  Save
-                </Button>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Save className="h-4 w-4" />
+                Save Skill
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate(-1)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         </div>
