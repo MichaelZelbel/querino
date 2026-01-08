@@ -183,17 +183,17 @@ export function PromptForm({
       const result = response.data;
 
       
-      // Populate form fields with suggestions
-      if (result.title && !title.trim()) {
+      // Populate form fields with suggestions (always overwrite)
+      if (result.title) {
         setTitle(result.title);
       }
       
-      if (result.description && !description.trim()) {
+      if (result.description) {
         setDescription(result.description);
       }
       
       // Set category if provided and valid
-      if (result.category && !category) {
+      if (result.category) {
         const matchedCategory = categoryOptions.find(cat => 
           cat.id.toLowerCase() === result.category.toLowerCase()
         );
@@ -202,15 +202,13 @@ export function PromptForm({
         }
       }
       
-      // Add suggested tags
+      // Replace tags with suggested tags
       if (result.tags && Array.isArray(result.tags)) {
         const newTags = result.tags
           .map((tag: string) => normalizeTag(tag))
-          .filter((tag: string) => tag && !tags.includes(tag))
-          .slice(0, 10 - tags.length);
-        if (newTags.length > 0) {
-          setTags([...tags, ...newTags]);
-        }
+          .filter((tag: string) => tag)
+          .slice(0, 10);
+        setTags(newTags);
       }
     } catch (error) {
       console.error("Error suggesting metadata:", error);
