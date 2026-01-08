@@ -24,7 +24,7 @@ import {
   type PromptFramework,
 } from "@/lib/promptGenerator";
 
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
+const N8N_WEBHOOK_URL = "https://agentpool.app.n8n.cloud/webhook/prompt-wizard";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
