@@ -17,12 +17,14 @@ import {
 import { Wand2, Copy, ArrowRight, Loader2, Check, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
-  generatePromptFromWizard,
+  formatWizardInputForApi,
   FRAMEWORK_OPTIONS,
   getFrameworkDisplayName,
   type WizardFormData,
   type PromptFramework,
 } from "@/lib/promptGenerator";
+
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -49,9 +51,9 @@ export default function PromptWizard() {
 
   // Generated prompt
   const [generatedPrompt, setGeneratedPrompt] = useState("");
-  const [usedFramework, setUsedFramework] = useState<PromptFramework | null>(null);
   const [copied, setCopied] = useState(false);
   const [goalError, setGoalError] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -62,13 +64,18 @@ export default function PromptWizard() {
 
   const selectedFrameworkOption = FRAMEWORK_OPTIONS.find((f) => f.value === framework);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     // Validate goal
     if (!goal.trim()) {
       setGoalError("Please describe what you want the LLM to do");
       return;
     }
     setGoalError("");
+
+    if (!N8N_WEBHOOK_URL) {
+      toast.error("Webhook URL not configured");
+      return;
+    }
 
     const formData: WizardFormData = {
       goal: goal.trim(),
@@ -83,10 +90,29 @@ export default function PromptWizard() {
       framework,
     };
 
-    const result = generatePromptFromWizard(formData);
-    setGeneratedPrompt(result.prompt);
-    setUsedFramework(result.usedFramework);
-    toast.success("Prompt generated!");
+    const structuredInput = formatWizardInputForApi(formData);
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ structured_input: structuredInput }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setGeneratedPrompt(data.prompt || "");
+      toast.success("Prompt generated!");
+    } catch (error) {
+      console.error("Wizard error:", error);
+      toast.error("Failed to generate prompt");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopy = async () => {
@@ -274,26 +300,22 @@ export default function PromptWizard() {
             </div>
 
             {/* Generate Button */}
-            <Button onClick={handleGenerate} className="w-full gap-2">
-              <Wand2 className="h-4 w-4" />
-              Generate Prompt
+            <Button onClick={handleGenerate} disabled={isGenerating} className="w-full gap-2">
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
+              )}
+              {isGenerating ? "Generating..." : "Generate Prompt"}
             </Button>
           </div>
 
           {/* Generated Prompt Section */}
           {generatedPrompt && (
             <div className="mt-8 rounded-xl border border-border bg-card p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">
-                  Generated Prompt
-                </h2>
-                {usedFramework && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                    Framework: {getFrameworkDisplayName(usedFramework)}
-                    {framework === "auto" && " (auto-selected)"}
-                  </span>
-                )}
-              </div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Generated Prompt
+              </h2>
               <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm font-mono text-foreground overflow-x-auto">
                 {generatedPrompt}
               </pre>
