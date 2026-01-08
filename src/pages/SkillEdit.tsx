@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, Save, Send, ArrowLeft, Trash2, GitCompare } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
@@ -24,7 +24,7 @@ interface SkillFormData {
   description: string;
   content: string;
   tags: string[];
-  published: boolean;
+  isPublic: boolean;
 }
 
 export default function SkillEdit() {
@@ -41,7 +41,7 @@ export default function SkillEdit() {
     description: "",
     content: "",
     tags: [],
-    published: false,
+    isPublic: false,
   });
   const [tagInput, setTagInput] = useState("");
 
@@ -55,7 +55,7 @@ export default function SkillEdit() {
         description: data.description.trim() || null,
         content: data.content.trim(),
         tags: data.tags.length > 0 ? data.tags : null,
-        published: data.published,
+        published: data.isPublic,
       })
       .eq("id", id);
 
@@ -106,7 +106,7 @@ export default function SkillEdit() {
           description: data.description || "",
           content: data.content,
           tags: data.tags || [],
-          published: data.published,
+          isPublic: data.published ?? false,
         };
         setFormData(initialData);
         resetLastSaved(initialData);
@@ -143,7 +143,7 @@ export default function SkillEdit() {
     setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
   };
 
-  const handleSubmit = async (shouldPublish?: boolean) => {
+  const handleSubmit = async () => {
     if (!user || !id) return;
 
     if (!formData.title.trim()) {
@@ -164,7 +164,7 @@ export default function SkillEdit() {
         description: formData.description.trim() || null,
         content: formData.content.trim(),
         tags: formData.tags.length > 0 ? formData.tags : null,
-        published: shouldPublish !== undefined ? shouldPublish : formData.published,
+        published: formData.isPublic,
       };
 
       const { error } = await (supabase.from("skills") as any)
@@ -177,8 +177,8 @@ export default function SkillEdit() {
         return;
       }
 
-      resetLastSaved({ ...formData, published: updateData.published });
-      toast.success("Skill updated!");
+      resetLastSaved({ ...formData, isPublic: formData.isPublic });
+      toast.success("Skill saved!");
       navigate(`/skills/${id}`);
     } catch (err) {
       console.error("Error updating skill:", err);
@@ -221,7 +221,7 @@ export default function SkillEdit() {
       description: data.frontmatter.description || "",
       content: data.content,
       tags: data.frontmatter.tags || [],
-      published: formData.published, // Keep existing published state
+      isPublic: formData.isPublic, // Keep existing visibility state
     });
   };
 
@@ -363,36 +363,36 @@ export default function SkillEdit() {
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="published"
-                  checked={formData.published}
-                  onCheckedChange={(checked) => setFormData({ ...formData, published: checked })}
-                />
-                <Label htmlFor="published">{formData.published ? "Published" : "Draft"}</Label>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="isPublic"
+                    checked={formData.isPublic}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
+                  />
+                  <Label htmlFor="isPublic">Make public</Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-9">
+                  Anyone can discover and use this
+                </p>
               </div>
 
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => handleSubmit(false)}
+                  onClick={() => navigate(-1)}
                   disabled={isSubmitting}
-                  className="gap-2"
                 >
-                  <Save className="h-4 w-4" />
-                  Save as Draft
+                  Cancel
                 </Button>
                 <Button
-                  onClick={() => handleSubmit(true)}
+                  onClick={handleSubmit}
                   disabled={isSubmitting}
                   className="gap-2"
                 >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  {formData.published ? "Update" : "Publish"}
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="h-4 w-4" />
+                  Save
                 </Button>
               </div>
             </div>

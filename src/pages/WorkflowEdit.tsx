@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, Save, Send, ArrowLeft, Trash2, CheckCircle, AlertCircle, GitCompare } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, CheckCircle, AlertCircle, GitCompare, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
@@ -24,7 +24,7 @@ interface WorkflowFormData {
   description: string;
   jsonContent: string;
   tags: string[];
-  published: boolean;
+  isPublic: boolean;
 }
 
 export default function WorkflowEdit() {
@@ -41,7 +41,7 @@ export default function WorkflowEdit() {
     description: "",
     jsonContent: "",
     tags: [],
-    published: false,
+    isPublic: false,
   });
   const [tagInput, setTagInput] = useState("");
   const [jsonValid, setJsonValid] = useState<boolean | null>(null);
@@ -64,7 +64,7 @@ export default function WorkflowEdit() {
         description: data.description.trim() || null,
         json: parsedJson,
         tags: data.tags.length > 0 ? data.tags : null,
-        published: data.published,
+        published: data.isPublic,
       })
       .eq("id", id);
 
@@ -115,7 +115,7 @@ export default function WorkflowEdit() {
           description: data.description || "",
           jsonContent: JSON.stringify(data.json, null, 2),
           tags: data.tags || [],
-          published: data.published,
+          isPublic: data.published ?? false,
         };
         setFormData(initialData);
         resetLastSaved(initialData);
@@ -174,7 +174,7 @@ export default function WorkflowEdit() {
     setJsonValid(null);
   };
 
-  const handleSubmit = async (shouldPublish?: boolean) => {
+  const handleSubmit = async () => {
     if (!user || !id) return;
 
     if (!formData.title.trim()) {
@@ -203,7 +203,7 @@ export default function WorkflowEdit() {
         description: formData.description.trim() || null,
         json: parsedJson,
         tags: formData.tags.length > 0 ? formData.tags : null,
-        published: shouldPublish !== undefined ? shouldPublish : formData.published,
+        published: formData.isPublic,
       };
 
       const { error } = await (supabase.from("workflows") as any)
@@ -216,8 +216,8 @@ export default function WorkflowEdit() {
         return;
       }
 
-      resetLastSaved({ ...formData, published: updateData.published });
-      toast.success("Workflow updated!");
+      resetLastSaved({ ...formData, isPublic: formData.isPublic });
+      toast.success("Workflow saved!");
       navigate(`/workflows/${id}`);
     } catch (err) {
       console.error("Error updating workflow:", err);
@@ -284,7 +284,7 @@ export default function WorkflowEdit() {
       description: data.frontmatter.description || "",
       jsonContent,
       tags: data.frontmatter.tags || [],
-      published: formData.published, // Keep existing published state
+      isPublic: formData.isPublic, // Keep existing visibility state
     });
     setJsonValid(null); // Reset validation state
   };
@@ -442,36 +442,36 @@ export default function WorkflowEdit() {
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="published"
-                  checked={formData.published}
-                  onCheckedChange={(checked) => setFormData({ ...formData, published: checked })}
-                />
-                <Label htmlFor="published">{formData.published ? "Published" : "Draft"}</Label>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="isPublic"
+                    checked={formData.isPublic}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
+                  />
+                  <Label htmlFor="isPublic">Make public</Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-9">
+                  Anyone can discover and use this
+                </p>
               </div>
 
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => handleSubmit(false)}
+                  onClick={() => navigate(-1)}
                   disabled={isSubmitting}
-                  className="gap-2"
                 >
-                  <Save className="h-4 w-4" />
-                  Save as Draft
+                  Cancel
                 </Button>
                 <Button
-                  onClick={() => handleSubmit(true)}
+                  onClick={handleSubmit}
                   disabled={isSubmitting}
                   className="gap-2"
                 >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  {formData.published ? "Update" : "Publish"}
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="h-4 w-4" />
+                  Save
                 </Button>
               </div>
             </div>
