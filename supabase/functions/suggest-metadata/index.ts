@@ -21,6 +21,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("Calling n8n webhook with prompt_content length:", prompt_content.length);
+
     const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -28,10 +30,24 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
+      console.error("Webhook error:", response.status, response.statusText);
       throw new Error(`Webhook returned ${response.status}`);
     }
 
-    const result = await response.json();
+    const rawResult = await response.json();
+    console.log("Raw webhook response:", JSON.stringify(rawResult));
+
+    // Handle the n8n response format: [{ output: { title, description, category, tags } }]
+    let result;
+    if (Array.isArray(rawResult) && rawResult.length > 0 && rawResult[0].output) {
+      result = rawResult[0].output;
+    } else if (rawResult.output) {
+      result = rawResult.output;
+    } else {
+      result = rawResult;
+    }
+
+    console.log("Parsed result:", JSON.stringify(result));
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
