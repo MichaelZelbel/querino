@@ -29,6 +29,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Loader2,
   ArrowLeft,
   ShieldAlert,
@@ -44,6 +50,7 @@ import {
   Eye,
   Sparkles,
   FlaskConical,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
@@ -52,6 +59,7 @@ import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { TestPromptModal } from "@/components/prompts/TestPromptModal";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 
 interface PromptVersion {
   id: string;
@@ -69,6 +77,7 @@ export default function LibraryPromptEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { isPremium } = usePremiumCheck();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +101,10 @@ export default function LibraryPromptEdit() {
   const [isPublic, setIsPublic] = useState(true);
   const [changeNotes, setChangeNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // AI metadata suggestion state
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -187,6 +200,61 @@ export default function LibraryPromptEdit() {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       handleAddTag();
+    }
+  };
+
+  const handleSuggestMetadata = async () => {
+    if (!content.trim()) {
+      setMetadataError("Please add some prompt content first.");
+      return;
+    }
+
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+
+    try {
+      const response = await supabase.functions.invoke("suggest-metadata", {
+        body: { prompt_content: content.trim() },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data;
+
+      // Populate form fields with suggestions (always overwrite)
+      if (result.title) {
+        setTitle(result.title);
+      }
+      
+      if (result.description) {
+        setShortDescription(result.description);
+      }
+      
+      // Set category if provided and valid
+      if (result.category) {
+        const matchedCategory = categoryOptions.find(cat => 
+          cat.id.toLowerCase() === result.category.toLowerCase()
+        );
+        if (matchedCategory) {
+          setCategory(matchedCategory.id);
+        }
+      }
+      
+      // Replace tags with suggested tags
+      if (result.tags && Array.isArray(result.tags)) {
+        const newTags = result.tags
+          .map((tag: string) => normalizeTag(tag))
+          .filter((tag: string) => tag)
+          .slice(0, 10);
+        setTags(newTags);
+      }
+    } catch (error) {
+      console.error("Error suggesting metadata:", error);
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
     }
   };
 
@@ -619,6 +687,76 @@ export default function LibraryPromptEdit() {
                 </h1>
 
                 <div className="space-y-6">
+                  {/* Prompt Content - FIRST */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="content">Prompt Content *</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowRefineModal(true)}
+                        className="gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Refine with AI
+                      </Button>
+                    </div>
+                    <Textarea
+                      id="content"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Write your prompt here..."
+                      rows={12}
+                      className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
+                    />
+                    {errors.content && (
+                      <p className="text-sm text-destructive">{errors.content}</p>
+                    )}
+                  </div>
+
+                  {/* AI Metadata Suggestion Button */}
+                  <div className="space-y-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleSuggestMetadata}
+                              disabled={!isPremium || isGeneratingMetadata || !content.trim()}
+                              className="gap-1.5 text-muted-foreground hover:text-foreground"
+                            >
+                              {isGeneratingMetadata ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  Generating…
+                                </>
+                              ) : (
+                                <>
+                                  {!isPremium && <Lock className="h-3.5 w-3.5" />}
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                  Suggest title, description, category & tags
+                                </>
+                              )}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!isPremium && (
+                          <TooltipContent>
+                            <p>AI-assisted metadata is a Premium feature</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    {metadataError && (
+                      <p className="text-sm text-destructive">{metadataError}</p>
+                    )}
+                  </div>
+
                   {/* Title */}
                   <div className="space-y-2">
                     <Label htmlFor="title">Title *</Label>
@@ -713,34 +851,6 @@ export default function LibraryPromptEdit() {
                     <p className="text-xs text-muted-foreground">
                       {tags.length}/10 tags
                     </p>
-                  </div>
-
-                  {/* Prompt Content */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="content">Prompt Content *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowRefineModal(true)}
-                        className="gap-2"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        Refine with AI
-                      </Button>
-                    </div>
-                    <Textarea
-                      id="content"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Write your prompt here..."
-                      rows={12}
-                      className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
-                    />
-                    {errors.content && (
-                      <p className="text-sm text-destructive">{errors.content}</p>
-                    )}
                   </div>
 
                   {/* Visibility Toggle */}
