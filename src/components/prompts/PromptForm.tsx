@@ -162,13 +162,6 @@ export function PromptForm({
   };
 
   const handleSuggestMetadata = async () => {
-    const insightsUrl = import.meta.env.VITE_AI_INSIGHTS_URL;
-    
-    if (!insightsUrl) {
-      setMetadataError("AI insights service is not configured.");
-      return;
-    }
-
     if (!content.trim()) {
       setMetadataError("Please add some prompt content first.");
       return;
@@ -178,15 +171,11 @@ export function PromptForm({
     setMetadataError(null);
 
     try {
-      const response = await fetch(insightsUrl, {
+      const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-metadata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          itemType: "prompt",
-          title: "",
-          description: "",
-          content: content.trim(),
-          metadata: { id: "new" },
+          prompt_content: content.trim(),
         }),
       });
 
@@ -197,23 +186,18 @@ export function PromptForm({
       const result = await response.json();
       
       // Populate form fields with suggestions
-      if (result.summary && !title.trim()) {
-        // Use summary as title (truncate if needed)
-        const suggestedTitle = result.summary.length > 100 
-          ? result.summary.substring(0, 97) + "..." 
-          : result.summary;
-        setTitle(suggestedTitle);
+      if (result.title && !title.trim()) {
+        setTitle(result.title);
       }
       
-      if (result.summary && !description.trim()) {
-        setDescription(result.summary);
+      if (result.description && !description.trim()) {
+        setDescription(result.description);
       }
       
-      // Try to infer category from tags or recommendations
-      if (result.tags && Array.isArray(result.tags) && !category) {
-        const tagLower = result.tags.map((t: string) => t.toLowerCase());
+      // Set category if provided and valid
+      if (result.category && !category) {
         const matchedCategory = categoryOptions.find(cat => 
-          tagLower.some((t: string) => t.includes(cat.id.toLowerCase()) || cat.label.toLowerCase().includes(t))
+          cat.id.toLowerCase() === result.category.toLowerCase()
         );
         if (matchedCategory) {
           setCategory(matchedCategory.id);
