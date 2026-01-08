@@ -23,8 +23,7 @@ import {
   type WizardFormData,
   type PromptFramework,
 } from "@/lib/promptGenerator";
-
-const N8N_WEBHOOK_URL = "https://agentpool.app.n8n.cloud/webhook/prompt-wizard";
+import { supabase } from "@/integrations/supabase/client";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -72,11 +71,6 @@ export default function PromptWizard() {
     }
     setGoalError("");
 
-    if (!N8N_WEBHOOK_URL) {
-      toast.error("Webhook URL not configured");
-      return;
-    }
-
     const formData: WizardFormData = {
       goal: goal.trim(),
       targetLlm: targetLlm || "General LLM",
@@ -94,49 +88,23 @@ export default function PromptWizard() {
 
     setIsGenerating(true);
     try {
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ structured_input: structuredInput }),
+      const { data, error } = await supabase.functions.invoke("prompt-wizard", {
+        body: { structured_input: structuredInput },
       });
 
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const text = await response.text();
-      if (!text.trim()) {
-        throw new Error("Empty response from webhook");
+      if (!data?.prompt) {
+        throw new Error("No prompt returned");
       }
 
-      let promptText = text.trim();
-      
-      // Try to parse as JSON if it looks like JSON
-      if (promptText.startsWith("[") || promptText.startsWith("{")) {
-        try {
-          let parsed = JSON.parse(promptText);
-          // Unwrap array: [{ output: "..." }] -> { output: "..." }
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            parsed = parsed[0];
-          }
-          // Extract output field
-          if (parsed && typeof parsed === "object" && parsed.output) {
-            promptText = parsed.output;
-          }
-        } catch {
-          // Not valid JSON, use as plain text
-        }
-      }
-
-      setGeneratedPrompt(promptText);
+      setGeneratedPrompt(data.prompt);
       toast.success("Prompt generated!");
     } catch (error) {
       console.error("Wizard error:", error);
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        toast.error("Network error - check if the webhook URL is accessible");
-      } else {
-        toast.error("Failed to generate prompt");
-      }
+      toast.error("Failed to generate prompt");
     } finally {
       setIsGenerating(false);
     }
