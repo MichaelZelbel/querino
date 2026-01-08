@@ -123,6 +123,19 @@ export default function SkillNew() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
+            {/* Skill Content - FIRST */}
+            <div className="space-y-2">
+              <Label htmlFor="content">Skill Content *</Label>
+              <Textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Enter the skill file content, markdown supported..."
+                rows={12}
+                className="font-mono text-sm"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -141,18 +154,6 @@ export default function SkillNew() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief description of what this skill does..."
                 rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="content">Skill Content *</Label>
-              <Textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter the skill file content, markdown supported..."
-                rows={12}
-                className="font-mono text-sm"
               />
             </div>
 
