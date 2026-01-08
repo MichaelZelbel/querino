@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -171,19 +172,16 @@ export function PromptForm({
     setMetadataError(null);
 
     try {
-      const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-metadata", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt_content: content.trim(),
-        }),
+      const response = await supabase.functions.invoke("suggest-metadata", {
+        body: { prompt_content: content.trim() },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to generate suggestions");
+      if (response.error) {
+        throw new Error(response.error.message);
       }
 
-      const result = await response.json();
+      const result = response.data;
+
       
       // Populate form fields with suggestions
       if (result.title && !title.trim()) {
