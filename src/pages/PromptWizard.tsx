@@ -336,7 +336,7 @@ export default function PromptWizard() {
                 </Button>
                 <Button onClick={handleCreatePrompt} className="gap-2">
                   <ArrowRight className="h-4 w-4" />
-                  Create Prompt from this
+                  Next Step
                 </Button>
               </div>
             </div>
