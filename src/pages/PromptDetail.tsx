@@ -169,9 +169,9 @@ export default function PromptDetail() {
     }
 
     if (isPinned) {
-      toast.success("Unpinned from dashboard");
+      toast.success("Unpinned");
     } else {
-      toast.success("Pinned to dashboard!");
+      toast.success("Pinned!");
     }
   };
 
@@ -442,7 +442,7 @@ export default function PromptDetail() {
                 ) : (
                   <>
                     <Pin className="h-4 w-4" />
-                    Pin to Dashboard
+                    Pin
                   </>
                 )}
               </Button>

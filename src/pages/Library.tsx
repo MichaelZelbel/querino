@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ImportMarkdownButton } from "@/components/markdown";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow, Building2 } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow, Building2, Pin } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
+import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 
@@ -53,18 +54,42 @@ export default function Library() {
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
 
-  // Filter prompts based on search query
+  // Fetch pinned prompts
+  const { 
+    pinnedPromptIds, 
+    pinnedPrompts, 
+    loading: pinnedLoading, 
+    isPromptPinned,
+    refetch: refetchPinned 
+  } = usePinnedPrompts();
+
+  // Filter prompts based on search query (excluding pinned ones from main list)
   const filteredMyPrompts = useMemo(() => {
-    if (!debouncedSearch.trim()) return myPrompts;
+    // First exclude pinned prompts from the main list
+    const unpinnedPrompts = myPrompts.filter((p) => !pinnedPromptIds.has(p.id));
+    if (!debouncedSearch.trim()) return unpinnedPrompts;
     const search = debouncedSearch.toLowerCase();
-    return myPrompts.filter(
+    return unpinnedPrompts.filter(
       (prompt) =>
         prompt.title.toLowerCase().includes(search) ||
         prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
         (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
-  }, [myPrompts, debouncedSearch]);
+  }, [myPrompts, debouncedSearch, pinnedPromptIds]);
+
+  // Filter pinned prompts based on search
+  const filteredPinnedPrompts = useMemo(() => {
+    if (!debouncedSearch.trim()) return pinnedPrompts;
+    const search = debouncedSearch.toLowerCase();
+    return pinnedPrompts.filter(
+      (prompt) =>
+        prompt.title.toLowerCase().includes(search) ||
+        prompt.description.toLowerCase().includes(search) ||
+        prompt.content.toLowerCase().includes(search) ||
+        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [pinnedPrompts, debouncedSearch]);
 
   const filteredSavedPrompts = useMemo(() => {
     if (!debouncedSearch.trim()) return savedPrompts;
@@ -299,8 +324,9 @@ export default function Library() {
 
     if (user) {
       fetchLibraryData();
+      refetchPinned();
     }
-  }, [user, currentWorkspace, isTeamWorkspace]);
+  }, [user, currentWorkspace, isTeamWorkspace, refetchPinned]);
 
   if (authLoading) {
     return (
@@ -314,7 +340,7 @@ export default function Library() {
     return null; // Will redirect
   }
 
-  const isLoading = loading || skillsLoading || workflowsLoading;
+  const isLoading = loading || skillsLoading || workflowsLoading || pinnedLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -392,13 +418,44 @@ export default function Library() {
             </div>
           ) : (
             <div className="space-y-12">
-              {/* My Prompts Section */}
-              {myPrompts.length > 0 && (
+              {/* Pinned Section - only show if user has pinned items */}
+              {pinnedPrompts.length > 0 && (
+                <section>
+                  <div className="mb-4 flex items-center gap-2">
+                    <Pin className="h-5 w-5 text-warning" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      📌 Pinned ({filteredPinnedPrompts.length}{debouncedSearch ? ` of ${pinnedPrompts.length}` : ""})
+                    </h2>
+                  </div>
+                  {filteredPinnedPrompts.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No pinned prompts match your search.
+                    </p>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredPinnedPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          showAuthorBadge
+                          currentUserId={user?.id}
+                          editPath="library"
+                          showSendToLLM
+                          isPinned
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* My Prompts Section - excludes pinned prompts */}
+              {(myPrompts.length - pinnedPrompts.length > 0 || (myPrompts.length > 0 && pinnedPromptIds.size === 0)) && (
                 <section>
                   <div className="mb-4 flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
                     <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length}` : ""})
+                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({filteredMyPrompts.length}{debouncedSearch ? ` of ${myPrompts.length - pinnedPromptIds.size}` : ""})
                     </h2>
                   </div>
                   {filteredMyPrompts.length === 0 ? (

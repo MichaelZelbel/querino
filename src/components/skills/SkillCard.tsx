@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, BookOpen } from "lucide-react";
+import { Copy, Check, Pencil, Files, BookOpen, Pin } from "lucide-react";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
@@ -15,6 +15,7 @@ interface SkillCardProps {
   showAuthorInfo?: boolean;
   currentUserId?: string;
   showEditButton?: boolean;
+  isPinned?: boolean;
 }
 
 export function SkillCard({
@@ -23,6 +24,7 @@ export function SkillCard({
   showAuthorInfo = false,
   currentUserId,
   showEditButton = false,
+  isPinned = false,
 }: SkillCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
@@ -58,6 +60,9 @@ export function SkillCard({
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
+                {isPinned && (
+                  <Pin className="h-3.5 w-3.5 text-warning fill-warning" />
+                )}
                 <BookOpen className="h-4 w-4 text-primary" />
                 <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
                   {skill.title}
