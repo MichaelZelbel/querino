@@ -1,15 +1,56 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, ChevronLeft, RefreshCw, Sparkles, Tag, Lightbulb, BarChart3, Lock, Crown } from 'lucide-react';
+import { ChevronRight, ChevronLeft, RefreshCw, Sparkles, Lock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { useAuthContext } from '@/contexts/AuthContext';
 
 type ItemType = 'prompt' | 'skill' | 'workflow';
+
+// Simple markdown to HTML parser
+function parseMarkdown(markdown: string): string {
+  return markdown
+    // Escape HTML
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // Bold and italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Code blocks
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Unordered lists
+    .replace(/^\s*[-*]\s+(.*)$/gim, '<li>$1</li>')
+    // Ordered lists
+    .replace(/^\s*\d+\.\s+(.*)$/gim, '<li>$1</li>')
+    // Wrap consecutive <li> elements in <ul>
+    .replace(/(<li>.*<\/li>)(\s*<li>)/g, '$1$2')
+    .replace(/(<li>.*<\/li>)/gs, (match) => {
+      // Check if it's already inside a ul
+      return `<ul>${match}</ul>`;
+    })
+    // Clean up nested ul tags
+    .replace(/<\/ul>\s*<ul>/g, '')
+    // Line breaks
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br/>')
+    // Wrap in paragraphs
+    .replace(/^(?!<[hup]|<li|<pre|<ul|<ol)(.+)$/gim, '<p>$1</p>')
+    // Clean up empty paragraphs
+    .replace(/<p><\/p>/g, '')
+    .replace(/<p><br\/><\/p>/g, '');
+}
 
 interface AIInsightsPanelProps {
   itemType: ItemType;
@@ -29,28 +70,6 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
   if (!user) {
     return null;
   }
-
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A': return 'bg-green-500/20 text-green-600 border-green-500/30';
-      case 'B': return 'bg-blue-500/20 text-blue-600 border-blue-500/30';
-      case 'C': return 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30';
-      case 'D': return 'bg-red-500/20 text-red-600 border-red-500/30';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const getComplexityColor = (complexity: string) => {
-    switch (complexity) {
-      case 'Beginner':
-      case 'Low': return 'bg-green-500/20 text-green-600';
-      case 'Intermediate':
-      case 'Medium': return 'bg-yellow-500/20 text-yellow-600';
-      case 'Expert':
-      case 'High': return 'bg-red-500/20 text-red-600';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
 
   // Collapsed state for free users - show lock icon
   if (!isOpen) {
@@ -177,141 +196,28 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             )}
           </div>
         ) : (
-          <Tabs defaultValue="summary" className="w-full">
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-              <TabsTrigger
-                value="summary"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs"
-              >
-                <Sparkles className="h-3 w-3 mr-1" />
-                Summary
-              </TabsTrigger>
-              <TabsTrigger
-                value="tags"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs"
-              >
-                <Tag className="h-3 w-3 mr-1" />
-                Tags
-              </TabsTrigger>
-              <TabsTrigger
-                value="recommendations"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs"
-              >
-                <Lightbulb className="h-3 w-3 mr-1" />
-                Tips
-              </TabsTrigger>
-              <TabsTrigger
-                value="quality"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs"
-              >
-                <BarChart3 className="h-3 w-3 mr-1" />
-                Quality
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="summary" className="p-4 m-0">
+          <ScrollArea className="h-full">
+            <div className="p-4">
               {insights?.summary ? (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {insights.summary}
-                </p>
+                <div 
+                  className="prose prose-sm dark:prose-invert max-w-none
+                    prose-headings:text-foreground prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2
+                    prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+                    prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:my-2
+                    prose-ul:my-2 prose-ul:text-muted-foreground
+                    prose-ol:my-2 prose-ol:text-muted-foreground
+                    prose-li:my-0.5
+                    prose-strong:text-foreground prose-strong:font-medium
+                    prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+                    prose-pre:bg-muted prose-pre:text-foreground
+                    [&_hr]:my-4 [&_hr]:border-border"
+                  dangerouslySetInnerHTML={{ __html: parseMarkdown(insights.summary) }}
+                />
               ) : (
-                <p className="text-sm text-muted-foreground italic">No summary available</p>
+                <p className="text-sm text-muted-foreground italic">No insights available</p>
               )}
-            </TabsContent>
-
-            <TabsContent value="tags" className="p-4 m-0">
-              {insights?.tags && insights.tags.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {insights.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">No tags suggested</p>
-              )}
-            </TabsContent>
-
-            <TabsContent value="recommendations" className="p-4 m-0">
-              {insights?.recommendations && insights.recommendations.length > 0 ? (
-                <ul className="space-y-3">
-                  {insights.recommendations.map((rec, index) => (
-                    <li key={index} className="flex gap-2 text-sm">
-                      <Lightbulb className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
-                      <span className="text-muted-foreground">{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">No recommendations available</p>
-              )}
-            </TabsContent>
-
-            <TabsContent value="quality" className="p-4 m-0 space-y-4">
-              {insights?.quality ? (
-                <>
-                  {/* Grade */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Readability</span>
-                    <Badge className={cn("text-lg font-bold px-3", getGradeColor(insights.quality.readability))}>
-                      {insights.quality.readability}
-                    </Badge>
-                  </div>
-
-                  {/* Complexity */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Complexity</span>
-                    <Badge className={getComplexityColor(insights.quality.complexity)}>
-                      {insights.quality.complexity}
-                    </Badge>
-                  </div>
-
-                  {/* LLM Complexity */}
-                  {insights.quality.llmComplexity && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">LLM Complexity</span>
-                      <Badge className={getComplexityColor(insights.quality.llmComplexity)}>
-                        {insights.quality.llmComplexity}
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Strengths */}
-                  {insights.quality.strengths && insights.quality.strengths.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-green-600">Strengths</h4>
-                      <ul className="space-y-1">
-                        {insights.quality.strengths.map((strength, index) => (
-                          <li key={index} className="text-xs text-muted-foreground flex gap-2">
-                            <span className="text-green-500">✓</span>
-                            {strength}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Weaknesses */}
-                  {insights.quality.weaknesses && insights.quality.weaknesses.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-red-600">Areas to Improve</h4>
-                      <ul className="space-y-1">
-                        {insights.quality.weaknesses.map((weakness, index) => (
-                          <li key={index} className="text-xs text-muted-foreground flex gap-2">
-                            <span className="text-red-500">•</span>
-                            {weakness}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">No quality insights available</p>
-              )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </ScrollArea>
         )}
 
         {generating && hasInsights && (
