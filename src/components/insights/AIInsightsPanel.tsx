@@ -13,43 +13,83 @@ type ItemType = 'prompt' | 'skill' | 'workflow';
 
 // Simple markdown to HTML parser
 function parseMarkdown(markdown: string): string {
-  return markdown
-    // Escape HTML
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    // Headers
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    // Bold and italic
+  // Split into lines to handle block-level elements properly
+  const lines = markdown.split('\n');
+  const htmlLines: string[] = [];
+  let inList = false;
+  
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    
+    // Escape HTML entities first (but preserve structure)
+    line = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    // Headers (must be at start of line)
+    if (line.match(/^### /)) {
+      if (inList) { htmlLines.push('</ul>'); inList = false; }
+      htmlLines.push(`<h3>${line.slice(4)}</h3>`);
+      continue;
+    }
+    if (line.match(/^## /)) {
+      if (inList) { htmlLines.push('</ul>'); inList = false; }
+      htmlLines.push(`<h2>${line.slice(3)}</h2>`);
+      continue;
+    }
+    if (line.match(/^# /)) {
+      if (inList) { htmlLines.push('</ul>'); inList = false; }
+      htmlLines.push(`<h1>${line.slice(2)}</h1>`);
+      continue;
+    }
+    
+    // List items
+    if (line.match(/^\s*[-*]\s+/)) {
+      if (!inList) { htmlLines.push('<ul>'); inList = true; }
+      const content = line.replace(/^\s*[-*]\s+/, '');
+      htmlLines.push(`<li>${formatInline(content)}</li>`);
+      continue;
+    }
+    
+    // Numbered list items
+    if (line.match(/^\s*\d+\.\s+/)) {
+      if (!inList) { htmlLines.push('<ul>'); inList = true; }
+      const content = line.replace(/^\s*\d+\.\s+/, '');
+      htmlLines.push(`<li>${formatInline(content)}</li>`);
+      continue;
+    }
+    
+    // Close list if we hit a non-list line
+    if (inList && line.trim() !== '') {
+      htmlLines.push('</ul>');
+      inList = false;
+    }
+    
+    // Empty lines
+    if (line.trim() === '') {
+      if (inList) { htmlLines.push('</ul>'); inList = false; }
+      continue;
+    }
+    
+    // Regular paragraph
+    htmlLines.push(`<p>${formatInline(line)}</p>`);
+  }
+  
+  // Close any open list
+  if (inList) htmlLines.push('</ul>');
+  
+  return htmlLines.join('');
+}
+
+// Format inline elements (bold, italic, code)
+function formatInline(text: string): string {
+  return text
+    // Bold and italic combined
     .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    // Bold
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    // Code blocks
-    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
     // Inline code
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Unordered lists
-    .replace(/^\s*[-*]\s+(.*)$/gim, '<li>$1</li>')
-    // Ordered lists
-    .replace(/^\s*\d+\.\s+(.*)$/gim, '<li>$1</li>')
-    // Wrap consecutive <li> elements in <ul>
-    .replace(/(<li>.*<\/li>)(\s*<li>)/g, '$1$2')
-    .replace(/(<li>.*<\/li>)/gs, (match) => {
-      // Check if it's already inside a ul
-      return `<ul>${match}</ul>`;
-    })
-    // Clean up nested ul tags
-    .replace(/<\/ul>\s*<ul>/g, '')
-    // Line breaks
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br/>')
-    // Wrap in paragraphs
-    .replace(/^(?!<[hup]|<li|<pre|<ul|<ol)(.+)$/gim, '<p>$1</p>')
-    // Clean up empty paragraphs
-    .replace(/<p><\/p>/g, '')
-    .replace(/<p><br\/><\/p>/g, '');
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
 interface AIInsightsPanelProps {
