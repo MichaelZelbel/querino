@@ -9,6 +9,7 @@ interface ArtefactData {
   title: string;
   description: string | null;
   content: string;
+  tags: string[] | null;
 }
 
 export function useAIInsights(itemType: ItemType, itemId: string) {
@@ -50,27 +51,27 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       if (itemType === 'prompt') {
         const { data, error } = await supabase
           .from('prompts')
-          .select('title, description, content')
+          .select('title, description, content, tags')
           .eq('id', itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content };
+        return { title: data.title, description: data.description, content: data.content, tags: data.tags };
       } else if (itemType === 'skill') {
         const { data, error } = await supabase
           .from('skills')
-          .select('title, description, content')
+          .select('title, description, content, tags')
           .eq('id', itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content };
+        return { title: data.title, description: data.description, content: data.content, tags: data.tags };
       } else {
         const { data, error } = await supabase
           .from('workflows')
-          .select('title, description, json')
+          .select('title, description, json, tags')
           .eq('id', itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: JSON.stringify(data.json) };
+        return { title: data.title, description: data.description, content: JSON.stringify(data.json), tags: data.tags };
       }
     } catch {
       return null;
@@ -78,7 +79,11 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
   }, [itemType, itemId]);
 
   const generateInsights = useCallback(async (isRefresh = false) => {
-    const insightsUrl = import.meta.env.VITE_AI_INSIGHTS_URL;
+    // Use hardcoded URL for prompt insights, fallback to env var for other types
+    const insightsUrl = itemType === 'prompt' 
+      ? 'https://agentpool.app.n8n.cloud/webhook/prompt-insights'
+      : import.meta.env.VITE_AI_INSIGHTS_URL;
+    
     if (!insightsUrl) {
       setError('AI Insights URL not configured');
       return;
@@ -103,6 +108,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           title: artefact.title,
           description: artefact.description || '',
           content: artefact.content,
+          tags: artefact.tags || [],
           metadata: { id: itemId },
         }),
       });
