@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import { ChevronRight, ChevronLeft, RefreshCw, Sparkles, Lock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,87 +11,6 @@ import { useAIInsights } from '@/hooks/useAIInsights';
 import { useAuthContext } from '@/contexts/AuthContext';
 
 type ItemType = 'prompt' | 'skill' | 'workflow';
-
-// Simple markdown to HTML parser
-function parseMarkdown(markdown: string): string {
-  // Split into lines to handle block-level elements properly
-  const lines = markdown.split('\n');
-  const htmlLines: string[] = [];
-  let inList = false;
-  
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    
-    // Escape HTML entities first (but preserve structure)
-    line = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    
-    // Headers (must be at start of line)
-    if (line.match(/^### /)) {
-      if (inList) { htmlLines.push('</ul>'); inList = false; }
-      htmlLines.push(`<h3>${line.slice(4)}</h3>`);
-      continue;
-    }
-    if (line.match(/^## /)) {
-      if (inList) { htmlLines.push('</ul>'); inList = false; }
-      htmlLines.push(`<h2>${line.slice(3)}</h2>`);
-      continue;
-    }
-    if (line.match(/^# /)) {
-      if (inList) { htmlLines.push('</ul>'); inList = false; }
-      htmlLines.push(`<h1>${line.slice(2)}</h1>`);
-      continue;
-    }
-    
-    // List items
-    if (line.match(/^\s*[-*]\s+/)) {
-      if (!inList) { htmlLines.push('<ul>'); inList = true; }
-      const content = line.replace(/^\s*[-*]\s+/, '');
-      htmlLines.push(`<li>${formatInline(content)}</li>`);
-      continue;
-    }
-    
-    // Numbered list items
-    if (line.match(/^\s*\d+\.\s+/)) {
-      if (!inList) { htmlLines.push('<ul>'); inList = true; }
-      const content = line.replace(/^\s*\d+\.\s+/, '');
-      htmlLines.push(`<li>${formatInline(content)}</li>`);
-      continue;
-    }
-    
-    // Close list if we hit a non-list line
-    if (inList && line.trim() !== '') {
-      htmlLines.push('</ul>');
-      inList = false;
-    }
-    
-    // Empty lines
-    if (line.trim() === '') {
-      if (inList) { htmlLines.push('</ul>'); inList = false; }
-      continue;
-    }
-    
-    // Regular paragraph
-    htmlLines.push(`<p>${formatInline(line)}</p>`);
-  }
-  
-  // Close any open list
-  if (inList) htmlLines.push('</ul>');
-  
-  return htmlLines.join('');
-}
-
-// Format inline elements (bold, italic, code)
-function formatInline(text: string): string {
-  return text
-    // Bold and italic combined
-    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
-    // Bold
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
-}
 
 interface AIInsightsPanelProps {
   itemType: ItemType;
@@ -239,20 +159,9 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
           <ScrollArea className="h-full">
             <div className="p-4">
               {insights?.summary ? (
-                <div 
-                  className="prose prose-sm dark:prose-invert max-w-none
-                    prose-headings:text-foreground prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2
-                    prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
-                    prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:my-2
-                    prose-ul:my-2 prose-ul:text-muted-foreground
-                    prose-ol:my-2 prose-ol:text-muted-foreground
-                    prose-li:my-0.5
-                    prose-strong:text-foreground prose-strong:font-medium
-                    prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
-                    prose-pre:bg-muted prose-pre:text-foreground
-                    [&_hr]:my-4 [&_hr]:border-border"
-                  dangerouslySetInnerHTML={{ __html: parseMarkdown(insights.summary) }}
-                />
+                <div className="text-sm space-y-3 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-muted-foreground [&_li]:my-1 [&_strong]:text-foreground [&_strong]:font-medium [&_code]:text-primary [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs">
+                  <ReactMarkdown>{insights.summary}</ReactMarkdown>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground italic">No insights available</p>
               )}
