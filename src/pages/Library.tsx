@@ -63,20 +63,18 @@ export default function Library() {
     refetch: refetchPinned 
   } = usePinnedPrompts();
 
-  // Filter prompts based on search query (excluding pinned ones from main list)
+  // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
   const filteredMyPrompts = useMemo(() => {
-    // First exclude pinned prompts from the main list
-    const unpinnedPrompts = myPrompts.filter((p) => !pinnedPromptIds.has(p.id));
-    if (!debouncedSearch.trim()) return unpinnedPrompts;
+    if (!debouncedSearch.trim()) return myPrompts;
     const search = debouncedSearch.toLowerCase();
-    return unpinnedPrompts.filter(
+    return myPrompts.filter(
       (prompt) =>
         prompt.title.toLowerCase().includes(search) ||
         prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
         (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
-  }, [myPrompts, debouncedSearch, pinnedPromptIds]);
+  }, [myPrompts, debouncedSearch]);
 
   // Filter pinned prompts based on search
   const filteredPinnedPrompts = useMemo(() => {
@@ -455,17 +453,12 @@ export default function Library() {
                   <div className="mb-4 flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
                     <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({debouncedSearch ? `${filteredMyPrompts.length + filteredPinnedPrompts.filter(p => myPrompts.some(mp => mp.id === p.id)).length} of ` : ""}
-                      {myPrompts.length})
+                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({debouncedSearch ? `${filteredMyPrompts.length} of ` : ""}{myPrompts.length})
                     </h2>
                   </div>
                   {filteredMyPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
-                      {debouncedSearch 
-                        ? "No prompts match your search." 
-                        : pinnedPromptIds.size > 0 
-                          ? "All your prompts are pinned above." 
-                          : "No prompts yet."}
+                      {debouncedSearch ? "No prompts match your search." : "No prompts yet."}
                     </p>
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -477,6 +470,7 @@ export default function Library() {
                           currentUserId={user?.id}
                           editPath="library"
                           showSendToLLM
+                          isPinned={isPromptPinned(prompt.id)}
                         />
                       ))}
                     </div>
