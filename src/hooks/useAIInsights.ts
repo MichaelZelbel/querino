@@ -117,22 +117,65 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
         throw new Error('Failed to generate insights');
       }
 
-      const result = await response.json();
+      // Read response as text first, then try to parse
+      const responseText = await response.text();
+      
+      let summary: string | null = null;
+      let tags: string[] = [];
+      let recommendations: string[] = [];
+      let quality: AIQuality | null = null;
+
+      try {
+        const jsonResult = JSON.parse(responseText);
+        
+        // Handle n8n webhook format: [{ "output": "markdown string" }]
+        if (Array.isArray(jsonResult) && jsonResult[0]?.output) {
+          const output = jsonResult[0].output;
+          if (typeof output === 'string') {
+            summary = output;
+          } else {
+            // If output is an object with structured data
+            summary = output.summary || null;
+            tags = output.tags || [];
+            recommendations = output.recommendations || [];
+            quality = output.quality || null;
+          }
+        } else if (jsonResult.output) {
+          // Handle { "output": "..." } format
+          if (typeof jsonResult.output === 'string') {
+            summary = jsonResult.output;
+          } else {
+            summary = jsonResult.output.summary || null;
+            tags = jsonResult.output.tags || [];
+            recommendations = jsonResult.output.recommendations || [];
+            quality = jsonResult.output.quality || null;
+          }
+        } else {
+          // Handle direct structured response
+          summary = jsonResult.summary || null;
+          tags = jsonResult.tags || [];
+          recommendations = jsonResult.recommendations || [];
+          quality = jsonResult.quality || null;
+        }
+      } catch {
+        // If not valid JSON, treat as raw markdown text
+        summary = responseText;
+      }
 
       // Upsert into cache
       const insightData = {
         item_type: itemType,
         item_id: itemId,
-        summary: result.summary || null,
-        tags: result.tags || [],
-        recommendations: result.recommendations || [],
-        quality: result.quality || null,
+        summary,
+        tags,
+        recommendations,
+        quality,
         updated_at: new Date().toISOString(),
       };
 
       const { data: upserted, error: upsertError } = await supabase
         .from('ai_insights')
-        .upsert(insightData, { onConflict: 'item_type,item_id' })
+        .upsert(insightData as any, { onConflict: 'item_type,item_id' })
         .select()
         .single();
 
