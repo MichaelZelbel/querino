@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon } from "lucide-react";
+import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin } from "lucide-react";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
@@ -15,6 +15,7 @@ interface WorkflowCardProps {
   showAuthorInfo?: boolean;
   currentUserId?: string;
   showEditButton?: boolean;
+  isPinned?: boolean;
 }
 
 export function WorkflowCard({
@@ -23,6 +24,7 @@ export function WorkflowCard({
   showAuthorInfo = false,
   currentUserId,
   showEditButton = false,
+  isPinned = false,
 }: WorkflowCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
@@ -58,6 +60,9 @@ export function WorkflowCard({
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
+                {isPinned && (
+                  <Pin className="h-3.5 w-3.5 text-warning fill-warning" />
+                )}
                 <WorkflowIcon className="h-4 w-4 text-primary" />
                 <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
                   {workflow.title}
