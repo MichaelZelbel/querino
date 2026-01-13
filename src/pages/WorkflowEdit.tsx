@@ -10,19 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, ArrowLeft, Trash2, CheckCircle, AlertCircle, GitCompare, Save } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save, FileText, FolderOpen, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
-import type { Workflow } from "@/types/workflow";
+import type { Workflow, WorkflowScope } from "@/types/workflow";
+import { WORKFLOW_SCOPES } from "@/types/workflow";
 import type { ParsedMarkdown } from "@/lib/markdown";
 
 interface WorkflowFormData {
   title: string;
   description: string;
-  jsonContent: string;
+  content: string;
+  filename: string;
+  scope: WorkflowScope;
   tags: string[];
   isPublic: boolean;
 }
@@ -39,30 +43,25 @@ export default function WorkflowEdit() {
   const [formData, setFormData] = useState<WorkflowFormData>({
     title: "",
     description: "",
-    jsonContent: "",
+    content: "",
+    filename: "",
+    scope: "workspace",
     tags: [],
     isPublic: false,
   });
   const [tagInput, setTagInput] = useState("");
-  const [jsonValid, setJsonValid] = useState<boolean | null>(null);
 
   // Autosave handler
   const handleAutosave = useCallback(async (data: WorkflowFormData) => {
     if (!user || !id) return;
 
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(data.jsonContent);
-    } catch {
-      // Don't autosave invalid JSON
-      return;
-    }
-
     const { error } = await (supabase.from("workflows") as any)
       .update({
         title: data.title.trim(),
         description: data.description.trim() || null,
-        json: parsedJson,
+        content: data.content.trim(),
+        filename: data.filename.trim() || null,
+        scope: data.scope,
         tags: data.tags.length > 0 ? data.tags : null,
         published: data.isPublic,
       })
@@ -110,10 +109,20 @@ export default function WorkflowEdit() {
         }
 
         setWorkflow(data);
+        
+        // Handle content - use new content field, or fall back to json for legacy
+        let workflowContent = data.content || "";
+        if (!workflowContent && data.json) {
+          // Legacy: stringify JSON for old workflows
+          workflowContent = typeof data.json === 'string' ? data.json : JSON.stringify(data.json, null, 2);
+        }
+        
         const initialData: WorkflowFormData = {
           title: data.title,
           description: data.description || "",
-          jsonContent: JSON.stringify(data.json, null, 2),
+          content: workflowContent,
+          filename: data.filename || `${data.slug}.md`,
+          scope: data.scope || "workspace",
           tags: data.tags || [],
           isPublic: data.published ?? false,
         };
@@ -152,28 +161,6 @@ export default function WorkflowEdit() {
     setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
   };
 
-  const validateJson = () => {
-    if (!formData.jsonContent.trim()) {
-      setJsonValid(null);
-      return false;
-    }
-    try {
-      JSON.parse(formData.jsonContent);
-      setJsonValid(true);
-      toast.success("Valid JSON!");
-      return true;
-    } catch (err) {
-      setJsonValid(false);
-      toast.error("Invalid JSON format");
-      return false;
-    }
-  };
-
-  const handleJsonChange = (value: string) => {
-    setFormData({ ...formData, jsonContent: value });
-    setJsonValid(null);
-  };
-
   const handleSubmit = async () => {
     if (!user || !id) return;
 
@@ -182,17 +169,15 @@ export default function WorkflowEdit() {
       return;
     }
 
-    if (!formData.jsonContent.trim()) {
-      toast.error("Workflow JSON is required");
+    if (!formData.content.trim()) {
+      toast.error("Workflow content is required");
       return;
     }
 
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(formData.jsonContent);
-    } catch {
-      toast.error("Invalid JSON format");
-      return;
+    // Ensure filename ends with .md
+    let finalFilename = formData.filename.trim();
+    if (finalFilename && !finalFilename.endsWith(".md")) {
+      finalFilename += ".md";
     }
 
     setIsSubmitting(true);
@@ -201,7 +186,9 @@ export default function WorkflowEdit() {
       const updateData = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
-        json: parsedJson,
+        content: formData.content.trim(),
+        filename: finalFilename || null,
+        scope: formData.scope,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
       };
@@ -218,7 +205,7 @@ export default function WorkflowEdit() {
 
       resetLastSaved({ ...formData, isPublic: formData.isPublic });
       toast.success("Workflow saved!");
-      navigate(`/workflows/${id}`);
+      navigate(`/workflows/${workflow?.slug || id}`);
     } catch (err) {
       console.error("Error updating workflow:", err);
       toast.error("Something went wrong");
@@ -245,48 +232,26 @@ export default function WorkflowEdit() {
     }
   };
 
-  // Diff content - pretty-print JSON for comparison
+  // Diff content for comparison
   const diffContent = useMemo(() => {
     if (!lastSaved) return { original: "", current: "" };
     
-    // Try to pretty-print both for fair comparison
-    let originalPretty = lastSaved.jsonContent;
-    let currentPretty = formData.jsonContent;
-    
-    try {
-      originalPretty = JSON.stringify(JSON.parse(lastSaved.jsonContent), null, 2);
-    } catch {}
-    
-    try {
-      currentPretty = JSON.stringify(JSON.parse(formData.jsonContent), null, 2);
-    } catch {}
-    
     return {
-      original: originalPretty,
-      current: currentPretty,
+      original: lastSaved.content,
+      current: formData.content,
     };
-  }, [lastSaved, formData.jsonContent]);
+  }, [lastSaved, formData.content]);
 
   const handleImportMarkdown = (data: ParsedMarkdown) => {
-    // For workflows, the content could be JSON or text
-    let jsonContent = data.content;
-    
-    // Try to validate if it's JSON
-    try {
-      JSON.parse(data.content);
-    } catch {
-      // If not JSON, wrap it as a simple workflow structure
-      jsonContent = JSON.stringify({ content: data.content }, null, 2);
-    }
-
     setFormData({
-      title: data.frontmatter.title,
+      title: data.frontmatter.title || formData.title,
       description: data.frontmatter.description || "",
-      jsonContent,
+      content: data.content,
+      filename: formData.filename,
+      scope: formData.scope,
       tags: data.frontmatter.tags || [],
-      isPublic: formData.isPublic, // Keep existing visibility state
+      isPublic: formData.isPublic,
     });
-    setJsonValid(null); // Reset validation state
   };
 
   if (authLoading || loading) {
@@ -321,7 +286,7 @@ export default function WorkflowEdit() {
                 Edit Workflow
               </h1>
               <p className="mt-2 text-muted-foreground">
-                Update your workflow configuration.
+                Update your Antigravity workflow.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -339,7 +304,7 @@ export default function WorkflowEdit() {
                 type="workflow"
                 description={formData.description}
                 tags={formData.tags}
-                content={formData.jsonContent}
+                content={formData.content}
                 size="sm"
                 variant="outline"
               />
@@ -366,32 +331,30 @@ export default function WorkflowEdit() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            {/* Workflow JSON - FIRST */}
+            {/* Workflow Markdown Content - FIRST */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="json">Workflow JSON *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={validateJson}
-                  className="gap-2"
-                >
-                  {jsonValid === true && <CheckCircle className="h-4 w-4 text-green-500" />}
-                  {jsonValid === false && <AlertCircle className="h-4 w-4 text-destructive" />}
-                  Validate JSON
-                </Button>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="content">Workflow Markdown *</Label>
               </div>
               <Textarea
-                id="json"
-                value={formData.jsonContent}
-                onChange={(e) => handleJsonChange(e.target.value)}
-                placeholder='{"nodes": [], "connections": {}}'
-                rows={12}
-                className={`font-mono text-sm ${
-                  jsonValid === true ? "border-green-500" : jsonValid === false ? "border-destructive" : ""
-                }`}
+                id="content"
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                placeholder={`# My Workflow
+
+## Description
+Describe what this workflow does...
+
+## Steps
+1. First step...
+2. Second step...`}
+                rows={14}
+                className="font-mono text-sm"
               />
+              <p className="text-xs text-muted-foreground">
+                Write your workflow instructions in Markdown format.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -400,8 +363,23 @@ export default function WorkflowEdit() {
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Email Automation Pipeline"
+                placeholder="e.g., Code Review Workflow"
               />
+            </div>
+
+            {/* Filename */}
+            <div className="space-y-2">
+              <Label htmlFor="filename">Filename</Label>
+              <Input
+                id="filename"
+                value={formData.filename}
+                onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
+                placeholder="my-workflow.md"
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Must end with .md
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -413,6 +391,38 @@ export default function WorkflowEdit() {
                 placeholder="Brief description of what this workflow does..."
                 rows={2}
               />
+            </div>
+
+            {/* Scope Selection */}
+            <div className="space-y-3">
+              <Label>Scope</Label>
+              <RadioGroup
+                value={formData.scope}
+                onValueChange={(value) => setFormData({ ...formData, scope: value as WorkflowScope })}
+                className="space-y-2"
+              >
+                {WORKFLOW_SCOPES.map((scopeOption) => (
+                  <div
+                    key={scopeOption.value}
+                    className="flex items-start space-x-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <RadioGroupItem value={scopeOption.value} id={`edit-${scopeOption.value}`} className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor={`edit-${scopeOption.value}`} className="flex items-center gap-2 cursor-pointer">
+                        {scopeOption.value === 'workspace' ? (
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Globe className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        {scopeOption.label}
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                        {scopeOption.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </RadioGroup>
             </div>
 
             <div className="space-y-2">

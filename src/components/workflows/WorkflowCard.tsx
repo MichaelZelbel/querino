@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin } from "lucide-react";
+import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, FolderOpen, Globe } from "lucide-react";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
@@ -31,11 +31,23 @@ export function WorkflowCard({
   const isAuthor = currentUserId && workflow.author_id === currentUserId;
   const detailUrl = `/workflows/${workflow.slug}`;
 
+  // Get workflow content - use new content field, or fall back to json for legacy
+  const getWorkflowContent = (): string => {
+    if (workflow.content) return workflow.content;
+    // Legacy fallback: stringify JSON
+    if (workflow.json) {
+      return typeof workflow.json === 'string' ? workflow.json : JSON.stringify(workflow.json, null, 2);
+    }
+    return "";
+  };
+
+  const workflowContent = getWorkflowContent();
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(workflow.json, null, 2));
+      await navigator.clipboard.writeText(workflowContent);
       setCopied(true);
-      toast.success("Workflow JSON copied!");
+      toast.success("Workflow content copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error("Failed to copy workflow");
@@ -78,6 +90,16 @@ export function WorkflowCard({
                     Draft
                   </Badge>
                 )}
+                {workflow.scope && (
+                  <Badge variant="outline" className="text-xs gap-1">
+                    {workflow.scope === 'global' ? (
+                      <Globe className="h-3 w-3" />
+                    ) : (
+                      <FolderOpen className="h-3 w-3" />
+                    )}
+                    {workflow.scope === 'global' ? 'Global' : 'Workspace'}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {workflow.description || "No description"}
@@ -90,7 +112,7 @@ export function WorkflowCard({
       <CardContent className="flex-1 pb-3">
         <div className="relative rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
           <div className="line-clamp-3 whitespace-pre-wrap">
-            {JSON.stringify(workflow.json, null, 2).slice(0, 200)}...
+            {workflowContent.slice(0, 200)}...
           </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-muted/50 to-transparent rounded-b-lg" />
         </div>

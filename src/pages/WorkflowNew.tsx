@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, X, CheckCircle, AlertCircle } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Loader2, X, FileText, FolderOpen, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { WORKFLOW_SCOPES, type WorkflowScope } from "@/types/workflow";
+
+// Generate a slug from title
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 50);
+}
 
 export default function WorkflowNew() {
   const navigate = useNavigate();
@@ -20,11 +33,26 @@ export default function WorkflowNew() {
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [jsonContent, setJsonContent] = useState("");
+  const [content, setContent] = useState("");
+  const [filename, setFilename] = useState("");
+  const [filenameManuallyEdited, setFilenameManuallyEdited] = useState(false);
+  const [scope, setScope] = useState<WorkflowScope>("workspace");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
-  const [jsonValid, setJsonValid] = useState<boolean | null>(null);
+
+  // Auto-generate filename from title
+  const suggestedFilename = useMemo(() => {
+    const slug = generateSlug(title);
+    return slug ? `${slug}.md` : "";
+  }, [title]);
+
+  // Update filename when title changes (if not manually edited)
+  useEffect(() => {
+    if (!filenameManuallyEdited && suggestedFilename) {
+      setFilename(suggestedFilename);
+    }
+  }, [suggestedFilename, filenameManuallyEdited]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,26 +79,9 @@ export default function WorkflowNew() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const validateJson = () => {
-    if (!jsonContent.trim()) {
-      setJsonValid(null);
-      return false;
-    }
-    try {
-      JSON.parse(jsonContent);
-      setJsonValid(true);
-      toast.success("Valid JSON!");
-      return true;
-    } catch (err) {
-      setJsonValid(false);
-      toast.error("Invalid JSON format");
-      return false;
-    }
-  };
-
-  const handleJsonChange = (value: string) => {
-    setJsonContent(value);
-    setJsonValid(null);
+  const handleFilenameChange = (value: string) => {
+    setFilename(value);
+    setFilenameManuallyEdited(true);
   };
 
   const handleSubmit = async () => {
@@ -81,31 +92,36 @@ export default function WorkflowNew() {
       return;
     }
 
-    if (!jsonContent.trim()) {
-      toast.error("Workflow JSON is required");
+    if (!content.trim()) {
+      toast.error("Workflow content is required");
       return;
     }
 
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(jsonContent);
-    } catch {
-      toast.error("Invalid JSON format");
-      return;
+    // Ensure filename ends with .md
+    let finalFilename = filename.trim();
+    if (!finalFilename) {
+      finalFilename = suggestedFilename || "workflow.md";
+    }
+    if (!finalFilename.endsWith(".md")) {
+      finalFilename += ".md";
     }
 
     setIsSubmitting(true);
 
     try {
-      const { data: newWorkflow, error } = await supabase
-        .from("workflows")
+      const { data: newWorkflow, error } = await (supabase
+        .from("workflows") as any)
         .insert({
           title: title.trim(),
           description: description.trim() || null,
-          json: parsedJson,
+          content: content.trim(),
+          filename: finalFilename,
+          scope,
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
           published: isPublic,
+          // Keep json empty for new Antigravity workflows
+          json: {},
         })
         .select("slug")
         .single();
@@ -149,37 +165,40 @@ export default function WorkflowNew() {
               Create New Workflow
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Share an n8n or Antigravity workflow with the community.
+              Create an Antigravity workflow as a Markdown file.
             </p>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            {/* Workflow JSON - FIRST */}
+            {/* Workflow Markdown Content - FIRST */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="json">Workflow JSON *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={validateJson}
-                  className="gap-2"
-                >
-                  {jsonValid === true && <CheckCircle className="h-4 w-4 text-green-500" />}
-                  {jsonValid === false && <AlertCircle className="h-4 w-4 text-destructive" />}
-                  Validate JSON
-                </Button>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="content">Workflow Markdown *</Label>
               </div>
               <Textarea
-                id="json"
-                value={jsonContent}
-                onChange={(e) => handleJsonChange(e.target.value)}
-                placeholder='{"nodes": [], "connections": {}}'
-                rows={12}
-                className={`font-mono text-sm ${
-                  jsonValid === true ? "border-green-500" : jsonValid === false ? "border-destructive" : ""
-                }`}
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder={`# My Workflow
+
+## Description
+Describe what this workflow does...
+
+## Steps
+1. First step...
+2. Second step...
+
+## Example
+\`\`\`
+Example usage here
+\`\`\``}
+                rows={14}
+                className="font-mono text-sm"
               />
+              <p className="text-xs text-muted-foreground">
+                Write your workflow instructions in Markdown format.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -188,8 +207,25 @@ export default function WorkflowNew() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Email Automation Pipeline"
+                placeholder="e.g., Code Review Workflow"
               />
+            </div>
+
+            {/* Filename */}
+            <div className="space-y-2">
+              <Label htmlFor="filename">Filename</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="filename"
+                  value={filename}
+                  onChange={(e) => handleFilenameChange(e.target.value)}
+                  placeholder="my-workflow.md"
+                  className="font-mono text-sm"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Auto-generated from title. Must end with .md
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -201,6 +237,38 @@ export default function WorkflowNew() {
                 placeholder="Brief description of what this workflow does..."
                 rows={2}
               />
+            </div>
+
+            {/* Scope Selection */}
+            <div className="space-y-3">
+              <Label>Scope</Label>
+              <RadioGroup
+                value={scope}
+                onValueChange={(value) => setScope(value as WorkflowScope)}
+                className="space-y-2"
+              >
+                {WORKFLOW_SCOPES.map((scopeOption) => (
+                  <div
+                    key={scopeOption.value}
+                    className="flex items-start space-x-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <RadioGroupItem value={scopeOption.value} id={scopeOption.value} className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor={scopeOption.value} className="flex items-center gap-2 cursor-pointer">
+                        {scopeOption.value === 'workspace' ? (
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Globe className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        {scopeOption.label}
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                        {scopeOption.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </RadioGroup>
             </div>
 
             <div className="space-y-2">

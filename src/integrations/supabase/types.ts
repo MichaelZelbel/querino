@@ -734,12 +734,15 @@ export type Database = {
       workflows: {
         Row: {
           author_id: string | null
+          content: string | null
           created_at: string | null
           description: string | null
           embedding: string | null
+          filename: string | null
           id: string
           json: Json
           published: boolean | null
+          scope: string | null
           slug: string | null
           tags: string[] | null
           team_id: string | null
@@ -748,12 +751,15 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
+          content?: string | null
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          filename?: string | null
           id?: string
           json?: Json
           published?: boolean | null
+          scope?: string | null
           slug?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -762,12 +768,15 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
+          content?: string | null
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          filename?: string | null
           id?: string
           json?: Json
           published?: boolean | null
+          scope?: string | null
           slug?: string | null
           tags?: string[] | null
           team_id?: string | null
