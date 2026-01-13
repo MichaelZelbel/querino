@@ -73,11 +73,6 @@ export function SkillCard({
                     Your skill
                   </Badge>
                 )}
-                {!skill.published && (
-                  <Badge variant="outline" className="text-xs">
-                    Draft
-                  </Badge>
-                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {skill.description || "No description"}

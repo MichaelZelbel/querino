@@ -85,11 +85,6 @@ export function WorkflowCard({
                     Your workflow
                   </Badge>
                 )}
-                {!workflow.published && (
-                  <Badge variant="outline" className="text-xs">
-                    Draft
-                  </Badge>
-                )}
                 {workflow.scope && (
                   <Badge variant="outline" className="text-xs gap-1">
                     {workflow.scope === 'global' ? (
