@@ -14,8 +14,12 @@ export default function PromptNew() {
   const { user, loading: authLoading } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Get draft content from query param (from Prompt Wizard)
-  const draftContent = searchParams.get("draft") || "";
+  // Get prefill data from query params (from Prompt Wizard or Markdown import)
+  const prefillTitle = searchParams.get("title") || "";
+  const prefillDescription = searchParams.get("description") || "";
+  const prefillContent = searchParams.get("content") || searchParams.get("draft") || "";
+  const prefillTags = searchParams.get("tags")?.split(",").filter(Boolean) || [];
+  const prefillCategory = searchParams.get("category") || "";
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -110,12 +114,12 @@ export default function PromptNew() {
 
           <div className="rounded-xl border border-border bg-card p-6">
             <PromptForm
-              initialData={draftContent ? { 
-                title: "", 
-                description: "", 
-                content: draftContent, 
-                category: "", 
-                tags: [], 
+              initialData={prefillContent ? { 
+                title: prefillTitle, 
+                description: prefillDescription, 
+                content: prefillContent, 
+                category: prefillCategory, 
+                tags: prefillTags, 
                 is_public: false
               } : undefined}
               onSubmit={handleSubmit}
