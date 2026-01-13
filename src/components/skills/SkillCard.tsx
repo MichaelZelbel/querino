@@ -29,6 +29,7 @@ export function SkillCard({
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
   const isAuthor = currentUserId && skill.author_id === currentUserId;
+  const detailUrl = `/skills/${skill.slug}`;
 
   const handleCopy = async () => {
     try {
@@ -55,7 +56,7 @@ export function SkillCard({
 
   return (
     <Card variant="prompt" className="flex h-full flex-col">
-      <Link to={`/skills/${skill.id}`} className="block">
+      <Link to={detailUrl} className="block">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5 flex-1">
@@ -130,7 +131,7 @@ export function SkillCard({
 
           <div className="flex items-center gap-1">
             {(isAuthor || showEditButton) && (
-              <Link to={`/skills/${skill.id}/edit`}>
+              <Link to={`/skills/${skill.slug}/edit`}>
                 <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>

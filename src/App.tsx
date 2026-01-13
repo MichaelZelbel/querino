@@ -76,16 +76,16 @@ const App = () => (
             <Route path="/cookies" element={<Cookies />} />
             <Route path="/prompts/new" element={<PromptNew />} />
             <Route path="/prompts/wizard" element={<PromptWizard />} />
-            <Route path="/prompts/:id" element={<PromptDetail />} />
-            <Route path="/prompts/:id/edit" element={<PromptEdit />} />
-            <Route path="/library/:id/edit" element={<LibraryPromptEdit />} />
-            <Route path="/library/:id/versions" element={<VersionHistory />} />
+            <Route path="/prompts/:slug" element={<PromptDetail />} />
+            <Route path="/prompts/:slug/edit" element={<PromptEdit />} />
+            <Route path="/library/:slug/edit" element={<LibraryPromptEdit />} />
+            <Route path="/library/:slug/versions" element={<VersionHistory />} />
             <Route path="/skills/new" element={<SkillNew />} />
-            <Route path="/skills/:id" element={<SkillDetail />} />
-            <Route path="/skills/:id/edit" element={<SkillEdit />} />
+            <Route path="/skills/:slug" element={<SkillDetail />} />
+            <Route path="/skills/:slug/edit" element={<SkillEdit />} />
             <Route path="/workflows/new" element={<WorkflowNew />} />
-            <Route path="/workflows/:id" element={<WorkflowDetail />} />
-            <Route path="/workflows/:id/edit" element={<WorkflowEdit />} />
+            <Route path="/workflows/:slug" element={<WorkflowDetail />} />
+            <Route path="/workflows/:slug/edit" element={<WorkflowEdit />} />
             <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/collections" element={<Collections />} />

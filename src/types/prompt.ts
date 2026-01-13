@@ -1,6 +1,7 @@
 // Types for prompts from Supabase
 export interface Prompt {
   id: string;
+  slug: string;
   title: string;
   description: string;
   content: string;

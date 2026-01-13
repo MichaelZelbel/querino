@@ -429,6 +429,7 @@ export type Database = {
           published_at: string | null
           rating_avg: number | null
           rating_count: number | null
+          slug: string | null
           summary: string | null
           tags: string[] | null
           team_id: string | null
@@ -449,6 +450,7 @@ export type Database = {
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
+          slug?: string | null
           summary?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -469,6 +471,7 @@ export type Database = {
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
+          slug?: string | null
           summary?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -501,6 +504,7 @@ export type Database = {
           embedding: string | null
           id: string
           published: boolean | null
+          slug: string | null
           tags: string[] | null
           team_id: string | null
           title: string
@@ -514,6 +518,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           published?: boolean | null
+          slug?: string | null
           tags?: string[] | null
           team_id?: string | null
           title: string
@@ -527,6 +532,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           published?: boolean | null
+          slug?: string | null
           tags?: string[] | null
           team_id?: string | null
           title?: string
@@ -734,6 +740,7 @@ export type Database = {
           id: string
           json: Json
           published: boolean | null
+          slug: string | null
           tags: string[] | null
           team_id: string | null
           title: string
@@ -747,6 +754,7 @@ export type Database = {
           id?: string
           json?: Json
           published?: boolean | null
+          slug?: string | null
           tags?: string[] | null
           team_id?: string | null
           title: string
@@ -760,6 +768,7 @@ export type Database = {
           id?: string
           json?: Json
           published?: boolean | null
+          slug?: string | null
           tags?: string[] | null
           team_id?: string | null
           title?: string
@@ -788,6 +797,11 @@ export type Database = {
     }
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
+      generate_slug: { Args: { title: string }; Returns: string }
+      generate_unique_slug: {
+        Args: { p_exclude_id?: string; p_table: string; p_title: string }
+        Returns: string
+      }
       get_similar_prompts: {
         Args: { match_limit?: number; target_id: string }
         Returns: {

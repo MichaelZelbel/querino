@@ -36,7 +36,7 @@ interface PromptWithAuthor extends Prompt {
 }
 
 export default function PromptDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
@@ -53,7 +53,7 @@ export default function PromptDetail() {
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(id);
+  const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(prompt?.id);
   const { 
     suggestions, 
     loading: loadingSuggestions, 
@@ -63,15 +63,15 @@ export default function PromptDetail() {
     requestChanges,
     updateSuggestionAfterChanges,
     refetch: refetchSuggestions
-  } = useSuggestions('prompt', id || '');
+  } = useSuggestions('prompt', prompt?.id || '');
   
-  const isSaved = id ? isPromptSaved(id) : false;
-  const isPinned = id ? isPromptPinned(id) : false;
+  const isSaved = prompt?.id ? isPromptSaved(prompt.id) : false;
+  const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
 
   useEffect(() => {
     async function fetchPrompt() {
-      if (!id) {
+      if (!slug) {
         setNotFound(true);
         setLoading(false);
         return;
@@ -88,7 +88,7 @@ export default function PromptDetail() {
               avatar_url
             )
           `)
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (error) {
@@ -112,7 +112,7 @@ export default function PromptDetail() {
     }
 
     fetchPrompt();
-  }, [id]);
+  }, [slug]);
 
   const handleCopy = async () => {
     if (!prompt) return;
@@ -128,15 +128,15 @@ export default function PromptDetail() {
   };
 
   const handleSaveToLibrary = async () => {
-    if (!id) return;
+    if (!prompt?.id) return;
     
     if (!user) {
-      navigate(`/auth?redirect=/prompts/${id}`);
+      navigate(`/auth?redirect=/prompts/${prompt.slug}`);
       return;
     }
 
     setSaving(true);
-    const { error } = await toggleSave(id);
+    const { error } = await toggleSave(prompt.id);
     setSaving(false);
 
     if (error) {
@@ -152,15 +152,15 @@ export default function PromptDetail() {
   };
 
   const handleTogglePin = async () => {
-    if (!id) return;
+    if (!prompt?.id) return;
     
     if (!user) {
-      navigate(`/auth?redirect=/prompts/${id}`);
+      navigate(`/auth?redirect=/prompts/${prompt.slug}`);
       return;
     }
 
     setPinning(true);
-    const { error } = await togglePin(id);
+    const { error } = await togglePin(prompt.id);
     setPinning(false);
 
     if (error) {
@@ -193,7 +193,7 @@ export default function PromptDetail() {
     const { data } = await supabase
       .from("prompts")
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("id", id)
+      .eq("slug", slug)
       .maybeSingle();
     
     if (data) {
@@ -450,7 +450,7 @@ export default function PromptDetail() {
 
             {isAuthor && (
               <>
-                <Link to={`/library/${id}/edit`}>
+                <Link to={`/library/${prompt.slug}/edit`}>
                   <Button size="lg" variant="outline" className="gap-2">
                     <Pencil className="h-4 w-4" />
                     Edit Prompt
