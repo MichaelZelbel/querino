@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command, Shield } from "lucide-react";
+import logoImage from "@/assets/logo.png";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
@@ -51,9 +52,7 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={logoImage} alt="Querino" className="h-9 w-9" />
             <span className="text-xl font-bold tracking-tight text-foreground">Querino</span>
           </Link>
           
