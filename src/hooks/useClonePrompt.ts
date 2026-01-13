@@ -35,7 +35,7 @@ export function useClonePrompt() {
           rating_count: 0,
           copies_count: 0,
         })
-        .select("id")
+        .select("id, slug")
         .single();
 
       if (error) {
@@ -46,7 +46,7 @@ export function useClonePrompt() {
 
       console.log("Prompt cloned", { sourceId: sourcePrompt.id, newId: data.id });
       toast.success("Prompt cloned to your library!");
-      navigate(`/library/${data.id}/edit`);
+      navigate(`/library/${data.slug}/edit`);
       return data.id;
     } catch (err) {
       console.error("Error cloning prompt:", err);

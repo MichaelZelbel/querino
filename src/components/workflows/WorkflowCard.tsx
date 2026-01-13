@@ -29,6 +29,7 @@ export function WorkflowCard({
   const [copied, setCopied] = useState(false);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
   const isAuthor = currentUserId && workflow.author_id === currentUserId;
+  const detailUrl = `/workflows/${workflow.slug}`;
 
   const handleCopy = async () => {
     try {
@@ -55,7 +56,7 @@ export function WorkflowCard({
 
   return (
     <Card variant="prompt" className="flex h-full flex-col">
-      <Link to={`/workflows/${workflow.id}`} className="block">
+      <Link to={detailUrl} className="block">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5 flex-1">
@@ -130,7 +131,7 @@ export function WorkflowCard({
 
           <div className="flex items-center gap-1">
             {(isAuthor || showEditButton) && (
-              <Link to={`/workflows/${workflow.id}/edit`}>
+              <Link to={`/workflows/${workflow.slug}/edit`}>
                 <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>

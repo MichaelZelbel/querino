@@ -29,7 +29,7 @@ interface SkillWithAuthor extends Skill {
 }
 
 export default function SkillDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneSkill, cloning } = useCloneSkill();
@@ -39,7 +39,7 @@ export default function SkillDetail() {
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
-  const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(id);
+  const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(skill?.id);
   const { 
     suggestions, 
     loading: loadingSuggestions, 
@@ -48,12 +48,12 @@ export default function SkillDetail() {
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges
-  } = useSuggestions('skill', id || '');
+  } = useSuggestions('skill', skill?.id || '');
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
 
   useEffect(() => {
     async function fetchSkill() {
-      if (!id) {
+      if (!slug) {
         setNotFound(true);
         setLoading(false);
         return;
@@ -70,7 +70,7 @@ export default function SkillDetail() {
               avatar_url
             )
           `)
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (error) {
@@ -94,7 +94,7 @@ export default function SkillDetail() {
     }
 
     fetchSkill();
-  }, [id]);
+  }, [slug]);
 
   const handleCopy = async () => {
     if (!skill) return;
@@ -126,7 +126,7 @@ export default function SkillDetail() {
     const { data } = await (supabase
       .from("skills") as any)
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("id", id)
+      .eq("slug", slug)
       .maybeSingle();
     
     if (data) {
@@ -299,7 +299,7 @@ export default function SkillDetail() {
             </Button>
 
             {isAuthor && (
-              <Link to={`/skills/${id}/edit`}>
+              <Link to={`/skills/${skill.slug}/edit`}>
                 <Button size="lg" variant="outline" className="gap-2">
                   <Pencil className="h-4 w-4" />
                   Edit Skill

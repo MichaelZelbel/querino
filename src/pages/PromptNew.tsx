@@ -51,7 +51,7 @@ export default function PromptNew() {
           rating_count: 0,
           copies_count: 0,
         })
-        .select("id")
+        .select("id, slug")
         .single();
 
       if (error) {
@@ -61,7 +61,7 @@ export default function PromptNew() {
       }
 
       toast.success("Prompt created successfully!");
-      navigate(`/prompts/${newPrompt.id}`);
+      navigate(`/prompts/${newPrompt.slug}`);
     } catch (err) {
       console.error("Error creating prompt:", err);
       toast.error("Something went wrong. Please try again.");

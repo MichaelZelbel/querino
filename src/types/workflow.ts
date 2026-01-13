@@ -1,6 +1,7 @@
 // Types for workflows from Supabase
 export interface Workflow {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   json: Record<string, unknown>;

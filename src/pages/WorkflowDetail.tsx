@@ -30,7 +30,7 @@ interface WorkflowWithAuthor extends Workflow {
 }
 
 export default function WorkflowDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneWorkflow, cloning } = useCloneWorkflow();
@@ -41,7 +41,7 @@ export default function WorkflowDetail() {
   const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
-  const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(id);
+  const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(workflow?.id);
   const { 
     suggestions, 
     loading: loadingSuggestions, 
@@ -50,12 +50,12 @@ export default function WorkflowDetail() {
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges
-  } = useSuggestions('workflow', id || '');
+  } = useSuggestions('workflow', workflow?.id || '');
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
 
   useEffect(() => {
     async function fetchWorkflow() {
-      if (!id) {
+      if (!slug) {
         setNotFound(true);
         setLoading(false);
         return;
@@ -72,7 +72,7 @@ export default function WorkflowDetail() {
               avatar_url
             )
           `)
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (error) {
@@ -96,7 +96,7 @@ export default function WorkflowDetail() {
     }
 
     fetchWorkflow();
-  }, [id]);
+  }, [slug]);
 
   const handleCopy = async () => {
     if (!workflow) return;
@@ -137,7 +137,7 @@ export default function WorkflowDetail() {
     const { data } = await (supabase
       .from("workflows") as any)
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("id", id)
+      .eq("slug", slug)
       .maybeSingle();
     
     if (data) {
@@ -320,7 +320,7 @@ export default function WorkflowDetail() {
             </Button>
 
             {isAuthor && (
-              <Link to={`/workflows/${id}/edit`}>
+              <Link to={`/workflows/${workflow.slug}/edit`}>
                 <Button size="lg" variant="outline" className="gap-2">
                   <Pencil className="h-4 w-4" />
                   Edit Workflow

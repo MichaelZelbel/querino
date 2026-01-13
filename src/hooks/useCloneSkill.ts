@@ -22,7 +22,7 @@ export function useCloneSkill() {
           author_id: userId,
           published: false,
         })
-        .select("id")
+        .select("id, slug")
         .single();
 
       if (error) {
@@ -30,7 +30,7 @@ export function useCloneSkill() {
       }
 
       toast.success("Skill cloned to your library!");
-      navigate(`/skills/${newSkill.id}/edit`);
+      navigate(`/skills/${newSkill.slug}/edit`);
     } catch (err) {
       console.error("Error cloning skill:", err);
       toast.error("Failed to clone skill");

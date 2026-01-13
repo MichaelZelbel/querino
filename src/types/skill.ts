@@ -1,6 +1,7 @@
 // Types for skills from Supabase
 export interface Skill {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   content: string;

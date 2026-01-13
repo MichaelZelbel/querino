@@ -34,8 +34,8 @@ export function PromptCard({
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
-  const editUrl = editPath === "library" ? `/library/${prompt.id}/edit` : `/prompts/${prompt.id}/edit`;
-
+  const editUrl = editPath === "library" ? `/library/${prompt.slug}/edit` : `/prompts/${prompt.slug}/edit`;
+  const detailUrl = `/prompts/${prompt.slug}`;
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(prompt.content);
@@ -61,7 +61,7 @@ export function PromptCard({
 
   return (
     <Card variant="prompt" className="flex h-full flex-col">
-      <Link to={`/prompts/${prompt.id}`} className="block">
+      <Link to={detailUrl} className="block">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1.5 flex-1">
@@ -113,7 +113,7 @@ export function PromptCard({
       <CardFooter className="flex flex-col gap-2 border-t border-border/50 pt-4">
         {/* User's own rating (if present and not author) */}
         {userRating && !isAuthor && (
-          <Link to={`/prompts/${prompt.id}`} className="w-full">
+          <Link to={detailUrl} className="w-full">
             <div className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
               <span>Your rating:</span>
               {[1, 2, 3, 4, 5].map((star) => (
