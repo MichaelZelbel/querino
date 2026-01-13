@@ -10,15 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save, FileText, FolderOpen, Globe } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
-import type { Workflow, WorkflowScope } from "@/types/workflow";
-import { WORKFLOW_SCOPES } from "@/types/workflow";
+import type { Workflow } from "@/types/workflow";
 import type { ParsedMarkdown } from "@/lib/markdown";
 
 interface WorkflowFormData {
@@ -26,7 +24,6 @@ interface WorkflowFormData {
   description: string;
   content: string;
   filename: string;
-  scope: WorkflowScope;
   tags: string[];
   isPublic: boolean;
 }
@@ -45,7 +42,6 @@ export default function WorkflowEdit() {
     description: "",
     content: "",
     filename: "",
-    scope: "workspace",
     tags: [],
     isPublic: false,
   });
@@ -61,7 +57,6 @@ export default function WorkflowEdit() {
         description: data.description.trim() || null,
         content: data.content.trim(),
         filename: data.filename.trim() || null,
-        scope: data.scope,
         tags: data.tags.length > 0 ? data.tags : null,
         published: data.isPublic,
       })
@@ -122,7 +117,6 @@ export default function WorkflowEdit() {
           description: data.description || "",
           content: workflowContent,
           filename: data.filename || `${data.slug}.md`,
-          scope: data.scope || "workspace",
           tags: data.tags || [],
           isPublic: data.published ?? false,
         };
@@ -188,7 +182,6 @@ export default function WorkflowEdit() {
         description: formData.description.trim() || null,
         content: formData.content.trim(),
         filename: finalFilename || null,
-        scope: formData.scope,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
       };
@@ -248,7 +241,6 @@ export default function WorkflowEdit() {
       description: data.frontmatter.description || "",
       content: data.content,
       filename: formData.filename,
-      scope: formData.scope,
       tags: data.frontmatter.tags || [],
       isPublic: formData.isPublic,
     });
@@ -391,38 +383,6 @@ Describe what this workflow does...
                 placeholder="Brief description of what this workflow does..."
                 rows={2}
               />
-            </div>
-
-            {/* Scope Selection */}
-            <div className="space-y-3">
-              <Label>Scope</Label>
-              <RadioGroup
-                value={formData.scope}
-                onValueChange={(value) => setFormData({ ...formData, scope: value as WorkflowScope })}
-                className="space-y-2"
-              >
-                {WORKFLOW_SCOPES.map((scopeOption) => (
-                  <div
-                    key={scopeOption.value}
-                    className="flex items-start space-x-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
-                  >
-                    <RadioGroupItem value={scopeOption.value} id={`edit-${scopeOption.value}`} className="mt-0.5" />
-                    <div className="flex-1">
-                      <Label htmlFor={`edit-${scopeOption.value}`} className="flex items-center gap-2 cursor-pointer">
-                        {scopeOption.value === 'workspace' ? (
-                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        {scopeOption.label}
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                        {scopeOption.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
             </div>
 
             <div className="space-y-2">

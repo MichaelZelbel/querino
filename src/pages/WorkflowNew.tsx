@@ -10,10 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, X, FileText, FolderOpen, Globe } from "lucide-react";
+import { Loader2, X, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { WORKFLOW_SCOPES, type WorkflowScope } from "@/types/workflow";
 
 // Generate a slug from title
 function generateSlug(title: string): string {
@@ -36,7 +34,6 @@ export default function WorkflowNew() {
   const [content, setContent] = useState("");
   const [filename, setFilename] = useState("");
   const [filenameManuallyEdited, setFilenameManuallyEdited] = useState(false);
-  const [scope, setScope] = useState<WorkflowScope>("workspace");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
@@ -116,7 +113,6 @@ export default function WorkflowNew() {
           description: description.trim() || null,
           content: content.trim(),
           filename: finalFilename,
-          scope,
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
           published: isPublic,
@@ -237,38 +233,6 @@ Example usage here
                 placeholder="Brief description of what this workflow does..."
                 rows={2}
               />
-            </div>
-
-            {/* Scope Selection */}
-            <div className="space-y-3">
-              <Label>Scope</Label>
-              <RadioGroup
-                value={scope}
-                onValueChange={(value) => setScope(value as WorkflowScope)}
-                className="space-y-2"
-              >
-                {WORKFLOW_SCOPES.map((scopeOption) => (
-                  <div
-                    key={scopeOption.value}
-                    className="flex items-start space-x-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
-                  >
-                    <RadioGroupItem value={scopeOption.value} id={scopeOption.value} className="mt-0.5" />
-                    <div className="flex-1">
-                      <Label htmlFor={scopeOption.value} className="flex items-center gap-2 cursor-pointer">
-                        {scopeOption.value === 'workspace' ? (
-                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        {scopeOption.label}
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                        {scopeOption.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
             </div>
 
             <div className="space-y-2">

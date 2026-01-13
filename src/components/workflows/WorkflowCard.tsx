@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, FolderOpen, Globe } from "lucide-react";
+import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin } from "lucide-react";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
@@ -83,16 +83,6 @@ export function WorkflowCard({
                 {showAuthorBadge && isAuthor && (
                   <Badge variant="secondary" className="text-xs">
                     Your workflow
-                  </Badge>
-                )}
-                {workflow.scope && (
-                  <Badge variant="outline" className="text-xs gap-1">
-                    {workflow.scope === 'global' ? (
-                      <Globe className="h-3 w-3" />
-                    ) : (
-                      <FolderOpen className="h-3 w-3" />
-                    )}
-                    {workflow.scope === 'global' ? 'Global' : 'Workspace'}
                   </Badge>
                 )}
               </div>

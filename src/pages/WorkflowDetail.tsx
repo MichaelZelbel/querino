@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FolderOpen, Globe, FileText } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -222,16 +222,6 @@ export default function WorkflowDetail() {
                 <WorkflowIcon className="h-3 w-3" />
                 Workflow
               </Badge>
-              {workflow.scope && (
-                <Badge variant="outline" className="gap-1 text-sm">
-                  {workflow.scope === 'global' ? (
-                    <Globe className="h-3 w-3" />
-                  ) : (
-                    <FolderOpen className="h-3 w-3" />
-                  )}
-                  {workflow.scope === 'global' ? 'Global' : 'Workspace'}
-                </Badge>
-              )}
               {workflow.tags && workflow.tags.length > 0 && (
                 <>
                   {workflow.tags.slice(0, 5).map((tag) => (
