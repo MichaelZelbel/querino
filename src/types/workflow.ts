@@ -6,7 +6,6 @@ export interface Workflow {
   description: string | null;
   content: string; // Markdown content for Antigravity workflows
   filename: string | null; // e.g., "my-workflow.md"
-  scope: 'workspace' | 'global'; // Workflow scope
   tags: string[] | null;
   published: boolean;
   created_at: string;
@@ -23,11 +22,3 @@ export interface WorkflowAuthor {
   display_name: string | null;
   avatar_url: string | null;
 }
-
-// Scope options for the UI
-export const WORKFLOW_SCOPES = [
-  { value: 'workspace', label: 'Workspace', description: 'Stored in your-workspace/.agent/workflows/' },
-  { value: 'global', label: 'Global', description: 'Stored in ~/.gemini/antigravity/global_workflows/' },
-] as const;
-
-export type WorkflowScope = 'workspace' | 'global';
