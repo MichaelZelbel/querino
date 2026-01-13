@@ -97,8 +97,8 @@ export default function WorkflowNew() {
     setIsSubmitting(true);
 
     try {
-      const { data: newWorkflow, error } = await (supabase
-        .from("workflows") as any)
+      const { data: newWorkflow, error } = await supabase
+        .from("workflows")
         .insert({
           title: title.trim(),
           description: description.trim() || null,
@@ -107,7 +107,7 @@ export default function WorkflowNew() {
           author_id: user.id,
           published: isPublic,
         })
-        .select("id")
+        .select("slug")
         .single();
 
       if (error) {
@@ -117,7 +117,7 @@ export default function WorkflowNew() {
       }
 
       toast.success("Workflow created!");
-      navigate(`/workflows/${newWorkflow.id}`);
+      navigate(`/workflows/${newWorkflow.slug}`);
     } catch (err) {
       console.error("Error creating workflow:", err);
       toast.error("Something went wrong");
