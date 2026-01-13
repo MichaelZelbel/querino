@@ -9,12 +9,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command, Shield } from "lucide-react";
+import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command, Shield, Wand2, Upload } from "lucide-react";
 import logoImage from "@/assets/logo.png";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
 import { CommandPalette } from "@/components/CommandPalette";
+import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, loading, signOut } = useAuthContext();
+  const { triggerFileSelect: triggerPromptImport } = useMarkdownImport("prompt");
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -157,13 +159,27 @@ export function Header() {
                     Create
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem asChild>
                     <Link to="/prompts/new" className="flex items-center gap-2 cursor-pointer">
                       <Sparkles className="h-4 w-4" />
                       New Prompt
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/prompts/wizard" className="flex items-center gap-2 cursor-pointer">
+                      <Wand2 className="h-4 w-4" />
+                      Prompt Wizard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={triggerPromptImport}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import Prompt from .md
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/skills/new" className="flex items-center gap-2 cursor-pointer">
                       <FileText className="h-4 w-4" />
@@ -338,6 +354,23 @@ export function Header() {
                     New Prompt
                   </Button>
                 </Link>
+                <Link to="/prompts/wizard" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Wand2 className="h-4 w-4" />
+                    Prompt Wizard
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    triggerPromptImport();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Upload className="h-4 w-4" />
+                  Import Prompt from .md
+                </Button>
                 <Link to="/skills/new" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <FileText className="h-4 w-4" />
