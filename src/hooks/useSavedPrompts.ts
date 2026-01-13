@@ -44,12 +44,23 @@ export function useSavedPrompts() {
     [savedPromptIds]
   );
 
-  // Save a prompt
+  // Save a prompt (with ownership check)
   const savePrompt = useCallback(
     async (promptId: string) => {
       if (!user) return { error: new Error("Not authenticated") };
 
       try {
+        // Check if user owns this prompt (can't save your own prompt)
+        const { data: promptData } = await supabase
+          .from("prompts")
+          .select("author_id")
+          .eq("id", promptId)
+          .maybeSingle();
+
+        if (promptData?.author_id === user.id) {
+          return { error: new Error("Cannot save your own prompt") };
+        }
+
         const { error } = await supabase
           .from("user_saved_prompts")
           .insert({ user_id: user.id, prompt_id: promptId });
