@@ -8,14 +8,16 @@ import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
+import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
+import { useCollections } from "@/hooks/useCollections";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
 
@@ -61,6 +63,9 @@ export default function Library() {
     isPromptPinned,
     refetch: refetchPinned 
   } = usePinnedPrompts();
+
+  // Fetch user's collections
+  const { data: myCollections, isLoading: collectionsLoading } = useCollections(user?.id);
 
   // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
   const filteredMyPrompts = useMemo(() => {
@@ -337,7 +342,7 @@ export default function Library() {
     return null; // Will redirect
   }
 
-  const isLoading = loading || skillsLoading || workflowsLoading || pinnedLoading;
+  const isLoading = loading || skillsLoading || workflowsLoading || pinnedLoading || collectionsLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -551,6 +556,51 @@ export default function Library() {
                           userRating={userRatings[prompt.id]}
                           showSendToLLM
                         />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* Collections Section - only show in personal workspace */}
+              {!isTeamWorkspace && (
+                <section>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className="h-5 w-5 text-primary" />
+                      <h2 className="text-xl font-semibold text-foreground">
+                        My Collections ({myCollections?.length || 0})
+                      </h2>
+                    </div>
+                    <Link to="/collections/new">
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        New Collection
+                      </Button>
+                    </Link>
+                  </div>
+                  {(!myCollections || myCollections.length === 0) ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                        <FolderOpen className="h-8 w-8 text-primary" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        No collections yet
+                      </h3>
+                      <p className="mb-6 max-w-md text-muted-foreground">
+                        Create collections to organize your prompts, skills, and workflows.
+                      </p>
+                      <Link to="/collections/new">
+                        <Button variant="secondary" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          Create Collection
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {myCollections.map((collection) => (
+                        <CollectionCard key={collection.id} collection={collection} showOwner={false} />
                       ))}
                     </div>
                   )}

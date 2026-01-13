@@ -222,12 +222,6 @@ export default function WorkflowDetail() {
                 <WorkflowIcon className="h-3 w-3" />
                 Workflow
               </Badge>
-              {!workflow.published && isAuthor && (
-                <Badge variant="outline" className="gap-1 text-sm">
-                  <Lock className="h-3 w-3" />
-                  Draft
-                </Badge>
-              )}
               {workflow.scope && (
                 <Badge variant="outline" className="gap-1 text-sm">
                   {workflow.scope === 'global' ? (

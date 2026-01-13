@@ -207,12 +207,6 @@ export default function SkillDetail() {
                 <BookOpen className="h-3 w-3" />
                 Skill
               </Badge>
-              {!skill.published && isAuthor && (
-                <Badge variant="outline" className="gap-1 text-sm">
-                  <Lock className="h-3 w-3" />
-                  Draft
-                </Badge>
-              )}
               {skill.tags && skill.tags.length > 0 && (
                 <>
                   {skill.tags.slice(0, 5).map((tag) => (

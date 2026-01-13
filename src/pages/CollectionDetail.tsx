@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Loader2,
@@ -11,8 +13,9 @@ import {
   Globe,
   Lock,
   FileText,
-  Code,
+  BookOpen,
   Workflow,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -20,6 +23,7 @@ import {
   useCollectionItems,
   useCreateCollection,
   useAddToCollection,
+  useRemoveFromCollection,
 } from "@/hooks/useCollections";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useSkills } from "@/hooks/useSkills";
@@ -33,6 +37,7 @@ export default function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [activeFilter, setActiveFilter] = useState<string>("all");
   
   const { data: collection, isLoading: loadingCollection } = useCollection(id || "");
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
@@ -42,21 +47,41 @@ export default function CollectionDetail() {
   
   const createCollection = useCreateCollection();
   const addToCollection = useAddToCollection();
+  const removeFromCollection = useRemoveFromCollection();
 
   const isOwner = user?.id === collection?.owner_id;
 
   // Get full item data
-  const itemsWithData = items?.map((item) => {
-    let data = null;
-    if (item.item_type === "prompt") {
-      data = prompts?.find((p) => p.id === item.item_id);
-    } else if (item.item_type === "skill") {
-      data = skills?.find((s) => s.id === item.item_id);
-    } else if (item.item_type === "workflow") {
-      data = workflows?.find((w) => w.id === item.item_id);
-    }
-    return { ...item, data };
-  });
+  const itemsWithData = useMemo(() => {
+    return items?.map((item) => {
+      let data = null;
+      if (item.item_type === "prompt") {
+        data = prompts?.find((p) => p.id === item.item_id);
+      } else if (item.item_type === "skill") {
+        data = skills?.find((s) => s.id === item.item_id);
+      } else if (item.item_type === "workflow") {
+        data = workflows?.find((w) => w.id === item.item_id);
+      }
+      return { ...item, data };
+    }) || [];
+  }, [items, prompts, skills, workflows]);
+
+  // Filter items by type
+  const filteredItems = useMemo(() => {
+    if (activeFilter === "all") return itemsWithData;
+    return itemsWithData.filter((item) => item.item_type === activeFilter);
+  }, [itemsWithData, activeFilter]);
+
+  // Count items by type
+  const itemCounts = useMemo(() => {
+    const counts = { prompt: 0, skill: 0, workflow: 0 };
+    itemsWithData.forEach((item) => {
+      if (item.item_type in counts) {
+        counts[item.item_type as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [itemsWithData]);
 
   const handleCloneCollection = async () => {
     if (!user || !collection || !items) {
@@ -89,6 +114,19 @@ export default function CollectionDetail() {
     }
   };
 
+  const handleRemoveItem = async (itemId: string) => {
+    if (!id) return;
+    
+    try {
+      await removeFromCollection.mutateAsync({
+        collectionId: id,
+        itemId: itemId,
+      });
+    } catch (error) {
+      console.error("Error removing item:", error);
+    }
+  };
+
   if (loadingCollection || loadingItems) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -107,8 +145,8 @@ export default function CollectionDetail() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Collection not found</h1>
-          <Button onClick={() => navigate("/collections")}>
-            Back to Collections
+          <Button onClick={() => navigate("/library")}>
+            Back to Library
           </Button>
         </main>
         <Footer />
@@ -124,7 +162,7 @@ export default function CollectionDetail() {
       case "prompt":
         return <FileText className="h-4 w-4" />;
       case "skill":
-        return <Code className="h-4 w-4" />;
+        return <BookOpen className="h-4 w-4" />;
       case "workflow":
         return <Workflow className="h-4 w-4" />;
       default:
@@ -135,11 +173,11 @@ export default function CollectionDetail() {
   const getItemLink = (item: any) => {
     switch (item.item_type) {
       case "prompt":
-        return `/prompts/${item.item_id}`;
+        return `/prompts/${item.data?.slug || item.item_id}`;
       case "skill":
-        return `/skills/${item.item_id}`;
+        return `/skills/${item.data?.slug || item.item_id}`;
       case "workflow":
-        return `/workflows/${item.item_id}`;
+        return `/workflows/${item.data?.slug || item.item_id}`;
       default:
         return "#";
     }
@@ -153,10 +191,10 @@ export default function CollectionDetail() {
         <Button
           variant="ghost"
           className="mb-6"
-          onClick={() => navigate("/collections")}
+          onClick={() => navigate("/library")}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Collections
+          Back to Library
         </Button>
 
         {/* Header */}
@@ -215,19 +253,58 @@ export default function CollectionDetail() {
           </Link>
         </div>
 
+        {/* Filter Tabs */}
+        <Tabs value={activeFilter} onValueChange={setActiveFilter} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="all" className="gap-2">
+              All
+              <Badge variant="secondary" className="h-5 px-1.5">
+                {itemsWithData.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="prompt" className="gap-2">
+              <FileText className="h-3.5 w-3.5" />
+              Prompts
+              {itemCounts.prompt > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5">
+                  {itemCounts.prompt}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="skill" className="gap-2">
+              <BookOpen className="h-3.5 w-3.5" />
+              Skills
+              {itemCounts.skill > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5">
+                  {itemCounts.skill}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="gap-2">
+              <Workflow className="h-3.5 w-3.5" />
+              Workflows
+              {itemCounts.workflow > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5">
+                  {itemCounts.workflow}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Items */}
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">
-            Items ({itemsWithData?.length || 0})
+            {activeFilter === "all" ? "All Items" : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`} ({filteredItems.length})
           </h2>
           
-          {itemsWithData && itemsWithData.length > 0 ? (
+          {filteredItems.length > 0 ? (
             <div className="space-y-2">
-              {itemsWithData.map((item) => (
-                <Link key={item.id} to={getItemLink(item)}>
-                  <Card className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
+              {filteredItems.map((item) => (
+                <Card key={item.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Link to={getItemLink(item)} className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="p-2 bg-muted rounded">
                           {getItemIcon(item.item_type)}
                         </div>
@@ -236,7 +313,7 @@ export default function CollectionDetail() {
                             <span className="font-medium truncate">
                               {item.data?.title || "Unknown item"}
                             </span>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs capitalize">
                               {item.item_type}
                             </Badge>
                           </div>
@@ -246,17 +323,30 @@ export default function CollectionDetail() {
                             </p>
                           )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                      </Link>
+                      {isOwner && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveItem(item.id)}
+                          disabled={removeFromCollection.isPending}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-muted-foreground">
-                  This collection is empty
+                  {activeFilter === "all" 
+                    ? "This collection is empty"
+                    : `No ${activeFilter}s in this collection`}
                 </p>
               </CardContent>
             </Card>
@@ -264,7 +354,9 @@ export default function CollectionDetail() {
         </div>
 
         {/* Comments & Discussion */}
-        <CommentsSection itemType="collection" itemId={collection.id} teamId={(collection as any).team_id} />
+        <div className="mt-8">
+          <CommentsSection itemType="collection" itemId={collection.id} teamId={(collection as any).team_id} />
+        </div>
       </main>
 
       <Footer />
