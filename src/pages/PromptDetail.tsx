@@ -135,6 +135,12 @@ export default function PromptDetail() {
       return;
     }
 
+    // Guard: Can't save your own prompt
+    if (isAuthor) {
+      toast.info("That one's already yours 🙂");
+      return;
+    }
+
     setSaving(true);
     const { error } = await toggleSave(prompt.id);
     setSaving(false);
@@ -406,25 +412,28 @@ export default function PromptDetail() {
               )}
             </Button>
             
-            <Button
-              size="lg"
-              variant={isSaved ? "secondary" : "outline"}
-              onClick={handleSaveToLibrary}
-              disabled={saving}
-              className="gap-2"
-            >
-              {isSaved ? (
-                <>
-                  <BookmarkCheck className="h-4 w-4" />
-                  Saved ✓
-                </>
-              ) : (
-                <>
-                  <Bookmark className="h-4 w-4" />
-                  Save to My Library
-                </>
-              )}
-            </Button>
+            {/* Only show Save button for prompts user doesn't own */}
+            {!isAuthor && (
+              <Button
+                size="lg"
+                variant={isSaved ? "secondary" : "outline"}
+                onClick={handleSaveToLibrary}
+                disabled={saving}
+                className="gap-2"
+              >
+                {isSaved ? (
+                  <>
+                    <BookmarkCheck className="h-4 w-4" />
+                    Saved ✓
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="h-4 w-4" />
+                    Save to My Library
+                  </>
+                )}
+              </Button>
+            )}
 
             {user && (
               <Button
