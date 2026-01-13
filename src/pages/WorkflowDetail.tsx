@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, ExternalLink, FolderPlus, GitPullRequest } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FolderOpen, Globe, FileText } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -38,7 +38,7 @@ export default function WorkflowDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isJsonOpen, setIsJsonOpen] = useState(false);
+  const [isContentOpen, setIsContentOpen] = useState(true);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(workflow?.id);
@@ -98,13 +98,26 @@ export default function WorkflowDetail() {
     fetchWorkflow();
   }, [slug]);
 
+  // Get workflow content - use new content field, or fall back to json for legacy
+  const getWorkflowContent = (): string => {
+    if (!workflow) return "";
+    if (workflow.content) return workflow.content;
+    // Legacy fallback: stringify JSON
+    if (workflow.json) {
+      return typeof workflow.json === 'string' ? workflow.json : JSON.stringify(workflow.json, null, 2);
+    }
+    return "";
+  };
+
+  const workflowContent = getWorkflowContent();
+
   const handleCopy = async () => {
     if (!workflow) return;
     
     try {
-      await navigator.clipboard.writeText(JSON.stringify(workflow.json, null, 2));
+      await navigator.clipboard.writeText(workflowContent);
       setCopied(true);
-      toast.success("Workflow JSON copied!");
+      toast.success("Workflow content copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error("Failed to copy workflow");
@@ -114,16 +127,7 @@ export default function WorkflowDetail() {
   const handleApplySuggestion = async (suggestion: any) => {
     if (!workflow) return;
     
-    // For workflows, the content is the JSON string - parse it back
-    let jsonContent = workflow.json;
-    try {
-      jsonContent = JSON.parse(suggestion.content);
-    } catch {
-      // If not valid JSON, wrap it
-      jsonContent = { content: suggestion.content };
-    }
-    
-    const updates: any = { json: jsonContent };
+    const updates: any = { content: suggestion.content };
     if (suggestion.title) updates.title = suggestion.title;
     if (suggestion.description) updates.description = suggestion.description;
     
@@ -198,9 +202,6 @@ export default function WorkflowDetail() {
     );
   }
 
-  // For workflows, the "content" for suggestions is the JSON stringified
-  const workflowContent = JSON.stringify(workflow.json, null, 2);
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
@@ -227,6 +228,16 @@ export default function WorkflowDetail() {
                   Draft
                 </Badge>
               )}
+              {workflow.scope && (
+                <Badge variant="outline" className="gap-1 text-sm">
+                  {workflow.scope === 'global' ? (
+                    <Globe className="h-3 w-3" />
+                  ) : (
+                    <FolderOpen className="h-3 w-3" />
+                  )}
+                  {workflow.scope === 'global' ? 'Global' : 'Workspace'}
+                </Badge>
+              )}
               {workflow.tags && workflow.tags.length > 0 && (
                 <>
                   {workflow.tags.slice(0, 5).map((tag) => (
@@ -251,6 +262,14 @@ export default function WorkflowDetail() {
               <p className="text-lg text-muted-foreground">
                 {workflow.description}
               </p>
+            )}
+
+            {/* Filename display */}
+            {workflow.filename && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                <code className="font-mono bg-muted px-2 py-0.5 rounded">{workflow.filename}</code>
+              </div>
             )}
 
             <div className="mt-6 flex flex-wrap items-center gap-6">
@@ -282,16 +301,16 @@ export default function WorkflowDetail() {
           </div>
 
           <div className="mb-8">
-            <Collapsible open={isJsonOpen} onOpenChange={setIsJsonOpen}>
+            <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
               <CollapsibleTrigger asChild>
                 <Button variant="outline" className="w-full justify-between mb-4">
-                  <span className="text-lg font-semibold">Workflow JSON</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isJsonOpen ? "rotate-180" : ""}`} />
+                  <span className="text-lg font-semibold">Workflow Content</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isContentOpen ? "rotate-180" : ""}`} />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
-                  <pre className="whitespace-pre-wrap font-mono text-xs text-foreground leading-relaxed">
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
                     {workflowContent}
                   </pre>
                 </div>
@@ -314,7 +333,7 @@ export default function WorkflowDetail() {
               ) : (
                 <>
                   <Copy className="h-4 w-4" />
-                  Copy JSON
+                  Copy Content
                 </>
               )}
             </Button>
@@ -351,17 +370,6 @@ export default function WorkflowDetail() {
                 </Button>
               </>
             )}
-
-            <Button
-              size="lg"
-              variant="outline"
-              className="gap-2"
-              disabled
-              title="Coming soon"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Open in Antigravity
-            </Button>
 
             {user && (
               <Button
