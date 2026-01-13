@@ -66,8 +66,8 @@ export default function SkillNew() {
     setIsSubmitting(true);
 
     try {
-      const { data: newSkill, error } = await (supabase
-        .from("skills") as any)
+      const { data: newSkill, error } = await supabase
+        .from("skills")
         .insert({
           title: title.trim(),
           description: description.trim() || null,
@@ -76,7 +76,7 @@ export default function SkillNew() {
           author_id: user.id,
           published: isPublic,
         })
-        .select("id")
+        .select("slug")
         .single();
 
       if (error) {
@@ -86,7 +86,7 @@ export default function SkillNew() {
       }
 
       toast.success("Skill created!");
-      navigate(`/skills/${newSkill.id}`);
+      navigate(`/skills/${newSkill.slug}`);
     } catch (err) {
       console.error("Error creating skill:", err);
       toast.error("Something went wrong");
