@@ -11,8 +11,7 @@ import { WorkflowCard } from "@/components/workflows/WorkflowCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ImportMarkdownButton } from "@/components/markdown";
-import { Loader2, Library as LibraryIcon, Sparkles, Plus, Wand2, Search, Github, FileText, Workflow, Building2, Pin } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
@@ -382,19 +381,6 @@ export default function Library() {
                   {syncing ? "Syncing..." : "Sync to GitHub"}
                 </Button>
               )}
-              <Link to="/prompts/wizard">
-                <Button variant="outline" className="gap-2">
-                  <Wand2 className="h-4 w-4" />
-                  Prompt Wizard
-                </Button>
-              </Link>
-              <ImportMarkdownButton type="prompt" size="default" variant="outline" />
-              <Link to="/prompts/new">
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Prompt
-                </Button>
-              </Link>
             </div>
           </div>
 
@@ -481,22 +467,11 @@ export default function Library() {
               {/* My Skills Section */}
               {(mySkills?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <h2 className="text-xl font-semibold text-foreground">
-                        {isTeamWorkspace ? "Team Skills" : "My Skills"} ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
-                      </h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ImportMarkdownButton type="skill" size="sm" variant="outline" />
-                      <Link to="/skills/new">
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Plus className="h-4 w-4" />
-                          New Skill
-                        </Button>
-                      </Link>
-                    </div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {isTeamWorkspace ? "Team Skills" : "My Skills"} ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
+                    </h2>
                   </div>
                   {filteredMySkills.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
@@ -515,22 +490,11 @@ export default function Library() {
               {/* My Workflows Section */}
               {(myWorkflows?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Workflow className="h-5 w-5 text-primary" />
-                      <h2 className="text-xl font-semibold text-foreground">
-                        {isTeamWorkspace ? "Team Workflows" : "My Workflows"} ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
-                      </h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ImportMarkdownButton type="workflow" size="sm" variant="outline" />
-                      <Link to="/workflows/new">
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Plus className="h-4 w-4" />
-                          New Workflow
-                        </Button>
-                      </Link>
-                    </div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <Workflow className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {isTeamWorkspace ? "Team Workflows" : "My Workflows"} ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
+                    </h2>
                   </div>
                   {filteredMyWorkflows.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
