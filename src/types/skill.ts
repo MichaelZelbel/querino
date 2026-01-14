@@ -5,6 +5,7 @@ export interface Skill {
   title: string;
   description: string | null;
   content: string;
+  category: string | null;
   tags: string[] | null;
   published: boolean;
   created_at: string;

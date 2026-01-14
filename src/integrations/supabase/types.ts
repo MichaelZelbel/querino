@@ -498,6 +498,7 @@ export type Database = {
       skills: {
         Row: {
           author_id: string | null
+          category: string | null
           content: string
           created_at: string | null
           description: string | null
@@ -512,6 +513,7 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
+          category?: string | null
           content: string
           created_at?: string | null
           description?: string | null
@@ -526,6 +528,7 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
+          category?: string | null
           content?: string
           created_at?: string | null
           description?: string | null
@@ -734,6 +737,7 @@ export type Database = {
       workflows: {
         Row: {
           author_id: string | null
+          category: string | null
           content: string | null
           created_at: string | null
           description: string | null
@@ -751,6 +755,7 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
+          category?: string | null
           content?: string | null
           created_at?: string | null
           description?: string | null
@@ -768,6 +773,7 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
+          category?: string | null
           content?: string | null
           created_at?: string | null
           description?: string | null

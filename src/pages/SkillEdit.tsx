@@ -10,12 +10,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import { categoryOptions } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { ParsedMarkdown } from "@/lib/markdown";
 
@@ -23,6 +31,7 @@ interface SkillFormData {
   title: string;
   description: string;
   content: string;
+  category: string;
   tags: string[];
   isPublic: boolean;
 }
@@ -40,6 +49,7 @@ export default function SkillEdit() {
     title: "",
     description: "",
     content: "",
+    category: "",
     tags: [],
     isPublic: false,
   });
@@ -54,6 +64,7 @@ export default function SkillEdit() {
         title: data.title.trim(),
         description: data.description.trim() || null,
         content: data.content.trim(),
+        category: data.category || null,
         tags: data.tags.length > 0 ? data.tags : null,
         published: data.isPublic,
       })
@@ -105,6 +116,7 @@ export default function SkillEdit() {
           title: data.title,
           description: data.description || "",
           content: data.content,
+          category: data.category || "",
           tags: data.tags || [],
           isPublic: data.published ?? false,
         };
@@ -163,6 +175,7 @@ export default function SkillEdit() {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         content: formData.content.trim(),
+        category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
       };
@@ -220,6 +233,7 @@ export default function SkillEdit() {
       title: data.frontmatter.title,
       description: data.frontmatter.description || "",
       content: data.content,
+      category: formData.category, // Keep existing category
       tags: data.frontmatter.tags || [],
       isPublic: formData.isPublic, // Keep existing visibility state
     });
@@ -334,6 +348,23 @@ export default function SkillEdit() {
                 placeholder="Brief description of what this skill does..."
                 rows={2}
               />
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

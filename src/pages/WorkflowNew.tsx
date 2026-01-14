@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,46 +10,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, X, FileText } from "lucide-react";
 import { toast } from "sonner";
-
-// Generate a slug from title
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 50);
-}
+import { categoryOptions } from "@/types/prompt";
 
 export default function WorkflowNew() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [filename, setFilename] = useState("");
-  const [filenameManuallyEdited, setFilenameManuallyEdited] = useState(false);
+  const [category, setCategory] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
-
-  // Auto-generate filename from title
-  const suggestedFilename = useMemo(() => {
-    const slug = generateSlug(title);
-    return slug ? `${slug}.md` : "";
-  }, [title]);
-
-  // Update filename when title changes (if not manually edited)
-  useEffect(() => {
-    if (!filenameManuallyEdited && suggestedFilename) {
-      setFilename(suggestedFilename);
-    }
-  }, [suggestedFilename, filenameManuallyEdited]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -76,32 +60,29 @@ export default function WorkflowNew() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleFilenameChange = (value: string) => {
-    setFilename(value);
-    setFilenameManuallyEdited(true);
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!content.trim()) {
+      newErrors.content = "Workflow content is required";
+    }
+
+    if (!title.trim()) {
+      newErrors.title = "Title is required";
+    }
+
+    if (!category) {
+      newErrors.category = "Please select a category";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!user) return;
 
-    if (!title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-
-    if (!content.trim()) {
-      toast.error("Workflow content is required");
-      return;
-    }
-
-    // Ensure filename ends with .md
-    let finalFilename = filename.trim();
-    if (!finalFilename) {
-      finalFilename = suggestedFilename || "workflow.md";
-    }
-    if (!finalFilename.endsWith(".md")) {
-      finalFilename += ".md";
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
@@ -112,7 +93,7 @@ export default function WorkflowNew() {
           title: title.trim(),
           description: description.trim() || null,
           content: content.trim(),
-          filename: finalFilename,
+          category: category,
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
           published: isPublic,
@@ -190,13 +171,17 @@ Describe what this workflow does...
 Example usage here
 \`\`\``}
                 rows={14}
-                className="font-mono text-sm"
+                className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
               />
+              {errors.content && (
+                <p className="text-sm text-destructive">{errors.content}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Write your workflow instructions in Markdown format.
               </p>
             </div>
 
+            {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -204,26 +189,14 @@ Example usage here
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Code Review Workflow"
+                className={errors.title ? "border-destructive" : ""}
               />
+              {errors.title && (
+                <p className="text-sm text-destructive">{errors.title}</p>
+              )}
             </div>
 
-            {/* Filename */}
-            <div className="space-y-2">
-              <Label htmlFor="filename">Filename</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="filename"
-                  value={filename}
-                  onChange={(e) => handleFilenameChange(e.target.value)}
-                  placeholder="my-workflow.md"
-                  className="font-mono text-sm"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Auto-generated from title. Must end with .md
-              </p>
-            </div>
-
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -235,6 +208,27 @@ Example usage here
               />
             </div>
 
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && (
+                <p className="text-sm text-destructive">{errors.category}</p>
+              )}
+            </div>
+
+            {/* Tags */}
             <div className="space-y-2">
               <Label htmlFor="tags">Tags</Label>
               <Input
