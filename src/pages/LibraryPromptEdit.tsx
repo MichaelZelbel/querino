@@ -74,7 +74,7 @@ interface PromptVersion {
 }
 
 export default function LibraryPromptEdit() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
@@ -106,24 +106,27 @@ export default function LibraryPromptEdit() {
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
+  // Get the prompt ID for database operations
+  const promptId = prompt?.id;
+
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/library/${id}/edit`, { replace: true });
+      navigate(`/auth?redirect=/library/${slug}/edit`, { replace: true });
     }
-  }, [user, authLoading, navigate, id]);
+  }, [user, authLoading, navigate, slug]);
 
   // Fetch prompt and versions
   useEffect(() => {
     async function fetchData() {
-      if (!id || !user) return;
+      if (!slug || !user) return;
 
       try {
-        // Fetch prompt
+        // Fetch prompt by slug
         const { data: promptData, error: promptError } = await supabase
           .from("prompts")
           .select("*")
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (promptError) {
@@ -151,11 +154,11 @@ export default function LibraryPromptEdit() {
         setTags(typedPrompt.tags || []);
         setIsPublic(typedPrompt.is_public);
 
-        // Fetch versions
+        // Fetch versions using the prompt's ID
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
           .select("*")
-          .eq("prompt_id", id)
+          .eq("prompt_id", promptData.id)
           .order("version_number", { ascending: false });
 
         if (!versionsError && versionsData) {
@@ -172,7 +175,7 @@ export default function LibraryPromptEdit() {
     if (user) {
       fetchData();
     }
-  }, [id, user]);
+  }, [slug, user]);
 
   const normalizeTag = (tag: string): string => {
     return tag
@@ -286,7 +289,7 @@ export default function LibraryPromptEdit() {
   };
 
   const handleSaveChanges = async () => {
-    if (!validate() || !id || !user) return;
+    if (!validate() || !promptId || !user) return;
 
     setIsSaving(true);
     try {
@@ -300,7 +303,7 @@ export default function LibraryPromptEdit() {
           tags: tags.length > 0 ? tags : null,
           is_public: isPublic,
         })
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (error) {
@@ -319,7 +322,7 @@ export default function LibraryPromptEdit() {
   };
 
   const handleSaveAsNewVersion = async () => {
-    if (!validate() || !id || !user) return;
+    if (!validate() || !promptId || !user) return;
 
     setIsSavingVersion(true);
     try {
@@ -330,7 +333,7 @@ export default function LibraryPromptEdit() {
       const { error: versionError } = await supabase
         .from("prompt_versions")
         .insert({
-          prompt_id: id,
+          prompt_id: promptId,
           version_number: nextVersionNumber,
           title: title.trim(),
           description: shortDescription.trim(),
@@ -356,7 +359,7 @@ export default function LibraryPromptEdit() {
           tags: tags.length > 0 ? tags : null,
           is_public: isPublic,
         })
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (updateError) {
@@ -369,7 +372,7 @@ export default function LibraryPromptEdit() {
       const { data: newVersions } = await supabase
         .from("prompt_versions")
         .select("*")
-        .eq("prompt_id", id)
+        .eq("prompt_id", promptId)
         .order("version_number", { ascending: false });
 
       if (newVersions) {
@@ -387,14 +390,14 @@ export default function LibraryPromptEdit() {
   };
 
   const handleDelete = async () => {
-    if (!id || !user) return;
+    if (!promptId || !user) return;
 
     setIsDeleting(true);
     try {
       const { error } = await supabase
         .from("prompts")
         .delete()
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (error) {
@@ -414,7 +417,7 @@ export default function LibraryPromptEdit() {
   };
 
   const handlePublish = async (data: { summary: string; exampleOutput: string }) => {
-    if (!id || !user) return;
+    if (!promptId || !user) return;
 
     setIsPublishing(true);
     try {
@@ -426,7 +429,7 @@ export default function LibraryPromptEdit() {
           summary: data.summary,
           example_output: data.exampleOutput || null,
         })
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (error) {
@@ -446,7 +449,7 @@ export default function LibraryPromptEdit() {
       setIsPublic(true);
       setShowPublishModal(false);
       toast.success("Prompt published successfully!");
-      navigate(`/prompts/${id}`);
+      navigate(`/prompts/${slug}`);
     } catch (err) {
       console.error("Error publishing:", err);
       toast.error("Something went wrong. Please try again.");
@@ -456,7 +459,7 @@ export default function LibraryPromptEdit() {
   };
 
   const handleUnpublish = async () => {
-    if (!id || !user) return;
+    if (!promptId || !user) return;
 
     setIsSaving(true);
     try {
@@ -465,7 +468,7 @@ export default function LibraryPromptEdit() {
         .update({
           is_public: false,
         })
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (error) {
@@ -572,7 +575,7 @@ export default function LibraryPromptEdit() {
               {/* View/Publish buttons */}
               {prompt?.is_public ? (
                 <>
-                  <Link to={`/prompts/${id}`}>
+                  <Link to={`/prompts/${slug}`}>
                     <Button variant="outline" className="gap-2">
                       <Eye className="h-4 w-4" />
                       View Public Page
@@ -608,7 +611,7 @@ export default function LibraryPromptEdit() {
                 Test Prompt
               </Button>
 
-              <Link to={`/library/${id}/versions`}>
+              <Link to={`/library/${slug}/versions`}>
                 <Button variant="outline" className="gap-2">
                   <History className="h-4 w-4" />
                   Version History

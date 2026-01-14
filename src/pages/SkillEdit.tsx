@@ -37,7 +37,7 @@ interface SkillFormData {
 }
 
 export default function SkillEdit() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,9 +55,12 @@ export default function SkillEdit() {
   });
   const [tagInput, setTagInput] = useState("");
 
+  // Get the skill ID for database operations
+  const skillId = skill?.id;
+
   // Autosave handler
   const handleAutosave = useCallback(async (data: SkillFormData) => {
-    if (!user || !id) return;
+    if (!user || !skillId) return;
 
     const { error } = await (supabase.from("skills") as any)
       .update({
@@ -68,10 +71,10 @@ export default function SkillEdit() {
         tags: data.tags.length > 0 ? data.tags : null,
         published: data.isPublic,
       })
-      .eq("id", id);
+      .eq("id", skillId);
 
     if (error) throw error;
-  }, [id, user]);
+  }, [skillId, user]);
 
   const isOwner = skill?.author_id === user?.id;
 
@@ -84,19 +87,19 @@ export default function SkillEdit() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/skills/${id}/edit`, { replace: true });
+      navigate(`/auth?redirect=/skills/${slug}/edit`, { replace: true });
     }
-  }, [user, authLoading, navigate, id]);
+  }, [user, authLoading, navigate, slug]);
 
   useEffect(() => {
     async function fetchSkill() {
-      if (!id || !user) return;
+      if (!slug || !user) return;
 
       try {
         const { data, error } = await (supabase
           .from("skills") as any)
           .select("*")
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (error || !data) {
@@ -134,7 +137,7 @@ export default function SkillEdit() {
     if (user) {
       fetchSkill();
     }
-  }, [id, user, navigate, resetLastSaved]);
+  }, [slug, user, navigate, resetLastSaved]);
 
   const normalizeTag = (tag: string) => {
     return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -156,7 +159,7 @@ export default function SkillEdit() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !id) return;
+    if (!user || !skillId) return;
 
     if (!formData.title.trim()) {
       toast.error("Title is required");
@@ -182,7 +185,7 @@ export default function SkillEdit() {
 
       const { error } = await (supabase.from("skills") as any)
         .update(updateData)
-        .eq("id", id);
+        .eq("id", skillId);
 
       if (error) {
         console.error("Error updating skill:", error);
@@ -192,7 +195,7 @@ export default function SkillEdit() {
 
       resetLastSaved({ ...formData, isPublic: formData.isPublic });
       toast.success("Skill saved!");
-      navigate(`/skills/${id}`);
+      navigate(`/skills/${slug}`);
     } catch (err) {
       console.error("Error updating skill:", err);
       toast.error("Something went wrong");
@@ -202,12 +205,12 @@ export default function SkillEdit() {
   };
 
   const handleDelete = async () => {
-    if (!id || !confirm("Are you sure you want to delete this skill?")) return;
+    if (!skillId || !confirm("Are you sure you want to delete this skill?")) return;
 
     try {
       const { error } = await (supabase.from("skills") as any)
         .delete()
-        .eq("id", id);
+        .eq("id", skillId);
 
       if (error) throw error;
 

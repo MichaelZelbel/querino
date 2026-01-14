@@ -17,7 +17,7 @@ import type { Prompt } from "@/types/prompt";
 import type { ParsedMarkdown } from "@/lib/markdown";
 
 export default function PromptEdit() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
@@ -38,9 +38,12 @@ export default function PromptEdit() {
     is_public: false,
   });
 
+  // Get the prompt ID for database operations
+  const promptId = prompt?.id;
+
   // Autosave
   const handleAutosave = useCallback(async (data: PromptFormData) => {
-    if (!user || !id) return;
+    if (!user || !promptId) return;
 
     const { error } = await supabase
       .from("prompts")
@@ -52,11 +55,11 @@ export default function PromptEdit() {
         tags: data.tags.length > 0 ? data.tags : null,
         is_public: data.is_public,
       })
-      .eq("id", id)
+      .eq("id", promptId)
       .eq("author_id", user.id);
 
     if (error) throw error;
-  }, [id, user]);
+  }, [promptId, user]);
 
   const isOwner = prompt?.author_id === user?.id;
 
@@ -70,20 +73,20 @@ export default function PromptEdit() {
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/prompts/${id}/edit`, { replace: true });
+      navigate(`/auth?redirect=/prompts/${slug}/edit`, { replace: true });
     }
-  }, [user, authLoading, navigate, id]);
+  }, [user, authLoading, navigate, slug]);
 
-  // Fetch prompt
+  // Fetch prompt by slug
   useEffect(() => {
     async function fetchPrompt() {
-      if (!id || !user) return;
+      if (!slug || !user) return;
 
       try {
         const { data, error } = await supabase
           .from("prompts")
           .select("*")
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (error) {
@@ -117,10 +120,10 @@ export default function PromptEdit() {
     if (user) {
       fetchPrompt();
     }
-  }, [id, user, resetLastSaved]);
+  }, [slug, user, resetLastSaved]);
 
   const handleSubmit = async (data: PromptFormData) => {
-    if (!user || !id) return;
+    if (!user || !promptId) return;
 
     setIsSubmitting(true);
 
@@ -135,7 +138,7 @@ export default function PromptEdit() {
           tags: data.tags.length > 0 ? data.tags : null,
           is_public: data.is_public,
         })
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (error) {
@@ -146,7 +149,7 @@ export default function PromptEdit() {
 
       resetLastSaved(data);
       toast.success("Prompt updated successfully!");
-      navigate(`/prompts/${id}`);
+      navigate(`/prompts/${slug}`);
     } catch (err) {
       console.error("Error updating prompt:", err);
       toast.error("Something went wrong. Please try again.");
@@ -156,7 +159,7 @@ export default function PromptEdit() {
   };
 
   const handleCancel = () => {
-    navigate(`/prompts/${id}`);
+    navigate(`/prompts/${slug}`);
   };
 
   const handleFormChange = useCallback((data: PromptFormData) => {
@@ -164,7 +167,7 @@ export default function PromptEdit() {
   }, []);
 
   const handleCreateVersion = async () => {
-    if (!user || !id || !prompt) return;
+    if (!user || !promptId || !prompt) return;
 
     setIsCreatingVersion(true);
     try {
@@ -172,7 +175,7 @@ export default function PromptEdit() {
       const { data: versions } = await supabase
         .from("prompt_versions")
         .select("version_number")
-        .eq("prompt_id", id)
+        .eq("prompt_id", promptId)
         .order("version_number", { ascending: false })
         .limit(1);
 
@@ -180,7 +183,7 @@ export default function PromptEdit() {
 
       // Create a new version
       const { error } = await supabase.from("prompt_versions").insert({
-        prompt_id: id,
+        prompt_id: promptId,
         version_number: nextVersion,
         title: formData.title,
         content: formData.content,
@@ -275,7 +278,7 @@ export default function PromptEdit() {
             <p className="mb-8 text-lg text-muted-foreground">
               You don't have permission to edit this prompt.
             </p>
-            <Link to={`/prompts/${id}`}>
+            <Link to={`/prompts/${slug}`}>
               <Button className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Prompt
@@ -295,7 +298,7 @@ export default function PromptEdit() {
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-2xl px-4">
           <Link
-            to={`/prompts/${id}`}
+            to={`/prompts/${slug}`}
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
