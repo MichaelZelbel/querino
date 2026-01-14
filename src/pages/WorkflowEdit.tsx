@@ -10,12 +10,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { DiffViewerModal } from "@/components/editors/DiffViewerModal";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import { categoryOptions } from "@/types/prompt";
 import type { Workflow } from "@/types/workflow";
 import type { ParsedMarkdown } from "@/lib/markdown";
 
@@ -23,7 +31,7 @@ interface WorkflowFormData {
   title: string;
   description: string;
   content: string;
-  filename: string;
+  category: string;
   tags: string[];
   isPublic: boolean;
 }
@@ -41,7 +49,7 @@ export default function WorkflowEdit() {
     title: "",
     description: "",
     content: "",
-    filename: "",
+    category: "",
     tags: [],
     isPublic: false,
   });
@@ -56,7 +64,7 @@ export default function WorkflowEdit() {
         title: data.title.trim(),
         description: data.description.trim() || null,
         content: data.content.trim(),
-        filename: data.filename.trim() || null,
+        category: data.category || null,
         tags: data.tags.length > 0 ? data.tags : null,
         published: data.isPublic,
       })
@@ -116,7 +124,7 @@ export default function WorkflowEdit() {
           title: data.title,
           description: data.description || "",
           content: workflowContent,
-          filename: data.filename || `${data.slug}.md`,
+          category: data.category || "",
           tags: data.tags || [],
           isPublic: data.published ?? false,
         };
@@ -168,12 +176,6 @@ export default function WorkflowEdit() {
       return;
     }
 
-    // Ensure filename ends with .md
-    let finalFilename = formData.filename.trim();
-    if (finalFilename && !finalFilename.endsWith(".md")) {
-      finalFilename += ".md";
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -181,7 +183,7 @@ export default function WorkflowEdit() {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         content: formData.content.trim(),
-        filename: finalFilename || null,
+        category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
       };
@@ -240,7 +242,7 @@ export default function WorkflowEdit() {
       title: data.frontmatter.title || formData.title,
       description: data.frontmatter.description || "",
       content: data.content,
-      filename: formData.filename,
+      category: formData.category,
       tags: data.frontmatter.tags || [],
       isPublic: formData.isPublic,
     });
@@ -359,21 +361,7 @@ Describe what this workflow does...
               />
             </div>
 
-            {/* Filename */}
-            <div className="space-y-2">
-              <Label htmlFor="filename">Filename</Label>
-              <Input
-                id="filename"
-                value={formData.filename}
-                onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
-                placeholder="my-workflow.md"
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                Must end with .md
-              </p>
-            </div>
-
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -383,6 +371,23 @@ Describe what this workflow does...
                 placeholder="Brief description of what this workflow does..."
                 rows={2}
               />
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

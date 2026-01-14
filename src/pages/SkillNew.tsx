@@ -10,20 +10,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { categoryOptions } from "@/types/prompt";
 
 export default function SkillNew() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
+  const [category, setCategory] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -50,18 +60,29 @@ export default function SkillNew() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!content.trim()) {
+      newErrors.content = "Skill content is required";
+    }
+
+    if (!title.trim()) {
+      newErrors.title = "Title is required";
+    }
+
+    if (!category) {
+      newErrors.category = "Please select a category";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
 
-    if (!title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-
-    if (!content.trim()) {
-      toast.error("Content is required");
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
@@ -72,6 +93,7 @@ export default function SkillNew() {
           title: title.trim(),
           description: description.trim() || null,
           content: content.trim(),
+          category: category,
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
           published: isPublic,
@@ -132,10 +154,14 @@ export default function SkillNew() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Enter the skill file content, markdown supported..."
                 rows={12}
-                className="font-mono text-sm"
+                className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
               />
+              {errors.content && (
+                <p className="text-sm text-destructive">{errors.content}</p>
+              )}
             </div>
 
+            {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -143,9 +169,14 @@ export default function SkillNew() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Expert Content Writer"
+                className={errors.title ? "border-destructive" : ""}
               />
+              {errors.title && (
+                <p className="text-sm text-destructive">{errors.title}</p>
+              )}
             </div>
 
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -157,6 +188,27 @@ export default function SkillNew() {
               />
             </div>
 
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && (
+                <p className="text-sm text-destructive">{errors.category}</p>
+              )}
+            </div>
+
+            {/* Tags */}
             <div className="space-y-2">
               <Label htmlFor="tags">Tags</Label>
               <Input

@@ -24,12 +24,15 @@ export interface ParsedMarkdown {
  * - remove leading/trailing -
  */
 export function slugify(title: string): string {
+  if (!title || !title.trim()) {
+    return "querino-export";
+  }
   return title
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/^-|-$/g, "") || "querino-export";
 }
 
 /**
