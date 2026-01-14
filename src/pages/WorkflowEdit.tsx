@@ -37,7 +37,7 @@ interface WorkflowFormData {
 }
 
 export default function WorkflowEdit() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,9 +55,12 @@ export default function WorkflowEdit() {
   });
   const [tagInput, setTagInput] = useState("");
 
+  // Get the workflow ID for database operations
+  const workflowId = workflow?.id;
+
   // Autosave handler
   const handleAutosave = useCallback(async (data: WorkflowFormData) => {
-    if (!user || !id) return;
+    if (!user || !workflowId) return;
 
     const { error } = await (supabase.from("workflows") as any)
       .update({
@@ -68,10 +71,10 @@ export default function WorkflowEdit() {
         tags: data.tags.length > 0 ? data.tags : null,
         published: data.isPublic,
       })
-      .eq("id", id);
+      .eq("id", workflowId);
 
     if (error) throw error;
-  }, [id, user]);
+  }, [workflowId, user]);
 
   const isOwner = workflow?.author_id === user?.id;
 
@@ -84,19 +87,19 @@ export default function WorkflowEdit() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/workflows/${id}/edit`, { replace: true });
+      navigate(`/auth?redirect=/workflows/${slug}/edit`, { replace: true });
     }
-  }, [user, authLoading, navigate, id]);
+  }, [user, authLoading, navigate, slug]);
 
   useEffect(() => {
     async function fetchWorkflow() {
-      if (!id || !user) return;
+      if (!slug || !user) return;
 
       try {
         const { data, error } = await (supabase
           .from("workflows") as any)
           .select("*")
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (error || !data) {
@@ -142,7 +145,7 @@ export default function WorkflowEdit() {
     if (user) {
       fetchWorkflow();
     }
-  }, [id, user, navigate, resetLastSaved]);
+  }, [slug, user, navigate, resetLastSaved]);
 
   const normalizeTag = (tag: string) => {
     return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -164,7 +167,7 @@ export default function WorkflowEdit() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !id) return;
+    if (!user || !workflowId) return;
 
     if (!formData.title.trim()) {
       toast.error("Title is required");
@@ -190,7 +193,7 @@ export default function WorkflowEdit() {
 
       const { error } = await (supabase.from("workflows") as any)
         .update(updateData)
-        .eq("id", id);
+        .eq("id", workflowId);
 
       if (error) {
         console.error("Error updating workflow:", error);
@@ -200,7 +203,7 @@ export default function WorkflowEdit() {
 
       resetLastSaved({ ...formData, isPublic: formData.isPublic });
       toast.success("Workflow saved!");
-      navigate(`/workflows/${workflow?.slug || id}`);
+      navigate(`/workflows/${slug}`);
     } catch (err) {
       console.error("Error updating workflow:", err);
       toast.error("Something went wrong");
@@ -210,12 +213,12 @@ export default function WorkflowEdit() {
   };
 
   const handleDelete = async () => {
-    if (!id || !confirm("Are you sure you want to delete this workflow?")) return;
+    if (!workflowId || !confirm("Are you sure you want to delete this workflow?")) return;
 
     try {
       const { error } = await (supabase.from("workflows") as any)
         .delete()
-        .eq("id", id);
+        .eq("id", workflowId);
 
       if (error) throw error;
 
