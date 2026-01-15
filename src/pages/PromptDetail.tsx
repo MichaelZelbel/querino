@@ -20,11 +20,11 @@ import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, FlaskConical, Pin, PinOff, FolderPlus, GitPullRequest, History } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History } from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
-import { TestPromptModal } from "@/components/prompts/TestPromptModal";
+
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { toast } from "sonner";
@@ -49,7 +49,7 @@ export default function PromptDetail() {
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
-  const [showTestModal, setShowTestModal] = useState(false);
+  
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -513,17 +513,6 @@ export default function PromptDetail() {
               </Button>
             )}
 
-            {user && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setShowTestModal(true)}
-                className="gap-2"
-              >
-                <FlaskConical className="h-4 w-4" />
-                Test Prompt
-              </Button>
-            )}
 
             {user && (
               <Button
@@ -555,13 +544,6 @@ export default function PromptDetail() {
             userId={user?.id}
           />
 
-          <TestPromptModal
-            isOpen={showTestModal}
-            onClose={() => setShowTestModal(false)}
-            promptContent={prompt.content}
-            promptTitle={prompt.title}
-            userId={user?.id}
-          />
 
           <AddToCollectionModal
             open={showCollectionModal}
