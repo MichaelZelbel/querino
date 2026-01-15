@@ -88,95 +88,110 @@ export function ReviewSection({
   const displayReviews = reviews.filter((r) => r.user_id !== userId).slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Rating Summary */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Ratings & Reviews</h2>
-
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <StarRating rating={ratingAvg} readonly size="lg" />
-            <span className="text-2xl font-bold text-foreground">
-              {Number(ratingAvg).toFixed(1)}
-            </span>
+    <div className="space-y-4">
+      {/* Compact Rating Card */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-6">
+          {/* Overall Rating - Left side */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold text-foreground">
+                {Number(ratingAvg).toFixed(1)}
+              </span>
+              <span className="text-muted-foreground text-sm">/5</span>
+            </div>
+            <div className="flex flex-col">
+              <StarRating rating={ratingAvg} readonly size="sm" />
+              <span className="text-xs text-muted-foreground mt-0.5">
+                {ratingCount} {ratingCount === 1 ? "review" : "reviews"}
+              </span>
+            </div>
           </div>
-          <span className="text-muted-foreground">
-            ({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})
-          </span>
-        </div>
 
-        {/* User Rating Section */}
-        <div className="border-t border-border pt-4">
-          <h3 className="mb-3 text-sm font-medium text-foreground">
-            {userReview ? "Your Rating" : "Rate this prompt"}
-          </h3>
+          {/* Divider */}
+          <div className="h-10 w-px bg-border" />
 
-          {!userId ? (
-            <div>
-              <StarRating rating={0} readonly size="md" />
+          {/* User Rating - Right side */}
+          <div className="flex-1">
+            {!userId ? (
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                className="mt-3"
                 onClick={() => navigate(`/auth?redirect=/prompts/${promptId}`)}
+                className="text-xs"
               >
                 Sign in to rate
               </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <StarRating
-                rating={selectedRating || userReview?.rating || 0}
-                onRate={handleRatingClick}
-                size="lg"
-              />
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {userReview ? "Your rating:" : "Rate it:"}
+                </span>
+                <StarRating
+                  rating={selectedRating || userReview?.rating || 0}
+                  onRate={handleRatingClick}
+                  size="md"
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
-              {(showForm || userReview) && (
-                <div className="space-y-3">
-                  <Textarea
-                    placeholder="Add an optional comment..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    rows={3}
-                    className="resize-none"
-                  />
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={submitting || selectedRating === 0}
-                      size="sm"
-                    >
-                      {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {userReview ? "Update Review" : "Submit Review"}
-                    </Button>
-                    {userReview && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDelete}
-                        disabled={submitting}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
+        {/* Expandable review form */}
+        {userId && (showForm || userReview) && (
+          <div className="mt-4 pt-4 border-t border-border space-y-3">
+            <Textarea
+              placeholder="Share your thoughts (optional)..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={2}
+              className="resize-none text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || selectedRating === 0}
+                size="sm"
+              >
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {userReview ? "Update" : "Submit"}
+              </Button>
+              {!userReview && showForm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedRating(0);
+                    setComment("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+              {userReview && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={submitting}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Reviews List */}
       {loading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : reviews.length > 0 ? (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">Recent Reviews</h3>
-
+        <div className="space-y-3">
           {/* User's own review first */}
           {userReview && <ReviewCard review={userReview} isOwn getInitials={getInitials} />}
 
@@ -186,8 +201,8 @@ export function ReviewSection({
           ))}
 
           {reviews.length > 5 && (
-            <p className="text-sm text-muted-foreground text-center pt-2">
-              View all reviews (coming soon)
+            <p className="text-xs text-muted-foreground text-center pt-1">
+              + {reviews.length - 5} more reviews
             </p>
           )}
         </div>
