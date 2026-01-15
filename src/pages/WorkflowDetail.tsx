@@ -21,6 +21,7 @@ import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
+import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSection";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -392,6 +393,15 @@ export default function WorkflowDetail() {
             currentDescription={workflow.description || ''}
             currentContent={workflowContent}
             onSubmit={createSuggestion}
+          />
+
+          {/* Ratings & Reviews Section */}
+          <WorkflowReviewSection
+            workflowId={workflow.id}
+            workflowSlug={workflow.slug || undefined}
+            userId={user?.id}
+            ratingAvg={workflow.rating_avg || 0}
+            ratingCount={workflow.rating_count || 0}
           />
 
           {/* Tabbed Content Section */}

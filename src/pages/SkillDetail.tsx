@@ -20,6 +20,7 @@ import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
+import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -362,6 +363,15 @@ export default function SkillDetail() {
             currentDescription={skill.description || ''}
             currentContent={skill.content}
             onSubmit={createSuggestion}
+          />
+
+          {/* Ratings & Reviews Section */}
+          <SkillReviewSection
+            skillId={skill.id}
+            skillSlug={skill.slug || undefined}
+            userId={user?.id}
+            ratingAvg={skill.rating_avg || 0}
+            ratingCount={skill.rating_count || 0}
           />
 
           {/* Tabbed Content Section */}

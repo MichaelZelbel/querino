@@ -495,6 +495,51 @@ export type Database = {
           },
         ]
       }
+      skill_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          skill_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          skill_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          skill_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_reviews_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
         Row: {
           author_id: string | null
@@ -505,6 +550,8 @@ export type Database = {
           embedding: string | null
           id: string
           published: boolean | null
+          rating_avg: number | null
+          rating_count: number | null
           slug: string | null
           tags: string[] | null
           team_id: string | null
@@ -520,6 +567,8 @@ export type Database = {
           embedding?: string | null
           id?: string
           published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
           slug?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -535,6 +584,8 @@ export type Database = {
           embedding?: string | null
           id?: string
           published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
           slug?: string | null
           tags?: string[] | null
           team_id?: string | null
@@ -734,6 +785,51 @@ export type Database = {
           },
         ]
       }
+      workflow_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_reviews_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflows: {
         Row: {
           author_id: string | null
@@ -746,6 +842,8 @@ export type Database = {
           id: string
           json: Json
           published: boolean | null
+          rating_avg: number | null
+          rating_count: number | null
           scope: string | null
           slug: string | null
           tags: string[] | null
@@ -764,6 +862,8 @@ export type Database = {
           id?: string
           json?: Json
           published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
           scope?: string | null
           slug?: string | null
           tags?: string[] | null
@@ -782,6 +882,8 @@ export type Database = {
           id?: string
           json?: Json
           published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
           scope?: string | null
           slug?: string | null
           tags?: string[] | null

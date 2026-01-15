@@ -13,6 +13,8 @@ export interface Workflow {
   updated_at: string;
   author_id: string | null;
   team_id?: string | null;
+  rating_avg?: number;
+  rating_count?: number;
   // Legacy field - may still exist in DB but not used in new workflows
   json?: Record<string, unknown>;
 }

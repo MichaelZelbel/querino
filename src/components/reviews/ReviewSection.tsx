@@ -1,0 +1,283 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { StarRating } from "@/components/prompts/StarRating";
+import { Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import type { ReviewWithUser } from "@/types/review";
+
+interface ReviewSectionProps {
+  itemId: string;
+  itemType: "prompt" | "skill" | "workflow";
+  itemSlug?: string;
+  userId?: string;
+  ratingAvg: number;
+  ratingCount: number;
+  reviews: ReviewWithUser[];
+  userReview: ReviewWithUser | null;
+  loading: boolean;
+  submitting: boolean;
+  onSubmitReview: (rating: number, comment?: string) => Promise<{ error: Error | null }>;
+  onDeleteReview: () => Promise<{ error: Error | null }>;
+}
+
+export function ReviewSection({
+  itemId,
+  itemType,
+  itemSlug,
+  userId,
+  ratingAvg,
+  ratingCount,
+  reviews,
+  userReview,
+  loading,
+  submitting,
+  onSubmitReview,
+  onDeleteReview,
+}: ReviewSectionProps) {
+  const navigate = useNavigate();
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  // Update local state when userReview loads
+  useEffect(() => {
+    if (userReview) {
+      setSelectedRating(userReview.rating);
+      setComment(userReview.comment || "");
+    }
+  }, [userReview]);
+
+  const getAuthRedirectPath = () => {
+    const slug = itemSlug || itemId;
+    switch (itemType) {
+      case "prompt":
+        return `/auth?redirect=/prompts/${slug}`;
+      case "skill":
+        return `/auth?redirect=/skills/${slug}`;
+      case "workflow":
+        return `/auth?redirect=/workflows/${slug}`;
+      default:
+        return `/auth`;
+    }
+  };
+
+  const handleRatingClick = (rating: number) => {
+    if (!userId) {
+      navigate(getAuthRedirectPath());
+      return;
+    }
+    setSelectedRating(rating);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async () => {
+    if (selectedRating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    const { error } = await onSubmitReview(selectedRating, comment);
+    if (error) {
+      toast.error("Failed to submit review");
+    } else {
+      toast.success(userReview ? "Review updated!" : "Review submitted!");
+      setShowForm(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const { error } = await onDeleteReview();
+    if (error) {
+      toast.error("Failed to delete review");
+    } else {
+      toast.success("Review deleted");
+      setSelectedRating(0);
+      setComment("");
+      setShowForm(false);
+    }
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Get reviews excluding user's own for display
+  const displayReviews = reviews.filter((r) => r.user_id !== userId).slice(0, 5);
+
+  return (
+    <div className="space-y-4">
+      {/* Compact Rating Card */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-6">
+          {/* Overall Rating - Left side */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold text-foreground">
+                {Number(ratingAvg || 0).toFixed(1)}
+              </span>
+              <span className="text-muted-foreground text-sm">/5</span>
+            </div>
+            <div className="flex flex-col">
+              <StarRating rating={ratingAvg || 0} readonly size="sm" />
+              <span className="text-xs text-muted-foreground mt-0.5">
+                {ratingCount || 0} {ratingCount === 1 ? "review" : "reviews"}
+              </span>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-10 w-px bg-border" />
+
+          {/* User Rating - Right side */}
+          <div className="flex-1">
+            {!userId ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(getAuthRedirectPath())}
+                className="text-xs"
+              >
+                Sign in to rate
+              </Button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {userReview ? "Your rating:" : "Rate it:"}
+                </span>
+                <StarRating
+                  rating={selectedRating || userReview?.rating || 0}
+                  onRate={handleRatingClick}
+                  size="md"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Expandable review form */}
+        {userId && (showForm || userReview) && (
+          <div className="mt-4 pt-4 border-t border-border space-y-3">
+            <Textarea
+              placeholder="Share your thoughts (optional)..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={2}
+              className="resize-none text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || selectedRating === 0}
+                size="sm"
+              >
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {userReview ? "Update" : "Submit"}
+              </Button>
+              {!userReview && showForm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedRating(0);
+                    setComment("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+              {userReview && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={submitting}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Reviews List */}
+      {loading ? (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : reviews.length > 0 ? (
+        <div className="space-y-3">
+          {/* User's own review first */}
+          {userReview && <ReviewCard review={userReview} isOwn getInitials={getInitials} />}
+
+          {/* Other reviews */}
+          {displayReviews.map((review) => (
+            <ReviewCard key={review.id} review={review} getInitials={getInitials} />
+          ))}
+
+          {reviews.length > 5 && (
+            <p className="text-xs text-muted-foreground text-center pt-1">
+              + {reviews.length - 5} more reviews
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ReviewCard({
+  review,
+  isOwn,
+  getInitials,
+}: {
+  review: ReviewWithUser;
+  isOwn?: boolean;
+  getInitials: (name: string | null) => string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-start gap-3">
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={review.user?.avatar_url || undefined} />
+          <AvatarFallback className="text-xs bg-muted">
+            {getInitials(review.user?.display_name || null)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm text-foreground">
+              {review.user?.display_name || "Anonymous"}
+            </span>
+            {isOwn && (
+              <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
+                You
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {format(new Date(review.created_at), "MMM d, yyyy")}
+            </span>
+          </div>
+          <div className="mt-1">
+            <StarRating rating={review.rating} readonly size="sm" />
+          </div>
+          {review.comment && (
+            <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
