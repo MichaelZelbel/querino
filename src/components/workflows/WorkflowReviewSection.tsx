@@ -1,29 +1,32 @@
-import { usePromptReviews } from "@/hooks/usePromptReviews";
+import { useWorkflowReviews } from "@/hooks/useWorkflowReviews";
 import { ReviewSection as GenericReviewSection } from "@/components/reviews/ReviewSection";
 
-interface ReviewSectionProps {
-  promptId: string;
+interface WorkflowReviewSectionProps {
+  workflowId: string;
+  workflowSlug?: string;
   userId?: string;
   ratingAvg: number;
   ratingCount: number;
 }
 
 /**
- * Prompt-specific ReviewSection wrapper that uses usePromptReviews hook
+ * Workflow-specific ReviewSection wrapper that uses useWorkflowReviews hook
  */
-export function ReviewSection({
-  promptId,
+export function WorkflowReviewSection({
+  workflowId,
+  workflowSlug,
   userId,
   ratingAvg,
   ratingCount,
-}: ReviewSectionProps) {
+}: WorkflowReviewSectionProps) {
   const { reviews, userReview, loading, submitting, submitReview, deleteReview } =
-    usePromptReviews(promptId, userId);
+    useWorkflowReviews(workflowId, userId);
 
   return (
     <GenericReviewSection
-      itemId={promptId}
-      itemType="prompt"
+      itemId={workflowId}
+      itemType="workflow"
+      itemSlug={workflowSlug}
       userId={userId}
       ratingAvg={ratingAvg}
       ratingCount={ratingCount}
