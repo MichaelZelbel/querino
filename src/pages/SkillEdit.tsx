@@ -17,7 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, GitCompare, Save, Sparkles, Lock } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
@@ -40,10 +47,15 @@ export default function SkillEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { isPremium } = usePremiumCheck();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [skill, setSkill] = useState<Skill | null>(null);
   const [showDiff, setShowDiff] = useState(false);
+  
+  // AI metadata suggestion state
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<SkillFormData>({
     title: "",
@@ -156,6 +168,63 @@ export default function SkillEdit() {
 
   const handleRemoveTag = (tagToRemove: string) => {
     setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
+  };
+
+  const handleSuggestMetadata = async () => {
+    if (!formData.content.trim()) {
+      setMetadataError("Please add some skill content first.");
+      return;
+    }
+
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+
+    try {
+      const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-skill-metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_content: formData.content.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate suggestions");
+      }
+
+      const result = await response.json();
+
+      // Populate form fields with suggestions
+      if (result.title) {
+        setFormData(prev => ({ ...prev, title: result.title }));
+      }
+      
+      if (result.description) {
+        setFormData(prev => ({ ...prev, description: result.description }));
+      }
+      
+      // Set category if provided and valid
+      if (result.category) {
+        const matchedCategory = categoryOptions.find(cat => 
+          cat.id.toLowerCase() === result.category.toLowerCase()
+        );
+        if (matchedCategory) {
+          setFormData(prev => ({ ...prev, category: matchedCategory.id }));
+        }
+      }
+      
+      // Replace tags with suggested tags
+      if (result.tags && Array.isArray(result.tags)) {
+        const newTags = result.tags
+          .map((tag: string) => normalizeTag(tag))
+          .filter((tag: string) => tag)
+          .slice(0, 10);
+        setFormData(prev => ({ ...prev, tags: newTags }));
+      }
+    } catch (error) {
+      console.error("Error suggesting metadata:", error);
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -330,6 +399,48 @@ export default function SkillEdit() {
                 rows={12}
                 className="font-mono text-sm"
               />
+            </div>
+
+            {/* AI Metadata Suggestion Button */}
+            <div className="space-y-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSuggestMetadata}
+                        disabled={!isPremium || isGeneratingMetadata || !formData.content.trim()}
+                        className="gap-1.5 text-muted-foreground hover:text-foreground"
+                      >
+                        {isGeneratingMetadata ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Generating…
+                          </>
+                        ) : (
+                          <>
+                            {!isPremium && <Lock className="h-3.5 w-3.5" />}
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Suggest title, description, category & tags
+                          </>
+                        )}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!isPremium && (
+                    <TooltipContent>
+                      <p>AI-assisted metadata is a Premium feature</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+              
+              {metadataError && (
+                <p className="text-sm text-destructive">{metadataError}</p>
+              )}
             </div>
 
             <div className="space-y-2">
