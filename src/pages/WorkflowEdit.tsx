@@ -199,20 +199,21 @@ export default function WorkflowEdit() {
       }
 
       const result = await response.json();
+      const data = result.output || result;
 
       // Populate form fields with suggestions
-      if (result.title) {
-        setFormData(prev => ({ ...prev, title: result.title }));
+      if (data.title) {
+        setFormData(prev => ({ ...prev, title: data.title }));
       }
       
-      if (result.description) {
-        setFormData(prev => ({ ...prev, description: result.description }));
+      if (data.description) {
+        setFormData(prev => ({ ...prev, description: data.description }));
       }
       
       // Set category if provided and valid
-      if (result.category) {
+      if (data.category) {
         const matchedCategory = categoryOptions.find(cat => 
-          cat.id.toLowerCase() === result.category.toLowerCase()
+          cat.id.toLowerCase() === data.category.toLowerCase()
         );
         if (matchedCategory) {
           setFormData(prev => ({ ...prev, category: matchedCategory.id }));
@@ -220,8 +221,8 @@ export default function WorkflowEdit() {
       }
       
       // Replace tags with suggested tags
-      if (result.tags && Array.isArray(result.tags)) {
-        const newTags = result.tags
+      if (data.tags && Array.isArray(data.tags)) {
+        const newTags = data.tags
           .map((tag: string) => normalizeTag(tag))
           .filter((tag: string) => tag)
           .slice(0, 10);
