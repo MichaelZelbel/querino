@@ -170,67 +170,25 @@ export default function Library() {
   const handleSyncToGithub = async () => {
     if (!user || !githubSettings?.github_repo) return;
     
-    const syncUrl = import.meta.env.VITE_GITHUB_SYNC_URL;
-    if (!syncUrl) {
-      toast.error("GitHub sync is not configured");
-      return;
-    }
-    
     setSyncing(true);
     
     try {
-      const payload = {
-        userId: user.id,
-        githubRepo: githubSettings.github_repo,
-        githubBranch: githubSettings.github_branch || "main",
-        githubFolder: githubSettings.github_folder || "",
-        prompts: myPrompts.map((p) => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          content: p.content,
-          tags: p.tags,
-          createdAt: p.created_at,
-          updatedAt: p.updated_at,
-          isPublic: p.is_public,
-          rating: p.rating_avg,
-        })),
-        skills: (mySkills || []).map((s) => ({
-          id: s.id,
-          title: s.title,
-          description: s.description,
-          content: s.content,
-          tags: s.tags,
-          createdAt: s.created_at,
-          updatedAt: s.updated_at,
-          published: s.published,
-        })),
-        workflows: (myWorkflows || []).map((w) => ({
-          id: w.id,
-          title: w.title,
-          description: w.description,
-          json: w.json,
-          tags: w.tags,
-          createdAt: w.created_at,
-          updatedAt: w.updated_at,
-          published: w.published,
-        })),
-      };
-      
-      const response = await fetch(syncUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const { data, error } = await supabase.functions.invoke("github-sync", {
+        body: { 
+          teamId: isTeamWorkspace ? currentWorkspace : undefined,
+        },
       });
-      
-      if (!response.ok) {
-        throw new Error("Sync failed");
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(data.message || "Successfully synced to GitHub!");
+      } else {
+        throw new Error(data?.error || "Sync failed");
       }
-      
-      toast.success("Successfully sent data to GitHub sync backend.");
     } catch (error) {
       console.error("GitHub sync error:", error);
-      toast.error("GitHub sync failed. Please check your settings or try again later.");
+      toast.error(error instanceof Error ? error.message : "GitHub sync failed. Please check your settings.");
     } finally {
       setSyncing(false);
     }

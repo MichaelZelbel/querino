@@ -241,8 +241,10 @@ export type Database = {
           github: string | null
           github_branch: string | null
           github_folder: string | null
+          github_last_synced_at: string | null
           github_repo: string | null
           github_sync_enabled: boolean | null
+          github_token_encrypted: string | null
           id: string
           plan_source: string | null
           plan_type: string | null
@@ -259,8 +261,10 @@ export type Database = {
           github?: string | null
           github_branch?: string | null
           github_folder?: string | null
+          github_last_synced_at?: string | null
           github_repo?: string | null
           github_sync_enabled?: boolean | null
+          github_token_encrypted?: string | null
           id: string
           plan_source?: string | null
           plan_type?: string | null
@@ -277,8 +281,10 @@ export type Database = {
           github?: string | null
           github_branch?: string | null
           github_folder?: string | null
+          github_last_synced_at?: string | null
           github_repo?: string | null
           github_sync_enabled?: boolean | null
+          github_token_encrypted?: string | null
           id?: string
           plan_source?: string | null
           plan_type?: string | null
@@ -716,7 +722,9 @@ export type Database = {
           created_at: string | null
           github_branch: string | null
           github_folder: string | null
+          github_last_synced_at: string | null
           github_repo: string | null
+          github_token_encrypted: string | null
           id: string
           name: string
           owner_id: string
@@ -725,7 +733,9 @@ export type Database = {
           created_at?: string | null
           github_branch?: string | null
           github_folder?: string | null
+          github_last_synced_at?: string | null
           github_repo?: string | null
+          github_token_encrypted?: string | null
           id?: string
           name: string
           owner_id: string
@@ -734,7 +744,9 @@ export type Database = {
           created_at?: string | null
           github_branch?: string | null
           github_folder?: string | null
+          github_last_synced_at?: string | null
           github_repo?: string | null
+          github_token_encrypted?: string | null
           id?: string
           name?: string
           owner_id?: string
