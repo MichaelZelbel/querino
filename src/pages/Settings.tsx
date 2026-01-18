@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import heroSettings from "@/assets/hero-settings.png";
 
@@ -33,14 +33,22 @@ export default function Settings() {
   const [personalGithubBranch, setPersonalGithubBranch] = useState("main");
   const [personalGithubFolder, setPersonalGithubFolder] = useState("");
   const [personalGithubSyncEnabled, setPersonalGithubSyncEnabled] = useState(false);
+  const [personalGithubToken, setPersonalGithubToken] = useState("");
+  const [personalGithubLastSynced, setPersonalGithubLastSynced] = useState<string | null>(null);
   const [savingPersonalGithub, setSavingPersonalGithub] = useState(false);
   const [loadingPersonalGithub, setLoadingPersonalGithub] = useState(true);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Team GitHub Sync state
   const [teamGithubRepo, setTeamGithubRepo] = useState("");
   const [teamGithubBranch, setTeamGithubBranch] = useState("main");
   const [teamGithubFolder, setTeamGithubFolder] = useState("");
+  const [teamGithubToken, setTeamGithubToken] = useState("");
+  const [teamGithubLastSynced, setTeamGithubLastSynced] = useState<string | null>(null);
   const [savingTeamGithub, setSavingTeamGithub] = useState(false);
+  const [testingTeamConnection, setTestingTeamConnection] = useState(false);
+  const [teamConnectionStatus, setTeamConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Redirect if not logged in
   useEffect(() => {
@@ -56,7 +64,7 @@ export default function Settings() {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("github_repo, github_branch, github_folder, github_sync_enabled")
+        .select("github_repo, github_branch, github_folder, github_sync_enabled, github_token_encrypted, github_last_synced_at")
         .eq("id", user.id)
         .single();
       
@@ -67,6 +75,8 @@ export default function Settings() {
         setPersonalGithubBranch(data.github_branch || "main");
         setPersonalGithubFolder(data.github_folder || "");
         setPersonalGithubSyncEnabled(data.github_sync_enabled || false);
+        setPersonalGithubToken(data.github_token_encrypted ? "••••••••••••••••" : "");
+        setPersonalGithubLastSynced(data.github_last_synced_at || null);
       }
       setLoadingPersonalGithub(false);
     }
@@ -82,6 +92,19 @@ export default function Settings() {
       setTeamGithubRepo(teamData.github_repo || "");
       setTeamGithubBranch(teamData.github_branch || "main");
       setTeamGithubFolder(teamData.github_folder || "");
+      // Team token - check if exists in DB
+      const loadTeamToken = async () => {
+        const { data } = await supabase
+          .from("teams")
+          .select("github_token_encrypted, github_last_synced_at")
+          .eq("id", teamData.id)
+          .single();
+        if (data) {
+          setTeamGithubToken(data.github_token_encrypted ? "••••••••••••••••" : "");
+          setTeamGithubLastSynced(data.github_last_synced_at || null);
+        }
+      };
+      loadTeamToken();
     }
   }, [teamData]);
 
@@ -96,14 +119,22 @@ export default function Settings() {
     setSavingPersonalGithub(true);
     const cleanFolder = personalGithubFolder.replace(/^\/+|\/+$/g, "");
     
+    // Prepare update object
+    const updateData: Record<string, unknown> = {
+      github_repo: personalGithubRepo || null,
+      github_branch: personalGithubBranch || "main",
+      github_folder: cleanFolder || null,
+      github_sync_enabled: personalGithubSyncEnabled,
+    };
+    
+    // Only update token if it's been changed (not the masked value)
+    if (personalGithubToken && !personalGithubToken.includes("•")) {
+      updateData.github_token_encrypted = personalGithubToken;
+    }
+    
     const { error } = await supabase
       .from("profiles")
-      .update({
-        github_repo: personalGithubRepo || null,
-        github_branch: personalGithubBranch || "main",
-        github_folder: cleanFolder || null,
-        github_sync_enabled: personalGithubSyncEnabled,
-      })
+      .update(updateData)
       .eq("id", user.id);
     
     setSavingPersonalGithub(false);
@@ -113,6 +144,53 @@ export default function Settings() {
       toast.error("Failed to save GitHub settings");
     } else {
       toast.success("Personal GitHub sync settings saved");
+      setConnectionStatus('idle');
+    }
+  };
+
+  const handleTestConnection = async (isTeam: boolean) => {
+    if (isTeam) {
+      setTestingTeamConnection(true);
+      setTeamConnectionStatus('idle');
+    } else {
+      setTestingConnection(true);
+      setConnectionStatus('idle');
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke("github-sync", {
+        body: { 
+          testConnection: true,
+          teamId: isTeam ? currentTeam?.id : undefined,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        if (isTeam) {
+          setTeamConnectionStatus('success');
+        } else {
+          setConnectionStatus('success');
+        }
+        toast.success("GitHub connection successful!");
+      } else {
+        throw new Error(data?.error || "Connection failed");
+      }
+    } catch (error) {
+      console.error("Connection test failed:", error);
+      if (isTeam) {
+        setTeamConnectionStatus('error');
+      } else {
+        setConnectionStatus('error');
+      }
+      toast.error(error instanceof Error ? error.message : "Failed to connect to GitHub");
+    } finally {
+      if (isTeam) {
+        setTestingTeamConnection(false);
+      } else {
+        setTestingConnection(false);
+      }
     }
   };
 
@@ -127,16 +205,28 @@ export default function Settings() {
     setSavingTeamGithub(true);
     const cleanFolder = teamGithubFolder.replace(/^\/+|\/+$/g, "");
     
+    // Prepare update object
+    const updateData: Record<string, unknown> = {
+      github_repo: teamGithubRepo || null,
+      github_branch: teamGithubBranch || "main",
+      github_folder: cleanFolder || null,
+    };
+    
+    // Only update token if it's been changed (not the masked value)
+    if (teamGithubToken && !teamGithubToken.includes("•")) {
+      updateData.github_token_encrypted = teamGithubToken;
+    }
+    
     try {
-      await updateTeam.mutateAsync({
-        teamId: currentTeam.id,
-        updates: {
-          github_repo: teamGithubRepo || null,
-          github_branch: teamGithubBranch || "main",
-          github_folder: cleanFolder || null,
-        },
-      });
+      // Use direct supabase update for team to include token
+      const { error } = await supabase
+        .from("teams")
+        .update(updateData)
+        .eq("id", currentTeam.id);
+        
+      if (error) throw error;
       toast.success("Team GitHub sync settings saved");
+      setTeamConnectionStatus('idle');
     } catch (error) {
       console.error("Error saving team GitHub settings:", error);
       toast.error("Failed to save team GitHub settings");
@@ -374,6 +464,37 @@ export default function Settings() {
                         Team members with editor+ access can sync to this repository.
                       </p>
                     </div>
+                    
+                    {/* Token Input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="teamGithubToken" className="flex items-center gap-2">
+                        <Key className="h-4 w-4" />
+                        Personal Access Token
+                      </Label>
+                      <Input
+                        id="teamGithubToken"
+                        type="password"
+                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                        value={teamGithubToken}
+                        onChange={(e) => {
+                          setTeamGithubToken(e.target.value);
+                          setTeamConnectionStatus('idle');
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Create a token at{" "}
+                        <a 
+                          href="https://github.com/settings/tokens/new?scopes=repo&description=Querino%20Sync" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          GitHub Settings
+                        </a>
+                        {" "}with <code className="bg-muted px-1 rounded">repo</code> scope.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="teamGithubRepo">Repository (owner/name)</Label>
                       <Input
@@ -403,16 +524,51 @@ export default function Settings() {
                         />
                       </div>
                     </div>
-                    <Button onClick={handleSaveTeamGithubSettings} disabled={savingTeamGithub}>
-                      {savingTeamGithub ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Team GitHub Settings"
-                      )}
-                    </Button>
+
+                    {/* Last synced info */}
+                    {teamGithubLastSynced && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Last synced: {new Date(teamGithubLastSynced).toLocaleString()}
+                      </p>
+                    )}
+
+                    <div className="flex gap-3">
+                      <Button onClick={handleSaveTeamGithubSettings} disabled={savingTeamGithub}>
+                        {savingTeamGithub ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Team GitHub Settings"
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleTestConnection(true)} 
+                        disabled={testingTeamConnection || !teamGithubRepo || !teamGithubToken}
+                      >
+                        {testingTeamConnection ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Testing...
+                          </>
+                        ) : teamConnectionStatus === 'success' ? (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                            Connected
+                          </>
+                        ) : teamConnectionStatus === 'error' ? (
+                          <>
+                            <XCircle className="mr-2 h-4 w-4 text-destructive" />
+                            Failed
+                          </>
+                        ) : (
+                          "Test Connection"
+                        )}
+                      </Button>
+                    </div>
                   </>
                 ) : loadingPersonalGithub ? (
                   <div className="flex items-center justify-center py-4">
@@ -421,6 +577,36 @@ export default function Settings() {
                 ) : (
                   // Personal GitHub Settings
                   <>
+                    {/* Token Input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="personalGithubToken" className="flex items-center gap-2">
+                        <Key className="h-4 w-4" />
+                        Personal Access Token
+                      </Label>
+                      <Input
+                        id="personalGithubToken"
+                        type="password"
+                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                        value={personalGithubToken}
+                        onChange={(e) => {
+                          setPersonalGithubToken(e.target.value);
+                          setConnectionStatus('idle');
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Create a token at{" "}
+                        <a 
+                          href="https://github.com/settings/tokens/new?scopes=repo&description=Querino%20Sync" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          GitHub Settings
+                        </a>
+                        {" "}with <code className="bg-muted px-1 rounded">repo</code> scope.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="personalGithubRepo">Repository (owner/name)</Label>
                       <Input
@@ -455,7 +641,7 @@ export default function Settings() {
                       <div>
                         <p className="font-medium">Enable GitHub Sync</p>
                         <p className="text-sm text-muted-foreground">
-                          Allow syncing your prompts to GitHub.
+                          Allow syncing your prompts, skills, and workflows to GitHub.
                         </p>
                       </div>
                       <Switch
@@ -463,16 +649,51 @@ export default function Settings() {
                         onCheckedChange={setPersonalGithubSyncEnabled}
                       />
                     </div>
-                    <Button onClick={handleSavePersonalGithubSettings} disabled={savingPersonalGithub}>
-                      {savingPersonalGithub ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save GitHub Settings"
-                      )}
-                    </Button>
+
+                    {/* Last synced info */}
+                    {personalGithubLastSynced && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Last synced: {new Date(personalGithubLastSynced).toLocaleString()}
+                      </p>
+                    )}
+
+                    <div className="flex gap-3">
+                      <Button onClick={handleSavePersonalGithubSettings} disabled={savingPersonalGithub}>
+                        {savingPersonalGithub ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save GitHub Settings"
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleTestConnection(false)} 
+                        disabled={testingConnection || !personalGithubRepo || !personalGithubToken}
+                      >
+                        {testingConnection ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Testing...
+                          </>
+                        ) : connectionStatus === 'success' ? (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                            Connected
+                          </>
+                        ) : connectionStatus === 'error' ? (
+                          <>
+                            <XCircle className="mr-2 h-4 w-4 text-destructive" />
+                            Failed
+                          </>
+                        ) : (
+                          "Test Connection"
+                        )}
+                      </Button>
+                    </div>
                   </>
                 )}
               </CardContent>
