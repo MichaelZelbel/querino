@@ -14,7 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users } from "lucide-react";
+import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
 import heroSettings from "@/assets/hero-settings.png";
 
@@ -26,7 +28,10 @@ export default function Settings() {
   const updateTeam = useUpdateTeam();
   
   // Premium check
-  const isPremium = profile?.plan_type === 'premium';
+  const { isPremium } = usePremiumCheck();
+  
+  // Join team modal
+  const [showJoinTeamModal, setShowJoinTeamModal] = useState(false);
   
   // Personal GitHub Sync state
   const [personalGithubRepo, setPersonalGithubRepo] = useState("");
@@ -413,6 +418,32 @@ export default function Settings() {
               </CardContent>
             </Card>
 
+            {/* Teams Section - Premium Only */}
+            {isPremium && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-display flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Teams
+                  </CardTitle>
+                  <CardDescription>Join team workspaces to collaborate with others.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Join a team</p>
+                      <p className="text-sm text-muted-foreground">
+                        Enter a team ID shared with you to join their workspace.
+                      </p>
+                    </div>
+                    <Button variant="outline" onClick={() => setShowJoinTeamModal(true)}>
+                      Join team
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* GitHub Sync Section - Workspace Aware */}
             <Card className={showTeamGithub ? 'border-primary/30' : ''}>
               <CardHeader>
@@ -703,6 +734,12 @@ export default function Settings() {
       </main>
 
       <Footer />
+      
+      {/* Join Team Modal */}
+      <JoinTeamModal 
+        open={showJoinTeamModal} 
+        onOpenChange={setShowJoinTeamModal} 
+      />
     </div>
   );
 }
