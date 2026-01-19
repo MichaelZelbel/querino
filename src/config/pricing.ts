@@ -79,7 +79,6 @@ export const featureComparison: FeatureComparison[] = [
       { name: "AI recommendations", free: false, premium: true, isPremium: true },
       { name: "Prompt Wizard", free: false, premium: true, isPremium: true },
       { name: "Semantic search", free: false, premium: true, isPremium: true },
-      { name: "Similar artefacts", free: false, premium: true, isPremium: true },
     ],
   },
   {
@@ -87,7 +86,6 @@ export const featureComparison: FeatureComparison[] = [
     features: [
       { name: "Version history", free: "Last 3", premium: "Unlimited" },
       { name: "GitHub sync", free: false, premium: true, isPremium: true },
-      { name: "Markdown import/export", free: "Basic", premium: "Full" },
       { name: "Collections", free: "3 max", premium: "Unlimited" },
     ],
   },
@@ -95,7 +93,6 @@ export const featureComparison: FeatureComparison[] = [
     category: "Collaboration",
     features: [
       { name: "Team workspaces", free: false, premium: true, isPremium: true },
-      { name: "Role-based access", free: false, premium: true, isPremium: true },
       { name: "Edit suggestions", free: true, premium: true },
       { name: "Comments", free: true, premium: true },
     ],
@@ -103,7 +100,6 @@ export const featureComparison: FeatureComparison[] = [
   {
     category: "Support",
     features: [
-      { name: "Community support", free: true, premium: true },
       { name: "Priority support", free: false, premium: true },
     ],
   },
