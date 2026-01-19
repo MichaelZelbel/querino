@@ -695,16 +695,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prepare files - use ID in filename to ensure stability across renames
+    // Prepare files - use clean slug-based filenames for readability
     const files: GitHubFile[] = [];
     const basePath = githubFolder ? `${githubFolder}/` : "";
 
-    // Generate prompt files with ID-based filenames
+    // Generate prompt files with clean slug filenames
     for (const prompt of prompts) {
       const slug = prompt.slug || slugify(prompt.title);
-      // Use format: id--slug.md for stable identification + human readability
       files.push({
-        path: `${basePath}prompts/${prompt.id}--${slug}.md`,
+        path: `${basePath}prompts/${slug}.md`,
         content: generatePromptMarkdown(prompt),
       });
     }
@@ -713,7 +712,7 @@ Deno.serve(async (req) => {
     for (const skill of skills) {
       const slug = skill.slug || slugify(skill.title);
       files.push({
-        path: `${basePath}skills/${skill.id}--${slug}.md`,
+        path: `${basePath}skills/${slug}.md`,
         content: generateSkillMarkdown(skill),
       });
     }
@@ -722,7 +721,7 @@ Deno.serve(async (req) => {
     for (const workflow of workflows) {
       const slug = workflow.slug || slugify(workflow.title);
       files.push({
-        path: `${basePath}workflows/${workflow.id}--${slug}.md`,
+        path: `${basePath}workflows/${slug}.md`,
         content: generateWorkflowMarkdown(workflow),
       });
     }
