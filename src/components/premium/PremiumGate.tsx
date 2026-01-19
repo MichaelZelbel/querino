@@ -26,14 +26,14 @@ export function PremiumGate({
   const location = useLocation();
 
   // Check if user has required plan
+  // Since "team" is now a feature of premium (not a separate plan),
+  // both requirements are satisfied by premium
   const hasAccess = (() => {
     if (!user || !profile) return false;
     const planType = profile.plan_type;
-    if (requires === 'premium') {
-      return planType === 'premium' || planType === 'team';
-    }
-    if (requires === 'team') {
-      return planType === 'team';
+    // Premium plan grants access to both 'premium' and 'team' features
+    if (requires === 'premium' || requires === 'team') {
+      return planType === 'premium';
     }
     return false;
   })();

@@ -77,7 +77,7 @@ function PremiumLockedSection({ title, icon: Icon }: { title: string; icon: Reac
 
 export function SimilarPromptsSection({ items, loading }: SimilarPromptsSectionProps) {
   const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
@@ -143,7 +143,7 @@ export function SimilarPromptsSection({ items, loading }: SimilarPromptsSectionP
 
 export function SimilarSkillsSection({ items, loading }: SimilarSkillsSectionProps) {
   const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
@@ -206,7 +206,7 @@ export function SimilarSkillsSection({ items, loading }: SimilarSkillsSectionPro
 
 export function SimilarWorkflowsSection({ items, loading }: SimilarWorkflowsSectionProps) {
   const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {

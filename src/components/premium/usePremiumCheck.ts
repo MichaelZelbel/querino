@@ -7,15 +7,15 @@ import type { PlanRequirement } from './PremiumGate';
 export function usePremiumCheck() {
   const { user, profile } = useAuthContext();
 
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
-  const isTeam = profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
   const isFree = user && profile?.plan_type === 'free';
   const isAnonymous = !user;
 
   const hasAccess = (requires: PlanRequirement): boolean => {
     if (!user || !profile) return false;
-    if (requires === 'premium') return isPremium;
-    if (requires === 'team') return isTeam;
+    // Both 'premium' and 'team' requirements are satisfied by premium plan
+    // since "team" is now just a feature of premium, not a separate plan
+    if (requires === 'premium' || requires === 'team') return isPremium;
     return false;
   };
 
@@ -23,7 +23,6 @@ export function usePremiumCheck() {
     user,
     profile,
     isPremium,
-    isTeam,
     isFree,
     isAnonymous,
     hasAccess,

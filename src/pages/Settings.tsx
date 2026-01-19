@@ -26,7 +26,7 @@ export default function Settings() {
   const updateTeam = useUpdateTeam();
   
   // Premium check
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
   
   // Personal GitHub Sync state
   const [personalGithubRepo, setPersonalGithubRepo] = useState("");

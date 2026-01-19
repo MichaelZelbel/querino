@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Building2, ChevronDown, Plus, User, Settings, Check } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Building2, ChevronDown, Plus, User, Settings, Check, Crown, Lock } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useCreateTeam } from "@/hooks/useTeams";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -28,11 +29,17 @@ export function WorkspacePicker() {
   const navigate = useNavigate();
   const { currentWorkspace, currentTeam, teams, switchWorkspace, canManageTeam, isTeamWorkspace } = useWorkspace();
   const createTeam = useCreateTeam();
+  const { isPremium, user } = usePremiumCheck();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
+    
+    if (!isPremium) {
+      toast.error("Teams are available on Premium. Please upgrade to create teams.");
+      return;
+    }
 
     try {
       const team = await createTeam.mutateAsync(newTeamName.trim());
@@ -45,9 +52,18 @@ export function WorkspacePicker() {
     }
   };
 
+  const handleCreateTeamClick = () => {
+    if (isPremium) {
+      setShowCreateDialog(true);
+    }
+  };
+
   const displayName = currentWorkspace === "personal" 
     ? "Personal" 
     : currentTeam?.name || "Team";
+
+  // If not logged in, don't show the workspace picker
+  if (!user) return null;
 
   return (
     <>
@@ -92,7 +108,8 @@ export function WorkspacePicker() {
             )}
           </DropdownMenuItem>
 
-          {teams.length > 0 && (
+          {/* Show teams section only for premium users with teams */}
+          {isPremium && teams.length > 0 && (
             <>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
@@ -101,7 +118,7 @@ export function WorkspacePicker() {
             </>
           )}
 
-          {teams.map((team) => (
+          {isPremium && teams.map((team) => (
             <DropdownMenuItem
               key={team.id}
               onClick={() => switchWorkspace(team.id)}
@@ -120,7 +137,7 @@ export function WorkspacePicker() {
 
           <DropdownMenuSeparator />
 
-          {currentWorkspace !== "personal" && canManageTeam && (
+          {currentWorkspace !== "personal" && canManageTeam && isPremium && (
             <DropdownMenuItem
               onClick={() => navigate(`/team/${currentWorkspace}/settings`)}
               className="gap-2"
@@ -130,13 +147,35 @@ export function WorkspacePicker() {
             </DropdownMenuItem>
           )}
 
-          <DropdownMenuItem
-            onClick={() => setShowCreateDialog(true)}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Team
-          </DropdownMenuItem>
+          {/* Premium users can create teams */}
+          {isPremium ? (
+            <DropdownMenuItem
+              onClick={handleCreateTeamClick}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Team
+            </DropdownMenuItem>
+          ) : (
+            // Non-premium users see upgrade prompt
+            <div className="px-2 py-3 border-t border-border mt-1">
+              <div className="flex items-start gap-2 mb-2">
+                <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="text-foreground font-medium">Teams require Premium</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Collaborate with shared team libraries
+                  </p>
+                </div>
+              </div>
+              <Link to="/pricing" className="block">
+                <Button size="sm" variant="outline" className="w-full gap-1.5 h-8">
+                  <Crown className="h-3.5 w-3.5" />
+                  Upgrade to Premium
+                </Button>
+              </Link>
+            </div>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

@@ -22,22 +22,19 @@ export function FeatureComparisonTable() {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-4 px-4 font-medium text-foreground w-[40%]">
+            <th className="text-left py-4 px-4 font-medium text-foreground w-[50%]">
               Feature
             </th>
-            <th className="text-center py-4 px-4 font-medium text-foreground w-[20%]">
+            <th className="text-center py-4 px-4 font-medium text-foreground w-[25%]">
               Free
             </th>
-            <th className="text-center py-4 px-4 font-medium w-[20%]">
+            <th className="text-center py-4 px-4 font-medium w-[25%]">
               <div className="flex items-center justify-center gap-2">
                 <span className="text-primary">Premium</span>
                 <Badge variant="secondary" className="bg-primary/10 text-primary border-0 text-[10px]">
                   Popular
                 </Badge>
               </div>
-            </th>
-            <th className="text-center py-4 px-4 font-medium text-foreground w-[20%]">
-              Team
             </th>
           </tr>
         </thead>
@@ -46,7 +43,7 @@ export function FeatureComparisonTable() {
             <>
               {/* Category Header */}
               <tr key={section.category} className="bg-muted/30">
-                <td colSpan={4} className="py-3 px-4 font-semibold text-foreground text-sm">
+                <td colSpan={3} className="py-3 px-4 font-semibold text-foreground text-sm">
                   {section.category}
                 </td>
               </tr>
@@ -72,9 +69,6 @@ export function FeatureComparisonTable() {
                   </td>
                   <td className="py-3 px-4 text-center bg-primary/5">
                     {renderValue(feature.premium, feature.isPremium)}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {renderValue(feature.team, feature.isPremium)}
                   </td>
                 </tr>
               ))}

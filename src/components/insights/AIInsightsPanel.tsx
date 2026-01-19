@@ -24,7 +24,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
   const { insights, loading, generating, error, generateInsights, refreshInsights, hasInsights } = useAIInsights(itemType, itemId);
 
   // Check if user has premium access
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
 
   // Don't render anything for anonymous users
   if (!user) {
