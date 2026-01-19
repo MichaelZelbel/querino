@@ -14,6 +14,7 @@ export interface Prompt {
   created_at: string;
   updated_at?: string;
   author_id: string | null;
+  team_id?: string | null;
   published_at?: string | null;
   summary?: string | null;
   example_output?: string | null;
