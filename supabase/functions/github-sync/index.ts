@@ -430,6 +430,91 @@ async function createRef(
   }
 }
 
+// For empty repos, use the Contents API to create files one by one
+async function createFileViaContentsApi(
+  owner: string,
+  repo: string,
+  path: string,
+  content: string,
+  message: string,
+  branch: string,
+  token: string
+): Promise<void> {
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        content: btoa(unescape(encodeURIComponent(content))),
+        branch,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Failed to create file via Contents API:", error);
+    throw new Error(`Failed to create file: ${response.status}`);
+  }
+}
+
+// Initialize empty repo with a README to enable Git Data API
+async function initializeEmptyRepo(
+  owner: string,
+  repo: string,
+  branch: string,
+  token: string
+): Promise<string> {
+  console.log("Initializing empty repository with README...");
+  
+  const readmeContent = `# Querino Sync
+
+This repository is synced from [Querino](https://querino.lovable.app).
+
+## Structure
+
+- \`prompts/\` - AI prompts
+- \`skills/\` - AI skills  
+- \`workflows/\` - AI workflows
+
+Each file contains YAML frontmatter with metadata and the content in Markdown format.
+`;
+
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/README.md`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "Initialize repository for Querino sync",
+        content: btoa(unescape(encodeURIComponent(readmeContent))),
+        branch,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Failed to initialize repo:", error);
+    throw new Error(`Failed to initialize repository: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.commit.sha;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -643,9 +728,16 @@ Deno.serve(async (req) => {
 
     console.log(`Preparing to commit ${files.length} files`);
 
-    // Get current commit SHA
-    const currentCommitSha = await getRef(owner, repo, githubBranch, githubToken);
+    // Get current commit SHA (null if empty repo)
+    let currentCommitSha = await getRef(owner, repo, githubBranch, githubToken);
     console.log("Current commit SHA:", currentCommitSha);
+
+    // If repo is empty, initialize it first with a README
+    if (!currentCommitSha) {
+      console.log("Empty repository detected, initializing...");
+      currentCommitSha = await initializeEmptyRepo(owner, repo, githubBranch, githubToken);
+      console.log("Repository initialized, new commit SHA:", currentCommitSha);
+    }
 
     // Create blobs for all files
     const blobPromises = files.map(async (file) => {
@@ -681,14 +773,9 @@ Synced by: ${user.email}`;
     );
     console.log("Created commit:", newCommitSha);
 
-    // Update or create branch ref
-    if (currentCommitSha) {
-      await updateRef(owner, repo, githubBranch, newCommitSha, githubToken);
-      console.log("Updated branch ref");
-    } else {
-      await createRef(owner, repo, githubBranch, newCommitSha, githubToken);
-      console.log("Created new branch ref");
-    }
+    // Update branch ref
+    await updateRef(owner, repo, githubBranch, newCommitSha, githubToken);
+    console.log("Updated branch ref");
 
     // Update last synced timestamp
     if (teamId) {
