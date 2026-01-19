@@ -228,7 +228,7 @@ export function Header() {
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
                       <Settings className="h-4 w-4" />
-                      Account
+                      Settings
                     </Link>
                   </DropdownMenuItem>
                   {profile?.role === "admin" && (
@@ -410,7 +410,7 @@ export function Header() {
                   <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start gap-2">
                       <Settings className="h-4 w-4" />
-                      Account
+                      Settings
                     </Button>
                   </Link>
                   {profile?.role === "admin" && (
