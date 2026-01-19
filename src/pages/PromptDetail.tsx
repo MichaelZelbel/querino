@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useSimilarPrompts } from "@/hooks/useSimilarArtefacts";
 import { useSuggestions } from "@/hooks/useSuggestions";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,8 @@ import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History } from "lucide-react";
+import { CopyToTeamModal } from "@/components/prompts/CopyToTeamModal";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound } from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -49,6 +52,7 @@ export default function PromptDetail() {
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
+  const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
@@ -68,6 +72,15 @@ export default function PromptDetail() {
   const isSaved = prompt?.id ? isPromptSaved(prompt.id) : false;
   const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
+  
+  // Premium and team checks for "Copy to team" feature
+  const { isPremium } = usePremiumCheck();
+  const { teams, currentWorkspace } = useWorkspace();
+  const isPersonalWorkspace = currentWorkspace === "personal";
+  const hasTeams = teams.length > 0;
+  // Show "Copy to team" only for personal prompts the user owns (no team_id)
+  const isPersonalPrompt = !prompt?.team_id;
+  const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalPrompt;
 
   useEffect(() => {
     async function fetchPrompt() {
@@ -474,6 +487,19 @@ export default function PromptDetail() {
                   <History className="h-4 w-4" />
                   Version History
                 </Button>
+                
+                {/* Copy to team - only for personal prompts owned by premium users with teams */}
+                {canCopyToTeam && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setShowCopyToTeamModal(true)}
+                    className="gap-2"
+                  >
+                    <UsersRound className="h-4 w-4" />
+                    Copy to team…
+                  </Button>
+                )}
               </>
             )}
 
@@ -551,6 +577,14 @@ export default function PromptDetail() {
             itemType="prompt"
             itemId={prompt.id}
           />
+
+          {canCopyToTeam && (
+            <CopyToTeamModal
+              open={showCopyToTeamModal}
+              onOpenChange={setShowCopyToTeamModal}
+              prompt={prompt}
+            />
+          )}
 
           <SuggestEditModal
             open={showSuggestModal}
