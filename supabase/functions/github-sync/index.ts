@@ -58,9 +58,16 @@ interface GitHubFile {
 
 interface GitHubTreeItem {
   path: string;
+  mode: "100644" | "100755" | "040000" | "160000" | "120000";
+  type: "blob" | "tree" | "commit";
+  sha: string | null;
+}
+
+interface GitHubTreeEntry {
+  path: string;
   mode: "100644";
   type: "blob";
-  sha: string;
+  sha: string | null;  // null = delete file
 }
 
 // Generate markdown content with YAML frontmatter
@@ -283,21 +290,14 @@ async function createBlob(
   return data.sha;
 }
 
-async function createTree(
+async function createTreeWithDeletions(
   owner: string,
   repo: string,
   baseTree: string | null,
-  files: { path: string; sha: string }[],
+  entries: GitHubTreeEntry[],
   token: string
 ): Promise<string> {
-  const tree = files.map((file) => ({
-    path: file.path,
-    mode: "100644" as const,
-    type: "blob" as const,
-    sha: file.sha,
-  }));
-
-  const body: Record<string, unknown> = { tree };
+  const body: Record<string, unknown> = { tree: entries };
   if (baseTree) {
     body.base_tree = baseTree;
   }
@@ -695,33 +695,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prepare files
+    // Prepare files - use ID in filename to ensure stability across renames
     const files: GitHubFile[] = [];
     const basePath = githubFolder ? `${githubFolder}/` : "";
 
-    // Generate prompt files
+    // Generate prompt files with ID-based filenames
     for (const prompt of prompts) {
-      const filename = prompt.slug || slugify(prompt.title);
+      const slug = prompt.slug || slugify(prompt.title);
+      // Use format: id--slug.md for stable identification + human readability
       files.push({
-        path: `${basePath}prompts/${filename}.md`,
+        path: `${basePath}prompts/${prompt.id}--${slug}.md`,
         content: generatePromptMarkdown(prompt),
       });
     }
 
     // Generate skill files
     for (const skill of skills) {
-      const filename = skill.slug || slugify(skill.title);
+      const slug = skill.slug || slugify(skill.title);
       files.push({
-        path: `${basePath}skills/${filename}.md`,
+        path: `${basePath}skills/${skill.id}--${slug}.md`,
         content: generateSkillMarkdown(skill),
       });
     }
 
     // Generate workflow files
     for (const workflow of workflows) {
-      const filename = workflow.slug || slugify(workflow.title);
+      const slug = workflow.slug || slugify(workflow.title);
       files.push({
-        path: `${basePath}workflows/${filename}.md`,
+        path: `${basePath}workflows/${workflow.id}--${slug}.md`,
         content: generateWorkflowMarkdown(workflow),
       });
     }
@@ -739,7 +740,37 @@ Deno.serve(async (req) => {
       console.log("Repository initialized, new commit SHA:", currentCommitSha);
     }
 
-    // Create blobs for all files
+    // Get current tree to find files to delete in our managed folders
+    const existingTree = await getTree(owner, repo, currentCommitSha!, githubToken);
+    const managedPaths = [`${basePath}prompts/`, `${basePath}skills/`, `${basePath}workflows/`];
+    
+    // Find existing files in our managed folders that should be deleted
+    const existingManagedFiles = existingTree.filter((item) => 
+      item.type === "blob" && 
+      managedPaths.some((mp) => item.path.startsWith(mp))
+    );
+    console.log(`Found ${existingManagedFiles.length} existing files in managed folders`);
+
+    // Build a set of new file paths for quick lookup
+    const newFilePaths = new Set(files.map((f) => f.path));
+
+    // Create tree entries: deletions first (sha: null), then new files
+    const treeEntries: GitHubTreeEntry[] = [];
+
+    // Add deletion entries for files that no longer exist or have different paths
+    for (const existingFile of existingManagedFiles) {
+      if (!newFilePaths.has(existingFile.path)) {
+        console.log(`Will delete: ${existingFile.path}`);
+        treeEntries.push({
+          path: existingFile.path,
+          mode: "100644",
+          type: "blob",
+          sha: null,  // null sha = delete
+        });
+      }
+    }
+
+    // Create blobs for all new files
     const blobPromises = files.map(async (file) => {
       const sha = await createBlob(owner, repo, file.content, githubToken!);
       return { path: file.path, sha };
@@ -748,8 +779,20 @@ Deno.serve(async (req) => {
     const blobs = await Promise.all(blobPromises);
     console.log("Created blobs:", blobs.length);
 
-    // Create new tree
-    const treeSha = await createTree(owner, repo, currentCommitSha, blobs, githubToken);
+    // Add new file entries
+    for (const blob of blobs) {
+      treeEntries.push({
+        path: blob.path,
+        mode: "100644",
+        type: "blob",
+        sha: blob.sha,
+      });
+    }
+
+    console.log(`Tree entries: ${treeEntries.filter(e => e.sha === null).length} deletions, ${blobs.length} additions`);
+
+    // Create new tree with deletions and additions
+    const treeSha = await createTreeWithDeletions(owner, repo, currentCommitSha, treeEntries, githubToken);
     console.log("Created tree:", treeSha);
 
     // Create commit
