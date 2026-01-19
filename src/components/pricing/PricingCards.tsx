@@ -18,7 +18,7 @@ export function PricingCards({ fromDashboard = false }: PricingCardsProps) {
   };
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
+    <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
       {pricingPlans.map((plan, index) => (
         <Card 
           key={plan.id}

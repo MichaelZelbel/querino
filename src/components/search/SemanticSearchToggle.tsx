@@ -26,7 +26,7 @@ export function SemanticSearchToggle({
   const { user, profile } = useAuthContext();
   const [showUpsell, setShowUpsell] = useState(false);
 
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
   const isFreeUser = user && !isPremium;
 
   const handleToggle = (checked: boolean) => {

@@ -273,7 +273,6 @@ export default function Admin() {
                             <SelectContent>
                               <SelectItem value="free">free</SelectItem>
                               <SelectItem value="premium">premium</SelectItem>
-                              <SelectItem value="team">team</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>

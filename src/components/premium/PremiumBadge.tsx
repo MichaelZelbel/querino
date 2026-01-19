@@ -18,7 +18,7 @@ export function PremiumBadge({ className, showForPremiumUsers = false }: Premium
   // Don't show for anonymous users
   if (!user) return null;
 
-  const isPremium = profile?.plan_type === 'premium' || profile?.plan_type === 'team';
+  const isPremium = profile?.plan_type === 'premium';
 
   // Only show for free users (unless overridden)
   if (isPremium && !showForPremiumUsers) return null;
