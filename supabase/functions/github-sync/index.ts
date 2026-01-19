@@ -197,7 +197,7 @@ async function getRef(
   repo: string,
   branch: string,
   token: string
-): Promise<string> {
+): Promise<string | null> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`,
     {
@@ -211,6 +211,11 @@ async function getRef(
 
   if (!response.ok) {
     const error = await response.text();
+    // 409 means empty repo, 404 means branch doesn't exist
+    if (response.status === 409 || response.status === 404) {
+      console.log("Repository is empty or branch doesn't exist, will create initial commit");
+      return null;
+    }
     console.error("Failed to get ref:", error);
     throw new Error(`Failed to get branch ref: ${response.status}`);
   }
@@ -281,7 +286,7 @@ async function createBlob(
 async function createTree(
   owner: string,
   repo: string,
-  baseTree: string,
+  baseTree: string | null,
   files: { path: string; sha: string }[],
   token: string
 ): Promise<string> {
@@ -291,6 +296,11 @@ async function createTree(
     type: "blob" as const,
     sha: file.sha,
   }));
+
+  const body: Record<string, unknown> = { tree };
+  if (baseTree) {
+    body.base_tree = baseTree;
+  }
 
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees`,
@@ -302,10 +312,7 @@ async function createTree(
         "X-GitHub-Api-Version": "2022-11-28",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        base_tree: baseTree,
-        tree,
-      }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -324,9 +331,20 @@ async function createCommit(
   repo: string,
   message: string,
   treeSha: string,
-  parentSha: string,
+  parentSha: string | null,
   token: string
 ): Promise<string> {
+  const body: Record<string, unknown> = {
+    message,
+    tree: treeSha,
+  };
+  
+  if (parentSha) {
+    body.parents = [parentSha];
+  } else {
+    body.parents = [];
+  }
+
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/commits`,
     {
@@ -337,11 +355,7 @@ async function createCommit(
         "X-GitHub-Api-Version": "2022-11-28",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        message,
-        tree: treeSha,
-        parents: [parentSha],
-      }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -382,6 +396,37 @@ async function updateRef(
     const error = await response.text();
     console.error("Failed to update ref:", error);
     throw new Error(`Failed to update ref: ${response.status}`);
+  }
+}
+
+async function createRef(
+  owner: string,
+  repo: string,
+  branch: string,
+  commitSha: string,
+  token: string
+): Promise<void> {
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ref: `refs/heads/${branch}`,
+        sha: commitSha,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Failed to create ref:", error);
+    throw new Error(`Failed to create ref: ${response.status}`);
   }
 }
 
@@ -493,10 +538,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Test connection only
+    // Test connection only - verify we can access the repo
     if (testConnection) {
       try {
-        await getRef(owner, repo, githubBranch, githubToken);
+        // Try to get repo info instead of branch ref (works for empty repos too)
+        const repoResponse = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}`,
+          {
+            headers: {
+              Authorization: `Bearer ${githubToken}`,
+              Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          }
+        );
+        
+        if (!repoResponse.ok) {
+          throw new Error(`Cannot access repository: ${repoResponse.status}`);
+        }
+        
         return new Response(
           JSON.stringify({ success: true, message: "Connection successful" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -621,9 +681,14 @@ Synced by: ${user.email}`;
     );
     console.log("Created commit:", newCommitSha);
 
-    // Update branch ref
-    await updateRef(owner, repo, githubBranch, newCommitSha, githubToken);
-    console.log("Updated branch ref");
+    // Update or create branch ref
+    if (currentCommitSha) {
+      await updateRef(owner, repo, githubBranch, newCommitSha, githubToken);
+      console.log("Updated branch ref");
+    } else {
+      await createRef(owner, repo, githubBranch, newCommitSha, githubToken);
+      console.log("Created new branch ref");
+    }
 
     // Update last synced timestamp
     if (teamId) {
