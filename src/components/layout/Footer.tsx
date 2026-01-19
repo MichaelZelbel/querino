@@ -27,9 +27,9 @@ export function Footer() {
               <Link to="/dashboard" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 My Library
               </Link>
-              <a href="#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Pricing
-              </a>
+              </Link>
             </nav>
           </div>
 
