@@ -5,3 +5,12 @@ enabled = true
 
 [functions.github-sync]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.prompt-wizard]
+verify_jwt = false
+
+[functions.suggest-metadata]
+verify_jwt = false
