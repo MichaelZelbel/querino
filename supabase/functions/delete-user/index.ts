@@ -26,8 +26,8 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     console.log("Auth header present:", !!authHeader);
     
-    if (!authHeader) {
-      console.error("No authorization header provided");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("No valid authorization header provided");
       return new Response(
         JSON.stringify({ error: "No authorization header" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -41,7 +41,7 @@ serve(async (req) => {
       },
     });
 
-    // Get the requesting user
+    // Get the current user from the token
     const { data: { user: requestingUser }, error: userError } = await supabaseUser.auth.getUser();
     
     if (userError || !requestingUser) {
