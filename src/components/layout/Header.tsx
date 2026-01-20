@@ -257,7 +257,7 @@ export function Header() {
                   Sign In
                 </Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/auth?tab=signup">
                 <Button variant="default" size="sm">
                   Get Started
                 </Button>
