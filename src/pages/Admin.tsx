@@ -147,13 +147,24 @@ export default function Admin() {
 
     setDeletingUserId(userId);
     try {
-      // Delete profile (this will cascade to other related data via RLS)
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", userId);
+      // Get the current session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
 
-      if (error) throw error;
+      // Call edge function to delete user from auth.users (cascades to profiles)
+      const response = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to delete user");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       // Remove from local state
       setUsers((prev) => prev.filter((u) => u.id !== userId));
@@ -165,9 +176,9 @@ export default function Admin() {
       });
 
       toast.success("User deleted successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting user:", error);
-      toast.error("Failed to delete user");
+      toast.error(error.message || "Failed to delete user");
     } finally {
       setDeletingUserId(null);
     }
