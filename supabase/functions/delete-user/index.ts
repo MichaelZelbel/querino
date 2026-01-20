@@ -34,15 +34,19 @@ serve(async (req) => {
       );
     }
 
-    // Create a client with the user's token to verify their identity
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
+    // Extract the JWT token from the header
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Create admin client for all operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     });
 
-    // Get the current user from the token
-    const { data: { user: requestingUser }, error: userError } = await supabaseUser.auth.getUser();
+    // Verify the token and get the user
+    const { data: { user: requestingUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !requestingUser) {
       console.error("Failed to get user:", userError?.message);
@@ -53,14 +57,6 @@ serve(async (req) => {
     }
 
     console.log("Requesting user ID:", requestingUser.id);
-
-    // Create admin client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
 
     // Check if requesting user is admin
     const { data: profile, error: profileError } = await supabaseAdmin
