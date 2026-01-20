@@ -11,9 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Shield, Save, Users } from "lucide-react";
+import { Search, Shield, Save, Users, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface UserProfile {
@@ -33,6 +43,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [editedUsers, setEditedUsers] = useState<Record<string, Partial<UserProfile>>>({});
 
   // Access control check
@@ -124,6 +135,41 @@ export default function Admin() {
       toast.error("Failed to update user");
     } finally {
       setSavingUserId(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    // Prevent self-deletion
+    if (userId === user?.id) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+
+    setDeletingUserId(userId);
+    try {
+      // Delete profile (this will cascade to other related data via RLS)
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      
+      // Clear any pending edits for this user
+      setEditedUsers((prev) => {
+        const { [userId]: _, ...rest } = prev;
+        return rest;
+      });
+
+      toast.success("User deleted successfully");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -298,17 +344,52 @@ export default function Admin() {
                             : "—"}
                         </TableCell>
                         <TableCell>
-                          {hasChanges(u.id) && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleSaveUser(u.id)}
-                              disabled={savingUserId === u.id}
-                              className="gap-1"
-                            >
-                              <Save className="h-3 w-3" />
-                              {savingUserId === u.id ? "Saving..." : "Save"}
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {hasChanges(u.id) && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveUser(u.id)}
+                                disabled={savingUserId === u.id}
+                                className="gap-1"
+                              >
+                                <Save className="h-3 w-3" />
+                                {savingUserId === u.id ? "Saving..." : "Save"}
+                              </Button>
+                            )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  disabled={u.id === user?.id || deletingUserId === u.id}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete{" "}
+                                    <span className="font-semibold">
+                                      {u.display_name || "this user"}
+                                    </span>
+                                    ? This action cannot be undone and will remove all their data.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteUser(u.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deletingUserId === u.id ? "Deleting..." : "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
