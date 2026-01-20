@@ -18,31 +18,49 @@ serve(async (req) => {
   }
 
   try {
-    // Create admin client with service role key
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    // Verify the requesting user is an admin
+    // Get the Authorization header
     const authHeader = req.headers.get("Authorization");
+    console.log("Auth header present:", !!authHeader);
+    
     if (!authHeader) {
-      throw new Error("No authorization header");
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "No authorization header" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
+    // Create a client with the user's token to verify their identity
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
 
-    if (authError || !requestingUser) {
-      throw new Error("Unauthorized");
+    // Get the requesting user
+    const { data: { user: requestingUser }, error: userError } = await supabaseUser.auth.getUser();
+    
+    if (userError || !requestingUser) {
+      console.error("Failed to get user:", userError?.message);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - invalid token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
+
+    console.log("Requesting user ID:", requestingUser.id);
+
+    // Create admin client
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Check if requesting user is admin
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -51,20 +69,33 @@ serve(async (req) => {
       .eq("id", requestingUser.id)
       .single();
 
+    console.log("User profile:", profile, "Error:", profileError?.message);
+
     if (profileError || profile?.role !== "admin") {
-      throw new Error("Only admins can delete users");
+      console.error("User is not admin:", profile?.role);
+      return new Response(
+        JSON.stringify({ error: "Only admins can delete users" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Get the user ID to delete
     const { userId }: DeleteUserRequest = await req.json();
+    console.log("User ID to delete:", userId);
 
     if (!userId) {
-      throw new Error("User ID is required");
+      return new Response(
+        JSON.stringify({ error: "User ID is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Prevent self-deletion
     if (userId === requestingUser.id) {
-      throw new Error("You cannot delete your own account");
+      return new Response(
+        JSON.stringify({ error: "You cannot delete your own account" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Delete the user from auth.users (this will cascade to profiles due to foreign key)
@@ -72,26 +103,23 @@ serve(async (req) => {
 
     if (deleteError) {
       console.error("Error deleting user:", deleteError);
-      throw new Error(`Failed to delete user: ${deleteError.message}`);
+      return new Response(
+        JSON.stringify({ error: `Failed to delete user: ${deleteError.message}` }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     console.log(`User ${userId} deleted successfully by admin ${requestingUser.id}`);
 
     return new Response(
       JSON.stringify({ success: true, message: "User deleted successfully" }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
     console.error("Error in delete-user function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: error.message === "Unauthorized" || error.message === "Only admins can delete users" ? 403 : 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 });
