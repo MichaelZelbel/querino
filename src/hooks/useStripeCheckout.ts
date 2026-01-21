@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getStripeMode } from "@/config/stripe";
+import { getPriceId } from "@/config/stripe";
 import { toast } from "sonner";
 
 type BillingCycle = "monthly" | "yearly";
@@ -8,12 +8,12 @@ type BillingCycle = "monthly" | "yearly";
 export function useStripeCheckout() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const createCheckoutSession = async (billingCycle: BillingCycle, priceId?: string) => {
+  const createCheckoutSession = async (billingCycle: BillingCycle) => {
     setIsLoading(true);
     
     try {
-      const mode = getStripeMode();
-      console.log("Creating checkout with mode:", mode);
+      const priceId = getPriceId(billingCycle);
+      console.log("Creating checkout with price:", priceId);
 
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -22,12 +22,8 @@ export function useStripeCheckout() {
         return null;
       }
 
-      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: {
-          priceId,
-          billingCycle,
-          mode,
-        },
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { priceId },
       });
 
       if (error) {
@@ -37,7 +33,6 @@ export function useStripeCheckout() {
       }
 
       if (data?.url) {
-        // Redirect to Stripe checkout
         window.location.href = data.url;
         return data;
       }
