@@ -5,7 +5,10 @@ import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Zap, Brain, Shield, ArrowRight, X } from "lucide-react";
+import { Check, Sparkles, Zap, Brain, Shield, ArrowRight, X, Loader2 } from "lucide-react";
+import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { useAuth } from "@/hooks/useAuth";
 import heroPremium from "@/assets/hero-premium.png";
 
 const plans = [
@@ -58,6 +61,16 @@ const comparisonFeatures = [
 
 export default function PremiumUpgrade() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const { createCheckoutSession, isLoading } = useStripeCheckout();
+  const { user } = useAuth();
+
+  const handleUpgrade = async (planName: string) => {
+    if (!user) {
+      window.location.href = "/auth?redirect=/premium-feature-upgrade";
+      return;
+    }
+    await createCheckoutSession(billingCycle);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -100,6 +113,11 @@ export default function PremiumUpgrade() {
               <Badge variant="secondary" className="ml-2 bg-success/10 text-success">Save 20%</Badge>
             </button>
           </div>
+          
+          {/* Stripe Mode Toggle - only visible in dev */}
+          <div className="mt-6 flex justify-center">
+            <StripeModeToggle showInProduction={false} />
+          </div>
         </div>
 
         {/* Pricing Cards */}
@@ -139,7 +157,15 @@ export default function PremiumUpgrade() {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
+                <Button 
+                  className="w-full" 
+                  variant={plan.popular ? "default" : "outline"}
+                  onClick={() => handleUpgrade(plan.name)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
