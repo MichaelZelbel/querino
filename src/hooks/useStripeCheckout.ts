@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getPriceId } from "@/config/stripe";
+import { getPriceId, getStripeMode } from "@/config/stripe";
 import { toast } from "sonner";
 
 type BillingCycle = "monthly" | "yearly";
@@ -13,7 +13,8 @@ export function useStripeCheckout() {
     
     try {
       const priceId = getPriceId(billingCycle);
-      console.log("Creating checkout with price:", priceId);
+      const mode = getStripeMode();
+      console.log("Creating checkout with price:", priceId, "mode:", mode);
 
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -23,7 +24,7 @@ export function useStripeCheckout() {
       }
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
+        body: { priceId, mode },
       });
 
       if (error) {
