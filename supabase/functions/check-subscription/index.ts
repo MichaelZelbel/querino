@@ -12,10 +12,14 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for plan type mapping
+// Product IDs for plan type mapping (both live and sandbox)
 const PREMIUM_PRODUCTS = [
-  "prod_TpqhlvF6bKNQIk", // Monthly
-  "prod_Tpqih5nfN3NUhI", // Yearly
+  // Live
+  "prod_TpqhlvF6bKNQIk",
+  "prod_Tpqih5nfN3NUhI",
+  // Sandbox
+  "prod_Tpqq1Ng9whtnlI",
+  "prod_Tpqqzh9Ejs24xh",
 ];
 
 serve(async (req) => {
@@ -32,10 +36,6 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
     logStep("Authorization header found");
@@ -48,83 +48,44 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    // Check both live and sandbox Stripe accounts
+    const results = await Promise.allSettled([
+      checkStripeAccount(user.email, Deno.env.get("STRIPE_SECRET_KEY"), "live"),
+      checkStripeAccount(user.email, Deno.env.get("STRIPE_SANDBOX_SECRET_KEY"), "sandbox"),
+    ]);
 
-    if (customers.data.length === 0) {
-      logStep("No customer found, user is not subscribed");
-      
-      // Update profile to free
-      await supabaseClient
-        .from("profiles")
-        .update({ plan_type: "free", plan_source: null })
-        .eq("id", user.id);
-      
-      return new Response(JSON.stringify({ 
-        subscribed: false,
-        plan_type: "free",
-        product_id: null,
-        subscription_end: null 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-
-    const hasActiveSub = subscriptions.data.length > 0;
-    let productId: string | null = null;
-    let subscriptionEnd: string | null = null;
+    let subscription = null;
     let planType = "free";
+    let planSource: string | null = null;
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      productId = subscription.items.data[0].price.product as string;
-      
-      // Determine plan type based on product
-      if (PREMIUM_PRODUCTS.includes(productId)) {
-        planType = "premium";
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value.hasActiveSub) {
+        subscription = result.value;
+        if (PREMIUM_PRODUCTS.includes(subscription.productId || "")) {
+          planType = "premium";
+          planSource = `stripe_${subscription.mode}`;
+        }
+        break;
       }
-      
-      logStep("Active subscription found", { 
-        subscriptionId: subscription.id, 
-        productId,
-        planType,
-        endDate: subscriptionEnd 
-      });
-
-      // Update profile with subscription status
-      await supabaseClient
-        .from("profiles")
-        .update({ 
-          plan_type: planType, 
-          plan_source: "stripe" 
-        })
-        .eq("id", user.id);
-    } else {
-      logStep("No active subscription found");
-      
-      // Update profile to free
-      await supabaseClient
-        .from("profiles")
-        .update({ plan_type: "free", plan_source: null })
-        .eq("id", user.id);
     }
+
+    logStep("Subscription check complete", { planType, planSource });
+
+    // Update profile with subscription status
+    await supabaseClient
+      .from("profiles")
+      .update({ 
+        plan_type: planType, 
+        plan_source: planSource 
+      })
+      .eq("id", user.id);
 
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
+      subscribed: planType !== "free",
       plan_type: planType,
-      product_id: productId,
-      subscription_end: subscriptionEnd
+      product_id: subscription?.productId || null,
+      subscription_end: subscription?.subscriptionEnd || null,
+      mode: subscription?.mode || null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -138,3 +99,35 @@ serve(async (req) => {
     });
   }
 });
+
+async function checkStripeAccount(email: string, stripeKey: string | undefined, mode: string) {
+  if (!stripeKey) {
+    return { hasActiveSub: false, mode };
+  }
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+  const customers = await stripe.customers.list({ email, limit: 1 });
+
+  if (customers.data.length === 0) {
+    return { hasActiveSub: false, mode };
+  }
+
+  const customerId = customers.data[0].id;
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 1,
+  });
+
+  if (subscriptions.data.length === 0) {
+    return { hasActiveSub: false, mode };
+  }
+
+  const subscription = subscriptions.data[0];
+  return {
+    hasActiveSub: true,
+    mode,
+    productId: subscription.items.data[0].price.product as string,
+    subscriptionEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+  };
+}

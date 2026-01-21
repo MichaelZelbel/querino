@@ -25,12 +25,18 @@ serve(async (req) => {
   try {
     logStep("Function started");
     
-    const { priceId } = await req.json();
-    logStep("Request body parsed", { priceId });
+    const { priceId, mode = "live" } = await req.json();
+    logStep("Request body parsed", { priceId, mode });
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    // Select the appropriate Stripe key based on mode
+    const stripeKey = mode === "sandbox" 
+      ? Deno.env.get("STRIPE_SANDBOX_SECRET_KEY")
+      : Deno.env.get("STRIPE_SECRET_KEY");
+      
+    if (!stripeKey) {
+      throw new Error(`Stripe ${mode} key not configured`);
+    }
+    logStep("Stripe key verified", { mode });
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
@@ -73,10 +79,11 @@ serve(async (req) => {
       cancel_url: `${origin}/pricing?checkout=canceled`,
       metadata: {
         supabase_user_id: user.id,
+        stripe_mode: mode,
       },
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created", { sessionId: session.id, url: session.url, mode });
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
