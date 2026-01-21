@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Zap, Brain, Shield, ArrowRight, X, Loader2 } from "lucide-react";
+import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useAuth } from "@/hooks/useAuth";
 import heroPremium from "@/assets/hero-premium.png";
@@ -113,6 +114,10 @@ export default function PremiumUpgrade() {
             </button>
           </div>
           
+          {/* Stripe Mode Toggle - only visible in dev */}
+          <div className="mt-6 flex justify-center">
+            <StripeModeToggle showInProduction={false} />
+          </div>
         </div>
 
         {/* Pricing Cards */}
