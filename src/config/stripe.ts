@@ -20,8 +20,8 @@ export function setStripeMode(mode: StripeMode): void {
 // Price IDs for Premium subscription
 export const STRIPE_PRICES = {
   live: {
-    premium_monthly: "price_1SsB03AOLjIkoJut62OdjVVB",
-    premium_yearly: "price_1SsB0eAOLjIkoJut3uIxRDFd",
+    premium_monthly: "price_1SsPvlAOLjIkoJutHVQDWSbf",
+    premium_yearly: "price_1SsPw2PI0Qbup0BVmoUmIdfk",
   },
   sandbox: {
     premium_monthly: "price_1SsB8mPI0Qbup0BVjThtGENU",
@@ -32,8 +32,8 @@ export const STRIPE_PRICES = {
 // Product IDs for plan type mapping
 export const STRIPE_PRODUCTS = {
   live: {
-    premium_monthly: "prod_TpqhlvF6bKNQIk",
-    premium_yearly: "prod_Tpqih5nfN3NUhI",
+    premium_monthly: "prod_Tq686K3LQZSdbp",
+    premium_yearly: "prod_Tq68iP8wBpcugj",
   },
   sandbox: {
     premium_monthly: "prod_Tpqq1Ng9whtnlI",
