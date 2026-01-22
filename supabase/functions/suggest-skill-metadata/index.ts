@@ -23,10 +23,11 @@ serve(async (req) => {
 
     console.log("Calling n8n webhook with skill_content length:", skill_content.length);
 
-    const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-skill-metadata", {
+    // Use the working suggest-metadata endpoint (same as prompts) since suggest-skill-metadata returns 404
+    const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ skill_content }),
+      body: JSON.stringify({ prompt_content: skill_content }),
     });
 
     if (!response.ok) {
