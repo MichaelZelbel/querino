@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { getStripeMode } from "@/config/stripe";
 
 interface SubscriptionStatus {
   subscribed: boolean;
@@ -44,7 +45,10 @@ export function useSubscription() {
 
   const openCustomerPortal = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const mode = getStripeMode();
+      const { data, error } = await supabase.functions.invoke("customer-portal", {
+        body: { mode },
+      });
 
       if (error) {
         console.error("Customer portal error:", error);
