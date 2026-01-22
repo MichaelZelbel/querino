@@ -90,7 +90,9 @@ serve(async (req) => {
           subscription = checkResult;
           if (PREMIUM_PRODUCTS.includes(subscription.productId || "")) {
             planType = "premium";
-            planSource = `stripe_${subscription.mode}`;
+            // Use "stripe" as plan_source (valid value per check constraint)
+            // Store mode info in logs for debugging
+            planSource = "stripe";
             logStep("Found premium subscription", { mode: subscription.mode, productId: subscription.productId });
             break;
           }
