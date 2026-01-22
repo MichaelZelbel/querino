@@ -23,8 +23,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Shield, Save, Users, Trash2 } from "lucide-react";
+import { Search, Shield, Save, Users, Trash2, CreditCard } from "lucide-react";
 import { format } from "date-fns";
+import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
 
 interface UserProfile {
   id: string;
@@ -237,6 +238,22 @@ export default function Admin() {
             <p className="text-muted-foreground">Manage users, plans, and roles</p>
           </div>
         </div>
+
+        {/* Stripe Mode Toggle */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Stripe Environment</CardTitle>
+            </div>
+            <CardDescription>
+              Toggle between Live and Sandbox mode for testing payments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StripeModeToggle showInProduction={true} />
+          </CardContent>
+        </Card>
 
         {/* Users Management */}
         <Card>
