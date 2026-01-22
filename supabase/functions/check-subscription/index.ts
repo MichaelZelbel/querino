@@ -48,6 +48,32 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check if user has an admin-set plan that should not be overwritten
+    const { data: profileData } = await supabaseClient
+      .from("profiles")
+      .select("plan_type, plan_source")
+      .eq("id", user.id)
+      .single();
+    
+    const adminControlledSources = ["internal", "gifted", "test"];
+    if (profileData?.plan_source && adminControlledSources.includes(profileData.plan_source)) {
+      logStep("Admin-controlled plan, skipping Stripe check", { 
+        planType: profileData.plan_type, 
+        planSource: profileData.plan_source 
+      });
+      return new Response(JSON.stringify({
+        subscribed: profileData.plan_type === "premium",
+        plan_type: profileData.plan_type,
+        product_id: null,
+        subscription_end: null,
+        mode: null,
+        admin_controlled: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     // Check both live and sandbox Stripe accounts
     const liveKey = Deno.env.get("STRIPE_SECRET_KEY");
     const sandboxKey = Deno.env.get("STRIPE_SANDBOX_SECRET_KEY");
