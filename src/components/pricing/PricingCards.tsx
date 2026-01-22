@@ -6,14 +6,14 @@ import { Check, Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { pricingPlans, type PricingPlan } from "@/config/pricing";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface PricingCardsProps {
   fromDashboard?: boolean;
 }
 
 export function PricingCards({ fromDashboard = false }: PricingCardsProps) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { isPremium, isLoading: isSubLoading } = useSubscription();
   const { createCheckoutSession, isLoading: isCheckoutLoading } = useStripeCheckout();
 
