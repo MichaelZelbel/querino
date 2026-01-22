@@ -5,6 +5,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { useSimilarWorkflows } from "@/hooks/useSimilarArtefacts";
 import { useSuggestions } from "@/hooks/useSuggestions";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -22,6 +24,7 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSection";
+import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTeamModal";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -42,6 +45,7 @@ export default function WorkflowDetail() {
   const [isContentOpen, setIsContentOpen] = useState(true);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(workflow?.id);
   const { 
     suggestions, 
@@ -53,6 +57,15 @@ export default function WorkflowDetail() {
     updateSuggestionAfterChanges
   } = useSuggestions('workflow', workflow?.id || '');
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
+
+  // Premium and team checks for "Copy to team" feature
+  const { isPremium } = usePremiumCheck();
+  const { teams, currentWorkspace } = useWorkspace();
+  const isPersonalWorkspace = currentWorkspace === "personal";
+  const hasTeams = teams.length > 0;
+  // Show "Copy to team" only for personal workflows the user owns (no team_id)
+  const isPersonalWorkflow = !(workflow as any)?.team_id;
+  const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalWorkflow;
 
   useEffect(() => {
     async function fetchWorkflow() {
@@ -324,12 +337,25 @@ export default function WorkflowDetail() {
             </Button>
 
             {isAuthor && (
-              <Link to={`/workflows/${workflow.slug}/edit`}>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit Workflow
-                </Button>
-              </Link>
+              <>
+                <Link to={`/workflows/${workflow.slug}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Workflow
+                  </Button>
+                </Link>
+                {canCopyToTeam && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setShowCopyToTeamModal(true)}
+                    className="gap-2"
+                  >
+                    <UsersRound className="h-4 w-4" />
+                    Copy to team…
+                  </Button>
+                )}
+              </>
             )}
 
             {user && !isAuthor && (
@@ -394,6 +420,14 @@ export default function WorkflowDetail() {
             currentContent={workflowContent}
             onSubmit={createSuggestion}
           />
+
+          {canCopyToTeam && (
+            <CopyWorkflowToTeamModal
+              open={showCopyToTeamModal}
+              onOpenChange={setShowCopyToTeamModal}
+              workflow={workflow}
+            />
+          )}
 
           {/* Ratings & Reviews Section */}
           <WorkflowReviewSection
