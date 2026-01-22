@@ -101,18 +101,13 @@ export default function SkillNew() {
     setMetadataError(null);
 
     try {
-      const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-skill-metadata", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skill_content: content.trim() }),
+      const { data, error } = await supabase.functions.invoke("suggest-skill-metadata", {
+        body: { skill_content: content.trim() },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to generate suggestions");
+      if (error) {
+        throw error;
       }
-
-      const result = await response.json();
-      const data = result.output || result;
 
       // Populate form fields with suggestions
       if (data.title) {
