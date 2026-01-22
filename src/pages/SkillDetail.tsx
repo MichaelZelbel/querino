@@ -5,6 +5,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { useSimilarSkills } from "@/hooks/useSimilarArtefacts";
 import { useSuggestions } from "@/hooks/useSuggestions";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -21,6 +23,7 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
+import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -40,6 +43,7 @@ export default function SkillDetail() {
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(skill?.id);
   const { 
     suggestions, 
@@ -51,6 +55,15 @@ export default function SkillDetail() {
     updateSuggestionAfterChanges
   } = useSuggestions('skill', skill?.id || '');
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
+  
+  // Premium and team checks for "Copy to team" feature
+  const { isPremium } = usePremiumCheck();
+  const { teams, currentWorkspace } = useWorkspace();
+  const isPersonalWorkspace = currentWorkspace === "personal";
+  const hasTeams = teams.length > 0;
+  // Show "Copy to team" only for personal skills the user owns (no team_id)
+  const isPersonalSkill = !(skill as any)?.team_id;
+  const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalSkill;
 
   useEffect(() => {
     async function fetchSkill() {
@@ -294,12 +307,25 @@ export default function SkillDetail() {
             </Button>
 
             {isAuthor && (
-              <Link to={`/skills/${skill.slug}/edit`}>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit Skill
-                </Button>
-              </Link>
+              <>
+                <Link to={`/skills/${skill.slug}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Skill
+                  </Button>
+                </Link>
+                {canCopyToTeam && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setShowCopyToTeamModal(true)}
+                    className="gap-2"
+                  >
+                    <UsersRound className="h-4 w-4" />
+                    Copy to team…
+                  </Button>
+                )}
+              </>
             )}
 
             {user && !isAuthor && (
@@ -364,6 +390,14 @@ export default function SkillDetail() {
             currentContent={skill.content}
             onSubmit={createSuggestion}
           />
+
+          {canCopyToTeam && (
+            <CopySkillToTeamModal
+              open={showCopyToTeamModal}
+              onOpenChange={setShowCopyToTeamModal}
+              skill={skill}
+            />
+          )}
 
           {/* Ratings & Reviews Section */}
           <SkillReviewSection
