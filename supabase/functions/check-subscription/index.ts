@@ -22,7 +22,8 @@ const PREMIUM_PRODUCTS = [
   "prod_Tpqqzh9Ejs24xh",
 ];
 
-// Admin-controlled sources that should be preserved when NO active Stripe subscription exists
+// Admin-controlled sources - when set, DO NOT update the database
+// The admin has explicitly set this and it should persist until manually changed
 const ADMIN_CONTROLLED_SOURCES = ["internal", "gifted", "test"];
 
 interface StripeCheckResult {
@@ -118,7 +119,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get current profile to check existing plan
+    // Get current profile to check for admin override
     const { data: profileData } = await supabaseClient
       .from("profiles")
       .select("plan_type, plan_source")
@@ -130,7 +131,29 @@ serve(async (req) => {
       planSource: profileData?.plan_source 
     });
 
-    // ALWAYS check Stripe first - active subscriptions take priority
+    // CRITICAL: If plan_source is admin-controlled, return current values WITHOUT updating
+    // This ensures admin overrides persist and aren't overwritten by Stripe sync
+    if (profileData?.plan_source && ADMIN_CONTROLLED_SOURCES.includes(profileData.plan_source)) {
+      logStep("Admin override active - returning current profile without Stripe check", { 
+        planType: profileData.plan_type, 
+        planSource: profileData.plan_source 
+      });
+      
+      return new Response(JSON.stringify({
+        subscribed: profileData.plan_type === "premium",
+        plan_type: profileData.plan_type || "free",
+        plan_source: profileData.plan_source,
+        product_id: null,
+        subscription_end: null,
+        mode: null,
+        admin_override: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // No admin override - check Stripe
     const liveKey = Deno.env.get("STRIPE_SECRET_KEY");
     const sandboxKey = Deno.env.get("STRIPE_SANDBOX_SECRET_KEY");
     
@@ -169,7 +192,7 @@ serve(async (req) => {
               mode: checkResult.mode, 
               productId: checkResult.productId 
             });
-            break; // Use first active premium subscription found
+            break;
           }
         } else {
           logStep("Stripe check failed", { error: String(result.reason) });
@@ -177,28 +200,21 @@ serve(async (req) => {
       }
     }
 
-    // Determine final plan based on Stripe result and current profile
+    // Determine final plan based on Stripe result
     let planType: string;
     let planSource: string | null;
 
     if (activeSubscription) {
-      // Active Stripe subscription ALWAYS wins
       planType = "premium";
       planSource = "stripe";
-      logStep("Setting premium from Stripe", { mode: activeSubscription.mode });
-    } else if (profileData?.plan_source && ADMIN_CONTROLLED_SOURCES.includes(profileData.plan_source)) {
-      // No active Stripe subscription, but has admin-controlled plan - preserve it
-      planType = profileData.plan_type || "free";
-      planSource = profileData.plan_source;
-      logStep("Preserving admin-controlled plan", { planType, planSource });
+      logStep("Setting premium from active Stripe subscription", { mode: activeSubscription.mode });
     } else {
-      // No active subscription and no admin override - set to free
       planType = "free";
       planSource = null;
-      logStep("No subscription found, setting to free");
+      logStep("No active Stripe subscription found, setting to free");
     }
 
-    // Update profile
+    // Update profile with subscription status
     const { error: updateError } = await supabaseClient
       .from("profiles")
       .update({ plan_type: planType, plan_source: planSource })
