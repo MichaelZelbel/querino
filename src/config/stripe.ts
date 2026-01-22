@@ -9,8 +9,8 @@ export function getStripeMode(): StripeMode {
   if (typeof window === "undefined") return "live";
   const stored = localStorage.getItem(STRIPE_MODE_KEY);
   if (stored === "sandbox" || stored === "live") return stored;
-  // Default to sandbox in development, live in production
-  return import.meta.env.DEV ? "sandbox" : "live";
+  // Default to sandbox until live products are configured
+  return "sandbox";
 }
 
 export function setStripeMode(mode: StripeMode): void {
