@@ -12,9 +12,10 @@ export function useStripeCheckout() {
     setIsLoading(true);
     
     try {
-      const priceId = getPriceId(billingCycle);
+      // Get fresh mode value from localStorage
       const mode = getStripeMode();
-      console.log("Creating checkout with price:", priceId, "mode:", mode);
+      const priceId = getPriceId(billingCycle);
+      console.log("Creating checkout with price:", priceId, "mode:", mode, "localStorage value:", localStorage.getItem("querino_stripe_mode"));
 
       const { data: { session } } = await supabase.auth.getSession();
       
