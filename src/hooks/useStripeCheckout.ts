@@ -12,10 +12,16 @@ export function useStripeCheckout() {
     setIsLoading(true);
     
     try {
-      // Get fresh mode value from localStorage
+      // Get fresh mode value from localStorage at the moment of checkout
       const mode = getStripeMode();
       const priceId = getPriceId(billingCycle);
-      console.log("Creating checkout with price:", priceId, "mode:", mode, "localStorage value:", localStorage.getItem("querino_stripe_mode"));
+      
+      console.log("[Checkout] Starting checkout", { 
+        priceId, 
+        mode, 
+        billingCycle,
+        localStorageValue: localStorage.getItem("querino_stripe_mode") 
+      });
 
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -29,21 +35,26 @@ export function useStripeCheckout() {
       });
 
       if (error) {
-        console.error("Checkout error:", error);
+        console.error("[Checkout] Edge function error:", error);
         toast.error("Failed to start checkout. Please try again.");
         return null;
       }
 
+      console.log("[Checkout] Session created", { 
+        url: data?.url?.substring(0, 60) + "...",
+        isTestUrl: data?.url?.includes("cs_test_")
+      });
+
       if (data?.url) {
-        // Open in new tab to avoid loading state issues
-        window.open(data.url, "_blank");
+        // Redirect in the same tab to maintain auth state
+        window.location.href = data.url;
         return data;
       }
 
       toast.error("No checkout URL received");
       return null;
     } catch (error) {
-      console.error("Checkout error:", error);
+      console.error("[Checkout] Unexpected error:", error);
       toast.error("An error occurred. Please try again.");
       return null;
     } finally {
