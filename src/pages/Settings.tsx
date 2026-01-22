@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeam, useUpdateTeam } from "@/hooks/useTeams";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -14,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles } from "lucide-react";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
@@ -26,9 +27,24 @@ export default function Settings() {
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
   const { data: teamData } = useTeam(isTeamWorkspace ? currentWorkspace : undefined);
   const updateTeam = useUpdateTeam();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // Premium check
-  const { isPremium } = usePremiumCheck();
+  // Subscription status
+  const { subscription, isPremium, isLoading: subscriptionLoading, openCustomerPortal } = useSubscription();
+  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
+  
+  // Check for checkout success
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      setShowUpgradeSuccess(true);
+      // Clean up URL
+      searchParams.delete("checkout");
+      setSearchParams(searchParams, { replace: true });
+      // Auto-hide after 10 seconds
+      const timer = setTimeout(() => setShowUpgradeSuccess(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, setSearchParams]);
   
   // Join team modal
   const [showJoinTeamModal, setShowJoinTeamModal] = useState(false);
@@ -271,6 +287,67 @@ export default function Settings() {
             className="hidden md:block w-48 h-24 object-cover rounded-lg opacity-80"
           />
         </div>
+
+        {/* Upgrade Success Banner */}
+        {showUpgradeSuccess && (
+          <Alert className="mb-6 border-success/50 bg-success/10">
+            <Sparkles className="h-5 w-5 text-success" />
+            <AlertDescription className="ml-2 flex items-center gap-2">
+              <span className="font-semibold text-success">Welcome to Premium!</span>
+              <span className="text-muted-foreground">Your upgrade was successful. Enjoy all the premium features!</span>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Plan Status Card */}
+        <Card className={`mb-8 ${isPremium ? 'border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10' : 'border-border'}`}>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full ${isPremium ? 'bg-primary/20' : 'bg-muted'}`}>
+                {isPremium ? (
+                  <Crown className="h-6 w-6 text-primary" />
+                ) : (
+                  <CreditCard className="h-6 w-6 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">Your Plan</h3>
+                  {subscriptionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Badge 
+                      variant={isPremium ? "default" : "secondary"}
+                      className={isPremium ? "bg-primary text-primary-foreground" : ""}
+                    >
+                      {isPremium ? "Premium" : "Free"}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {isPremium 
+                    ? "You have access to all premium features including AI refinement, GitHub sync, and more."
+                    : "Upgrade to unlock AI refinement tools, unlimited storage, and GitHub sync."}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {isPremium ? (
+                <Button variant="outline" onClick={openCustomerPortal} className="gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Manage Billing
+                </Button>
+              ) : (
+                <Link to="/pricing?from=settings">
+                  <Button variant="hero" className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Upgrade to Premium
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Workspace Indicator */}
         <Alert className={`mb-8 ${isTeamWorkspace ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
