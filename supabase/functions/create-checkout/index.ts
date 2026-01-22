@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
+const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
@@ -28,6 +28,11 @@ serve(async (req) => {
     const { priceId, mode = "live" } = await req.json();
     logStep("Request body parsed", { priceId, mode });
 
+    // Validate mode
+    if (mode !== "live" && mode !== "sandbox") {
+      throw new Error(`Invalid mode: ${mode}. Must be 'live' or 'sandbox'`);
+    }
+
     // Select the appropriate Stripe key based on mode
     const stripeKey = mode === "sandbox" 
       ? Deno.env.get("STRIPE_SANDBOX_SECRET_KEY")
@@ -36,7 +41,7 @@ serve(async (req) => {
     if (!stripeKey) {
       throw new Error(`Stripe ${mode} key not configured`);
     }
-    logStep("Stripe key verified", { mode });
+    logStep("Stripe key verified", { mode, keyPrefix: stripeKey.substring(0, 7) });
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
@@ -83,7 +88,12 @@ serve(async (req) => {
       },
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url, mode });
+    logStep("Checkout session created", { 
+      sessionId: session.id, 
+      url: session.url?.substring(0, 50) + "...", 
+      mode,
+      isTest: session.url?.includes("cs_test_") 
+    });
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
