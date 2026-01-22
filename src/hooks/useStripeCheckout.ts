@@ -35,7 +35,8 @@ export function useStripeCheckout() {
       }
 
       if (data?.url) {
-        window.location.href = data.url;
+        // Open in new tab to avoid loading state issues
+        window.open(data.url, "_blank");
         return data;
       }
 
