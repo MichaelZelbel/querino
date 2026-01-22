@@ -24,8 +24,7 @@ import Auth from "./pages/Auth";
 import Library from "./pages/Library";
 import PromptDetail from "./pages/PromptDetail";
 import PromptNew from "./pages/PromptNew";
-import PromptEdit from "./pages/PromptEdit";
-import LibraryPromptEdit from "./pages/LibraryPromptEdit";
+import PromptEdit from "./pages/LibraryPromptEdit";
 import VersionHistory from "./pages/VersionHistory";
 import PromptWizard from "./pages/PromptWizard";
 import SkillNew from "./pages/SkillNew";
@@ -78,7 +77,7 @@ const App = () => (
             <Route path="/prompts/wizard" element={<PromptWizard />} />
             <Route path="/prompts/:slug" element={<PromptDetail />} />
             <Route path="/prompts/:slug/edit" element={<PromptEdit />} />
-            <Route path="/library/:slug/edit" element={<LibraryPromptEdit />} />
+            <Route path="/library/:slug/edit" element={<PromptEdit />} />
             <Route path="/library/:slug/versions" element={<VersionHistory />} />
             <Route path="/skills/new" element={<SkillNew />} />
             <Route path="/skills/:slug" element={<SkillDetail />} />

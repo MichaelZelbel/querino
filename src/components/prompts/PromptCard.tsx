@@ -34,7 +34,7 @@ export function PromptCard({
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
-  const editUrl = editPath === "library" ? `/library/${prompt.slug}/edit` : `/prompts/${prompt.slug}/edit`;
+  const editUrl = `/library/${prompt.slug}/edit`;
   const detailUrl = `/prompts/${prompt.slug}`;
   const handleCopy = async () => {
     try {
