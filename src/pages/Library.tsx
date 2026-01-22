@@ -55,14 +55,17 @@ export default function Library() {
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
 
-  // Fetch pinned prompts
+  // Fetch pinned prompts - filtered by workspace
   const { 
     pinnedPromptIds, 
     pinnedPrompts, 
     loading: pinnedLoading, 
     isPromptPinned,
     refetch: refetchPinned 
-  } = usePinnedPrompts();
+  } = usePinnedPrompts({
+    teamId: isTeamWorkspace ? currentWorkspace : undefined,
+    personalOnly: !isTeamWorkspace,
+  });
 
   // Fetch user's collections
   const { data: myCollections, isLoading: collectionsLoading } = useCollections(user?.id);

@@ -7,8 +7,16 @@ interface PinnedPromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
 }
 
-export function usePinnedPrompts() {
+interface UsePinnedPromptsOptions {
+  /** If provided, only return pinned prompts belonging to this team */
+  teamId?: string | null;
+  /** If true and teamId is null/undefined, only return personal (non-team) pinned prompts */
+  personalOnly?: boolean;
+}
+
+export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
   const { user } = useAuthContext();
+  const { teamId, personalOnly } = options;
   const [pinnedPromptIds, setPinnedPromptIds] = useState<Set<string>>(new Set());
   const [pinnedPrompts, setPinnedPrompts] = useState<PinnedPromptWithAuthor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +45,7 @@ export function usePinnedPrompts() {
     }
   }, [user]);
 
-  // Fetch full pinned prompt data
+  // Fetch full pinned prompt data with optional workspace filtering
   const fetchPinnedPrompts = useCallback(async () => {
     if (!user) {
       setPinnedPrompts([]);
@@ -66,7 +74,8 @@ export function usePinnedPrompts() {
 
       const promptIds = pins.map((p) => p.prompt_id);
 
-      const { data: prompts, error: promptsError } = await supabase
+      // Build the query with workspace filtering
+      let query = supabase
         .from("prompts")
         .select(`
           *,
@@ -77,6 +86,18 @@ export function usePinnedPrompts() {
           )
         `)
         .in("id", promptIds);
+
+      // Apply workspace filter
+      if (teamId) {
+        // Team workspace: only show prompts belonging to this team
+        query = query.eq("team_id", teamId);
+      } else if (personalOnly) {
+        // Personal workspace: only show prompts without a team
+        query = query.is("team_id", null);
+      }
+      // If neither teamId nor personalOnly, return all pinned prompts (no filter)
+
+      const { data: prompts, error: promptsError } = await query;
 
       if (promptsError) {
         console.error("Error fetching prompts:", promptsError);
@@ -93,14 +114,14 @@ export function usePinnedPrompts() {
         .filter(Boolean) as PinnedPromptWithAuthor[];
 
       setPinnedPrompts(orderedPrompts);
-      setPinnedPromptIds(new Set(promptIds));
+      // Keep pinnedPromptIds as all pins (for checking if a prompt is pinned)
+      setPinnedPromptIds(new Set(pins.map(p => p.prompt_id)));
     } catch (err) {
       console.error("Error fetching pinned prompts:", err);
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
+  }, [user, teamId, personalOnly]);
   useEffect(() => {
     fetchPinnedPromptIds();
   }, [fetchPinnedPromptIds]);
