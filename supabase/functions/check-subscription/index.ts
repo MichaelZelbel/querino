@@ -180,10 +180,22 @@ async function checkStripeAccount(email: string, stripeKey: string, mode: string
   const subscription = subscriptions.data[0];
   const productId = subscription.items.data[0]?.price?.product as string;
   
+  // Safely parse subscription end date
+  let subscriptionEnd: string | undefined;
+  try {
+    if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    }
+  } catch (dateError) {
+    logStep(`${mode} date parsing error`, { error: String(dateError) });
+    // Continue without the end date - subscription is still valid
+  }
+  
   logStep(`${mode} active subscription found`, { 
     subscriptionId: subscription.id,
     productId,
-    currentPeriodEnd: subscription.current_period_end
+    currentPeriodEnd: subscription.current_period_end,
+    subscriptionEnd
   });
   
   return {
@@ -191,6 +203,6 @@ async function checkStripeAccount(email: string, stripeKey: string, mode: string
     mode,
     customerId,
     productId,
-    subscriptionEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+    subscriptionEnd,
   };
 }
