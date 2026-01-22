@@ -17,13 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, X } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Loader2, X, Sparkles, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 
 export default function SkillNew() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { isPremium } = usePremiumCheck();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [content, setContent] = useState("");
@@ -34,6 +42,10 @@ export default function SkillNew() {
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // AI metadata suggestion state
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -77,6 +89,66 @@ export default function SkillNew() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSuggestMetadata = async () => {
+    if (!content.trim()) {
+      setMetadataError("Please add some skill content first.");
+      return;
+    }
+
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+
+    try {
+      const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-skill-metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_content: content.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate suggestions");
+      }
+
+      const result = await response.json();
+      const data = result.output || result;
+
+      // Populate form fields with suggestions
+      if (data.title) {
+        setTitle(data.title);
+      }
+      
+      if (data.description) {
+        setDescription(data.description);
+      }
+      
+      // Set category if provided and valid
+      if (data.category) {
+        const matchedCategory = categoryOptions.find(cat => 
+          cat.id.toLowerCase() === data.category.toLowerCase()
+        );
+        if (matchedCategory) {
+          setCategory(matchedCategory.id);
+        }
+      }
+      
+      // Replace tags with suggested tags
+      if (data.tags && Array.isArray(data.tags)) {
+        const normalizedTags = data.tags
+          .map((tag: string) => normalizeTag(tag))
+          .filter((tag: string) => tag)
+          .slice(0, 10);
+        setTags(normalizedTags);
+      }
+      
+      toast.success("Metadata suggestions applied!");
+    } catch (error) {
+      console.error("Error suggesting metadata:", error);
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -159,6 +231,41 @@ export default function SkillNew() {
               {errors.content && (
                 <p className="text-sm text-destructive">{errors.content}</p>
               )}
+              
+              {/* AI Metadata Suggestion */}
+              <div className="pt-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSuggestMetadata}
+                        disabled={isGeneratingMetadata || !isPremium}
+                        className="gap-2"
+                      >
+                        {isGeneratingMetadata ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isPremium ? (
+                          <Sparkles className="h-4 w-4" />
+                        ) : (
+                          <Lock className="h-4 w-4" />
+                        )}
+                        {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                      </Button>
+                    </TooltipTrigger>
+                    {!isPremium && (
+                      <TooltipContent>
+                        <p>Premium feature – upgrade to use AI suggestions</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+                {metadataError && (
+                  <p className="text-sm text-destructive mt-2">{metadataError}</p>
+                )}
+              </div>
             </div>
 
             {/* Title */}
