@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+
+[functions.ensure-token-allowance]
+verify_jwt = false
+
+[functions.suggest-skill-metadata]
+verify_jwt = false
