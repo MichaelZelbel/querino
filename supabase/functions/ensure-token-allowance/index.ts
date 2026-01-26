@@ -299,24 +299,28 @@ serve(async (req) => {
         throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
       }
 
-      const results: { user_id: string; created: boolean; error?: string }[] = [];
+      const results: { userId: string; status: string; balance?: AllowanceResult["allowance"]; error?: string }[] = [];
 
       for (const profile of profiles || []) {
         try {
           const result = await ensureTokenAllowance(supabaseAdmin, profile.id);
-          results.push({ user_id: profile.id, created: result.created });
+          results.push({ 
+            userId: profile.id,
+            status: result.created ? "created" : "exists",
+            balance: result.allowance
+          });
         } catch (err) {
           results.push({ 
-            user_id: profile.id, 
-            created: false, 
+            userId: profile.id, 
+            status: "error",
             error: err instanceof Error ? err.message : String(err) 
           });
         }
       }
 
-      const created = results.filter(r => r.created).length;
-      const skipped = results.filter(r => !r.created && !r.error).length;
-      const errors = results.filter(r => r.error).length;
+      const created = results.filter(r => r.status === "created").length;
+      const skipped = results.filter(r => r.status === "exists").length;
+      const errors = results.filter(r => r.status === "error").length;
 
       logStep("Batch initialization complete", { created, skipped, errors });
 
