@@ -27,6 +27,14 @@ import { Search, Shield, Save, Users, Trash2, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
 import { AICreditSettings } from "@/components/admin/AICreditSettings";
+import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
+
+interface AllowancePeriod {
+  id: string;
+  user_id: string;
+  tokens_granted: number;
+  tokens_used: number;
+}
 
 interface UserProfile {
   id: string;
@@ -47,6 +55,7 @@ export default function Admin() {
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [editedUsers, setEditedUsers] = useState<Record<string, Partial<UserProfile>>>({});
+  const [allowances, setAllowances] = useState<Record<string, AllowancePeriod>>({});
 
   // Access control check
   useEffect(() => {
@@ -68,6 +77,7 @@ export default function Admin() {
   useEffect(() => {
     if (profile?.role === "admin") {
       fetchUsers();
+      fetchAllowances();
     }
   }, [profile]);
 
@@ -87,6 +97,43 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAllowances = async () => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from("ai_allowance_periods")
+        .select("id, user_id, tokens_granted, tokens_used, period_start, period_end")
+        .lte("period_start", now)
+        .gt("period_end", now);
+
+      if (error) throw error;
+
+      // Create a map of user_id to their current period allowance
+      const allowanceMap: Record<string, AllowancePeriod> = {};
+      (data || []).forEach((row) => {
+        // If multiple periods exist for a user, keep the one with latest period_end
+        if (!allowanceMap[row.user_id] || row.period_end > allowanceMap[row.user_id].id) {
+          allowanceMap[row.user_id] = {
+            id: row.id,
+            user_id: row.user_id,
+            tokens_granted: row.tokens_granted,
+            tokens_used: row.tokens_used,
+          };
+        }
+      });
+      setAllowances(allowanceMap);
+    } catch (error) {
+      console.error("Error fetching allowances:", error);
+    }
+  };
+
+  const handleAllowanceUpdate = (userId: string, newAllowance: AllowancePeriod) => {
+    setAllowances((prev) => ({
+      ...prev,
+      [userId]: newAllowance,
+    }));
   };
 
   const handleFieldChange = (userId: string, field: string, value: string) => {
@@ -303,6 +350,7 @@ export default function Admin() {
                       <TableHead>Role</TableHead>
                       <TableHead>Plan Type</TableHead>
                       <TableHead>Plan Source</TableHead>
+                      <TableHead>Remaining Tokens</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-24"></TableHead>
                     </TableRow>
@@ -371,6 +419,13 @@ export default function Admin() {
                               <SelectItem value="test">test</SelectItem>
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          <UserTokenBalance
+                            userId={u.id}
+                            allowances={allowances}
+                            onUpdate={handleAllowanceUpdate}
+                          />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {u.created_at
