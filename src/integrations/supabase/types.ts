@@ -119,6 +119,24 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_credit_settings: {
+        Row: {
+          description: string | null
+          key: string
+          value_int: number
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          value_int: number
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          value_int?: number
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           created_at: string | null
