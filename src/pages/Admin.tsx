@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { Search, Shield, Save, Users, Trash2, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
+import { AICreditSettings } from "@/components/admin/AICreditSettings";
 
 interface UserProfile {
   id: string;
@@ -254,6 +255,11 @@ export default function Admin() {
             <StripeModeToggle showInProduction={true} />
           </CardContent>
         </Card>
+
+        {/* AI Credit Settings */}
+        <div className="mb-8">
+          <AICreditSettings />
+        </div>
 
         {/* Users Management */}
         <Card>
