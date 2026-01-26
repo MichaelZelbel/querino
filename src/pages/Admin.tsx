@@ -73,13 +73,56 @@ export default function Admin() {
     }
   }, [user, profile, authLoading, navigate]);
 
-  // Fetch users
+  // Fetch users and initialize allowances
   useEffect(() => {
     if (profile?.role === "admin") {
       fetchUsers();
-      fetchAllowances();
+      initializeAndFetchAllowances();
     }
   }, [profile]);
+
+  const initializeAndFetchAllowances = async () => {
+    try {
+      // First, call the edge function to ensure all users have current-period allowances
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await supabase.functions.invoke("ensure-token-allowance", {
+        body: { batch_init: true },
+      });
+
+      if (response.error) {
+        console.error("Error initializing allowances:", response.error);
+        // Fall back to direct fetch
+        await fetchAllowances();
+        return;
+      }
+
+      // Use the returned balances from the edge function
+      if (response.data?.results) {
+        const allowanceMap: Record<string, AllowancePeriod> = {};
+        response.data.results.forEach((result: any) => {
+          if (result.status === "exists" || result.status === "created") {
+            const balance = result.balance;
+            allowanceMap[result.userId] = {
+              id: balance.id,
+              user_id: balance.user_id,
+              tokens_granted: balance.tokens_granted,
+              tokens_used: balance.tokens_used,
+            };
+          }
+        });
+        setAllowances(allowanceMap);
+      } else {
+        // Fall back to direct fetch if no results
+        await fetchAllowances();
+      }
+    } catch (error) {
+      console.error("Error in initializeAndFetchAllowances:", error);
+      // Fall back to direct fetch
+      await fetchAllowances();
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
