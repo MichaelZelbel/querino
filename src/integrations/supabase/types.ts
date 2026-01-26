@@ -62,6 +62,63 @@ export type Database = {
           },
         ]
       }
+      ai_allowance_periods: {
+        Row: {
+          created_at: string
+          credits_granted: number
+          credits_unit: string
+          credits_used: number
+          id: string
+          metadata: Json
+          milli_credits_granted: number
+          milli_credits_used: number
+          period_end: string
+          period_start: string
+          source: string | null
+          token_to_milli_credit_factor: number
+          tokens_granted: number
+          tokens_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_granted?: number
+          credits_unit?: string
+          credits_used?: number
+          id?: string
+          metadata?: Json
+          milli_credits_granted?: number
+          milli_credits_used?: number
+          period_end: string
+          period_start: string
+          source?: string | null
+          token_to_milli_credit_factor?: number
+          tokens_granted?: number
+          tokens_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_granted?: number
+          credits_unit?: string
+          credits_used?: number
+          id?: string
+          metadata?: Json
+          milli_credits_granted?: number
+          milli_credits_used?: number
+          period_end?: string
+          period_start?: string
+          source?: string | null
+          token_to_milli_credit_factor?: number
+          tokens_granted?: number
+          tokens_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           created_at: string | null
@@ -231,6 +288,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      llm_usage_events: {
+        Row: {
+          completion_tokens: number
+          created_at: string
+          credits_charged: number
+          feature: string | null
+          id: string
+          idempotency_key: string
+          metadata: Json
+          milli_credits_charged: number
+          model: string | null
+          n8n_execution_id: string | null
+          prompt_tokens: number
+          provider: string | null
+          total_tokens: number
+          user_id: string
+          workflow_id: string | null
+          workflow_name: string | null
+        }
+        Insert: {
+          completion_tokens?: number
+          created_at?: string
+          credits_charged?: number
+          feature?: string | null
+          id?: string
+          idempotency_key: string
+          metadata?: Json
+          milli_credits_charged?: number
+          model?: string | null
+          n8n_execution_id?: string | null
+          prompt_tokens?: number
+          provider?: string | null
+          total_tokens?: number
+          user_id: string
+          workflow_id?: string | null
+          workflow_name?: string | null
+        }
+        Update: {
+          completion_tokens?: number
+          created_at?: string
+          credits_charged?: number
+          feature?: string | null
+          id?: string
+          idempotency_key?: string
+          metadata?: Json
+          milli_credits_charged?: number
+          model?: string | null
+          n8n_execution_id?: string | null
+          prompt_tokens?: number
+          provider?: string | null
+          total_tokens?: number
+          user_id?: string
+          workflow_id?: string | null
+          workflow_name?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -922,7 +1036,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_ai_allowance_current: {
+        Row: {
+          created_at: string | null
+          credits_granted: number | null
+          credits_unit: string | null
+          credits_used: number | null
+          display_credits: number | null
+          id: string | null
+          metadata: Json | null
+          milli_credits_granted: number | null
+          milli_credits_used: number | null
+          period_end: string | null
+          period_start: string | null
+          remaining_credits: number | null
+          remaining_milli_credits: number | null
+          remaining_tokens: number | null
+          source: string | null
+          token_to_milli_credit_factor: number | null
+          tokens_granted: number | null
+          tokens_used: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_granted?: number | null
+          credits_unit?: string | null
+          credits_used?: number | null
+          display_credits?: never
+          id?: string | null
+          metadata?: Json | null
+          milli_credits_granted?: number | null
+          milli_credits_used?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          remaining_credits?: never
+          remaining_milli_credits?: never
+          remaining_tokens?: never
+          source?: string | null
+          token_to_milli_credit_factor?: number | null
+          tokens_granted?: number | null
+          tokens_used?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_granted?: number | null
+          credits_unit?: string | null
+          credits_used?: number | null
+          display_credits?: never
+          id?: string | null
+          metadata?: Json | null
+          milli_credits_granted?: number | null
+          milli_credits_used?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          remaining_credits?: never
+          remaining_milli_credits?: never
+          remaining_tokens?: never
+          source?: string | null
+          token_to_milli_credit_factor?: number | null
+          tokens_granted?: number | null
+          tokens_used?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
