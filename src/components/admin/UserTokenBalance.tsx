@@ -44,12 +44,29 @@ export function UserTokenBalance({ userId, allowances, onUpdate }: UserTokenBala
 
     setSaving(true);
     try {
-      // Calculate new tokens_used: GREATEST(tokens_granted - new_remaining_tokens, 0)
-      const newTokensUsed = Math.max(allowance.tokens_granted - value, 0);
+      // If the admin sets remaining tokens higher than what's currently granted,
+      // we need to increase tokens_granted to accommodate the new value
+      let newTokensGranted = allowance.tokens_granted;
+      let newTokensUsed = allowance.tokens_used;
+
+      if (value > allowance.tokens_granted) {
+        // Admin wants more remaining than currently granted
+        // Set tokens_granted = value (the new remaining), tokens_used = 0
+        newTokensGranted = value;
+        newTokensUsed = 0;
+      } else {
+        // Normal case: adjust tokens_used to achieve desired remaining
+        // remaining = tokens_granted - tokens_used
+        // tokens_used = tokens_granted - remaining
+        newTokensUsed = Math.max(allowance.tokens_granted - value, 0);
+      }
 
       const { error } = await supabase
         .from("ai_allowance_periods")
-        .update({ tokens_used: newTokensUsed })
+        .update({ 
+          tokens_granted: newTokensGranted,
+          tokens_used: newTokensUsed 
+        })
         .eq("id", allowance.id);
 
       if (error) throw error;
@@ -57,6 +74,7 @@ export function UserTokenBalance({ userId, allowances, onUpdate }: UserTokenBala
       // Update local state
       onUpdate(userId, {
         ...allowance,
+        tokens_granted: newTokensGranted,
         tokens_used: newTokensUsed,
       });
 
