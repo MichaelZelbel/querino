@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,6 +51,7 @@ export function PromptForm({
   isSubmitting,
 }: PromptFormProps) {
   const { isPremium } = usePremiumCheck();
+  const { user } = useAuthContext();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
     initialData?.description || ""
@@ -173,7 +175,7 @@ export function PromptForm({
 
     try {
       const response = await supabase.functions.invoke("suggest-metadata", {
-        body: { prompt_content: content.trim() },
+        body: { prompt_content: content.trim(), user_id: user?.id },
       });
 
       if (response.error) {
