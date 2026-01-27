@@ -21,6 +21,7 @@ import { Loader2, Sparkles, Copy, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { FRAMEWORK_OPTIONS, type PromptFramework } from "@/lib/promptGenerator";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RefinePromptModalProps {
   isOpen: boolean;
@@ -67,35 +68,24 @@ export function RefinePromptModal({
     setExplanation(null);
 
     try {
-      const refinementUrl = import.meta.env.VITE_PROMPT_REFINEMENT_URL;
-      
-      if (!refinementUrl) {
-        // Fallback: simulate refinement locally if no endpoint configured
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const simulatedRefinement = `# Enhanced Prompt\n\n${promptContent}\n\n---\n*This prompt has been refined for clarity and structure.*`;
-        setRefinedPrompt(simulatedRefinement);
-        setExplanation("Refinement endpoint not configured. Showing simulated result.");
-        return;
-      }
-
-      const response = await fetch(refinementUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke("refine-prompt", {
+        body: {
           prompt: promptContent,
           framework,
           goal: promptTitle || "",
           user_id: userId,
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to refine prompt");
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to refine prompt");
       }
 
-      const data: RefinementResponse = await response.json();
+      if (!data?.refinedPrompt) {
+        throw new Error("No refined prompt in response");
+      }
+
       setRefinedPrompt(data.refinedPrompt);
       setExplanation(data.explanation || null);
     } catch (error) {
