@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt_content } = await req.json();
+    const { prompt_content, user_id } = await req.json();
 
     if (!prompt_content || typeof prompt_content !== "string") {
       return new Response(
@@ -21,12 +21,12 @@ serve(async (req) => {
       );
     }
 
-    console.log("Calling n8n webhook with prompt_content length:", prompt_content.length);
+    console.log("Calling n8n webhook with prompt_content length:", prompt_content.length, "user_id:", user_id);
 
     const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt_content }),
+      body: JSON.stringify({ prompt_content, user_id }),
     });
 
     if (!response.ok) {
