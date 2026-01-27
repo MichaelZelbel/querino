@@ -49,7 +49,7 @@ export function useAICredits() {
         supabase
           .from("ai_credit_settings")
           .select("key, value_int")
-          .in("key", ["credits_free_per_month", "credits_premium_per_month"]),
+          .in("key", ["credits_free_per_month", "credits_premium_per_month", "tokens_per_credit"]),
       ]);
 
       if (allowanceResult.error) {
@@ -76,9 +76,10 @@ export function useAICredits() {
         } | null;
 
         // Calculate credits from tokens if credits are 0 but tokens exist
-        // token_to_milli_credit_factor: 1 token = X milli-credits
+        // Use current tokens_per_credit from settings for dynamic calculation
         // 1000 milli-credits = 1 credit
-        const tokenToMilliCreditFactor = Number(data.token_to_milli_credit_factor) || 5;
+        const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
+        const tokenToMilliCreditFactor = 1000 / tokensPerCredit;
         const tokensGranted = Number(data.tokens_granted) || 0;
         const tokensUsed = Number(data.tokens_used) || 0;
         const remainingTokens = Number(data.remaining_tokens) || 0;
