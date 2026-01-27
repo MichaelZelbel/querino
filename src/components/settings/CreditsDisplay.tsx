@@ -23,6 +23,9 @@ export function CreditsDisplay() {
 
   const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, planBaseCredits } = credits;
   
+  // Provide fallback for planBaseCredits to avoid undefined errors
+  const effectivePlanCredits = planBaseCredits ?? 1500;
+  
   // Calculate percentage for progress bar based on total granted
   const usagePercentage = creditsGranted > 0 
     ? Math.min((remainingCredits / creditsGranted) * 100, 100) 
@@ -37,7 +40,7 @@ export function CreditsDisplay() {
   const resetDate = periodEnd ? format(new Date(periodEnd), "dd MMM 'at' h:mm a") : null;
   
   // Max rollover is capped at the plan's monthly credits
-  const maxRollover = planBaseCredits || 1500;
+  const maxRollover = effectivePlanCredits;
 
   return (
     <div className="mt-6 pt-6 border-t border-border">
@@ -77,7 +80,7 @@ export function CreditsDisplay() {
         {resetDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Check className="h-4 w-4 text-primary" />
-            <span>{planBaseCredits.toLocaleString()} credits reset on {resetDate}</span>
+            <span>{effectivePlanCredits.toLocaleString()} credits reset on {resetDate}</span>
           </div>
         )}
       </div>
