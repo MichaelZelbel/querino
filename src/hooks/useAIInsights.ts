@@ -93,6 +93,9 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
     setError(null);
 
     try {
+      // Get current user for tracking
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Fetch artefact data
       const artefact = await fetchArtefact();
       if (!artefact) {
@@ -110,6 +113,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           content: artefact.content,
           tags: artefact.tags || [],
           metadata: { id: itemId },
+          user_id: user?.id,
         }),
       });
 
