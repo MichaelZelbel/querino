@@ -100,7 +100,7 @@ export default function PromptWizard() {
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ structured_input: structuredInput }),
+        body: JSON.stringify({ structured_input: structuredInput, user_id: user?.id }),
       });
 
       if (!response.ok) {
