@@ -682,16 +682,29 @@ export default function LibraryPromptEdit() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="content">Prompt Content *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowRefineModal(true)}
-                        className="gap-2"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        Refine with AI
-                      </Button>
+                      {isPremium ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowRefineModal(true)}
+                          className="gap-2"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Refine with AI
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate("/pricing")}
+                          className="gap-2"
+                        >
+                          <Lock className="h-4 w-4" />
+                          Refine with AI
+                        </Button>
+                      )}
                     </div>
                     <Textarea
                       id="content"
