@@ -23,7 +23,11 @@ export function CreditsDisplay() {
 
   const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, baseCredits } = credits;
   
-  // Calculate percentage for progress bar
+  // Use the plan's base credits (e.g., 1500 for Premium) as the basis
+  // Total granted = baseCredits + rolloverCredits
+  const planBaseCredits = baseCredits || 1500; // Default to Premium plan credits
+  
+  // Calculate percentage for progress bar based on total granted
   const usagePercentage = creditsGranted > 0 
     ? Math.min((remainingCredits / creditsGranted) * 100, 100) 
     : 0;
@@ -35,6 +39,9 @@ export function CreditsDisplay() {
 
   // Format the reset date
   const resetDate = periodEnd ? format(new Date(periodEnd), "dd MMM 'at' h:mm a") : null;
+  
+  // Max rollover is capped at the plan's base credits
+  const maxRollover = planBaseCredits;
 
   return (
     <div className="mt-6 pt-6 border-t border-border">
@@ -67,16 +74,14 @@ export function CreditsDisplay() {
 
       {/* Info lines */}
       <div className="mt-4 space-y-2">
-        {rolloverCredits > 0 && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Check className="h-4 w-4 text-primary" />
-            <span>Up to {baseCredits.toLocaleString()} credits rollover</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Check className="h-4 w-4 text-primary" />
+          <span>Up to {maxRollover.toLocaleString()} credits rollover</span>
+        </div>
         {resetDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Check className="h-4 w-4 text-primary" />
-            <span>{baseCredits.toLocaleString()} credits reset on {resetDate}</span>
+            <span>{planBaseCredits.toLocaleString()} credits reset on {resetDate}</span>
           </div>
         )}
       </div>
