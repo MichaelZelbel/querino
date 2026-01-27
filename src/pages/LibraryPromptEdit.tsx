@@ -214,7 +214,7 @@ export default function LibraryPromptEdit() {
 
     try {
       const response = await supabase.functions.invoke("suggest-metadata", {
-        body: { prompt_content: content.trim() },
+        body: { prompt_content: content.trim(), user_id: user?.id },
       });
 
       if (response.error) {
