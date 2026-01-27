@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Wand2, Copy, ArrowRight, Loader2, Check, Info } from "lucide-react";
+import { Wand2, Copy, ArrowRight, Loader2, Check, Info, Lock, Crown } from "lucide-react";
 import { toast } from "sonner";
 import {
   formatWizardInputForApi,
@@ -36,6 +37,7 @@ const llmOptions = [
 export default function PromptWizard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { isPremium } = usePremiumCheck();
 
   // Form state
   const [goal, setGoal] = useState("");
@@ -144,6 +146,62 @@ export default function PromptWizard() {
 
   if (!user) {
     return null; // Will redirect
+  }
+
+  // Premium gate for the wizard
+  if (!isPremium) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+
+        <main className="flex-1 py-12">
+          <div className="container mx-auto max-w-2xl px-4">
+            {/* Page Header */}
+            <div className="mb-8 text-center">
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Lock className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="text-display-md font-bold text-foreground">
+                Prompt Wizard
+              </h1>
+              <p className="mt-2 text-muted-foreground">
+                Answer a few questions and let Querino draft a powerful prompt for you.
+              </p>
+            </div>
+
+            {/* Premium Gate Card */}
+            <div className="rounded-xl border border-border bg-card p-8 text-center">
+              <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Crown className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mb-2">
+                Premium Feature
+              </h2>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                The Prompt Wizard uses AI to craft powerful prompts tailored to your needs. 
+                Upgrade to Premium to unlock this feature.
+              </p>
+              <Button onClick={() => navigate("/pricing")} className="gap-2">
+                <Crown className="h-4 w-4" />
+                Upgrade to Premium
+              </Button>
+            </div>
+
+            {/* Back link */}
+            <div className="mt-6 text-center">
+              <Link
+                to="/library"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to My Library
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
   }
 
   return (
