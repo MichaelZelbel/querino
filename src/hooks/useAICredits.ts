@@ -11,6 +11,7 @@ interface AICreditsData {
   periodEnd: string;
   rolloverCredits: number;
   baseCredits: number;
+  planBaseCredits: number;
   source: string | null;
 }
 
@@ -33,19 +34,40 @@ export function useAICredits() {
       // First ensure the user has an allowance period
       await supabase.functions.invoke("ensure-token-allowance");
 
-      // Then fetch the current allowance from the view
-      const { data, error: fetchError } = await supabase
-        .from("v_ai_allowance_current")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Fetch user's plan type and credit settings in parallel
+      const [allowanceResult, profileResult, settingsResult] = await Promise.all([
+        supabase
+          .from("v_ai_allowance_current")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("plan_type")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("ai_credit_settings")
+          .select("key, value_int")
+          .in("key", ["credits_free_per_month", "credits_premium_per_month"]),
+      ]);
 
-      if (fetchError) {
-        console.error("[AICredits] Fetch error:", fetchError);
-        setError(fetchError.message);
+      if (allowanceResult.error) {
+        console.error("[AICredits] Fetch error:", allowanceResult.error);
+        setError(allowanceResult.error.message);
         return;
       }
 
+      // Determine plan base credits from settings
+      const isPremium = profileResult.data?.plan_type === "premium";
+      const settingsMap = Object.fromEntries(
+        (settingsResult.data || []).map((s) => [s.key, s.value_int])
+      );
+      const planBaseCredits = isPremium
+        ? settingsMap["credits_premium_per_month"] || 1500
+        : settingsMap["credits_free_per_month"] || 0;
+
+      const data = allowanceResult.data;
       if (data) {
         // Parse metadata for rollover info
         const metadata = data.metadata as { 
@@ -82,7 +104,8 @@ export function useAICredits() {
           periodStart: data.period_start || "",
           periodEnd: data.period_end || "",
           rolloverCredits: metadata?.rollover_credits || 0,
-          baseCredits: metadata?.base_credits || creditsGranted,
+          baseCredits: metadata?.base_credits || planBaseCredits,
+          planBaseCredits,
           source: data.source,
         });
       } else {
