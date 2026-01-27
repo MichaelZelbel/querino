@@ -26,14 +26,18 @@ export function CreditsDisplay() {
   // Provide fallback for planBaseCredits to avoid undefined errors
   const effectivePlanCredits = planBaseCredits ?? 1500;
   
-  // Calculate percentage for progress bar based on total granted
-  const usagePercentage = creditsGranted > 0 
-    ? Math.min((remainingCredits / creditsGranted) * 100, 100) 
+  // Total credits available = plan base + any rollover
+  // But for display purposes, use plan credits as the total (matching Lovable UI)
+  const displayTotal = effectivePlanCredits + (rolloverCredits || 0);
+  
+  // Calculate percentage for progress bar based on plan total (with rollover)
+  const usagePercentage = displayTotal > 0 
+    ? Math.min((remainingCredits / displayTotal) * 100, 100) 
     : 0;
   
   // Calculate the rollover portion of the progress bar
-  const rolloverPercentage = creditsGranted > 0 
-    ? Math.min((rolloverCredits / creditsGranted) * 100, 100) 
+  const rolloverPercentage = displayTotal > 0 
+    ? Math.min((rolloverCredits / displayTotal) * 100, 100) 
     : 0;
 
   // Format the reset date
@@ -48,7 +52,7 @@ export function CreditsDisplay() {
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">AI Credits remaining</span>
         <span className="text-sm text-muted-foreground">
-          {remainingCredits.toLocaleString(undefined, { maximumFractionDigits: 1 })} of {creditsGranted.toLocaleString()}
+          {remainingCredits.toLocaleString(undefined, { maximumFractionDigits: 1 })} of {displayTotal.toLocaleString()}
         </span>
       </div>
 
