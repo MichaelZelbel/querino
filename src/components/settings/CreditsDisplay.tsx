@@ -40,7 +40,7 @@ export function CreditsDisplay() {
     <div className="mt-6 pt-6 border-t border-border">
       {/* Header with remaining / total */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-foreground">Credits remaining</span>
+        <span className="text-sm font-medium text-foreground">AI Credits remaining</span>
         <span className="text-sm text-muted-foreground">
           {remainingCredits.toLocaleString(undefined, { maximumFractionDigits: 1 })} of {creditsGranted.toLocaleString()}
         </span>
