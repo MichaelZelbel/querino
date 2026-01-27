@@ -21,11 +21,7 @@ export function CreditsDisplay() {
     return null;
   }
 
-  const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, baseCredits } = credits;
-  
-  // Use the plan's base credits (e.g., 1500 for Premium) as the basis
-  // Total granted = baseCredits + rolloverCredits
-  const planBaseCredits = baseCredits || 1500; // Default to Premium plan credits
+  const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, planBaseCredits } = credits;
   
   // Calculate percentage for progress bar based on total granted
   const usagePercentage = creditsGranted > 0 
@@ -40,8 +36,8 @@ export function CreditsDisplay() {
   // Format the reset date
   const resetDate = periodEnd ? format(new Date(periodEnd), "dd MMM 'at' h:mm a") : null;
   
-  // Max rollover is capped at the plan's base credits
-  const maxRollover = planBaseCredits;
+  // Max rollover is capped at the plan's monthly credits
+  const maxRollover = planBaseCredits || 1500;
 
   return (
     <div className="mt-6 pt-6 border-t border-border">
