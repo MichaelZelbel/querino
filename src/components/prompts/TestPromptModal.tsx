@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, FlaskConical, AlertCircle } from "lucide-react";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 interface TestPromptModalProps {
   isOpen: boolean;
@@ -36,8 +37,14 @@ export function TestPromptModal({
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { checkCredits } = useAICreditsGate();
 
   const handleRun = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     setIsRunning(true);
     setError(null);
     setResult(null);

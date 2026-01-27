@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function PromptWizard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
+  const { checkCredits } = useAICreditsGate();
 
   // Form state
   const [goal, setGoal] = useState("");
@@ -67,6 +69,11 @@ export default function PromptWizard() {
   const selectedFrameworkOption = FRAMEWORK_OPTIONS.find((f) => f.value === framework);
 
   const handleGenerate = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     if (!goal.trim()) {
       setGoalError("Please describe what you want the LLM to do");
       return;

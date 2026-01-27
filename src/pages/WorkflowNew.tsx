@@ -27,11 +27,13 @@ import { Loader2, X, FileText, Sparkles, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 export default function WorkflowNew() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
+  const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [content, setContent] = useState("");
@@ -92,6 +94,11 @@ export default function WorkflowNew() {
   };
 
   const handleSuggestMetadata = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     if (!content.trim()) {
       setMetadataError("Please add some workflow content first.");
       return;

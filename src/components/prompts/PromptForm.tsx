@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Loader2, Sparkles, Lock } from "lucide-react";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import {
   Tooltip,
   TooltipContent,
@@ -51,6 +52,7 @@ export function PromptForm({
   isSubmitting,
 }: PromptFormProps) {
   const { isPremium } = usePremiumCheck();
+  const { checkCredits } = useAICreditsGate();
   const { user } = useAuthContext();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
@@ -114,6 +116,11 @@ export function PromptForm({
   };
 
   const handleSuggestTags = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     const tagSuggestionUrl = import.meta.env.VITE_TAG_SUGGESTION_URL;
     
     if (!tagSuggestionUrl) {
@@ -165,6 +172,11 @@ export function PromptForm({
   };
 
   const handleSuggestMetadata = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     if (!content.trim()) {
       setMetadataError("Please add some prompt content first.");
       return;
