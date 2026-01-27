@@ -109,7 +109,7 @@ export default function SkillNew() {
 
     try {
       const { data, error } = await supabase.functions.invoke("suggest-skill-metadata", {
-        body: { skill_content: content.trim() },
+        body: { skill_content: content.trim(), user_id: user?.id },
       });
 
       if (error) {
