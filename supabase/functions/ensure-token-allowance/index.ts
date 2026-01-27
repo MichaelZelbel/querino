@@ -20,9 +20,18 @@ interface AllowanceResult {
     period_end: string;
     tokens_granted: number;
     tokens_used: number;
+    credits_granted: number;
+    credits_used: number;
     milli_credits_granted: number;
     milli_credits_used: number;
     source: string;
+    metadata?: {
+      created_by?: string;
+      created_at?: string;
+      rollover_credits?: number;
+      rollover_tokens?: number;
+      base_credits?: number;
+    };
   } | null;
   error?: string;
 }
@@ -120,8 +129,70 @@ async function getActiveAllowance(
 }
 
 /**
+ * Get the most recent expired period for rollover calculation
+ */
+// deno-lint-ignore no-explicit-any
+async function getMostRecentExpiredPeriod(
+  supabaseAdmin: any,
+  userId: string
+): Promise<AllowanceResult["allowance"]> {
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from("ai_allowance_periods")
+    .select("*")
+    .eq("user_id", userId)
+    .lt("period_end", now)
+    .order("period_end", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    logStep("Error fetching previous period", { error: error.message, userId });
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Calculate rollover credits from previous period
+ * Maximum rollover is capped at the monthly plan credits
+ */
+function calculateRollover(
+  previousPeriod: AllowanceResult["allowance"],
+  monthlyCredits: number
+): { rolloverCredits: number; rolloverTokens: number } {
+  if (!previousPeriod) {
+    return { rolloverCredits: 0, rolloverTokens: 0 };
+  }
+
+  // Calculate remaining credits from previous period
+  const remainingCredits = previousPeriod.credits_granted - previousPeriod.credits_used;
+  const remainingTokens = previousPeriod.tokens_granted - previousPeriod.tokens_used;
+
+  // Cap rollover at monthly plan credits
+  const rolloverCredits = Math.min(Math.max(remainingCredits, 0), monthlyCredits);
+  
+  // Calculate proportional token rollover based on credits ratio
+  const creditsRatio = remainingCredits > 0 ? rolloverCredits / remainingCredits : 0;
+  const rolloverTokens = Math.floor(Math.max(remainingTokens, 0) * creditsRatio);
+
+  logStep("Rollover calculation", {
+    remainingCredits,
+    remainingTokens,
+    monthlyCredits,
+    rolloverCredits,
+    rolloverTokens,
+  });
+
+  return { rolloverCredits, rolloverTokens };
+}
+
+/**
  * Create a new allowance period for the user
  * Uses calendar month for manual users, or custom dates for Stripe
+ * Supports rollover credits from previous period
  */
 // deno-lint-ignore no-explicit-any
 async function createAllowancePeriod(
@@ -130,18 +201,33 @@ async function createAllowancePeriod(
   options: {
     periodStart?: Date;
     periodEnd?: Date;
-    tokensGranted: number;
-    creditsGranted: number;
+    baseTokensGranted: number;
+    baseCreditsGranted: number;
+    rolloverTokens?: number;
+    rolloverCredits?: number;
     tokensPerCredit: number;
     source: string;
   }
 ): Promise<AllowanceResult["allowance"]> {
-  const { periodStart: customStart, periodEnd: customEnd, tokensGranted, creditsGranted, tokensPerCredit, source } = options;
+  const { 
+    periodStart: customStart, 
+    periodEnd: customEnd, 
+    baseTokensGranted, 
+    baseCreditsGranted,
+    rolloverTokens = 0,
+    rolloverCredits = 0,
+    tokensPerCredit, 
+    source 
+  } = options;
   
   // Use custom dates or default to calendar month
   const { periodStart: defaultStart, periodEnd: defaultEnd } = getCurrentMonthPeriod();
   const periodStart = customStart ?? defaultStart;
   const periodEnd = customEnd ?? defaultEnd;
+
+  // Total grants = base + rollover
+  const tokensGranted = baseTokensGranted + rolloverTokens;
+  const creditsGranted = baseCreditsGranted + rolloverCredits;
 
   // Calculate milli-credits (1 credit = 1000 milli-credits)
   const milliCreditsGranted = creditsGranted * 1000;
@@ -151,12 +237,16 @@ async function createAllowancePeriod(
   // Then 1 token = 1000/200 = 5 milli-credits
   const tokenToMilliCreditFactor = tokensPerCredit > 0 ? 1000 / tokensPerCredit : 0;
 
-  logStep("Creating allowance period", {
+  logStep("Creating allowance period with rollover", {
     userId,
     periodStart: periodStart.toISOString(),
     periodEnd: periodEnd.toISOString(),
-    tokensGranted,
-    creditsGranted,
+    baseTokensGranted,
+    baseCreditsGranted,
+    rolloverTokens,
+    rolloverCredits,
+    totalTokensGranted: tokensGranted,
+    totalCreditsGranted: creditsGranted,
     milliCreditsGranted,
     tokenToMilliCreditFactor,
     source,
@@ -179,6 +269,9 @@ async function createAllowancePeriod(
       metadata: {
         created_by: "ensure-token-allowance",
         created_at: new Date().toISOString(),
+        rollover_credits: rolloverCredits,
+        rollover_tokens: rolloverTokens,
+        base_credits: baseCreditsGranted,
       },
     })
     .select()
@@ -195,7 +288,7 @@ async function createAllowancePeriod(
 /**
  * Main function: Ensure user has an active token allowance
  * - If active period exists: return it
- * - If no active period: create one based on user's plan
+ * - If no active period: create one based on user's plan with rollover from previous period
  */
 // deno-lint-ignore no-explicit-any
 async function ensureTokenAllowance(
@@ -206,6 +299,7 @@ async function ensureTokenAllowance(
     periodEnd?: Date;
     source?: string;
     forceCredits?: number;
+    skipRollover?: boolean;
   }
 ): Promise<AllowanceResult> {
   logStep("Ensuring token allowance", { userId, options });
@@ -230,25 +324,38 @@ async function ensureTokenAllowance(
 
   logStep("User plan and settings", { planType, settings });
 
-  // Determine credits based on plan (or use forced value)
-  let creditsGranted: number;
+  // Determine base credits based on plan (or use forced value)
+  let baseCreditsGranted: number;
   if (options?.forceCredits !== undefined) {
-    creditsGranted = options.forceCredits;
+    baseCreditsGranted = options.forceCredits;
   } else {
-    creditsGranted = planType === "premium" 
+    baseCreditsGranted = planType === "premium" 
       ? settings.creditsPremiumPerMonth 
       : settings.creditsFreePerMonth;
   }
 
-  // Calculate tokens from credits
-  const tokensGranted = creditsGranted * settings.tokensPerCredit;
+  // Calculate base tokens from credits
+  const baseTokensGranted = baseCreditsGranted * settings.tokensPerCredit;
   const source = options?.source ?? (planType === "premium" ? "subscription" : "free_tier");
+
+  // Calculate rollover from previous period (unless skipped)
+  let rolloverCredits = 0;
+  let rolloverTokens = 0;
+  
+  if (!options?.skipRollover) {
+    const previousPeriod = await getMostRecentExpiredPeriod(supabaseAdmin, userId);
+    const rollover = calculateRollover(previousPeriod, baseCreditsGranted);
+    rolloverCredits = rollover.rolloverCredits;
+    rolloverTokens = rollover.rolloverTokens;
+  }
 
   const newAllowance = await createAllowancePeriod(supabaseAdmin, userId, {
     periodStart: options?.periodStart,
     periodEnd: options?.periodEnd,
-    tokensGranted,
-    creditsGranted,
+    baseTokensGranted,
+    baseCreditsGranted,
+    rolloverTokens,
+    rolloverCredits,
     tokensPerCredit: settings.tokensPerCredit,
     source,
   });
