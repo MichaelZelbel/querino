@@ -12,21 +12,21 @@ serve(async (req) => {
   }
 
   try {
-    const { skill_content, user_id } = await req.json();
+    const { workflow_content, user_id } = await req.json();
 
-    if (!skill_content || typeof skill_content !== "string") {
+    if (!workflow_content || typeof workflow_content !== "string") {
       return new Response(
-        JSON.stringify({ error: "skill_content is required" }),
+        JSON.stringify({ error: "workflow_content is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Calling n8n webhook with skill_content length:", skill_content.length, "user_id:", user_id);
+    console.log("Calling n8n webhook with workflow_content length:", workflow_content.length, "user_id:", user_id);
 
-    const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-skill-metadata", {
+    const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-workflow-metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ skill_content, user_id }),
+      body: JSON.stringify({ workflow_content, user_id }),
     });
 
     if (!response.ok) {
@@ -53,7 +53,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error calling suggest-skill-metadata webhook:", error);
+    console.error("Error calling suggest-workflow-metadata webhook:", error);
     return new Response(
       JSON.stringify({ error: "Failed to generate suggestions" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
