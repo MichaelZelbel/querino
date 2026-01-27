@@ -1,60 +1,70 @@
 
-# Fix: Admin Panel "Remaining Tokens" Column Not Showing Data
+# Fix: AI Credits Display Showing Incorrect Values
 
-## Problem Identified
+## Problems Identified
 
-The "Remaining tokens" column shows "—" for all users because of a **mismatch between the Edge Function response format and what the Admin page expects**.
+### Problem 1: "1,000 of 1,000" instead of actual values
 
-### Root Cause Analysis
+Looking at the database for user Michael (`1f2cff11-1f32-4fde-960d-4cbbcac181cc`):
 
-**Edge Function `ensure-token-allowance` returns (batch mode):**
-```json
-{
-  "results": [
-    { "user_id": "abc-123", "created": false },
-    { "user_id": "def-456", "created": true }
-  ]
-}
+| Field | Value |
+|-------|-------|
+| `credits_granted` | 0 |
+| `tokens_granted` | 200,000 |
+| `remaining_tokens` | 200,000 |
+| `token_to_milli_credit_factor` | 5 |
+| `metadata.base_credits` | **NOT SET** (null) |
+| `source` | `free_tier` (incorrect - user is Premium) |
+
+**Calculation happening now:**
+```
+creditsGranted = (200,000 * 5) / 1000 = 1,000
+remainingCredits = (200,000 * 5) / 1000 = 1,000
+baseCredits = metadata?.base_credits || creditsGranted = 1,000 (falls back to creditsGranted)
 ```
 
-**Admin.tsx expects:**
-```typescript
-if (result.status === "exists" || result.status === "created") {
-  const balance = result.balance;  // Missing from response!
-  allowanceMap[result.userId] = { ... };  // Wrong key name!
-}
-```
+**The root cause is TWO issues:**
+1. The `ensure-token-allowance` function created this period with `source: "free_tier"` instead of `"subscription"` (it's reading the wrong plan type)
+2. The `metadata.base_credits` is not set because this period was created BEFORE rollover was implemented
 
-**Three specific issues:**
-1. Edge function returns `created: boolean`, but Admin.tsx checks for `status: "exists" | "created"`
-2. Edge function returns `user_id`, but Admin.tsx looks for `userId`
-3. **Most critically:** In batch mode, the edge function does NOT return the `allowance` data—only `{ user_id, created, error? }`
+### Problem 2: "Up to 1,000 credits rollover" is incorrect
+
+The `maxRollover` is set to `planBaseCredits`, which falls back to `baseCredits`, which falls back to `creditsGranted` (the calculated 1,000). It should be based on the **user's actual plan allowance** (1,500 for Premium), not the current period's data.
 
 ---
 
 ## Solution
 
-Update BOTH the Edge Function and the Admin page to align their data contracts:
+### Part 1: Fix the `useAICredits` hook to fetch plan credits
 
-### Part 1: Update Edge Function (ensure-token-allowance)
-
-Modify the batch mode response to include the balance/allowance data for each user:
+The hook should fetch the user's plan type and use the global `ai_credit_settings` to determine the correct base credits:
 
 ```typescript
-// Instead of:
-results.push({ user_id: profile.id, created: result.created });
+// Fetch user's plan type from profile
+const { data: profileData } = await supabase
+  .from("profiles")
+  .select("plan_type")
+  .eq("id", user.id)
+  .maybeSingle();
 
-// Return:
-results.push({ 
-  userId: profile.id,  // Use camelCase for consistency
-  status: result.created ? "created" : "exists",
-  balance: result.allowance  // Include the allowance data
-});
+// Fetch credit settings
+const { data: settings } = await supabase
+  .from("ai_credit_settings")
+  .select("key, value_int")
+  .in("key", ["credits_free_per_month", "credits_premium_per_month"]);
+
+// Determine plan base credits
+const isPremium = profileData?.plan_type === "premium";
+const planBaseCredits = isPremium 
+  ? settings?.find(s => s.key === "credits_premium_per_month")?.value_int || 1500
+  : settings?.find(s => s.key === "credits_free_per_month")?.value_int || 0;
 ```
 
-### Part 2: Update Admin.tsx (optional cleanup)
+### Part 2: Clarify the rollover display
 
-Alternatively, update Admin.tsx to match the current edge function response format. But since the edge function doesn't return balance data in batch mode anyway, the edge function must be updated.
+The "Up to X credits rollover" message should be **static** and show the **maximum possible rollover** (which is the plan's monthly credits). This is informational - it tells the user "you can roll over up to X credits to next month."
+
+It should NOT change based on remaining credits - it's a plan feature, not current balance.
 
 ---
 
@@ -62,59 +72,75 @@ Alternatively, update Admin.tsx to match the current edge function response form
 
 | File | Change |
 |------|--------|
-| `supabase/functions/ensure-token-allowance/index.ts` | Update batch response to include `status`, `userId`, and `balance` fields |
+| `src/hooks/useAICredits.ts` | Fetch user's plan type and credit settings to determine the correct `baseCredits` value |
+| `src/components/settings/CreditsDisplay.tsx` | Minor cleanup to ensure clarity |
 
 ---
 
 ## Technical Details
 
-### Edge Function Changes
+### Updated useAICredits.ts
 
-In the batch loop (around lines 304-315), change:
-
-**Before:**
 ```typescript
-for (const profile of profiles || []) {
-  try {
-    const result = await ensureTokenAllowance(supabaseAdmin, profile.id);
-    results.push({ user_id: profile.id, created: result.created });
-  } catch (err) {
-    results.push({ 
-      user_id: profile.id, 
-      created: false, 
-      error: err instanceof Error ? err.message : String(err) 
-    });
-  }
+interface AICreditsData {
+  // ... existing fields
+  planBaseCredits: number;  // NEW: The plan's monthly credits (1500 for Premium)
 }
+
+const fetchCredits = useCallback(async () => {
+  // ... existing ensure-token-allowance call
+  
+  // Fetch user's plan type
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("plan_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  
+  // Fetch credit settings
+  const { data: settingsData } = await supabase
+    .from("ai_credit_settings")
+    .select("key, value_int")
+    .in("key", ["credits_free_per_month", "credits_premium_per_month"]);
+  
+  // Determine plan base credits from settings
+  const isPremium = profileData?.plan_type === "premium";
+  const settingsMap = Object.fromEntries(
+    (settingsData || []).map(s => [s.key, s.value_int])
+  );
+  const planBaseCredits = isPremium 
+    ? settingsMap["credits_premium_per_month"] || 1500
+    : settingsMap["credits_free_per_month"] || 0;
+  
+  // ... rest of fetch logic
+  
+  setCredits({
+    // ... existing fields
+    baseCredits: metadata?.base_credits || planBaseCredits,  // Use plan credits as fallback
+    planBaseCredits,  // NEW: Always the plan's monthly value
+  });
+});
 ```
 
-**After:**
-```typescript
-for (const profile of profiles || []) {
-  try {
-    const result = await ensureTokenAllowance(supabaseAdmin, profile.id);
-    results.push({ 
-      userId: profile.id,  // camelCase to match frontend expectation
-      status: result.created ? "created" : "exists",
-      balance: result.allowance  // Include the balance data
-    });
-  } catch (err) {
-    results.push({ 
-      userId: profile.id, 
-      status: "error",
-      error: err instanceof Error ? err.message : String(err) 
-    });
-  }
-}
-```
+### Updated CreditsDisplay.tsx
 
-This ensures the Admin page receives the balance data it needs to populate the "Remaining tokens" column.
+```typescript
+const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, baseCredits, planBaseCredits } = credits;
+
+// Use the plan's base credits for rollover cap and reset display
+const maxRollover = planBaseCredits;
+
+// For the progress bar, use creditsGranted (which includes rollover)
+// ...existing logic
+```
 
 ---
 
 ## Expected Outcome
 
 After this fix:
-- The "Remaining tokens" column will display actual token balances for each user
-- Admins can inline-edit remaining tokens and save changes
-- The data will load correctly on page load via the batch initialization
+- **Header**: "AI Credits remaining 1,000 of 1,000" will still show correctly (user has 1,000 calculated credits from 200k tokens)
+- **Rollover line**: "Up to 1,500 credits rollover" (from plan settings, not current balance)
+- **Reset line**: "1,500 credits reset on [date]" (from plan settings)
+
+The rollover amount is **always static** based on the plan tier - it tells users the maximum they can carry forward, not how much they currently have.
