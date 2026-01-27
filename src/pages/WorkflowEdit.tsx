@@ -175,17 +175,14 @@ export default function WorkflowEdit() {
     setMetadataError(null);
 
     try {
-      const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-workflow-metadata", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workflow_content: formData.content.trim() }),
+      const { data: result, error } = await supabase.functions.invoke("suggest-workflow-metadata", {
+        body: { workflow_content: formData.content.trim(), user_id: user?.id },
       });
 
-      if (!response.ok) {
+      if (error) {
         throw new Error("Failed to generate suggestions");
       }
 
-      const result = await response.json();
       const data = result.output || result;
 
       if (data.title) {
