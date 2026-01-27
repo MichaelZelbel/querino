@@ -107,10 +107,19 @@ export default function PromptWizard() {
         throw new Error(`Request failed: ${response.status}`);
       }
 
-      const data = await response.json();
-      // Webhook returns: [{ "output": "..." }]
-      const firstItem = Array.isArray(data) ? data[0] : data;
-      const promptText = firstItem?.output || firstItem?.prompt || "";
+      // Webhook may return plain text or JSON - handle both
+      const responseText = await response.text();
+      let promptText = "";
+
+      try {
+        // Try parsing as JSON first (expected format: [{ "output": "..." }])
+        const data = JSON.parse(responseText);
+        const firstItem = Array.isArray(data) ? data[0] : data;
+        promptText = firstItem?.output || firstItem?.prompt || "";
+      } catch {
+        // If not valid JSON, treat response as plain text prompt
+        promptText = responseText.trim();
+      }
       
       if (!promptText) {
         throw new Error("No prompt in response");
