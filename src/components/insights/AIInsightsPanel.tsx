@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useAICreditsGate } from '@/hooks/useAICreditsGate';
 
 type ItemType = 'prompt' | 'skill' | 'workflow';
 
@@ -22,9 +23,21 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
   const [isOpen, setIsOpen] = useState(true);
   const { user, profile } = useAuthContext();
   const { insights, loading, generating, error, generateInsights, refreshInsights, hasInsights } = useAIInsights(itemType, itemId);
+  const { checkCredits } = useAICreditsGate();
 
   // Check if user has premium access
   const isPremium = profile?.plan_type === 'premium';
+
+  // Gated generate/refresh functions
+  const handleGenerate = () => {
+    if (!checkCredits()) return;
+    generateInsights();
+  };
+
+  const handleRefresh = () => {
+    if (!checkCredits()) return;
+    refreshInsights();
+  };
 
   // Don't render anything for anonymous users
   if (!user) {
@@ -108,7 +121,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={hasInsights ? refreshInsights : generateInsights}
+            onClick={hasInsights ? handleRefresh : handleGenerate}
             disabled={generating}
           >
             <RefreshCw className={cn("h-3.5 w-3.5", generating && "animate-spin")} />
@@ -138,7 +151,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             <p className="text-sm text-muted-foreground mb-4">
               Generate AI-powered insights for this {itemType}
             </p>
-            <Button onClick={generateInsights} disabled={generating} size="sm">
+            <Button onClick={handleGenerate} disabled={generating} size="sm">
               {generating ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />

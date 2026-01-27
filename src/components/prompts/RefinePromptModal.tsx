@@ -20,6 +20,7 @@ import {
 import { Loader2, Sparkles, Copy, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { FRAMEWORK_OPTIONS, type PromptFramework } from "@/lib/promptGenerator";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 interface RefinePromptModalProps {
   isOpen: boolean;
@@ -53,8 +54,14 @@ export function RefinePromptModal({
   const [refinedPrompt, setRefinedPrompt] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const { checkCredits } = useAICreditsGate();
 
   const handleRefine = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     setIsRefining(true);
     setRefinedPrompt(null);
     setExplanation(null);

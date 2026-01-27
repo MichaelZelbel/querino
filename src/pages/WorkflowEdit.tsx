@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Loader2, X, ArrowLeft, Trash2, Save, GitBranch, FileText, Sparkles, Lock } from "lucide-react";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { toast } from "sonner";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import { categoryOptions } from "@/types/prompt";
@@ -56,6 +57,7 @@ export default function WorkflowEdit() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
+  const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -159,6 +161,11 @@ export default function WorkflowEdit() {
   };
 
   const handleSuggestMetadata = async () => {
+    // Check credits before making AI call
+    if (!checkCredits()) {
+      return;
+    }
+
     if (!formData.content.trim()) {
       setMetadataError("Please add some workflow content first.");
       return;
