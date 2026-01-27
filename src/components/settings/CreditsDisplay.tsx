@@ -56,8 +56,8 @@ export function CreditsDisplay() {
         </span>
       </div>
 
-      {/* Progress bar with rollover indicator - using accent color for visibility */}
-      <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent">
+      {/* Progress bar with rollover indicator - using primary/20 for light blue background */}
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-primary/20">
         {/* Main remaining credits bar */}
         <div 
           className="absolute top-0 left-0 h-full bg-primary transition-all duration-300"
