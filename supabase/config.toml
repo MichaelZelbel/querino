@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.suggest-skill-metadata]
 verify_jwt = false
+
+[functions.refine-prompt]
+verify_jwt = false
