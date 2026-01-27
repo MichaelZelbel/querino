@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles } from "lucide-react";
+import { CreditsDisplay } from "@/components/settings/CreditsDisplay";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
@@ -301,51 +302,56 @@ export default function Settings() {
 
         {/* Plan Status Card */}
         <Card className={`mb-8 ${isPremium ? 'border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10' : 'border-border'}`}>
-          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-full ${isPremium ? 'bg-primary/20' : 'bg-muted'}`}>
-                {isPremium ? (
-                  <Crown className="h-6 w-6 text-primary" />
-                ) : (
-                  <CreditCard className="h-6 w-6 text-muted-foreground" />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">Your Plan</h3>
-                  {subscriptionLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${isPremium ? 'bg-primary/20' : 'bg-muted'}`}>
+                  {isPremium ? (
+                    <Crown className="h-6 w-6 text-primary" />
                   ) : (
-                    <Badge 
-                      variant={isPremium ? "default" : "secondary"}
-                      className={isPremium ? "bg-primary text-primary-foreground" : ""}
-                    >
-                      {isPremium ? "Premium" : "Free"}
-                    </Badge>
+                    <CreditCard className="h-6 w-6 text-muted-foreground" />
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {isPremium 
-                    ? "You have access to all premium features including AI refinement, GitHub sync, and more."
-                    : "Upgrade to unlock AI refinement tools, unlimited storage, and GitHub sync."}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">Your Plan</h3>
+                    {subscriptionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Badge 
+                        variant={isPremium ? "default" : "secondary"}
+                        className={isPremium ? "bg-primary text-primary-foreground" : ""}
+                      >
+                        {isPremium ? "Premium" : "Free"}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {isPremium 
+                      ? "You have access to all premium features including AI refinement, GitHub sync, and more."
+                      : "Upgrade to unlock AI refinement tools, unlimited storage, and GitHub sync."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {isPremium ? (
+                  <Button variant="outline" onClick={openCustomerPortal} className="gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Manage Billing
+                  </Button>
+                ) : (
+                  <Link to="/pricing?from=settings">
+                    <Button variant="hero" className="gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Upgrade to Premium
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
-            <div className="flex gap-2">
-              {isPremium ? (
-                <Button variant="outline" onClick={openCustomerPortal} className="gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Manage Billing
-                </Button>
-              ) : (
-                <Link to="/pricing?from=settings">
-                  <Button variant="hero" className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Upgrade to Premium
-                  </Button>
-                </Link>
-              )}
-            </div>
+
+            {/* Credits Display */}
+            <CreditsDisplay />
           </CardContent>
         </Card>
 
