@@ -53,15 +53,36 @@ export function useAICredits() {
           base_credits?: number;
         } | null;
 
+        // Calculate credits from tokens if credits are 0 but tokens exist
+        // token_to_milli_credit_factor: 1 token = X milli-credits
+        // 1000 milli-credits = 1 credit
+        const tokenToMilliCreditFactor = Number(data.token_to_milli_credit_factor) || 5;
+        const tokensGranted = Number(data.tokens_granted) || 0;
+        const tokensUsed = Number(data.tokens_used) || 0;
+        const remainingTokens = Number(data.remaining_tokens) || 0;
+
+        // Use credits if available, otherwise calculate from tokens
+        let creditsGranted = Number(data.credits_granted) || 0;
+        let creditsUsed = Number(data.credits_used) || 0;
+        let remainingCredits = Number(data.remaining_credits) || 0;
+
+        // If credits are 0 but tokens exist, calculate credits from tokens
+        if (creditsGranted === 0 && tokensGranted > 0) {
+          // Convert tokens to credits: tokens * factor / 1000
+          creditsGranted = (tokensGranted * tokenToMilliCreditFactor) / 1000;
+          creditsUsed = (tokensUsed * tokenToMilliCreditFactor) / 1000;
+          remainingCredits = (remainingTokens * tokenToMilliCreditFactor) / 1000;
+        }
+
         setCredits({
           id: data.id || "",
-          creditsGranted: Number(data.credits_granted) || 0,
-          creditsUsed: Number(data.credits_used) || 0,
-          remainingCredits: Number(data.remaining_credits) || 0,
+          creditsGranted,
+          creditsUsed,
+          remainingCredits,
           periodStart: data.period_start || "",
           periodEnd: data.period_end || "",
           rolloverCredits: metadata?.rollover_credits || 0,
-          baseCredits: metadata?.base_credits || Number(data.credits_granted) || 0,
+          baseCredits: metadata?.base_credits || creditsGranted,
           source: data.source,
         });
       } else {
