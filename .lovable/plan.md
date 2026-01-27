@@ -1,146 +1,84 @@
 
-# Fix: AI Credits Display Showing Incorrect Values
 
-## Problems Identified
+# Fix: AI Credits Display Not Updating When Tokens Per Credit Changes
 
-### Problem 1: "1,000 of 1,000" instead of actual values
+## Problem Analysis
 
-Looking at the database for user Michael (`1f2cff11-1f32-4fde-960d-4cbbcac181cc`):
+When you change "Tokens per AI Credit" in the admin settings:
+- The new value (2000) is saved to `ai_credit_settings.tokens_per_credit`
+- However, existing `ai_allowance_periods` records still have the OLD `token_to_milli_credit_factor` value (5, from when 200 tokens = 1 credit)
+- The frontend reads the factor from the period record, not from the global settings
+- Result: Your displayed credits remain unchanged
 
-| Field | Value |
-|-------|-------|
-| `credits_granted` | 0 |
-| `tokens_granted` | 200,000 |
-| `remaining_tokens` | 200,000 |
-| `token_to_milli_credit_factor` | 5 |
-| `metadata.base_credits` | **NOT SET** (null) |
-| `source` | `free_tier` (incorrect - user is Premium) |
+**Example calculation with stored factor:**
+- Your tokens: ~197,000 remaining
+- Old factor (stored): 5
+- Credits = 197,000 * 5 / 1000 = **985 credits** (what you see)
 
-**Calculation happening now:**
-```
-creditsGranted = (200,000 * 5) / 1000 = 1,000
-remainingCredits = (200,000 * 5) / 1000 = 1,000
-baseCredits = metadata?.base_credits || creditsGranted = 1,000 (falls back to creditsGranted)
-```
-
-**The root cause is TWO issues:**
-1. The `ensure-token-allowance` function created this period with `source: "free_tier"` instead of `"subscription"` (it's reading the wrong plan type)
-2. The `metadata.base_credits` is not set because this period was created BEFORE rollover was implemented
-
-### Problem 2: "Up to 1,000 credits rollover" is incorrect
-
-The `maxRollover` is set to `planBaseCredits`, which falls back to `baseCredits`, which falls back to `creditsGranted` (the calculated 1,000). It should be based on the **user's actual plan allowance** (1,500 for Premium), not the current period's data.
-
----
+**What it should be with new factor:**
+- New factor: 1000/2000 = 0.5
+- Credits = 197,000 * 0.5 / 1000 = **98.5 credits**
 
 ## Solution
 
-### Part 1: Fix the `useAICredits` hook to fetch plan credits
+Modify the `useAICredits` hook to fetch the current `tokens_per_credit` from `ai_credit_settings` and use that for the conversion calculation, rather than relying on the stored `token_to_milli_credit_factor` in the period record.
 
-The hook should fetch the user's plan type and use the global `ai_credit_settings` to determine the correct base credits:
+## Implementation Steps
 
-```typescript
-// Fetch user's plan type from profile
-const { data: profileData } = await supabase
-  .from("profiles")
-  .select("plan_type")
-  .eq("id", user.id)
-  .maybeSingle();
+### Step 1: Update useAICredits Hook
 
-// Fetch credit settings
-const { data: settings } = await supabase
-  .from("ai_credit_settings")
-  .select("key, value_int")
-  .in("key", ["credits_free_per_month", "credits_premium_per_month"]);
+Modify `src/hooks/useAICredits.ts` to:
+1. Add `tokens_per_credit` to the settings query
+2. Calculate the milli-credit factor dynamically from the current setting
+3. Use this dynamic factor instead of the stored `token_to_milli_credit_factor`
 
-// Determine plan base credits
-const isPremium = profileData?.plan_type === "premium";
-const planBaseCredits = isPremium 
-  ? settings?.find(s => s.key === "credits_premium_per_month")?.value_int || 1500
-  : settings?.find(s => s.key === "credits_free_per_month")?.value_int || 0;
+```text
+Changes to src/hooks/useAICredits.ts:
+
+Line 50-52: Add 'tokens_per_credit' to the settings query
+  .in("key", ["credits_free_per_month", "credits_premium_per_month", "tokens_per_credit"])
+
+Line 78-81: Replace the stored factor with calculated factor
+  // Get current tokens_per_credit from settings (default 200)
+  const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
+  // Calculate factor: 1000 milli-credits per credit / tokens per credit
+  const tokenToMilliCreditFactor = 1000 / tokensPerCredit;
 ```
 
-### Part 2: Clarify the rollover display
+### Step 2: Update Settings Query
 
-The "Up to X credits rollover" message should be **static** and show the **maximum possible rollover** (which is the plan's monthly credits). This is informational - it tells the user "you can roll over up to X credits to next month."
+The `settingsMap` already uses the settings data, we just need to:
+1. Include `tokens_per_credit` in the query
+2. Use it to calculate the conversion factor
 
-It should NOT change based on remaining credits - it's a plan feature, not current balance.
+## Technical Details
 
----
+**Before (problematic):**
+```typescript
+const tokenToMilliCreditFactor = Number(data.token_to_milli_credit_factor) || 5;
+```
+This reads the OLD factor stored in the period record.
+
+**After (fixed):**
+```typescript
+// Add to settings query
+.in("key", ["credits_free_per_month", "credits_premium_per_month", "tokens_per_credit"])
+
+// Calculate from current settings
+const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
+const tokenToMilliCreditFactor = 1000 / tokensPerCredit;
+```
+
+## Expected Result
+
+After this fix:
+- Changing "Tokens per AI Credit" in admin will immediately affect the displayed credits
+- With 2000 tokens/credit and ~197,000 remaining tokens: ~98 credits displayed
+- With 200 tokens/credit (original): ~985 credits displayed
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/hooks/useAICredits.ts` | Fetch user's plan type and credit settings to determine the correct `baseCredits` value |
-| `src/components/settings/CreditsDisplay.tsx` | Minor cleanup to ensure clarity |
+| `src/hooks/useAICredits.ts` | Fetch `tokens_per_credit` from settings and calculate factor dynamically |
 
----
-
-## Technical Details
-
-### Updated useAICredits.ts
-
-```typescript
-interface AICreditsData {
-  // ... existing fields
-  planBaseCredits: number;  // NEW: The plan's monthly credits (1500 for Premium)
-}
-
-const fetchCredits = useCallback(async () => {
-  // ... existing ensure-token-allowance call
-  
-  // Fetch user's plan type
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("plan_type")
-    .eq("id", user.id)
-    .maybeSingle();
-  
-  // Fetch credit settings
-  const { data: settingsData } = await supabase
-    .from("ai_credit_settings")
-    .select("key, value_int")
-    .in("key", ["credits_free_per_month", "credits_premium_per_month"]);
-  
-  // Determine plan base credits from settings
-  const isPremium = profileData?.plan_type === "premium";
-  const settingsMap = Object.fromEntries(
-    (settingsData || []).map(s => [s.key, s.value_int])
-  );
-  const planBaseCredits = isPremium 
-    ? settingsMap["credits_premium_per_month"] || 1500
-    : settingsMap["credits_free_per_month"] || 0;
-  
-  // ... rest of fetch logic
-  
-  setCredits({
-    // ... existing fields
-    baseCredits: metadata?.base_credits || planBaseCredits,  // Use plan credits as fallback
-    planBaseCredits,  // NEW: Always the plan's monthly value
-  });
-});
-```
-
-### Updated CreditsDisplay.tsx
-
-```typescript
-const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, baseCredits, planBaseCredits } = credits;
-
-// Use the plan's base credits for rollover cap and reset display
-const maxRollover = planBaseCredits;
-
-// For the progress bar, use creditsGranted (which includes rollover)
-// ...existing logic
-```
-
----
-
-## Expected Outcome
-
-After this fix:
-- **Header**: "AI Credits remaining 1,000 of 1,000" will still show correctly (user has 1,000 calculated credits from 200k tokens)
-- **Rollover line**: "Up to 1,500 credits rollover" (from plan settings, not current balance)
-- **Reset line**: "1,500 credits reset on [date]" (from plan settings)
-
-The rollover amount is **always static** based on the plan tier - it tells users the maximum they can carry forward, not how much they currently have.
