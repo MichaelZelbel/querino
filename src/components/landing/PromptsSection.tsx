@@ -2,13 +2,11 @@ import { useState, useMemo } from "react";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { useSearchPrompts } from "@/hooks/useSearchPrompts";
-import { useSemanticSearchPrompts } from "@/hooks/useSemanticSearch";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, TrendingUp, Clock, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SemanticSearchToggle } from "@/components/search/SemanticSearchToggle";
 import { cn } from "@/lib/utils";
 
 type SortOption = "trending" | "newest" | "rating";
@@ -21,36 +19,15 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("trending");
-  const [semanticEnabled, setSemanticEnabled] = useState(false);
   
   const debouncedSearch = useDebounce(searchQuery, 300);
   const isSearching = debouncedSearch.trim().length > 0;
   
-  // Standard full-text search
-  const { data: textSearchPrompts, isLoading: textLoading, error: textError } = useSearchPrompts({ 
+  // Full-text search
+  const { data: prompts, isLoading, error } = useSearchPrompts({ 
     searchQuery: debouncedSearch,
     isPublic: true 
   });
-
-  // Semantic search (only when enabled and searching)
-  const { 
-    data: semanticPrompts, 
-    isLoading: semanticLoading,
-    isEmbeddingLoading 
-  } = useSemanticSearchPrompts({ 
-    searchQuery: debouncedSearch,
-    enabled: semanticEnabled && isSearching,
-  });
-
-  // Use semantic results when semantic is enabled and searching
-  const prompts = semanticEnabled && isSearching && semanticPrompts?.length 
-    ? semanticPrompts 
-    : textSearchPrompts;
-  
-  const isLoading = semanticEnabled && isSearching 
-    ? semanticLoading || isEmbeddingLoading 
-    : textLoading;
-  const error = textError;
 
   const filteredAndSortedPrompts = useMemo(() => {
     if (!prompts) return [];
@@ -103,7 +80,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
 
         {/* Search, Sort, and Filter */}
         <div className="mb-8 space-y-4">
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -114,10 +91,6 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
                 className="pl-10"
               />
             </div>
-            <SemanticSearchToggle
-              enabled={semanticEnabled}
-              onToggle={setSemanticEnabled}
-            />
           </div>
 
           {/* Sort Options - disabled when searching */}
@@ -142,7 +115,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
           </div>
           {isSearching && (
             <p className="text-center text-sm text-muted-foreground">
-              {semanticEnabled ? "Showing semantically similar results" : "Showing results by relevance"}
+              Showing results by relevance
             </p>
           )}
           
