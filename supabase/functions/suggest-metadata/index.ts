@@ -27,7 +27,7 @@ serve(async (req) => {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "X-API-Key": Deno.env.get("N8N_API_KEY") || "",
+        "X-API-Key": Deno.env.get("N8N_WEBHOOK_KEY") || "",
       },
       body: JSON.stringify({ prompt_content, user_id }),
     });
