@@ -112,14 +112,14 @@ export default function Docs() {
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Key Features</h3>
               <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { icon: Search, text: "Semantic search across all artifacts" },
-                  { icon: Copy, text: "One-click copy to clipboard" },
-                  { icon: Star, text: "Rate and review community content" },
-                  { icon: Download, text: "Export as Markdown files" },
-                  { icon: Upload, text: "Import from Markdown" },
-                  { icon: Wand2, text: "AI-powered prompt generation" },
-                ].map((feature) => (
+              {[
+                { icon: Search, text: "Full-text search across all artifacts" },
+                { icon: Copy, text: "One-click copy to clipboard" },
+                { icon: Star, text: "Rate and review community content" },
+                { icon: Download, text: "Export as Markdown files" },
+                { icon: Upload, text: "Import from Markdown" },
+                { icon: Wand2, text: "AI-powered prompt generation" },
+              ].map((feature) => (
                   <div key={feature.text} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <feature.icon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">{feature.text}</span>
