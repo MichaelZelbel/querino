@@ -38,7 +38,6 @@ export const pricingPlans: PricingPlan[] = [
       "Unlimited prompt library",
       "AI prompt refinement tools",
       "AI Insights & recommendations",
-      "Semantic search",
       "GitHub sync",
       "Shared team libraries",
       "Priority support",
@@ -78,7 +77,6 @@ export const featureComparison: FeatureComparison[] = [
       { name: "AI Insights & summaries", free: false, premium: true, isPremium: true },
       { name: "AI recommendations", free: false, premium: true, isPremium: true },
       { name: "Prompt Wizard", free: false, premium: true, isPremium: true },
-      { name: "Semantic search", free: false, premium: true, isPremium: true },
     ],
   },
   {
