@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const N8N_WEBHOOK_URL = "https://n8n-querino.agentpool.cloud/webhook/querino-prompt-refinement";
+const N8N_WEBHOOK_URL = "https://agentpool.app.n8n.cloud/webhook/prompt-refinement";
 
 serve(async (req) => {
   // Handle CORS preflight requests
