@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, Copy, Check, ArrowRight } from "lucide-react";
+import { Loader2, Sparkles, Copy, Check, ArrowRight, Save } from "lucide-react";
 import { toast } from "sonner";
 import { FRAMEWORK_OPTIONS, type PromptFramework } from "@/lib/promptGenerator";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
@@ -28,7 +28,9 @@ interface RefinePromptModalProps {
   onClose: () => void;
   promptContent: string;
   promptTitle?: string;
+  promptId?: string;
   onApplyRefinedPrompt?: (refinedPrompt: string) => void;
+  onPromptUpdated?: () => void;
   userId?: string;
 }
 
@@ -47,11 +49,14 @@ export function RefinePromptModal({
   onClose,
   promptContent,
   promptTitle,
+  promptId,
   onApplyRefinedPrompt,
+  onPromptUpdated,
   userId,
 }: RefinePromptModalProps) {
   const [framework, setFramework] = useState<PromptFramework>("auto");
   const [isRefining, setIsRefining] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [refinedPrompt, setRefinedPrompt] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -114,6 +119,32 @@ export function RefinePromptModal({
       onApplyRefinedPrompt(refinedPrompt);
       toast.success("Refined prompt applied!");
       handleClose();
+    }
+  };
+
+  const handleUpdatePrompt = async () => {
+    if (!refinedPrompt || !promptId) return;
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("prompts")
+        .update({ content: refinedPrompt, updated_at: new Date().toISOString() })
+        .eq("id", promptId);
+
+      if (error) {
+        console.error("Error updating prompt:", error);
+        throw new Error(error.message);
+      }
+
+      toast.success("Prompt updated successfully!");
+      onPromptUpdated?.();
+      handleClose();
+    } catch (error) {
+      console.error("Error updating prompt:", error);
+      toast.error("Failed to update prompt. Please try again.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -241,6 +272,21 @@ export function RefinePromptModal({
                 <Button onClick={handleApply} className="gap-2">
                   <ArrowRight className="h-4 w-4" />
                   Replace in Editor
+                </Button>
+              )}
+              {promptId && (
+                <Button onClick={handleUpdatePrompt} disabled={isUpdating} className="gap-2">
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Updating…
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Update Prompt
+                    </>
+                  )}
                 </Button>
               )}
             </>

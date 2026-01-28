@@ -82,48 +82,48 @@ export default function PromptDetail() {
   const isPersonalPrompt = !prompt?.team_id;
   const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalPrompt;
 
-  useEffect(() => {
-    async function fetchPrompt() {
-      if (!slug) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("prompts")
-          .select(`
-            *,
-            profiles:author_id (
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq("slug", slug)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching prompt:", error);
-          setNotFound(true);
-        } else if (!data) {
-          setNotFound(true);
-        } else {
-          const promptData: PromptWithAuthor = {
-            ...(data as any),
-            author: (data as any).profiles || null,
-          };
-          setPrompt(promptData);
-        }
-      } catch (err) {
-        console.error("Error fetching prompt:", err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
+  const fetchPrompt = async () => {
+    if (!slug) {
+      setNotFound(true);
+      setLoading(false);
+      return;
     }
 
+    try {
+      const { data, error } = await supabase
+        .from("prompts")
+        .select(`
+          *,
+          profiles:author_id (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching prompt:", error);
+        setNotFound(true);
+      } else if (!data) {
+        setNotFound(true);
+      } else {
+        const promptData: PromptWithAuthor = {
+          ...(data as any),
+          author: (data as any).profiles || null,
+        };
+        setPrompt(promptData);
+      }
+    } catch (err) {
+      console.error("Error fetching prompt:", err);
+      setNotFound(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPrompt();
   }, [slug]);
 
@@ -579,6 +579,8 @@ export default function PromptDetail() {
             onClose={() => setShowRefineModal(false)}
             promptContent={prompt.content}
             promptTitle={prompt.title}
+            promptId={prompt.id}
+            onPromptUpdated={fetchPrompt}
             userId={user?.id}
           />
 
