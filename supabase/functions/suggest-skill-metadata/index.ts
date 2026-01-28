@@ -25,7 +25,10 @@ serve(async (req) => {
 
     const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-skill-metadata", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-API-Key": Deno.env.get("N8N_API_KEY") || "",
+      },
       body: JSON.stringify({ skill_content, user_id }),
     });
 
