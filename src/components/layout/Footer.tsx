@@ -40,6 +40,9 @@ export function Footer() {
               <Link to="/docs" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Documentation
               </Link>
+              <a href="https://discord.gg/X3um7vxX8J" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Community Discord
+              </a>
               <a href="mailto:support@querino.ai" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Support
               </a>
