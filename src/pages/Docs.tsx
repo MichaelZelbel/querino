@@ -214,20 +214,20 @@ export default function Docs() {
             
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Workflows are automation sequences, typically in JSON format, for tools like n8n or similar automation platforms. They chain multiple actions together.
+                Workflows are documented automation sequences written in Markdown format. They describe step-by-step processes, procedures, or automation recipes that can be followed or adapted.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Creating Workflows</h3>
               <ol className="space-y-3 text-muted-foreground">
-                <li><strong>Export from n8n:</strong> Design your workflow in n8n, then export it as JSON.</li>
-                <li><strong>Paste the content:</strong> Add the JSON to a new workflow in Querino.</li>
+                <li><strong>Write your workflow:</strong> Document your process using Markdown formatting for clear structure.</li>
+                <li><strong>Add steps:</strong> Break down the workflow into clear, actionable steps.</li>
                 <li><strong>Add metadata:</strong> Include a title, description, and tags so others understand what it does.</li>
                 <li><strong>Share:</strong> Publish to share with the community or keep private for personal use.</li>
               </ol>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Using Workflows</h3>
               <p className="text-muted-foreground">
-                Copy the workflow content from Querino and import it into your automation tool. Workflows may need configuration (API keys, credentials) before they'll run in your environment.
+                Browse workflows to find documented processes you can follow or adapt. Copy the content to use as a reference, or clone the workflow to customize it for your own needs.
               </p>
             </div>
           </section>
