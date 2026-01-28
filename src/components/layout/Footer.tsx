@@ -37,14 +37,11 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-foreground">Resources</h4>
             <nav className="flex flex-col gap-2">
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/docs" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Documentation
-              </a>
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Blog
-              </a>
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Community
+              </Link>
+              <a href="mailto:support@querino.ai" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Support
               </a>
             </nav>
           </div>
