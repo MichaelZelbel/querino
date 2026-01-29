@@ -20,6 +20,7 @@ import Pricing from "./pages/Pricing";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Cookies from "./pages/Cookies";
+import Impressum from "./pages/Impressum";
 import Auth from "./pages/Auth";
 import Library from "./pages/Library";
 import PromptDetail from "./pages/PromptDetail";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/cookies" element={<Cookies />} />
+            <Route path="/impressum" element={<Impressum />} />
             <Route path="/prompts/new" element={<PromptNew />} />
             <Route path="/prompts/wizard" element={<PromptWizard />} />
             <Route path="/prompts/:slug" element={<PromptDetail />} />
