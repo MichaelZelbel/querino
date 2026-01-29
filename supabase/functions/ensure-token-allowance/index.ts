@@ -444,26 +444,42 @@ serve(async (req) => {
     // Single user mode
     let userId: string;
 
-    if (body.user_id) {
-      // Admin specifying a user ID
-      userId = body.user_id;
-      logStep("Using provided user_id", { userId });
-    } else {
-      // Get user from auth token
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader) {
-        throw new Error("No authorization header provided");
-      }
+    // Always require auth token for non-batch operations
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header provided");
+    }
 
-      const token = authHeader.replace("Bearer ", "");
-      const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError || !userData.user) {
+      throw new Error(`Authentication error: ${userError?.message ?? "User not found"}`);
+    }
+
+    const authenticatedUserId = userData.user.id;
+    logStep("Authenticated user", { userId: authenticatedUserId });
+
+    if (body.user_id && body.user_id !== authenticatedUserId) {
+      // Admin trying to specify a different user ID - verify admin privileges
+      logStep("Checking admin privileges for user_id override");
       
-      if (userError || !userData.user) {
-        throw new Error(`Authentication error: ${userError?.message ?? "User not found"}`);
+      const { data: callerProfile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('id', authenticatedUserId)
+        .single();
+      
+      if (profileError || callerProfile?.role !== 'admin') {
+        logStep("Admin check failed", { error: profileError?.message, role: callerProfile?.role });
+        throw new Error("Only admins can specify a different user_id");
       }
-
-      userId = userData.user.id;
-      logStep("Authenticated user", { userId });
+      
+      userId = body.user_id;
+      logStep("Admin override: using provided user_id", { userId, adminId: authenticatedUserId });
+    } else {
+      // Use the authenticated user's ID
+      userId = authenticatedUserId;
     }
 
     // Build options
