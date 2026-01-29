@@ -269,8 +269,8 @@ export default function LibraryPromptEdit() {
 
     if (!shortDescription.trim()) {
       newErrors.shortDescription = "Short description is required";
-    } else if (shortDescription.length > 200) {
-      newErrors.shortDescription = "Description must be less than 200 characters";
+    } else if (shortDescription.length > 2000) {
+      newErrors.shortDescription = "Description must be less than 2000 characters";
     }
 
     if (!content.trim()) {
@@ -791,7 +791,7 @@ export default function LibraryPromptEdit() {
                       <p className="text-sm text-destructive">{errors.shortDescription}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      {shortDescription.length}/200 characters
+                      {shortDescription.length}/2000 characters
                     </p>
                   </div>
 
