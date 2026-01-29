@@ -41,7 +41,13 @@ export function Header() {
 
   const getInitials = () => {
     if (profile?.display_name) {
-      return profile.display_name.slice(0, 2).toUpperCase();
+      // Take first letter of each word for multi-word names (e.g., "Mister Q" -> "MQ")
+      return profile.display_name
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
     }
     if (user?.email) {
       return user.email.slice(0, 2).toUpperCase();
