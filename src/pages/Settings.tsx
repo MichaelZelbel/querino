@@ -15,7 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles, Trash2, AlertTriangle } from "lucide-react";
 import { CreditsDisplay } from "@/components/settings/CreditsDisplay";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
@@ -71,6 +72,11 @@ export default function Settings() {
   const [savingTeamGithub, setSavingTeamGithub] = useState(false);
   const [testingTeamConnection, setTestingTeamConnection] = useState(false);
   const [teamConnectionStatus, setTeamConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Delete account state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -295,6 +301,38 @@ export default function Settings() {
       toast.error("Failed to save team GitHub settings");
     } finally {
       setSavingTeamGithub(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== "DELETE") {
+      toast.error("Please type DELETE to confirm");
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-my-account", {
+        body: { confirmation: "DELETE" },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Account deleted successfully. Redirecting...");
+        // Sign out and redirect
+        await supabase.auth.signOut();
+        navigate("/", { replace: true });
+      } else {
+        throw new Error(data?.error || "Failed to delete account");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete account");
+    } finally {
+      setDeletingAccount(false);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmation("");
     }
   };
 
@@ -851,6 +889,94 @@ export default function Settings() {
                     </div>
                   </>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Delete Account Section */}
+            <Card className="border-destructive/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <Trash2 className="h-5 w-5" />
+                  Delete Account
+                </CardTitle>
+                <CardDescription>
+                  Permanently delete your account and all associated data. This action cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Deleting your account will permanently remove:
+                    <ul className="list-disc ml-4 mt-2 space-y-1">
+                      <li>Your profile and personal information</li>
+                      <li>All prompts, skills, and workflows you created</li>
+                      <li>Your collections and saved items</li>
+                      <li>Reviews and comments you've made</li>
+                      <li>Team memberships and owned teams</li>
+                      <li>Usage history and AI credits</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+
+                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" className="gap-2">
+                      <Trash2 className="h-4 w-4" />
+                      Delete My Account
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                        Confirm Account Deletion
+                      </DialogTitle>
+                      <DialogDescription>
+                        This action is permanent and cannot be undone. All your data will be permanently deleted.
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                      <p className="text-sm text-muted-foreground">
+                        To confirm deletion, type <strong className="text-foreground">DELETE</strong> in the field below:
+                      </p>
+                      <Input
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                        placeholder="Type DELETE to confirm"
+                        className="font-mono"
+                      />
+                    </div>
+
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setDeleteDialogOpen(false);
+                          setDeleteConfirmation("");
+                        }}
+                        disabled={deletingAccount}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleDeleteAccount}
+                        disabled={deleteConfirmation !== "DELETE" || deletingAccount}
+                      >
+                        {deletingAccount ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Permanently Delete Account"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           </div>

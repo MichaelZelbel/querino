@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.refine-prompt]
 verify_jwt = false
+
+[functions.delete-my-account]
+verify_jwt = false
+
+[functions.suggest-workflow-metadata]
+verify_jwt = false
