@@ -12,13 +12,21 @@ import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Prompt } from "@/types/prompt";
 
 interface UserRatings {
@@ -44,6 +52,7 @@ export default function Library() {
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [syncSuccessDialogOpen, setSyncSuccessDialogOpen] = useState(false);
 
   // Fetch user's skills and workflows - filtered by workspace
   const { data: mySkills, isLoading: skillsLoading } = useSkills({ 
@@ -185,7 +194,7 @@ export default function Library() {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success(data.message || "Successfully synced to GitHub!");
+        setSyncSuccessDialogOpen(true);
       } else {
         throw new Error(data?.error || "Sync failed");
       }
@@ -195,6 +204,22 @@ export default function Library() {
     } finally {
       setSyncing(false);
     }
+  };
+
+  const getGithubFolderUrl = () => {
+    if (!githubSettings?.github_repo) return "";
+    const branch = githubSettings.github_branch || "main";
+    const folder = githubSettings.github_folder?.replace(/^\/+|\/+$/g, "") || "";
+    const baseUrl = `https://github.com/${githubSettings.github_repo}/tree/${branch}`;
+    return folder ? `${baseUrl}/${folder}` : baseUrl;
+  };
+
+  const handleOpenGithub = () => {
+    const url = getGithubFolderUrl();
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+    setSyncSuccessDialogOpen(false);
   };
 
   const canSyncToGithub = 
@@ -596,6 +621,31 @@ export default function Library() {
       </main>
       
       <Footer />
+
+      {/* GitHub Sync Success Dialog */}
+      <Dialog open={syncSuccessDialogOpen} onOpenChange={setSyncSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-success" />
+              Sync Successful
+            </DialogTitle>
+            <DialogDescription>
+              Your {isTeamWorkspace ? "team" : "library"} has been successfully synced to GitHub.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => setSyncSuccessDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={handleOpenGithub} className="gap-2">
+              <Github className="h-4 w-4" />
+              Open GitHub
+              <ExternalLink className="h-3 w-3" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
