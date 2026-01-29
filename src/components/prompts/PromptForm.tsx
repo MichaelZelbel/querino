@@ -65,12 +65,8 @@ export function PromptForm({
   const [isPublic, setIsPublic] = useState(initialData?.is_public ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // AI tag suggestion state
-  const [isGeneratingTags, setIsGeneratingTags] = useState(false);
-  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
-  const [tagSuggestionError, setTagSuggestionError] = useState<string | null>(null);
-  
   // AI metadata suggestion state
+  
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
@@ -112,62 +108,6 @@ export function PromptForm({
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       handleAddTag();
-    }
-  };
-
-  const handleSuggestTags = async () => {
-    // Check credits before making AI call
-    if (!checkCredits()) {
-      return;
-    }
-
-    const tagSuggestionUrl = import.meta.env.VITE_TAG_SUGGESTION_URL;
-    
-    if (!tagSuggestionUrl) {
-      setTagSuggestionError("Tag suggestion service is not configured.");
-      return;
-    }
-
-    setIsGeneratingTags(true);
-    setTagSuggestionError(null);
-    setSuggestedTags([]);
-
-    try {
-      const response = await fetch(tagSuggestionUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          content: content.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate tags");
-      }
-
-      const data = await response.json();
-      
-      if (data.tags && Array.isArray(data.tags)) {
-        // Filter out tags that are already added and normalize them
-        const newSuggestions = data.tags
-          .map((tag: string) => normalizeTag(tag))
-          .filter((tag: string) => tag && !tags.includes(tag));
-        setSuggestedTags(newSuggestions);
-      }
-    } catch (error) {
-      console.error("Error suggesting tags:", error);
-      setTagSuggestionError("Could not generate tags. Please try again.");
-    } finally {
-      setIsGeneratingTags(false);
-    }
-  };
-
-  const handleAddSuggestedTag = (tag: string) => {
-    if (!tags.includes(tag) && tags.length < 10) {
-      setTags([...tags, tag]);
-      setSuggestedTags(suggestedTags.filter((t) => t !== tag));
     }
   };
 
@@ -429,51 +369,6 @@ export function PromptForm({
           {tags.length}/10 tags
         </p>
 
-        {/* AI Tag Suggestion */}
-        <div className="pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleSuggestTags}
-            disabled={isGeneratingTags || (!title.trim() && !content.trim())}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
-          >
-            {isGeneratingTags ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5" />
-                Suggest Tags (AI)
-              </>
-            )}
-          </Button>
-          
-          {tagSuggestionError && (
-            <p className="mt-2 text-sm text-destructive">{tagSuggestionError}</p>
-          )}
-
-          {suggestedTags.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <p className="text-sm text-muted-foreground">Suggested Tags:</p>
-              <div className="flex flex-wrap gap-2">
-                {suggestedTags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-secondary transition-colors"
-                    onClick={() => handleAddSuggestedTag(tag)}
-                  >
-                    + {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Visibility Toggle */}
