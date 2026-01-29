@@ -376,7 +376,6 @@ export type Database = {
           github_last_synced_at: string | null
           github_repo: string | null
           github_sync_enabled: boolean | null
-          github_token_encrypted: string | null
           id: string
           plan_source: string | null
           plan_type: string | null
@@ -396,7 +395,6 @@ export type Database = {
           github_last_synced_at?: string | null
           github_repo?: string | null
           github_sync_enabled?: boolean | null
-          github_token_encrypted?: string | null
           id: string
           plan_source?: string | null
           plan_type?: string | null
@@ -416,7 +414,6 @@ export type Database = {
           github_last_synced_at?: string | null
           github_repo?: string | null
           github_sync_enabled?: boolean | null
-          github_token_encrypted?: string | null
           id?: string
           plan_source?: string | null
           plan_type?: string | null
@@ -856,7 +853,6 @@ export type Database = {
           github_folder: string | null
           github_last_synced_at: string | null
           github_repo: string | null
-          github_token_encrypted: string | null
           id: string
           name: string
           owner_id: string
@@ -867,7 +863,6 @@ export type Database = {
           github_folder?: string | null
           github_last_synced_at?: string | null
           github_repo?: string | null
-          github_token_encrypted?: string | null
           id?: string
           name: string
           owner_id: string
@@ -878,7 +873,6 @@ export type Database = {
           github_folder?: string | null
           github_last_synced_at?: string | null
           github_repo?: string | null
-          github_token_encrypted?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -889,6 +883,44 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_credentials: {
+        Row: {
+          created_at: string
+          credential_type: string
+          credential_value: string
+          id: string
+          team_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credential_type: string
+          credential_value: string
+          id?: string
+          team_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credential_type?: string
+          credential_value?: string
+          id?: string
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_credentials_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
