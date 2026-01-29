@@ -62,6 +62,9 @@ export function Footer() {
               <Link to="/cookies" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Cookie Policy
               </Link>
+              <Link to="/impressum" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Impressum
+              </Link>
             </nav>
           </div>
         </div>
