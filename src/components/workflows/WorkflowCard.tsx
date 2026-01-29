@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin } from "lucide-react";
+import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, Star } from "lucide-react";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
@@ -133,7 +133,17 @@ export function WorkflowCard({
                 </span>
               </Link>
             )}
-            <Badge variant="secondary" className="text-xs">Workflow</Badge>
+            
+            {/* Rating */}
+            {workflow.rating_count && workflow.rating_count > 0 ? (
+              <div className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                <span className="font-medium">{Number(workflow.rating_avg || 0).toFixed(1)}</span>
+                <span className="text-muted-foreground">({workflow.rating_count})</span>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">No ratings yet</span>
+            )}
           </div>
 
           <div className="flex items-center gap-1">

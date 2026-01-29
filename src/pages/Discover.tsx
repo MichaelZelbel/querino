@@ -82,7 +82,7 @@ const Discover = () => {
                 ) : skills && skills.length > 0 ? (
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {skills.map((skill) => (
-                      <SkillCard key={skill.id} skill={skill} />
+                      <SkillCard key={skill.id} skill={skill} showAuthorInfo />
                     ))}
                   </div>
                 ) : (
@@ -121,7 +121,7 @@ const Discover = () => {
                 ) : workflows && workflows.length > 0 ? (
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {workflows.map((workflow) => (
-                      <WorkflowCard key={workflow.id} workflow={workflow} />
+                      <WorkflowCard key={workflow.id} workflow={workflow} showAuthorInfo />
                     ))}
                   </div>
                 ) : (
