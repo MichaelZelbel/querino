@@ -531,12 +531,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create Supabase client
+    // Create Supabase clients
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // User client for auth and RLS-protected queries
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
+    
+    // Admin client for fetching team credentials (bypasses RLS)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -559,7 +565,23 @@ Deno.serve(async (req) => {
     let githubFolder = "";
 
     if (teamId) {
-      // Team sync - get team settings
+      // Team sync - verify user is a team member first
+      const { data: membership, error: memberError } = await supabase
+        .from("team_members")
+        .select("role")
+        .eq("team_id", teamId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (memberError || !membership) {
+        console.error("Team membership check failed:", memberError);
+        return new Response(JSON.stringify({ error: "You are not a member of this team" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get team settings
       const { data: team, error: teamError } = await supabase
         .from("teams")
         .select("github_repo, github_branch, github_folder")
@@ -574,8 +596,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Get GitHub token from user_credentials table (secured with RLS)
-      const { data: credential, error: credError } = await supabase
+      // Get GitHub token from user_credentials table using admin client
+      // (bypasses RLS so any team member can access the team's token)
+      const { data: credential, error: credError } = await supabaseAdmin
         .from("user_credentials")
         .select("credential_value")
         .eq("credential_type", "github_token")
