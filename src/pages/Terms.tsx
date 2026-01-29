@@ -59,6 +59,12 @@ const Terms = () => {
                     Termination
                   </button>
                   <button
+                    onClick={() => scrollToSection("withdrawal")}
+                    className="block text-muted-foreground hover:text-foreground transition-colors text-left"
+                  >
+                    Right of Withdrawal (Widerrufsrecht)
+                  </button>
+                  <button
                     onClick={() => scrollToSection("liability")}
                     className="block text-muted-foreground hover:text-foreground transition-colors text-left"
                   >
@@ -180,6 +186,60 @@ const Terms = () => {
                   <p className="mt-2">
                     Upon termination, Your right to use the Service will cease immediately.
                   </p>
+                </section>
+
+                <section id="withdrawal">
+                  <h2 className="text-2xl font-semibold text-foreground mt-10 mb-4">Right of Withdrawal (Widerrufsbelehrung)</h2>
+                  <p className="font-medium text-foreground">
+                    Information on the Right of Withdrawal for Consumers in the European Union
+                  </p>
+                  
+                  <h3 className="text-xl font-medium text-foreground mt-6 mb-3">Right of Withdrawal</h3>
+                  <p>
+                    You have the right to withdraw from this contract within 14 days without giving any reason.
+                  </p>
+                  <p className="mt-2">
+                    The withdrawal period will expire after 14 days from the day of the conclusion of the contract.
+                  </p>
+                  <p className="mt-2">
+                    To exercise the right of withdrawal, you must inform us (Zelbel Ltd., 69 Great Hampton Street, Birmingham, B18 6EW, United Kingdom, Email: support@querino.ai) of your decision to withdraw from this contract by an unequivocal statement (e.g., a letter sent by post or email). You may use the model withdrawal form below, but it is not obligatory.
+                  </p>
+                  <p className="mt-2">
+                    To meet the withdrawal deadline, it is sufficient for you to send your communication concerning your exercise of the right of withdrawal before the withdrawal period has expired.
+                  </p>
+
+                  <h3 className="text-xl font-medium text-foreground mt-6 mb-3">Effects of Withdrawal</h3>
+                  <p>
+                    If you withdraw from this contract, we shall reimburse to you all payments received from you, including the costs of delivery (with the exception of the supplementary costs resulting from your choice of a type of delivery other than the least expensive type of standard delivery offered by us), without undue delay and in any event not later than 14 days from the day on which we are informed about your decision to withdraw from this contract. We will carry out such reimbursement using the same means of payment as you used for the initial transaction, unless you have expressly agreed otherwise; in any event, you will not incur any fees as a result of such reimbursement.
+                  </p>
+                  <p className="mt-2">
+                    If you requested to begin the performance of services during the withdrawal period, you shall pay us an amount which is in proportion to what has been provided until you have communicated to us your withdrawal from this contract, in comparison with the full coverage of the contract.
+                  </p>
+
+                  <h3 className="text-xl font-medium text-foreground mt-6 mb-3">Exclusion of the Right of Withdrawal</h3>
+                  <p>
+                    The right of withdrawal does not apply to:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 mt-2">
+                    <li>Contracts for the supply of digital content which is not supplied on a tangible medium if the performance has begun with your prior express consent and your acknowledgment that you thereby lose your right of withdrawal.</li>
+                    <li>Contracts for the supply of services if the service has been fully performed by us and the performance has begun with your prior express consent and your acknowledgment that you would lose your right of withdrawal once the contract had been fully performed by us.</li>
+                  </ul>
+
+                  <h3 className="text-xl font-medium text-foreground mt-6 mb-3">Model Withdrawal Form</h3>
+                  <p className="text-sm italic">
+                    (Complete and return this form only if you wish to withdraw from the contract)
+                  </p>
+                  <div className="mt-2 p-4 bg-muted/30 rounded-lg border border-border">
+                    <p>To: Zelbel Ltd., 69 Great Hampton Street, Birmingham, B18 6EW, United Kingdom</p>
+                    <p>Email: support@querino.ai</p>
+                    <p className="mt-2">I/We (*) hereby give notice that I/We (*) withdraw from my/our (*) contract for the provision of the following service (*):</p>
+                    <p className="mt-2">— Ordered on (*) / received on (*):</p>
+                    <p>— Name of consumer(s):</p>
+                    <p>— Address of consumer(s):</p>
+                    <p>— Signature of consumer(s) (only if this form is notified on paper):</p>
+                    <p>— Date:</p>
+                    <p className="mt-2 text-sm">(*) Delete as appropriate.</p>
+                  </div>
                 </section>
 
                 <section id="liability">
