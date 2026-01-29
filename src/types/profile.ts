@@ -13,6 +13,7 @@ export interface Profile {
   github_branch: string | null;
   github_folder: string | null;
   github_sync_enabled: boolean | null;
+  github_last_synced_at: string | null;
   created_at: string;
   updated_at: string;
 }

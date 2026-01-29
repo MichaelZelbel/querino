@@ -559,10 +559,10 @@ Deno.serve(async (req) => {
     let githubFolder = "";
 
     if (teamId) {
-      // Team sync
+      // Team sync - get team settings
       const { data: team, error: teamError } = await supabase
         .from("teams")
-        .select("github_token_encrypted, github_repo, github_branch, github_folder")
+        .select("github_repo, github_branch, github_folder")
         .eq("id", teamId)
         .single();
 
@@ -574,15 +574,27 @@ Deno.serve(async (req) => {
         });
       }
 
-      githubToken = team.github_token_encrypted;
+      // Get GitHub token from user_credentials table (secured with RLS)
+      const { data: credential, error: credError } = await supabase
+        .from("user_credentials")
+        .select("credential_value")
+        .eq("credential_type", "github_token")
+        .eq("team_id", teamId)
+        .maybeSingle();
+
+      if (credError) {
+        console.error("Credential fetch error:", credError);
+      }
+
+      githubToken = credential?.credential_value || null;
       githubRepo = team.github_repo;
       githubBranch = team.github_branch || "main";
       githubFolder = team.github_folder || "";
     } else {
-      // Personal sync
+      // Personal sync - get profile settings
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("github_token_encrypted, github_repo, github_branch, github_folder")
+        .select("github_repo, github_branch, github_folder")
         .eq("id", user.id)
         .single();
 
@@ -594,7 +606,20 @@ Deno.serve(async (req) => {
         });
       }
 
-      githubToken = profile.github_token_encrypted;
+      // Get GitHub token from user_credentials table (secured with RLS)
+      const { data: credential, error: credError } = await supabase
+        .from("user_credentials")
+        .select("credential_value")
+        .eq("user_id", user.id)
+        .eq("credential_type", "github_token")
+        .is("team_id", null)
+        .maybeSingle();
+
+      if (credError) {
+        console.error("Credential fetch error:", credError);
+      }
+
+      githubToken = credential?.credential_value || null;
       githubRepo = profile.github_repo;
       githubBranch = profile.github_branch || "main";
       githubFolder = profile.github_folder || "";

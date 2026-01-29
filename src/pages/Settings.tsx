@@ -84,22 +84,34 @@ export default function Settings() {
     async function loadGithubSettings() {
       if (!user) return;
       
-      const { data, error } = await supabase
+      // Load profile settings
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("github_repo, github_branch, github_folder, github_sync_enabled, github_token_encrypted, github_last_synced_at")
+        .select("github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at")
         .eq("id", user.id)
         .single();
       
-      if (error) {
-        console.error("Error loading GitHub settings:", error);
-      } else if (data) {
-        setPersonalGithubRepo(data.github_repo || "");
-        setPersonalGithubBranch(data.github_branch || "main");
-        setPersonalGithubFolder(data.github_folder || "");
-        setPersonalGithubSyncEnabled(data.github_sync_enabled || false);
-        setPersonalGithubToken(data.github_token_encrypted ? "••••••••••••••••" : "");
-        setPersonalGithubLastSynced(data.github_last_synced_at || null);
+      // Load GitHub token from user_credentials table
+      const { data: credentialData } = await supabase
+        .from("user_credentials")
+        .select("credential_value")
+        .eq("user_id", user.id)
+        .eq("credential_type", "github_token")
+        .is("team_id", null)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error("Error loading GitHub settings:", profileError);
+      } else if (profileData) {
+        setPersonalGithubRepo(profileData.github_repo || "");
+        setPersonalGithubBranch(profileData.github_branch || "main");
+        setPersonalGithubFolder(profileData.github_folder || "");
+        setPersonalGithubSyncEnabled(profileData.github_sync_enabled || false);
+        setPersonalGithubLastSynced(profileData.github_last_synced_at || null);
       }
+      
+      // Set token indicator if exists
+      setPersonalGithubToken(credentialData?.credential_value ? "••••••••••••••••" : "");
       setLoadingPersonalGithub(false);
     }
     
@@ -114,17 +126,24 @@ export default function Settings() {
       setTeamGithubRepo(teamData.github_repo || "");
       setTeamGithubBranch(teamData.github_branch || "main");
       setTeamGithubFolder(teamData.github_folder || "");
-      // Team token - check if exists in DB
+      // Team token - check if exists in user_credentials table
       const loadTeamToken = async () => {
-        const { data } = await supabase
+        const { data: teamMeta } = await supabase
           .from("teams")
-          .select("github_token_encrypted, github_last_synced_at")
+          .select("github_last_synced_at")
           .eq("id", teamData.id)
           .single();
-        if (data) {
-          setTeamGithubToken(data.github_token_encrypted ? "••••••••••••••••" : "");
-          setTeamGithubLastSynced(data.github_last_synced_at || null);
-        }
+        
+        // Load token from user_credentials table
+        const { data: credentialData } = await supabase
+          .from("user_credentials")
+          .select("credential_value")
+          .eq("credential_type", "github_token")
+          .eq("team_id", teamData.id)
+          .maybeSingle();
+        
+        setTeamGithubToken(credentialData?.credential_value ? "••••••••••••••••" : "");
+        setTeamGithubLastSynced(teamMeta?.github_last_synced_at || null);
       };
       loadTeamToken();
     }
@@ -141,32 +160,44 @@ export default function Settings() {
     setSavingPersonalGithub(true);
     const cleanFolder = personalGithubFolder.replace(/^\/+|\/+$/g, "");
     
-    // Prepare update object
-    const updateData: Record<string, unknown> = {
-      github_repo: personalGithubRepo || null,
-      github_branch: personalGithubBranch || "main",
-      github_folder: cleanFolder || null,
-      github_sync_enabled: personalGithubSyncEnabled,
-    };
-    
-    // Only update token if it's been changed (not the masked value)
-    if (personalGithubToken && !personalGithubToken.includes("•")) {
-      updateData.github_token_encrypted = personalGithubToken;
-    }
-    
-    const { error } = await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", user.id);
-    
-    setSavingPersonalGithub(false);
-    
-    if (error) {
-      console.error("Error saving GitHub settings:", error);
-      toast.error("Failed to save GitHub settings");
-    } else {
+    try {
+      // Update profile settings
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          github_repo: personalGithubRepo || null,
+          github_branch: personalGithubBranch || "main",
+          github_folder: cleanFolder || null,
+          github_sync_enabled: personalGithubSyncEnabled,
+        })
+        .eq("id", user.id);
+      
+      if (profileError) throw profileError;
+      
+      // Only update token if it's been changed (not the masked value)
+      if (personalGithubToken && !personalGithubToken.includes("•")) {
+        // Upsert token in user_credentials table
+        const { error: tokenError } = await supabase
+          .from("user_credentials")
+          .upsert({
+            user_id: user.id,
+            credential_type: "github_token",
+            credential_value: personalGithubToken,
+            team_id: null,
+          }, {
+            onConflict: "user_id,credential_type,team_id",
+          });
+        
+        if (tokenError) throw tokenError;
+      }
+      
       toast.success("Personal GitHub sync settings saved");
       setConnectionStatus('idle');
+    } catch (error) {
+      console.error("Error saving GitHub settings:", error);
+      toast.error("Failed to save GitHub settings");
+    } finally {
+      setSavingPersonalGithub(false);
     }
   };
 
@@ -217,7 +248,7 @@ export default function Settings() {
   };
 
   const handleSaveTeamGithubSettings = async () => {
-    if (!currentTeam) return;
+    if (!currentTeam || !user) return;
     
     if (teamGithubRepo && !teamGithubRepo.includes("/")) {
       toast.error("Repository must be in format owner/repo");
@@ -227,26 +258,36 @@ export default function Settings() {
     setSavingTeamGithub(true);
     const cleanFolder = teamGithubFolder.replace(/^\/+|\/+$/g, "");
     
-    // Prepare update object
-    const updateData: Record<string, unknown> = {
-      github_repo: teamGithubRepo || null,
-      github_branch: teamGithubBranch || "main",
-      github_folder: cleanFolder || null,
-    };
-    
-    // Only update token if it's been changed (not the masked value)
-    if (teamGithubToken && !teamGithubToken.includes("•")) {
-      updateData.github_token_encrypted = teamGithubToken;
-    }
-    
     try {
-      // Use direct supabase update for team to include token
-      const { error } = await supabase
+      // Update team settings (without token)
+      const { error: teamError } = await supabase
         .from("teams")
-        .update(updateData)
+        .update({
+          github_repo: teamGithubRepo || null,
+          github_branch: teamGithubBranch || "main",
+          github_folder: cleanFolder || null,
+        })
         .eq("id", currentTeam.id);
         
-      if (error) throw error;
+      if (teamError) throw teamError;
+      
+      // Only update token if it's been changed (not the masked value)
+      if (teamGithubToken && !teamGithubToken.includes("•")) {
+        // Upsert token in user_credentials table
+        const { error: tokenError } = await supabase
+          .from("user_credentials")
+          .upsert({
+            user_id: user.id,
+            credential_type: "github_token",
+            credential_value: teamGithubToken,
+            team_id: currentTeam.id,
+          }, {
+            onConflict: "user_id,credential_type,team_id",
+          });
+        
+        if (tokenError) throw tokenError;
+      }
+      
       toast.success("Team GitHub sync settings saved");
       setTeamConnectionStatus('idle');
     } catch (error) {
