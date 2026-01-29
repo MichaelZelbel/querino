@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# Querino
 
-## Project info
+A platform for discovering, creating, and sharing AI artifacts—prompts, skills, and workflows that help you get better results from AI tools.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+### Core Functionality
+- **Prompts** - Create, store, and share AI prompts with the community
+- **Skills** - Build reusable prompt frameworks and system prompts
+- **Workflows** - Document automation sequences and procedures in Markdown
+- **Collections** - Organize related artifacts into themed groups
 
-There are several ways of editing your application.
+### Collaboration
+- **Teams** - Create shared workspaces for organizations
+- **Reviews & Ratings** - Rate and review community content
+- **Comments** - Discuss and provide feedback on artifacts
+- **Suggestions** - Propose edits to public artifacts
 
-**Use Lovable**
+### Discovery
+- **Semantic Search** - Find content using natural language queries
+- **Similar Artifacts** - Discover related prompts, skills, and workflows
+- **Categories & Tags** - Browse by category or filter by tags
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Import/Export
+- **Markdown Export** - Download artifacts as `.md` files with YAML frontmatter
+- **Markdown Import** - Import prompts from Markdown files
+- **GitHub Sync** - Sync your library to a GitHub repository
 
-Changes made via Lovable will be committed automatically to this repo.
+### AI Features
+- **Prompt Wizard** - Generate prompts from brief descriptions
+- **AI Suggestions** - Auto-fill metadata (title, description, tags)
+- **Prompt Refinement** - Improve prompts with AI assistance
 
-**Use your preferred IDE**
+## Tech Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Storage)
+- **State Management**: TanStack Query
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Getting Started
 
-Follow these steps:
+### Prerequisites
+- Node.js 18+ and npm
+- A Supabase project (or use Lovable Cloud)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Development
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The following environment variables are required:
 
-**Use GitHub Codespaces**
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/       # React components
+│   ├── ui/          # shadcn/ui components
+│   ├── layout/      # Header, Footer
+│   ├── prompts/     # Prompt-related components
+│   ├── skills/      # Skill-related components
+│   ├── workflows/   # Workflow-related components
+│   └── ...
+├── hooks/           # Custom React hooks
+├── pages/           # Route pages
+├── types/           # TypeScript type definitions
+├── contexts/        # React contexts (Auth, Workspace)
+├── lib/             # Utility functions
+└── config/          # Configuration files
 
-This project is built with:
+supabase/
+└── functions/       # Edge functions
+    ├── github-sync/
+    ├── prompt-wizard/
+    ├── refine-prompt/
+    ├── suggest-metadata/
+    └── ...
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Documentation
 
-## How can I deploy this project?
+- [API Documentation](./docs/API.md) - Edge function endpoints
+- [Database Schema](./docs/SCHEMA.md) - Database tables and relationships
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## License
 
-## Can I connect a custom domain to my Lovable project?
+MIT
 
-Yes, you can!
+## Links
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- [Live App](https://querino.lovable.app)
+- [Documentation](https://querino.lovable.app/docs)
