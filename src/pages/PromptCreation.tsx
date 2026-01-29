@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Plus, 
   Save, 
-  Send, 
+   
   Eye, 
   EyeOff, 
   Tag, 
@@ -54,9 +54,6 @@ export default function PromptCreation() {
     setIsSaved(true);
   };
 
-  const handlePublish = () => {
-    toast.success("Prompt published to the community!");
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,12 +205,6 @@ export default function PromptCreation() {
                     <Save className="h-4 w-4" />
                     Save to Library
                   </Button>
-                  {isPublic && (
-                    <Button variant="outline" className="w-full gap-2" onClick={handlePublish}>
-                      <Send className="h-4 w-4" />
-                      Publish to Community
-                    </Button>
-                  )}
                 </div>
               </CardContent>
             </Card>
