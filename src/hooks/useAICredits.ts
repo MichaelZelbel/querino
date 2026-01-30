@@ -4,15 +4,23 @@ import { useAuthContext } from "@/contexts/AuthContext";
 
 interface AICreditsData {
   id: string;
+  tokensGranted: number;
+  tokensUsed: number;
+  remainingTokens: number;
+  // Calculated credits for display
   creditsGranted: number;
   creditsUsed: number;
   remainingCredits: number;
+  // Period info
   periodStart: string;
   periodEnd: string;
-  rolloverCredits: number;
-  baseCredits: number;
-  planBaseCredits: number;
   source: string | null;
+  // Rollover info from metadata
+  rolloverTokens: number;
+  baseTokens: number;
+  // Plan info
+  planBaseCredits: number;
+  tokensPerCredit: number;
 }
 
 export function useAICredits() {
@@ -34,7 +42,7 @@ export function useAICredits() {
       // First ensure the user has an allowance period
       await supabase.functions.invoke("ensure-token-allowance");
 
-      // Fetch user's plan type and credit settings in parallel
+      // Fetch allowance data and settings in parallel
       const [allowanceResult, profileResult, settingsResult] = await Promise.all([
         supabase
           .from("v_ai_allowance_current")
@@ -58,11 +66,14 @@ export function useAICredits() {
         return;
       }
 
-      // Determine plan base credits from settings
-      const isPremium = profileResult.data?.plan_type === "premium";
+      // Build settings map
       const settingsMap = Object.fromEntries(
         (settingsResult.data || []).map((s) => [s.key, s.value_int])
       );
+      const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
+      
+      // Determine plan base credits
+      const isPremium = profileResult.data?.plan_type === "premium";
       const planBaseCredits = isPremium
         ? settingsMap["credits_premium_per_month"] || 1500
         : settingsMap["credits_free_per_month"] || 0;
@@ -71,43 +82,39 @@ export function useAICredits() {
       if (data) {
         // Parse metadata for rollover info
         const metadata = data.metadata as { 
-          rollover_credits?: number; 
-          base_credits?: number;
+          rollover_tokens?: number; 
+          base_tokens?: number;
         } | null;
 
-        // Calculate credits from tokens if credits are 0 but tokens exist
-        // Use current tokens_per_credit from settings for dynamic calculation
-        // 1000 milli-credits = 1 credit
-        const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
-        const tokenToMilliCreditFactor = 1000 / tokensPerCredit;
+        // Tokens are the source of truth
         const tokensGranted = Number(data.tokens_granted) || 0;
         const tokensUsed = Number(data.tokens_used) || 0;
         const remainingTokens = Number(data.remaining_tokens) || 0;
 
-        // Use credits if available, otherwise calculate from tokens
-        let creditsGranted = Number(data.credits_granted) || 0;
-        let creditsUsed = Number(data.credits_used) || 0;
-        let remainingCredits = Number(data.remaining_credits) || 0;
+        // Calculate credits dynamically from tokens
+        const creditsGranted = tokensGranted / tokensPerCredit;
+        const creditsUsed = tokensUsed / tokensPerCredit;
+        const remainingCredits = remainingTokens / tokensPerCredit;
 
-        // If credits are 0 but tokens exist, calculate credits from tokens
-        if (creditsGranted === 0 && tokensGranted > 0) {
-          // Convert tokens to credits: tokens * factor / 1000
-          creditsGranted = (tokensGranted * tokenToMilliCreditFactor) / 1000;
-          creditsUsed = (tokensUsed * tokenToMilliCreditFactor) / 1000;
-          remainingCredits = (remainingTokens * tokenToMilliCreditFactor) / 1000;
-        }
+        // Rollover tokens from metadata
+        const rolloverTokens = metadata?.rollover_tokens || 0;
+        const baseTokens = metadata?.base_tokens || tokensGranted;
 
         setCredits({
           id: data.id || "",
+          tokensGranted,
+          tokensUsed,
+          remainingTokens,
           creditsGranted,
           creditsUsed,
           remainingCredits,
           periodStart: data.period_start || "",
           periodEnd: data.period_end || "",
-          rolloverCredits: metadata?.rollover_credits || 0,
-          baseCredits: metadata?.base_credits || planBaseCredits,
-          planBaseCredits,
           source: data.source,
+          rolloverTokens,
+          baseTokens,
+          planBaseCredits,
+          tokensPerCredit,
         });
       } else {
         setCredits(null);

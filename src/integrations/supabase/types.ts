@@ -65,17 +65,11 @@ export type Database = {
       ai_allowance_periods: {
         Row: {
           created_at: string
-          credits_granted: number
-          credits_unit: string
-          credits_used: number
           id: string
           metadata: Json
-          milli_credits_granted: number
-          milli_credits_used: number
           period_end: string
           period_start: string
           source: string | null
-          token_to_milli_credit_factor: number
           tokens_granted: number
           tokens_used: number
           updated_at: string
@@ -83,17 +77,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          credits_granted?: number
-          credits_unit?: string
-          credits_used?: number
           id?: string
           metadata?: Json
-          milli_credits_granted?: number
-          milli_credits_used?: number
           period_end: string
           period_start: string
           source?: string | null
-          token_to_milli_credit_factor?: number
           tokens_granted?: number
           tokens_used?: number
           updated_at?: string
@@ -101,17 +89,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          credits_granted?: number
-          credits_unit?: string
-          credits_used?: number
           id?: string
           metadata?: Json
-          milli_credits_granted?: number
-          milli_credits_used?: number
           period_end?: string
           period_start?: string
           source?: string | null
-          token_to_milli_credit_factor?: number
           tokens_granted?: number
           tokens_used?: number
           updated_at?: string
@@ -316,7 +298,6 @@ export type Database = {
           id: string
           idempotency_key: string
           metadata: Json
-          milli_credits_charged: number
           model: string | null
           n8n_execution_id: string | null
           prompt_tokens: number
@@ -334,7 +315,6 @@ export type Database = {
           id?: string
           idempotency_key: string
           metadata?: Json
-          milli_credits_charged?: number
           model?: string | null
           n8n_execution_id?: string | null
           prompt_tokens?: number
@@ -352,7 +332,6 @@ export type Database = {
           id?: string
           idempotency_key?: string
           metadata?: Json
-          milli_credits_charged?: number
           model?: string | null
           n8n_execution_id?: string | null
           prompt_tokens?: number
@@ -1090,65 +1069,50 @@ export type Database = {
         Row: {
           created_at: string | null
           credits_granted: number | null
-          credits_unit: string | null
           credits_used: number | null
-          display_credits: number | null
           id: string | null
           metadata: Json | null
-          milli_credits_granted: number | null
-          milli_credits_used: number | null
           period_end: string | null
           period_start: string | null
           remaining_credits: number | null
-          remaining_milli_credits: number | null
           remaining_tokens: number | null
           source: string | null
-          token_to_milli_credit_factor: number | null
           tokens_granted: number | null
+          tokens_per_credit: number | null
           tokens_used: number | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
-          credits_granted?: number | null
-          credits_unit?: string | null
-          credits_used?: number | null
-          display_credits?: never
+          credits_granted?: never
+          credits_used?: never
           id?: string | null
           metadata?: Json | null
-          milli_credits_granted?: number | null
-          milli_credits_used?: number | null
           period_end?: string | null
           period_start?: string | null
           remaining_credits?: never
-          remaining_milli_credits?: never
           remaining_tokens?: never
           source?: string | null
-          token_to_milli_credit_factor?: number | null
           tokens_granted?: number | null
+          tokens_per_credit?: never
           tokens_used?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
-          credits_granted?: number | null
-          credits_unit?: string | null
-          credits_used?: number | null
-          display_credits?: never
+          credits_granted?: never
+          credits_used?: never
           id?: string | null
           metadata?: Json | null
-          milli_credits_granted?: number | null
-          milli_credits_used?: number | null
           period_end?: string | null
           period_start?: string | null
           remaining_credits?: never
-          remaining_milli_credits?: never
           remaining_tokens?: never
           source?: string | null
-          token_to_milli_credit_factor?: number | null
           tokens_granted?: number | null
+          tokens_per_credit?: never
           tokens_used?: number | null
           updated_at?: string | null
           user_id?: string | null

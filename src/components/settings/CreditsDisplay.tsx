@@ -1,6 +1,5 @@
 import { format } from "date-fns";
 import { Check, Loader2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { useAICredits } from "@/hooks/useAICredits";
 
 export function CreditsDisplay() {
@@ -21,14 +20,16 @@ export function CreditsDisplay() {
     return null;
   }
 
-  const { creditsGranted, remainingCredits, rolloverCredits, periodEnd, planBaseCredits } = credits;
+  const { remainingCredits, rolloverTokens, periodEnd, planBaseCredits, tokensPerCredit } = credits;
+  
+  // Calculate rollover credits from rollover tokens
+  const rolloverCredits = rolloverTokens / tokensPerCredit;
   
   // Provide fallback for planBaseCredits to avoid undefined errors
   const effectivePlanCredits = planBaseCredits ?? 1500;
   
   // Total credits available = plan base + any rollover
-  // But for display purposes, use plan credits as the total (matching Lovable UI)
-  const displayTotal = effectivePlanCredits + (rolloverCredits || 0);
+  const displayTotal = effectivePlanCredits + rolloverCredits;
   
   // Calculate percentage for progress bar based on plan total (with rollover)
   const usagePercentage = displayTotal > 0 
@@ -52,7 +53,7 @@ export function CreditsDisplay() {
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">AI Credits remaining</span>
         <span className="text-sm text-muted-foreground">
-          {Math.round(remainingCredits).toLocaleString()} of {displayTotal.toLocaleString()}
+          {Math.round(remainingCredits).toLocaleString()} of {Math.round(displayTotal).toLocaleString()}
         </span>
       </div>
 
