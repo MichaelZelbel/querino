@@ -43,21 +43,32 @@ serve(async (req) => {
       webhookUrl,
     });
 
+    // Build request body - use prompt_content for prompts (matching n8n webhook expectations)
+    const requestBody = item_type === "prompt" 
+      ? {
+          prompt_content: content,
+          prompt_title: title || "",
+          prompt_description: description || "",
+          prompt_tags: tags || [],
+          user_id,
+        }
+      : {
+          itemType: item_type,
+          title: title || "",
+          description: description || "",
+          content,
+          tags: tags || [],
+          metadata: metadata || {},
+          user_id,
+        };
+
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-API-Key": Deno.env.get("N8N_WEBHOOK_KEY") || "",
       },
-      body: JSON.stringify({
-        itemType: item_type,
-        title: title || "",
-        description: description || "",
-        content,
-        tags: tags || [],
-        metadata: metadata || {},
-        user_id,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
