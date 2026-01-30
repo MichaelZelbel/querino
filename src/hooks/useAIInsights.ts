@@ -79,16 +79,6 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
   }, [itemType, itemId]);
 
   const generateInsights = useCallback(async (isRefresh = false) => {
-    // Use hardcoded URL for prompt insights, fallback to env var for other types
-    const insightsUrl = itemType === 'prompt' 
-      ? 'https://agentpool.app.n8n.cloud/webhook/prompt-insights'
-      : import.meta.env.VITE_AI_INSIGHTS_URL;
-    
-    if (!insightsUrl) {
-      setError('AI Insights URL not configured');
-      return;
-    }
-
     setGenerating(true);
     setError(null);
 
@@ -102,69 +92,29 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
         throw new Error('Failed to fetch artefact data');
       }
 
-      // Call n8n endpoint
-      const response = await fetch(insightsUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          itemType,
+      // Call edge function instead of direct n8n webhook
+      const { data: response, error: fnError } = await supabase.functions.invoke('ai-insights', {
+        body: {
+          item_type: itemType,
           title: artefact.title,
           description: artefact.description || '',
           content: artefact.content,
           tags: artefact.tags || [],
           metadata: { id: itemId },
           user_id: user?.id,
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate insights');
+      if (fnError) {
+        console.error('Edge function error:', fnError);
+        throw new Error(fnError.message || 'Failed to generate insights');
       }
 
-      // Read response as text first, then try to parse
-      const responseText = await response.text();
-      
-      let summary: string | null = null;
-      let tags: string[] = [];
-      let recommendations: string[] = [];
-      let quality: AIQuality | null = null;
-
-      try {
-        const jsonResult = JSON.parse(responseText);
-        
-        // Handle n8n webhook format: [{ "output": "markdown string" }]
-        if (Array.isArray(jsonResult) && jsonResult[0]?.output) {
-          const output = jsonResult[0].output;
-          if (typeof output === 'string') {
-            summary = output;
-          } else {
-            // If output is an object with structured data
-            summary = output.summary || null;
-            tags = output.tags || [];
-            recommendations = output.recommendations || [];
-            quality = output.quality || null;
-          }
-        } else if (jsonResult.output) {
-          // Handle { "output": "..." } format
-          if (typeof jsonResult.output === 'string') {
-            summary = jsonResult.output;
-          } else {
-            summary = jsonResult.output.summary || null;
-            tags = jsonResult.output.tags || [];
-            recommendations = jsonResult.output.recommendations || [];
-            quality = jsonResult.output.quality || null;
-          }
-        } else {
-          // Handle direct structured response
-          summary = jsonResult.summary || null;
-          tags = jsonResult.tags || [];
-          recommendations = jsonResult.recommendations || [];
-          quality = jsonResult.quality || null;
-        }
-      } catch {
-        // If not valid JSON, treat as raw markdown text
-        summary = responseText;
-      }
+      // Edge function already normalizes the response
+      const summary = response.summary || null;
+      const tags: string[] = response.tags || [];
+      const recommendations: string[] = response.recommendations || [];
+      const quality: AIQuality | null = response.quality || null;
 
       // Upsert into cache
       const insightData = {
