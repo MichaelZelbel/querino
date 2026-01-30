@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface AICreditsData {
   id: string;
@@ -28,6 +29,7 @@ export function useAICredits() {
   const [credits, setCredits] = useState<AICreditsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lowCreditWarningShownRef = useRef(false);
 
   const fetchCredits = useCallback(async () => {
     if (!user) {
@@ -126,6 +128,24 @@ export function useAICredits() {
       setIsLoading(false);
     }
   }, [user]);
+
+  // Check for low credits and show warning toast (once per session)
+  useEffect(() => {
+    if (!credits || lowCreditWarningShownRef.current) return;
+    
+    const { remainingCredits, planBaseCredits, rolloverTokens, tokensPerCredit } = credits;
+    const rolloverCredits = rolloverTokens / tokensPerCredit;
+    const totalCredits = (planBaseCredits ?? 1500) + rolloverCredits;
+    
+    // Show warning if less than 15% remaining and user has some credits to begin with
+    if (totalCredits > 0 && remainingCredits > 0 && (remainingCredits / totalCredits) < 0.15) {
+      lowCreditWarningShownRef.current = true;
+      toast.warning("Low AI Credits", {
+        description: `You have ${Math.round(remainingCredits)} credits remaining. They will reset at the start of your next billing period.`,
+        duration: 8000,
+      });
+    }
+  }, [credits]);
 
   useEffect(() => {
     if (user) {
