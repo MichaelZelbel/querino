@@ -268,38 +268,56 @@ Stored credentials (GitHub tokens, etc.).
 
 ## AI & Analytics Tables
 
+### Architecture: Tokens as Source of Truth
+
+The AI credit system uses **tokens as the single source of truth**. Display credits are calculated dynamically using the current `tokens_per_credit` setting. This allows admins to adjust the conversion rate without requiring database migrations.
+
+**Credit Calculation**: `credits = tokens / tokens_per_credit`
+
+### `ai_credit_settings`
+
+Admin-configurable global settings.
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `tokens_per_credit` | 200 | LLM tokens per display credit |
+| `credits_free_per_month` | 0 | Monthly credits for free users |
+| `credits_premium_per_month` | 1500 | Monthly credits for premium users |
+
+---
+
 ### `ai_allowance_periods`
 
-User AI credit allowances.
+Monthly token allowances per user. Credits are NOT stored—calculated at display time.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | uuid | Primary key |
 | user_id | uuid | User |
-| tokens_granted | integer | Total tokens allocated |
-| tokens_used | integer | Tokens consumed |
-| milli_credits_granted | integer | Credits in 1/1000 units |
-| milli_credits_used | integer | Credits consumed |
+| tokens_granted | bigint | Total tokens allocated (base + rollover) |
+| tokens_used | bigint | Tokens consumed by LLM calls |
 | period_start | timestamptz | Period start |
 | period_end | timestamptz | Period end |
-| source | text | free, premium |
+| source | text | Origin: subscription, free_tier, admin_grant |
+| metadata | jsonb | Contains rollover_tokens, base_tokens |
 
 ---
 
 ### `llm_usage_events`
 
-LLM API usage tracking.
+Append-only ledger of LLM API calls.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | uuid | Primary key |
 | user_id | uuid | User |
+| idempotency_key | text | Prevents duplicate charges |
 | feature | text | Feature used |
 | model | text | LLM model |
-| prompt_tokens | integer | Input tokens |
-| completion_tokens | integer | Output tokens |
-| total_tokens | integer | Total tokens |
-| credits_charged | integer | Credits deducted |
+| prompt_tokens | bigint | Input tokens |
+| completion_tokens | bigint | Output tokens |
+| total_tokens | bigint | Total tokens |
+| credits_charged | numeric | Credits charged (historical) |
 | created_at | timestamptz | Usage timestamp |
 
 ---
@@ -325,14 +343,17 @@ User activity log.
 
 ### `v_ai_allowance_current`
 
-Current AI allowance period for each user with calculated remaining credits.
+Current AI allowance with dynamically calculated credits.
 
 | Column | Description |
 |--------|-------------|
-| remaining_tokens | Tokens remaining in current period |
-| remaining_credits | Display credits remaining |
-| remaining_milli_credits | Milli-credits remaining |
-| display_credits | User-facing credit count |
+| tokens_granted | Source of truth: granted tokens |
+| tokens_used | Source of truth: used tokens |
+| remaining_tokens | Calculated: granted - used |
+| tokens_per_credit | Current conversion factor from settings |
+| credits_granted | Calculated: tokens_granted / tokens_per_credit |
+| credits_used | Calculated: tokens_used / tokens_per_credit |
+| remaining_credits | Calculated: remaining_tokens / tokens_per_credit |
 
 ---
 
