@@ -23,11 +23,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Shield, Save, Users, Trash2, CreditCard } from "lucide-react";
+import { Search, Shield, Save, Users, Trash2, CreditCard, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
 import { AICreditSettings } from "@/components/admin/AICreditSettings";
 import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
+import { UserTokenModal } from "@/components/admin/UserTokenModal";
 
 interface AllowancePeriod {
   id: string;
@@ -56,6 +57,7 @@ export default function Admin() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [editedUsers, setEditedUsers] = useState<Record<string, Partial<UserProfile>>>({});
   const [allowances, setAllowances] = useState<Record<string, AllowancePeriod>>({});
+  const [tokenModalUser, setTokenModalUser] = useState<{ id: string; displayName: string | null } | null>(null);
 
   // Access control check
   useEffect(() => {
@@ -395,7 +397,8 @@ export default function Admin() {
                       <TableHead>Plan Source</TableHead>
                       <TableHead>Remaining Tokens</TableHead>
                       <TableHead>Created</TableHead>
-                      <TableHead className="w-24"></TableHead>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -476,6 +479,16 @@ export default function Admin() {
                             : "—"}
                         </TableCell>
                         <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setTokenModalUser({ id: u.id, displayName: u.display_name })}
+                            title="Manage tokens & plan"
+                          >
+                            <Coins className="h-4 w-4 text-amber-500" />
+                          </Button>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             {hasChanges(u.id) && (
                               <Button
@@ -532,6 +545,26 @@ export default function Admin() {
           </CardContent>
         </Card>
       </main>
+      
+      {/* Token Management Modal */}
+      <UserTokenModal
+        open={!!tokenModalUser}
+        onOpenChange={(open) => !open && setTokenModalUser(null)}
+        userId={tokenModalUser?.id || ""}
+        displayName={tokenModalUser?.displayName || null}
+        onSave={(updatedAllowance) => {
+          setAllowances((prev) => ({
+            ...prev,
+            [updatedAllowance.user_id]: {
+              id: updatedAllowance.id,
+              user_id: updatedAllowance.user_id,
+              tokens_granted: updatedAllowance.tokens_granted,
+              tokens_used: updatedAllowance.tokens_used,
+            },
+          }));
+        }}
+      />
+      
       <Footer />
     </div>
   );
