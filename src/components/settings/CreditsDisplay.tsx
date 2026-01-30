@@ -1,5 +1,5 @@
-import { format } from "date-fns";
-import { Check, Loader2 } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { Check, Loader2, ArrowRight } from "lucide-react";
 import { useAICredits } from "@/hooks/useAICredits";
 
 export function CreditsDisplay() {
@@ -47,6 +47,13 @@ export function CreditsDisplay() {
   // Max rollover is capped at the plan's monthly credits
   const maxRollover = effectivePlanCredits;
 
+  // Calculate days until reset and potential rollover amount
+  const daysUntilReset = periodEnd ? differenceInDays(new Date(periodEnd), new Date()) : null;
+  const showRolloverPreview = daysUntilReset !== null && daysUntilReset <= 5 && daysUntilReset >= 0;
+  
+  // Calculate how many credits will roll over (capped at plan base)
+  const projectedRollover = Math.min(Math.round(remainingCredits), maxRollover);
+
   return (
     <div className="mt-6 pt-6 border-t border-border">
       {/* Header with remaining / total */}
@@ -75,6 +82,17 @@ export function CreditsDisplay() {
           />
         )}
       </div>
+
+      {/* Rollover preview banner - shown within 5 days of reset */}
+      {showRolloverPreview && projectedRollover > 0 && (
+        <div className="mt-3 flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-md px-3 py-2">
+          <ArrowRight className="h-4 w-4 flex-shrink-0" />
+          <span>
+            <strong>{projectedRollover.toLocaleString()}</strong> credits will carry over to next period
+            {daysUntilReset === 0 ? " (today)" : daysUntilReset === 1 ? " (tomorrow)" : ` (in ${daysUntilReset} days)`}
+          </span>
+        </div>
+      )}
 
       {/* Info lines */}
       <div className="mt-4 space-y-2">
