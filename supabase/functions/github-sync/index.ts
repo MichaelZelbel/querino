@@ -743,33 +743,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prepare files - use clean slug-based filenames for readability
+    // Prepare files - generate filenames from titles (unique within this sync batch only)
     const files: GitHubFile[] = [];
     const basePath = githubFolder ? `${githubFolder}/` : "";
 
-    // Generate prompt files with clean slug filenames
+    // Helper to generate locally-unique filenames within a folder
+    function generateUniqueFilename(title: string, existingNames: Set<string>): string {
+      let baseName = slugify(title);
+      if (!baseName) baseName = "untitled";
+      
+      let filename = baseName;
+      let counter = 1;
+      
+      while (existingNames.has(filename)) {
+        filename = `${baseName}-${counter}`;
+        counter++;
+      }
+      
+      existingNames.add(filename);
+      return filename;
+    }
+
+    // Track used filenames per folder to ensure uniqueness within this sync
+    const promptFilenames = new Set<string>();
+    const skillFilenames = new Set<string>();
+    const workflowFilenames = new Set<string>();
+
+    // Generate prompt files with locally-unique filenames
     for (const prompt of prompts) {
-      const slug = prompt.slug || slugify(prompt.title);
+      const filename = generateUniqueFilename(prompt.title, promptFilenames);
       files.push({
-        path: `${basePath}prompts/${slug}.md`,
+        path: `${basePath}prompts/${filename}.md`,
         content: generatePromptMarkdown(prompt),
       });
     }
 
     // Generate skill files
     for (const skill of skills) {
-      const slug = skill.slug || slugify(skill.title);
+      const filename = generateUniqueFilename(skill.title, skillFilenames);
       files.push({
-        path: `${basePath}skills/${slug}.md`,
+        path: `${basePath}skills/${filename}.md`,
         content: generateSkillMarkdown(skill),
       });
     }
 
     // Generate workflow files
     for (const workflow of workflows) {
-      const slug = workflow.slug || slugify(workflow.title);
+      const filename = generateUniqueFilename(workflow.title, workflowFilenames);
       files.push({
-        path: `${basePath}workflows/${slug}.md`,
+        path: `${basePath}workflows/${filename}.md`,
         content: generateWorkflowMarkdown(workflow),
       });
     }
