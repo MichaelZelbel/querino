@@ -6,7 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
-import { useSimilarPrompts } from "@/hooks/useSimilarArtefacts";
+
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewSection } from "@/components/prompts/ReviewSection";
-import { SimilarPromptsSection } from "@/components/similar/SimilarArtefactsSection";
+
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
@@ -57,7 +57,7 @@ export default function PromptDetail() {
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(prompt?.id);
+  
   const { 
     suggestions, 
     loading: loadingSuggestions, 
@@ -654,8 +654,6 @@ export default function PromptDetail() {
             </TabsList>
             
             <TabsContent value="details" className="mt-6">
-              {/* Similar Prompts */}
-              <SimilarPromptsSection items={similarPrompts} loading={loadingSimilar} />
               
               {/* Activity Sidebar */}
               <div className="mt-8">
