@@ -13,6 +13,7 @@ import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow,
 import logoImage from "@/assets/logo.png";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
 import { CommandPalette } from "@/components/CommandPalette";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
@@ -25,6 +26,7 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, loading, signOut } = useAuthContext();
+  const { isAdmin } = useUserRole();
   const { triggerFileSelect: triggerPromptImport } = useMarkdownImport("prompt");
 
   const isActive = (path: string) => location.pathname === path;
@@ -237,7 +239,7 @@ export function Header() {
                       Settings
                     </Link>
                   </DropdownMenuItem>
-                  {profile?.role === "admin" && (
+                  {isAdmin && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -419,7 +421,7 @@ export function Header() {
                       Settings
                     </Button>
                   </Link>
-                  {profile?.role === "admin" && (
+                  {isAdmin && (
                     <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start gap-2 text-primary">
                         <Shield className="h-4 w-4" />
