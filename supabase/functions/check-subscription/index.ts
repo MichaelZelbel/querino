@@ -24,8 +24,9 @@ const PREMIUM_PRODUCTS = {
   ],
 };
 
-// Admin-controlled sources - when set, skip Stripe check entirely
-const ADMIN_CONTROLLED_SOURCES = ["internal", "gifted", "test"];
+// Roles that are admin-controlled - when set, skip Stripe check entirely
+// These users keep their role regardless of Stripe status
+const ADMIN_CONTROLLED_ROLES = ["admin", "premium_gift"];
 
 interface StripeCheckResult {
   hasActiveSub: boolean;
@@ -129,29 +130,28 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get current profile
-    const { data: profileData } = await supabaseClient
-      .from("profiles")
-      .select("plan_type, plan_source")
-      .eq("id", user.id)
+    // Get current role from user_roles table (the authoritative source)
+    const { data: roleData } = await supabaseClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
       .single();
     
-    logStep("Current profile", { 
-      planType: profileData?.plan_type, 
-      planSource: profileData?.plan_source 
-    });
+    const currentRole = roleData?.role || "free";
+    logStep("Current role", { role: currentRole });
 
-    // If plan_source is admin-controlled, return current values WITHOUT checking Stripe
-    if (profileData?.plan_source && ADMIN_CONTROLLED_SOURCES.includes(profileData.plan_source)) {
-      logStep("Admin override active - returning current profile", { 
-        planType: profileData.plan_type, 
-        planSource: profileData.plan_source 
-      });
+    // If role is admin-controlled, return current values WITHOUT checking Stripe
+    // Admin and premium_gift users keep their status regardless of Stripe
+    if (ADMIN_CONTROLLED_ROLES.includes(currentRole)) {
+      logStep("Admin-controlled role - skipping Stripe check", { role: currentRole });
+      
+      const isPremium = currentRole === "admin" || currentRole === "premium_gift";
       
       return new Response(JSON.stringify({
-        subscribed: profileData.plan_type === "premium",
-        plan_type: profileData.plan_type || "free",
-        plan_source: profileData.plan_source,
+        subscribed: isPremium,
+        role: currentRole,
+        plan_type: isPremium ? "premium" : "free", // Legacy field for compatibility
+        plan_source: currentRole === "admin" ? "admin" : "gift", // Legacy field
         product_id: null,
         subscription_end: null,
         mode: null,
@@ -171,6 +171,7 @@ serve(async (req) => {
       logStep("Stripe key not configured for mode", { mode: requestedMode });
       return new Response(JSON.stringify({
         subscribed: false,
+        role: "free",
         plan_type: "free",
         plan_source: null,
         product_id: null,
@@ -199,33 +200,32 @@ serve(async (req) => {
                       checkResult.productId && 
                       validProducts.includes(checkResult.productId);
 
-    const planType = isPremium ? "premium" : "free";
-    const planSource = isPremium ? "stripe" : null;
+    const newRole = isPremium ? "premium" : "free";
 
-    logStep("Plan determined", { 
-      planType, 
-      planSource, 
+    logStep("Role determined", { 
+      newRole, 
       mode: requestedMode,
       isPremium,
       productId: checkResult.productId
     });
 
-    // Update profile
+    // Update user_roles table (the authoritative source)
     const { error: updateError } = await supabaseClient
-      .from("profiles")
-      .update({ plan_type: planType, plan_source: planSource })
-      .eq("id", user.id);
+      .from("user_roles")
+      .update({ role: newRole })
+      .eq("user_id", user.id);
 
     if (updateError) {
-      logStep("Profile update error", { error: updateError.message });
+      logStep("Role update error", { error: updateError.message });
     } else {
-      logStep("Profile updated", { planType, planSource });
+      logStep("Role updated", { role: newRole });
     }
 
     return new Response(JSON.stringify({
       subscribed: isPremium,
-      plan_type: planType,
-      plan_source: planSource,
+      role: newRole,
+      plan_type: newRole === "premium" ? "premium" : "free", // Legacy field
+      plan_source: isPremium ? "stripe" : null, // Legacy field
       product_id: checkResult.productId || null,
       subscription_end: checkResult.subscriptionEnd || null,
       mode: requestedMode,

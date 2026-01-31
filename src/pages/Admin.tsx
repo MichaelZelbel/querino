@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -29,6 +30,7 @@ import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
 import { AICreditSettings } from "@/components/admin/AICreditSettings";
 import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
 import { UserTokenModal } from "@/components/admin/UserTokenModal";
+import type { AppRole } from "@/types/userRole";
 
 interface AllowancePeriod {
   id: string;
@@ -37,55 +39,53 @@ interface AllowancePeriod {
   tokens_used: number;
 }
 
-interface UserProfile {
+interface UserWithRole {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
-  role: string | null;
-  plan_type: string | null;
-  plan_source: string | null;
+  role: AppRole;
   created_at: string | null;
 }
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuthContext();
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const { user, loading: authLoading } = useAuthContext();
+  const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [editedUsers, setEditedUsers] = useState<Record<string, Partial<UserProfile>>>({});
+  const [editedUsers, setEditedUsers] = useState<Record<string, { role?: AppRole }>>({});
   const [allowances, setAllowances] = useState<Record<string, AllowancePeriod>>({});
   const [tokenModalUser, setTokenModalUser] = useState<{ id: string; displayName: string | null } | null>(null);
 
   // Access control check
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && !roleLoading) {
       if (!user) {
         toast.error("You don't have permission to view the admin panel.");
         navigate("/");
         return;
       }
-      if (profile?.role !== "admin") {
+      if (!isAdmin) {
         toast.error("You don't have permission to view the admin panel.");
         navigate("/");
         return;
       }
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, roleLoading, navigate]);
 
   // Fetch users and initialize allowances
   useEffect(() => {
-    if (profile?.role === "admin") {
+    if (isAdmin) {
       fetchUsers();
       initializeAndFetchAllowances();
     }
-  }, [profile]);
+  }, [isAdmin]);
 
   const initializeAndFetchAllowances = async () => {
     try {
-      // First, call the edge function to ensure all users have current-period allowances
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
@@ -95,12 +95,10 @@ export default function Admin() {
 
       if (response.error) {
         console.error("Error initializing allowances:", response.error);
-        // Fall back to direct fetch
         await fetchAllowances();
         return;
       }
 
-      // Use the returned balances from the edge function
       if (response.data?.results) {
         const allowanceMap: Record<string, AllowancePeriod> = {};
         response.data.results.forEach((result: any) => {
@@ -116,12 +114,10 @@ export default function Admin() {
         });
         setAllowances(allowanceMap);
       } else {
-        // Fall back to direct fetch if no results
         await fetchAllowances();
       }
     } catch (error) {
       console.error("Error in initializeAndFetchAllowances:", error);
-      // Fall back to direct fetch
       await fetchAllowances();
     }
   };
@@ -129,13 +125,37 @@ export default function Admin() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, role, plan_type, plan_source, created_at")
+        .select("id, display_name, avatar_url, created_at")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch roles from user_roles table
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) throw rolesError;
+
+      // Create a map of user_id to role
+      const roleMap = new Map<string, AppRole>();
+      (roles || []).forEach((r) => {
+        roleMap.set(r.user_id, r.role as AppRole);
+      });
+
+      // Combine profiles with roles
+      const usersWithRoles: UserWithRole[] = (profiles || []).map((p) => ({
+        id: p.id,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        created_at: p.created_at,
+        role: roleMap.get(p.id) || "free",
+      }));
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Failed to load users");
@@ -155,10 +175,8 @@ export default function Admin() {
 
       if (error) throw error;
 
-      // Create a map of user_id to their current period allowance
       const allowanceMap: Record<string, AllowancePeriod> = {};
       (data || []).forEach((row) => {
-        // If multiple periods exist for a user, keep the one with latest period_end
         if (!allowanceMap[row.user_id] || row.period_end > allowanceMap[row.user_id].id) {
           allowanceMap[row.user_id] = {
             id: row.id,
@@ -181,30 +199,24 @@ export default function Admin() {
     }));
   };
 
-  const handleFieldChange = (userId: string, field: string, value: string) => {
+  const handleRoleChange = (userId: string, value: AppRole) => {
     setEditedUsers((prev) => ({
       ...prev,
-      [userId]: {
-        ...prev[userId],
-        [field]: value,
-      },
+      [userId]: { role: value },
     }));
   };
 
   const handleSaveUser = async (userId: string) => {
     const changes = editedUsers[userId];
-    if (!changes) return;
+    if (!changes?.role) return;
 
     setSavingUserId(userId);
     try {
+      // Update user_roles table
       const { error } = await supabase
-        .from("profiles")
-        .update({
-          role: changes.role,
-          plan_type: changes.plan_type,
-          plan_source: changes.plan_source,
-        })
-        .eq("id", userId);
+        .from("user_roles")
+        .update({ role: changes.role })
+        .eq("user_id", userId);
 
       if (error) throw error;
 
@@ -212,7 +224,7 @@ export default function Admin() {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === userId
-            ? { ...u, ...changes }
+            ? { ...u, role: changes.role! }
             : u
         )
       );
@@ -223,17 +235,16 @@ export default function Admin() {
         return rest;
       });
 
-      toast.success("User updated successfully");
+      toast.success("User role updated successfully");
     } catch (error) {
       console.error("Error updating user:", error);
-      toast.error("Failed to update user");
+      toast.error("Failed to update user role");
     } finally {
       setSavingUserId(null);
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    // Prevent self-deletion
     if (userId === user?.id) {
       toast.error("You cannot delete your own account");
       return;
@@ -241,13 +252,11 @@ export default function Admin() {
 
     setDeletingUserId(userId);
     try {
-      // Get the current session for auth header
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Not authenticated");
       }
 
-      // Call edge function to delete user from auth.users (cascades to profiles)
       const response = await supabase.functions.invoke("delete-user", {
         body: { userId },
       });
@@ -260,10 +269,8 @@ export default function Admin() {
         throw new Error(response.data.error);
       }
 
-      // Remove from local state
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       
-      // Clear any pending edits for this user
       setEditedUsers((prev) => {
         const { [userId]: _, ...rest } = prev;
         return rest;
@@ -291,11 +298,11 @@ export default function Admin() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const getUserValue = (userId: string, field: keyof UserProfile) => {
-    const editedValue = editedUsers[userId]?.[field];
+  const getUserRole = (userId: string): AppRole => {
+    const editedValue = editedUsers[userId]?.role;
     if (editedValue !== undefined) return editedValue;
-    const user = users.find((u) => u.id === userId);
-    return user?.[field] || "";
+    const userItem = users.find((u) => u.id === userId);
+    return userItem?.role || "free";
   };
 
   const hasChanges = (userId: string) => {
@@ -303,7 +310,7 @@ export default function Admin() {
   };
 
   // Don't render anything until auth check is complete
-  if (authLoading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
@@ -316,7 +323,7 @@ export default function Admin() {
     );
   }
 
-  if (!user || profile?.role !== "admin") {
+  if (!user || !isAdmin) {
     return null;
   }
 
@@ -328,7 +335,7 @@ export default function Admin() {
           <Shield className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage users, plans, and roles</p>
+            <p className="text-muted-foreground">Manage users and roles</p>
           </div>
         </div>
 
@@ -393,8 +400,6 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Plan Type</TableHead>
-                      <TableHead>Plan Source</TableHead>
                       <TableHead>Remaining Tokens</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-8"></TableHead>
@@ -424,45 +429,17 @@ export default function Admin() {
                         </TableCell>
                         <TableCell>
                           <Select
-                            value={getUserValue(u.id, "role") as string}
-                            onValueChange={(value) => handleFieldChange(u.id, "role", value)}
+                            value={getUserRole(u.id)}
+                            onValueChange={(value) => handleRoleChange(u.id, value as AppRole)}
                           >
-                            <SelectTrigger className="w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="user">user</SelectItem>
-                              <SelectItem value="admin">admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={getUserValue(u.id, "plan_type") as string}
-                            onValueChange={(value) => handleFieldChange(u.id, "plan_type", value)}
-                          >
-                            <SelectTrigger className="w-28">
+                            <SelectTrigger className="w-36">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="free">free</SelectItem>
                               <SelectItem value="premium">premium</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={getUserValue(u.id, "plan_source") as string}
-                            onValueChange={(value) => handleFieldChange(u.id, "plan_source", value)}
-                          >
-                            <SelectTrigger className="w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="internal">internal</SelectItem>
-                              <SelectItem value="stripe">stripe</SelectItem>
-                              <SelectItem value="gifted">gifted</SelectItem>
-                              <SelectItem value="test">test</SelectItem>
+                              <SelectItem value="premium_gift">premium_gift</SelectItem>
+                              <SelectItem value="admin">admin</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>

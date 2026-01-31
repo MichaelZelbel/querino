@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Lock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -22,18 +23,21 @@ export function PremiumGate({
   className,
   variant = 'card',
 }: PremiumGateProps) {
-  const { user, profile } = useAuthContext();
+  const { user } = useAuthContext();
+  const { isPremium, isLoading } = useUserRole();
   const location = useLocation();
 
-  // Check if user has required plan
-  // Since "team" is now a feature of premium (not a separate plan),
-  // both requirements are satisfied by premium
+  // Show nothing while loading to prevent flash
+  if (isLoading) {
+    return null;
+  }
+
+  // Check if user has required plan from user_roles
+  // Premium plan (premium, premium_gift, admin) grants access to both 'premium' and 'team' features
   const hasAccess = (() => {
-    if (!user || !profile) return false;
-    const planType = profile.plan_type;
-    // Premium plan grants access to both 'premium' and 'team' features
+    if (!user) return false;
     if (requires === 'premium' || requires === 'team') {
-      return planType === 'premium';
+      return isPremium;
     }
     return false;
   })();

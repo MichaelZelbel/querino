@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { getStripeMode } from "@/config/stripe";
+import type { AppRole } from "@/types/userRole";
 
 interface SubscriptionStatus {
   subscribed: boolean;
-  plan_type: string;
-  plan_source: string | null;
+  role: AppRole;
+  plan_type: string; // Legacy field for compatibility
+  plan_source: string | null; // Legacy field for compatibility
   product_id: string | null;
   subscription_end: string | null;
   mode: string | null;
@@ -139,11 +141,16 @@ export function useSubscription() {
     }
   }, [checkSubscription]);
 
+  // Premium is determined by role now (premium, premium_gift, or admin)
+  const isPremium = subscription?.role === "premium" || 
+                    subscription?.role === "premium_gift" || 
+                    subscription?.role === "admin";
+
   return {
     subscription,
     isLoading,
     error,
-    isPremium: subscription?.plan_type === "premium",
+    isPremium,
     isAdminOverride: subscription?.admin_override === true,
     checkSubscription: () => checkSubscription(true),
     openCustomerPortal,
