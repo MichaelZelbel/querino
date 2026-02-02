@@ -48,6 +48,7 @@ export function useUserRole() {
         return;
       }
 
+      console.log("[useUserRole] Fetched role:", data.role, "for user:", user.id);
       setState({ 
         role: data.role as AppRole, 
         isLoading: false, 
