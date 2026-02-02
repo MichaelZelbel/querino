@@ -67,11 +67,11 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       } else if (itemType === 'workflow') {
         const { data, error } = await supabase
           .from('workflows')
-          .select('title, description, json, tags')
+          .select('title, description, content, tags')
           .eq('id', itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: JSON.stringify(data.json), tags: data.tags };
+        return { title: data.title, description: data.description, content: data.content || '', tags: data.tags };
       } else if (itemType === 'claw') {
         const { data, error } = await supabase
           .from('claws')
