@@ -19,6 +19,7 @@ import {
   Workflow,
   FolderOpen,
   User,
+  Grab,
   LucideIcon
 } from "lucide-react";
 
@@ -44,6 +45,7 @@ const itemTypeIcons: Record<string, LucideIcon> = {
   prompt: Sparkles,
   skill: BookOpen,
   workflow: Workflow,
+  claw: Grab,
   collection: FolderOpen,
   profile: User,
   team: Users,

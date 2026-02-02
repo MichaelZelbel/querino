@@ -155,6 +155,123 @@ export type Database = {
         }
         Relationships: []
       }
+      claw_reviews: {
+        Row: {
+          claw_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claw_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claw_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claw_reviews_claw_id_fkey"
+            columns: ["claw_id"]
+            isOneToOne: false
+            referencedRelation: "claws"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claw_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claws: {
+        Row: {
+          author_id: string | null
+          category: string | null
+          content: string | null
+          created_at: string | null
+          description: string | null
+          embedding: string | null
+          id: string
+          published: boolean | null
+          rating_avg: number | null
+          rating_count: number | null
+          slug: string | null
+          source: string | null
+          tags: string[] | null
+          team_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          embedding?: string | null
+          id?: string
+          published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
+          slug?: string | null
+          source?: string | null
+          tags?: string[] | null
+          team_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          embedding?: string | null
+          id?: string
+          published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
+          slug?: string | null
+          source?: string | null
+          tags?: string[] | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claws_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claws_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_items: {
         Row: {
           collection_id: string
@@ -1148,6 +1265,18 @@ export type Database = {
         Args: { p_exclude_id?: string; p_table: string; p_title: string }
         Returns: string
       }
+      get_similar_claws: {
+        Args: { match_limit?: number; target_id: string }
+        Returns: {
+          author_id: string
+          description: string
+          id: string
+          similarity: number
+          tags: string[]
+          team_id: string
+          title: string
+        }[]
+      }
       get_similar_prompts: {
         Args: { match_limit?: number; target_id: string }
         Returns: {
@@ -1224,6 +1353,24 @@ export type Database = {
       is_team_owner: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
+      }
+      search_claws_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          author_id: string
+          content: string
+          created_at: string
+          description: string
+          id: string
+          published: boolean
+          similarity: number
+          tags: string[]
+          title: string
+        }[]
       }
       search_prompts_semantic: {
         Args: {

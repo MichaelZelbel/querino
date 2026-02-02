@@ -1,6 +1,6 @@
 // Markdown import/export utilities for artefacts
 
-export type ArtefactType = "prompt" | "skill" | "workflow";
+export type ArtefactType = "prompt" | "skill" | "workflow" | "claw";
 
 export interface MarkdownFrontmatter {
   title: string;
