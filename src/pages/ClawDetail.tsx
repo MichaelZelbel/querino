@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown } from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
+import { DownloadMarkdownButton } from "@/components/markdown";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
 import { format } from "date-fns";
@@ -174,6 +175,15 @@ export default function ClawDetail() {
                 <Files className="h-4 w-4" />{cloning ? "Cloning..." : "Clone Claw"}
               </Button>
             )}
+            <DownloadMarkdownButton
+              title={claw.title}
+              type="claw"
+              description={claw.description}
+              tags={claw.tags}
+              content={claw.content || ""}
+              size="lg"
+              variant="outline"
+            />
           </div>
 
           <ClawReviewSection clawId={claw.id} authorId={claw.author_id || undefined} />
