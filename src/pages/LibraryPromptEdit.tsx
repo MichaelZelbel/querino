@@ -58,6 +58,8 @@ import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import type { ParsedMarkdown } from "@/lib/markdown";
 
 interface PromptVersion {
   id: string;
@@ -569,6 +571,31 @@ export default function LibraryPromptEdit() {
             </Link>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <ImportMarkdownButton
+                type="prompt"
+                size="sm"
+                variant="outline"
+                label="Import .md"
+                isEditorMode
+                onImport={(parsed: ParsedMarkdown) => {
+                  setTitle(parsed.frontmatter.title || title);
+                  setShortDescription(parsed.frontmatter.description || shortDescription);
+                  setContent(parsed.content);
+                  if (parsed.frontmatter.tags) {
+                    setTags(parsed.frontmatter.tags);
+                  }
+                }}
+              />
+              <DownloadMarkdownButton
+                title={title}
+                type="prompt"
+                description={shortDescription}
+                tags={tags}
+                content={content}
+                size="sm"
+                variant="outline"
+              />
+
               {/* View/Publish buttons */}
               {prompt?.is_public ? (
                 <>

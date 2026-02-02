@@ -16,6 +16,8 @@ import { Loader2, X, ArrowLeft, Trash2, Save, Grab } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import type { Claw } from "@/types/claw";
+import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import type { ParsedMarkdown } from "@/lib/markdown";
 
 export default function ClawEdit() {
   const { slug } = useParams<{ slug: string }>();
@@ -92,7 +94,32 @@ export default function ClawEdit() {
         <div className="container mx-auto max-w-4xl px-4">
           <div className="mb-6 flex items-center justify-between">
             <Link to="/library" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="h-4 w-4" />Back to Library</Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <ImportMarkdownButton
+                type="claw"
+                size="sm"
+                variant="outline"
+                label="Import .md"
+                isEditorMode
+                onImport={(parsed: ParsedMarkdown) => {
+                  setFormData({
+                    ...formData,
+                    title: parsed.frontmatter.title || formData.title,
+                    description: parsed.frontmatter.description || formData.description,
+                    content: parsed.content,
+                    tags: parsed.frontmatter.tags || formData.tags,
+                  });
+                }}
+              />
+              <DownloadMarkdownButton
+                title={formData.title}
+                type="claw"
+                description={formData.description}
+                tags={formData.tags}
+                content={formData.content}
+                size="sm"
+                variant="outline"
+              />
               <Button onClick={handleSaveChanges} disabled={isSubmitting} className="gap-2 bg-amber-500 hover:bg-amber-600">{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save Changes</Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild><Button variant="destructive" size="icon" disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}</Button></AlertDialogTrigger>
