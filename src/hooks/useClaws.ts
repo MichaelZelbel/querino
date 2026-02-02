@@ -38,7 +38,12 @@ export function useClaws(options: UseClawsOptions = {}) {
       }
 
       if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        // Use PostgreSQL full-text search
+        query = query.textSearch(
+          "title,description,content",
+          searchQuery.trim(),
+          { type: "websearch", config: "english" }
+        );
       }
 
       const { data, error } = await query;

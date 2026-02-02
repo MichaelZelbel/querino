@@ -38,7 +38,12 @@ export function useSkills(options: UseSkillsOptions = {}) {
       }
 
       if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
+        // Use PostgreSQL full-text search
+        query = query.textSearch(
+          "title,description,content",
+          searchQuery.trim(),
+          { type: "websearch", config: "english" }
+        );
       }
 
       const { data, error } = await query;
