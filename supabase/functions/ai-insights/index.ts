@@ -22,10 +22,10 @@ serve(async (req) => {
       );
     }
 
-    if (!item_type || !["prompt", "skill", "workflow"].includes(item_type)) {
+    if (!item_type || !["prompt", "skill", "workflow", "claw"].includes(item_type)) {
       console.error("[AI-INSIGHTS] Invalid item_type:", item_type);
       return new Response(
-        JSON.stringify({ error: "Valid item_type is required (prompt, skill, workflow)" }),
+        JSON.stringify({ error: "Valid item_type is required (prompt, skill, workflow, claw)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -35,6 +35,7 @@ serve(async (req) => {
       prompt: "https://agentpool.app.n8n.cloud/webhook/prompt-insights",
       skill: "https://agentpool.app.n8n.cloud/webhook/skill-insights",
       workflow: "https://agentpool.app.n8n.cloud/webhook/workflow-insights",
+      claw: "https://agentpool.app.n8n.cloud/webhook-test/claw-insights",
     };
     const webhookUrl = webhookUrls[item_type];
 
