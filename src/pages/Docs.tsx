@@ -14,7 +14,8 @@ import {
   Star,
   Download,
   Upload,
-  Wand2
+  Wand2,
+  Grab
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -48,6 +49,7 @@ export default function Docs() {
                 { icon: Lightbulb, label: "Prompts", href: "#prompts" },
                 { icon: Sparkles, label: "Skills", href: "#skills" },
                 { icon: Workflow, label: "Workflows", href: "#workflows" },
+                { icon: Grab, label: "Claws", href: "#claws" },
                 { icon: FolderOpen, label: "Collections", href: "#collections" },
                 { icon: Users, label: "Teams", href: "#teams" },
               ].map((item) => (
@@ -229,6 +231,73 @@ export default function Docs() {
               <p className="text-muted-foreground">
                 Browse workflows to find documented processes you can follow or adapt. Copy the content to use as a reference, or clone the workflow to customize it for your own needs.
               </p>
+            </div>
+          </section>
+
+          {/* Claws */}
+          <section id="claws" className="scroll-mt-24">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <Grab className="h-6 w-6 text-amber-500" />
+              </div>
+              <h2 className="text-2xl font-bold">Claws</h2>
+            </div>
+            
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                Claws are callable capabilities typically used by Clawbot. They represent specific actions or tools that can be invoked as part of AI-driven automation.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">What are Claws?</h3>
+              <p className="text-muted-foreground">
+                A Claw is a self-contained capability that Clawbot can call upon to perform specific tasks. Think of Claws as the "hands" of your AI assistant—each one designed to handle a particular action or operation.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Creating a Claw</h3>
+              <ol className="space-y-3 text-muted-foreground">
+                <li><strong>Content:</strong> Write your Claw definition using Markdown. Describe what the Claw does and how it should behave.</li>
+                <li><strong>Title & Description:</strong> Give it a clear, action-oriented name and description.</li>
+                <li><strong>Category:</strong> Choose a category to organize your Claws.</li>
+                <li><strong>Tags:</strong> Add tags for discoverability.</li>
+                <li><strong>Visibility:</strong> Keep it private or publish to share with the community.</li>
+              </ol>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Claws vs Workflows</h3>
+              <p className="text-muted-foreground mb-4">
+                While Claws and Workflows are technically similar, they serve different mental models:
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Grab className="h-4 w-4 text-amber-500" />
+                    <p className="font-medium">Claws</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Callable capabilities for Clawbot. Single-purpose tools that perform specific actions.</p>
+                </div>
+                <div className="p-4 rounded-lg border border-border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Workflow className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium">Workflows</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Multi-step orchestrations. Broader automation sequences that may combine multiple steps.</p>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Examples</h3>
+              <div className="grid gap-3">
+                <div className="p-4 rounded-lg border border-border bg-card">
+                  <p className="font-medium mb-1">Search Knowledge Base</p>
+                  <p className="text-sm text-muted-foreground">A Claw that searches internal documentation and returns relevant results.</p>
+                </div>
+                <div className="p-4 rounded-lg border border-border bg-card">
+                  <p className="font-medium mb-1">Send Notification</p>
+                  <p className="text-sm text-muted-foreground">A Claw that sends notifications via email, Slack, or other channels.</p>
+                </div>
+                <div className="p-4 rounded-lg border border-border bg-card">
+                  <p className="font-medium mb-1">Generate Summary</p>
+                  <p className="text-sm text-muted-foreground">A Claw that takes text input and produces a concise summary.</p>
+                </div>
+              </div>
             </div>
           </section>
 
