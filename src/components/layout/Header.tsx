@@ -254,6 +254,12 @@ export function Header() {
                           Admin
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/blog/admin" className="flex items-center gap-2 cursor-pointer text-primary">
+                          <FileText className="h-4 w-4" />
+                          Blog Admin
+                        </Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
@@ -434,12 +440,20 @@ export function Header() {
                     </Button>
                   </Link>
                   {isAdmin && (
-                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start gap-2 text-primary">
-                        <Shield className="h-4 w-4" />
-                        Admin
-                      </Button>
-                    </Link>
+                    <>
+                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start gap-2 text-primary">
+                          <Shield className="h-4 w-4" />
+                          Admin
+                        </Button>
+                      </Link>
+                      <Link to="/blog/admin" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start gap-2 text-primary">
+                          <FileText className="h-4 w-4" />
+                          Blog Admin
+                        </Button>
+                      </Link>
+                    </>
                   )}
                   <Button 
                     variant="ghost" 
