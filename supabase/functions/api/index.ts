@@ -28,6 +28,11 @@ Deno.serve(async (req) => {
       return await handleGetRSS(supabase);
     }
 
+    // GET /sitemap.xml
+    if (path === "/sitemap.xml") {
+      return await handleGetSitemap(supabase);
+    }
+
     // 404 for unknown routes
     return new Response(
       JSON.stringify({ error: "Not found", path }),
@@ -110,6 +115,154 @@ async function handleGetRSS(supabase: any) {
       "Cache-Control": "public, max-age=3600",
     },
   });
+}
+
+async function handleGetSitemap(supabase: any) {
+  const siteUrl = "https://querino.lovable.app";
+  
+  // Static pages with their priorities
+  const staticPages = [
+    { loc: "/", priority: "1.0", changefreq: "daily" },
+    { loc: "/discover", priority: "0.9", changefreq: "daily" },
+    { loc: "/blog", priority: "0.8", changefreq: "daily" },
+    { loc: "/pricing", priority: "0.7", changefreq: "weekly" },
+    { loc: "/auth", priority: "0.5", changefreq: "monthly" },
+    { loc: "/terms", priority: "0.3", changefreq: "yearly" },
+    { loc: "/privacy", priority: "0.3", changefreq: "yearly" },
+    { loc: "/cookies", priority: "0.3", changefreq: "yearly" },
+    { loc: "/impressum", priority: "0.3", changefreq: "yearly" },
+  ];
+
+  // Fetch dynamic content in parallel
+  const [blogPosts, prompts, skills, workflows, claws] = await Promise.all([
+    supabase
+      .from("blog_posts")
+      .select("slug, updated_at")
+      .eq("status", "published")
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("prompts")
+      .select("slug, updated_at")
+      .eq("is_public", true)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("skills")
+      .select("slug, updated_at")
+      .eq("published", true)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("workflows")
+      .select("slug, updated_at")
+      .eq("published", true)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("claws")
+      .select("slug, updated_at")
+      .eq("published", true)
+      .order("updated_at", { ascending: false }),
+  ]);
+
+  // Build URL entries
+  const urls: string[] = [];
+
+  // Add static pages
+  for (const page of staticPages) {
+    urls.push(`
+  <url>
+    <loc>${siteUrl}${page.loc}</loc>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`);
+  }
+
+  // Add blog posts
+  for (const post of blogPosts.data || []) {
+    if (post.slug) {
+      const lastmod = post.updated_at ? formatDate(post.updated_at) : formatDate(new Date().toISOString());
+      urls.push(`
+  <url>
+    <loc>${siteUrl}/blog/${escapeXml(post.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`);
+    }
+  }
+
+  // Add public prompts
+  for (const prompt of prompts.data || []) {
+    if (prompt.slug) {
+      const lastmod = prompt.updated_at ? formatDate(prompt.updated_at) : formatDate(new Date().toISOString());
+      urls.push(`
+  <url>
+    <loc>${siteUrl}/prompts/${escapeXml(prompt.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>`);
+    }
+  }
+
+  // Add public skills
+  for (const skill of skills.data || []) {
+    if (skill.slug) {
+      const lastmod = skill.updated_at ? formatDate(skill.updated_at) : formatDate(new Date().toISOString());
+      urls.push(`
+  <url>
+    <loc>${siteUrl}/skills/${escapeXml(skill.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>`);
+    }
+  }
+
+  // Add public workflows
+  for (const workflow of workflows.data || []) {
+    if (workflow.slug) {
+      const lastmod = workflow.updated_at ? formatDate(workflow.updated_at) : formatDate(new Date().toISOString());
+      urls.push(`
+  <url>
+    <loc>${siteUrl}/workflows/${escapeXml(workflow.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>`);
+    }
+  }
+
+  // Add public claws
+  for (const claw of claws.data || []) {
+    if (claw.slug) {
+      const lastmod = claw.updated_at ? formatDate(claw.updated_at) : formatDate(new Date().toISOString());
+      urls.push(`
+  <url>
+    <loc>${siteUrl}/claws/${escapeXml(claw.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>`);
+    }
+  }
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}
+</urlset>`;
+
+  console.log(`[api] Sitemap generated with ${urls.length} URLs`);
+
+  return new Response(sitemap, {
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
+
+function formatDate(isoDate: string): string {
+  // Return YYYY-MM-DD format for sitemap
+  return isoDate.split("T")[0];
 }
 
 function escapeXml(str: string): string {

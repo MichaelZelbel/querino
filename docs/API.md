@@ -286,6 +286,32 @@ Common HTTP status codes:
 
 ---
 
+## Public Endpoints (No Auth Required)
+
+### GET `/api/sitemap.xml`
+
+Returns an XML sitemap for SEO crawlers containing all public pages and content.
+
+**Response:** XML sitemap with all static pages and dynamic content (blog posts, prompts, skills, workflows, claws).
+
+**Headers:**
+- `Content-Type: application/xml; charset=utf-8`
+- `Cache-Control: public, max-age=3600`
+
+---
+
+### GET `/api/rss.xml`
+
+Returns an RSS 2.0 feed of published blog posts.
+
+**Response:** RSS XML feed with the 20 most recent blog posts.
+
+**Headers:**
+- `Content-Type: application/rss+xml; charset=utf-8`
+- `Cache-Control: public, max-age=3600`
+
+---
+
 ## Rate Limits
 
 AI-powered endpoints (`prompt-wizard`, `refine-prompt`, `suggest-*`) consume AI credits from the user's allowance. Check `/ensure-token-allowance` to verify available credits.
