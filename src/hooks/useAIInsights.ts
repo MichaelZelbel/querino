@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLogActivity } from './useLogActivity';
 import type { AIInsights, AIQuality } from '@/types/aiInsights';
 
-type ItemType = 'prompt' | 'skill' | 'workflow';
+type ItemType = 'prompt' | 'skill' | 'workflow' | 'claw';
 
 interface ArtefactData {
   title: string;
@@ -64,7 +64,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           .single();
         if (error || !data) return null;
         return { title: data.title, description: data.description, content: data.content, tags: data.tags };
-      } else {
+      } else if (itemType === 'workflow') {
         const { data, error } = await supabase
           .from('workflows')
           .select('title, description, json, tags')
@@ -72,7 +72,16 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           .single();
         if (error || !data) return null;
         return { title: data.title, description: data.description, content: JSON.stringify(data.json), tags: data.tags };
+      } else if (itemType === 'claw') {
+        const { data, error } = await supabase
+          .from('claws')
+          .select('title, description, content, tags')
+          .eq('id', itemId)
+          .single();
+        if (error || !data) return null;
+        return { title: data.title, description: data.description, content: data.content || '', tags: data.tags };
       }
+      return null;
     } catch {
       return null;
     }
@@ -143,12 +152,14 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
         quality: (upserted.quality as unknown as AIQuality) || null,
       });
 
-      // Log activity
-      await logActivity({
-        action: isRefresh ? 'ai_insights_refreshed' : 'ai_insights_generated',
-        itemType,
-        itemId,
-      });
+      // Log activity (only for types that support it)
+      if (itemType !== 'claw') {
+        await logActivity({
+          action: isRefresh ? 'ai_insights_refreshed' : 'ai_insights_generated',
+          itemType: itemType as 'prompt' | 'skill' | 'workflow',
+          itemId,
+        });
+      }
     } catch (err) {
       console.error('Error generating insights:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate insights');
