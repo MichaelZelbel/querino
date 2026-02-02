@@ -32,14 +32,14 @@ export function useUploadBlogMedia() {
       const filePath = `blog/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars') // Using existing bucket, could create a dedicated blog-media bucket
+        .from('blog-media')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('blog-media')
         .getPublicUrl(filePath);
 
       // Get image dimensions if it's an image
