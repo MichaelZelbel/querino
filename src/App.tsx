@@ -59,6 +59,12 @@ import BlogAdminCategories from "./pages/blog/admin/BlogAdminCategories";
 import BlogAdminTags from "./pages/blog/admin/BlogAdminTags";
 import BlogAdminMedia from "./pages/blog/admin/BlogAdminMedia";
 
+// Public Blog
+import BlogList from "./pages/blog/BlogList";
+import BlogPost from "./pages/blog/BlogPost";
+import BlogCategory from "./pages/blog/BlogCategory";
+import BlogTag from "./pages/blog/BlogTag";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -123,6 +129,12 @@ const App = () => (
             <Route path="/blog/admin/categories" element={<BlogAdminCategories />} />
             <Route path="/blog/admin/tags" element={<BlogAdminTags />} />
             <Route path="/blog/admin/media" element={<BlogAdminMedia />} />
+            
+            {/* Public Blog Routes */}
+            <Route path="/blog" element={<BlogList />} />
+            <Route path="/blog/category/:slug" element={<BlogCategory />} />
+            <Route path="/blog/tag/:slug" element={<BlogTag />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
