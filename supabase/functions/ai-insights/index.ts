@@ -30,9 +30,11 @@ serve(async (req) => {
       );
     }
 
-    // Use specific webhook for prompts, generic for others
+    // Use specific webhooks for each item type
     const webhookUrl = item_type === "prompt"
       ? "https://agentpool.app.n8n.cloud/webhook/prompt-insights"
+      : item_type === "skill"
+      ? "https://agentpool.app.n8n.cloud/webhook/skill-insights"
       : "https://agentpool.app.n8n.cloud/webhook/ai-insights";
 
     console.log("[AI-INSIGHTS] Calling webhook", {
