@@ -8,7 +8,7 @@ export interface AIQuality {
 
 export interface AIInsights {
   id: string;
-  item_type: 'prompt' | 'skill' | 'workflow';
+  item_type: 'prompt' | 'skill' | 'workflow' | 'claw';
   item_id: string;
   summary: string | null;
   tags: string[];

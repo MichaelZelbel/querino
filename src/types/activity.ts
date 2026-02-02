@@ -1,4 +1,4 @@
-export type ActivityItemType = 'prompt' | 'skill' | 'workflow' | 'collection' | 'profile' | 'team';
+export type ActivityItemType = 'prompt' | 'skill' | 'workflow' | 'claw' | 'collection' | 'profile' | 'team';
 
 export type ActivityAction = 
   | 'create'
