@@ -51,6 +51,14 @@ import Admin from "./pages/Admin";
 import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
+// Blog Admin
+import BlogAdminDashboard from "./pages/blog/admin/BlogAdminDashboard";
+import BlogAdminPosts from "./pages/blog/admin/BlogAdminPosts";
+import BlogAdminPostEditor from "./pages/blog/admin/BlogAdminPostEditor";
+import BlogAdminCategories from "./pages/blog/admin/BlogAdminCategories";
+import BlogAdminTags from "./pages/blog/admin/BlogAdminTags";
+import BlogAdminMedia from "./pages/blog/admin/BlogAdminMedia";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -106,6 +114,16 @@ const App = () => (
             <Route path="/u/:username/activity" element={<UserActivity />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/docs" element={<Docs />} />
+            
+            {/* Blog Admin Routes */}
+            <Route path="/blog/admin" element={<BlogAdminDashboard />} />
+            <Route path="/blog/admin/posts" element={<BlogAdminPosts />} />
+            <Route path="/blog/admin/posts/new" element={<BlogAdminPostEditor />} />
+            <Route path="/blog/admin/posts/:id/edit" element={<BlogAdminPostEditor />} />
+            <Route path="/blog/admin/categories" element={<BlogAdminCategories />} />
+            <Route path="/blog/admin/tags" element={<BlogAdminTags />} />
+            <Route path="/blog/admin/media" element={<BlogAdminMedia />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
