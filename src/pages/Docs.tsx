@@ -351,9 +351,16 @@ export default function Docs() {
               <ol className="space-y-3 text-muted-foreground">
                 <li>Click the workspace picker in the header</li>
                 <li>Select "Create Team" and give it a name</li>
-                <li>Invite members via email or share an invite link</li>
+                <li>Share the Team ID with members (found in Team Settings)</li>
+                <li>Members join by entering the Team ID in their <Link to="/settings" className="text-primary hover:underline">Settings</Link> page</li>
                 <li>Start creating team-owned artifacts</li>
               </ol>
+
+              <div className="bg-muted/50 p-4 rounded-lg mt-4">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note:</strong> Team membership requires a Premium plan. Free users cannot join teams.
+                </p>
+              </div>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Team Roles</h3>
               <ul className="space-y-2 text-muted-foreground">
