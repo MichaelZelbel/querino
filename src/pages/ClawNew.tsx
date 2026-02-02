@@ -132,9 +132,8 @@ export default function ClawNew() {
     setMetadataError(null);
 
     try {
-      // Reuse workflow metadata function
-      const { data: result, error } = await supabase.functions.invoke("suggest-workflow-metadata", {
-        body: { workflow_content: content.trim(), user_id: user?.id },
+      const { data: result, error } = await supabase.functions.invoke("suggest-claw-metadata", {
+        body: { claw_content: content.trim(), user_id: user?.id },
       });
 
       if (error) {
