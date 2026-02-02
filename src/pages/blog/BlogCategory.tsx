@@ -68,6 +68,7 @@ export default function BlogCategory() {
         title={`${category.name} - Blog`}
         description={category.description || `Posts in the ${category.name} category`}
         canonicalUrl={`${window.location.origin}/blog/category/${category.slug}`}
+        includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />

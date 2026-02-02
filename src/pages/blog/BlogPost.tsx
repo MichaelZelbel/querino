@@ -78,6 +78,7 @@ export default function BlogPost() {
         canonicalUrl={canonicalUrl}
         publishedTime={post.published_at || undefined}
         author={authorName}
+        includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />

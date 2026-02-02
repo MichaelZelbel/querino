@@ -9,6 +9,7 @@ interface SEOHeadProps {
   publishedTime?: string;
   author?: string;
   noIndex?: boolean;
+  includeRssFeed?: boolean;
 }
 
 export function SEOHead({
@@ -20,11 +21,13 @@ export function SEOHead({
   publishedTime,
   author,
   noIndex = false,
+  includeRssFeed = false,
 }: SEOHeadProps) {
   const siteName = "Querino";
   const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   const defaultDescription = "Discover and share AI prompts, skills, and workflows.";
   const finalDescription = description || defaultDescription;
+  const rssUrl = `${window.location.origin}/api/rss.xml`;
 
   useEffect(() => {
     // Update document title
@@ -91,11 +94,26 @@ export function SEOHead({
       canonical.remove();
     }
 
+    // RSS Feed link
+    let rssLink = document.querySelector('link[type="application/rss+xml"]') as HTMLLinkElement;
+    if (includeRssFeed) {
+      if (!rssLink) {
+        rssLink = document.createElement("link");
+        rssLink.setAttribute("rel", "alternate");
+        rssLink.setAttribute("type", "application/rss+xml");
+        rssLink.setAttribute("title", `${siteName} Blog RSS Feed`);
+        document.head.appendChild(rssLink);
+      }
+      rssLink.setAttribute("href", rssUrl);
+    } else if (rssLink) {
+      rssLink.remove();
+    }
+
     // Cleanup function
     return () => {
       // Reset title on unmount if needed
     };
-  }, [fullTitle, finalDescription, ogImage, ogType, canonicalUrl, publishedTime, author, noIndex]);
+  }, [fullTitle, finalDescription, ogImage, ogType, canonicalUrl, publishedTime, author, noIndex, includeRssFeed, rssUrl]);
 
   return null;
 }

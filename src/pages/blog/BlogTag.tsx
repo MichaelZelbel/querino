@@ -66,6 +66,7 @@ export default function BlogTag() {
         title={`#${tag.name} - Blog`}
         description={`Posts tagged with ${tag.name}`}
         canonicalUrl={`${window.location.origin}/blog/tag/${tag.slug}`}
+        includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
