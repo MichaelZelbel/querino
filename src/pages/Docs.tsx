@@ -317,8 +317,8 @@ export default function Docs() {
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Creating Collections</h3>
               <ol className="space-y-3 text-muted-foreground">
-                <li>Navigate to <Link to="/collections" className="text-primary hover:underline">Collections</Link> in your library</li>
-                <li>Click "New Collection" and add a title and description</li>
+                <li>Navigate to <Link to="/collections" className="text-primary hover:underline">Collections</Link></li>
+                <li>Click "Create Collection" and add a title and description</li>
                 <li>Add items from your library or from public artifacts</li>
                 <li>Optionally make the collection public to share</li>
               </ol>
