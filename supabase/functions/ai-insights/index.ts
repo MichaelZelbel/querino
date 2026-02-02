@@ -31,11 +31,12 @@ serve(async (req) => {
     }
 
     // Use specific webhooks for each item type
-    const webhookUrl = item_type === "prompt"
-      ? "https://agentpool.app.n8n.cloud/webhook/prompt-insights"
-      : item_type === "skill"
-      ? "https://agentpool.app.n8n.cloud/webhook/skill-insights"
-      : "https://agentpool.app.n8n.cloud/webhook/ai-insights";
+    const webhookUrls: Record<string, string> = {
+      prompt: "https://agentpool.app.n8n.cloud/webhook/prompt-insights",
+      skill: "https://agentpool.app.n8n.cloud/webhook/skill-insights",
+      workflow: "https://agentpool.app.n8n.cloud/webhook/workflow-insights",
+    };
+    const webhookUrl = webhookUrls[item_type];
 
     console.log("[AI-INSIGHTS] Calling webhook", {
       item_type,
