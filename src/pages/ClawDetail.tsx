@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown } from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
 import { DownloadMarkdownButton } from "@/components/markdown";
+import { AIInsightsPanel } from "@/components/insights";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
 import { format } from "date-fns";
@@ -113,82 +114,91 @@ export default function ClawDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 py-12">
-        <div className="container mx-auto max-w-4xl px-4">
-          <Link to="/discover" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />Back to Discover
-          </Link>
+      <div className="flex flex-1">
+        <main className="flex-1 py-12">
+          <div className="container mx-auto max-w-4xl px-4">
+            <Link to="/discover" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />Back to Discover
+            </Link>
 
-          <div className="mb-8">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Badge variant="secondary" className="text-sm gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                <Grab className="h-3 w-3" />Claw
-              </Badge>
-              {claw.tags?.slice(0, 5).map((tag) => (
-                <Badge key={tag} variant="outline" className="text-sm gap-1"><Tag className="h-3 w-3" />{tag}</Badge>
-              ))}
+            <div className="mb-8">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <Badge variant="secondary" className="text-sm gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                  <Grab className="h-3 w-3" />Claw
+                </Badge>
+                {claw.tags?.slice(0, 5).map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-sm gap-1"><Tag className="h-3 w-3" />{tag}</Badge>
+                ))}
+              </div>
+              <h1 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">{claw.title}</h1>
+              {claw.description && <p className="text-lg text-muted-foreground">{claw.description}</p>}
+              <div className="mt-6 flex flex-wrap items-center gap-6">
+                {claw.author && (
+                  <Link to={`/u/${encodeURIComponent(claw.author.display_name || "")}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={claw.author.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">{getAuthorInitials()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{claw.author.display_name || "Anonymous"}</p>
+                      <p className="text-xs text-muted-foreground">Author</p>
+                    </div>
+                  </Link>
+                )}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" /><span>Created {format(new Date(claw.created_at), "MMM d, yyyy")}</span>
+                </div>
+              </div>
             </div>
-            <h1 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">{claw.title}</h1>
-            {claw.description && <p className="text-lg text-muted-foreground">{claw.description}</p>}
-            <div className="mt-6 flex flex-wrap items-center gap-6">
-              {claw.author && (
-                <Link to={`/u/${encodeURIComponent(claw.author.display_name || "")}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={claw.author.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">{getAuthorInitials()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{claw.author.display_name || "Anonymous"}</p>
-                    <p className="text-xs text-muted-foreground">Author</p>
-                  </div>
-                </Link>
+
+            <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen} className="mb-8">
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between mb-4">
+                  <span className="text-lg font-semibold">Claw Definition</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isContentOpen ? "rotate-180" : ""}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">{claw.content}</pre>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <div className="mb-8 flex flex-wrap gap-3">
+              <Button size="lg" variant={copied ? "success" : "default"} onClick={handleCopy} className="gap-2 bg-amber-500 hover:bg-amber-600">
+                {copied ? <><Check className="h-4 w-4" />Copied!</> : <><Copy className="h-4 w-4" />Copy Content</>}
+              </Button>
+              {isAuthor && (
+                <Link to={`/claws/${claw.slug}/edit`}><Button size="lg" variant="outline" className="gap-2"><Pencil className="h-4 w-4" />Edit Claw</Button></Link>
               )}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" /><span>Created {format(new Date(claw.created_at), "MMM d, yyyy")}</span>
-              </div>
+              {user && !isAuthor && (
+                <Button size="lg" variant="outline" onClick={() => cloneClaw(claw, user.id)} disabled={cloning} className="gap-2">
+                  <Files className="h-4 w-4" />{cloning ? "Cloning..." : "Clone Claw"}
+                </Button>
+              )}
+              <DownloadMarkdownButton
+                title={claw.title}
+                type="claw"
+                description={claw.description}
+                tags={claw.tags}
+                content={claw.content || ""}
+                size="lg"
+                variant="outline"
+              />
             </div>
+
+            <ClawReviewSection clawId={claw.id} authorId={claw.author_id || undefined} />
           </div>
+        </main>
 
-          <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen} className="mb-8">
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between mb-4">
-                <span className="text-lg font-semibold">Claw Definition</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${isContentOpen ? "rotate-180" : ""}`} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
-                <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">{claw.content}</pre>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          <div className="mb-8 flex flex-wrap gap-3">
-            <Button size="lg" variant={copied ? "success" : "default"} onClick={handleCopy} className="gap-2 bg-amber-500 hover:bg-amber-600">
-              {copied ? <><Check className="h-4 w-4" />Copied!</> : <><Copy className="h-4 w-4" />Copy Content</>}
-            </Button>
-            {isAuthor && (
-              <Link to={`/claws/${claw.slug}/edit`}><Button size="lg" variant="outline" className="gap-2"><Pencil className="h-4 w-4" />Edit Claw</Button></Link>
-            )}
-            {user && !isAuthor && (
-              <Button size="lg" variant="outline" onClick={() => cloneClaw(claw, user.id)} disabled={cloning} className="gap-2">
-                <Files className="h-4 w-4" />{cloning ? "Cloning..." : "Clone Claw"}
-              </Button>
-            )}
-            <DownloadMarkdownButton
-              title={claw.title}
-              type="claw"
-              description={claw.description}
-              tags={claw.tags}
-              content={claw.content || ""}
-              size="lg"
-              variant="outline"
-            />
-          </div>
-
-          <ClawReviewSection clawId={claw.id} authorId={claw.author_id || undefined} />
-        </div>
-      </main>
+        {/* AI Insights Panel */}
+        <AIInsightsPanel 
+          itemType="claw" 
+          itemId={claw.id} 
+          teamId={(claw as any).team_id} 
+        />
+      </div>
       <Footer />
     </div>
   );
