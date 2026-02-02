@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command, Shield, Wand2, Upload } from "lucide-react";
+import { Sparkles, Menu, X, Library, Settings, LogOut, Plus, FileText, Workflow, User, Activity, Command, Shield, Wand2, Upload, Grab } from "lucide-react";
 import logoImage from "@/assets/logo.png";
 import { useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -198,6 +198,12 @@ export function Header() {
                     <Link to="/workflows/new" className="flex items-center gap-2 cursor-pointer">
                       <Workflow className="h-4 w-4" />
                       New Workflow
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/claws/new" className="flex items-center gap-2 cursor-pointer">
+                      <Grab className="h-4 w-4 text-amber-500" />
+                      New Claw
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -389,6 +395,12 @@ export function Header() {
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <Workflow className="h-4 w-4" />
                     New Workflow
+                  </Button>
+                </Link>
+                <Link to="/claws/new" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Grab className="h-4 w-4 text-amber-500" />
+                    New Claw
                   </Button>
                 </Link>
               </div>

@@ -34,6 +34,9 @@ import SkillEdit from "./pages/SkillEdit";
 import WorkflowNew from "./pages/WorkflowNew";
 import WorkflowDetail from "./pages/WorkflowDetail";
 import WorkflowEdit from "./pages/WorkflowEdit";
+import ClawNew from "./pages/ClawNew";
+import ClawDetail from "./pages/ClawDetail";
+import ClawEdit from "./pages/ClawEdit";
 import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
 import Collections from "./pages/Collections";
@@ -88,6 +91,9 @@ const App = () => (
             <Route path="/workflows/new" element={<WorkflowNew />} />
             <Route path="/workflows/:slug" element={<WorkflowDetail />} />
             <Route path="/workflows/:slug/edit" element={<WorkflowEdit />} />
+            <Route path="/claws/new" element={<ClawNew />} />
+            <Route path="/claws/:slug" element={<ClawDetail />} />
+            <Route path="/claws/:slug/edit" element={<ClawEdit />} />
             <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/collections" element={<Collections />} />
