@@ -363,10 +363,25 @@ export default function Docs() {
               </div>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Team Roles</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><strong>Owner:</strong> Full control, can delete team and manage all settings</li>
-                <li><strong>Admin:</strong> Can manage members and team settings</li>
-                <li><strong>Member:</strong> Can create, edit, and view team artifacts</li>
+              <ul className="space-y-3 text-muted-foreground">
+                <li>
+                  <strong>Owner:</strong> Full control, can delete team and manage all settings.
+                  <span className="block text-sm mt-1 text-muted-foreground/80">
+                    → Automatically assigned to the user who creates the team.
+                  </span>
+                </li>
+                <li>
+                  <strong>Admin:</strong> Can manage members (change roles, remove members) and team settings.
+                  <span className="block text-sm mt-1 text-muted-foreground/80">
+                    → Promoted by the team owner via Team Settings.
+                  </span>
+                </li>
+                <li>
+                  <strong>Member:</strong> Can create, edit, and view team artifacts.
+                  <span className="block text-sm mt-1 text-muted-foreground/80">
+                    → Default role when joining a team via Team ID.
+                  </span>
+                </li>
               </ul>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Switching Workspaces</h3>
