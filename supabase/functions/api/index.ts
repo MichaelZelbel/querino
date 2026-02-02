@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 });
 
 async function handleGetRSS(supabase: any) {
-  const siteUrl = "https://querino.lovable.app";
+  const siteUrl = "https://querino.ai";
   const siteName = "Querino Blog";
   const siteDescription = "Articles about AI, prompts, and productivity";
 
@@ -118,7 +118,7 @@ async function handleGetRSS(supabase: any) {
 }
 
 async function handleGetSitemap(supabase: any) {
-  const siteUrl = "https://querino.lovable.app";
+  const siteUrl = "https://querino.ai";
   
   // Static pages with their priorities
   const staticPages = [
