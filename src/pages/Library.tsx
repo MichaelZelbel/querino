@@ -8,14 +8,16 @@ import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
+import { ClawCard } from "@/components/claws/ClawCard";
 import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Grab } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
+import { useClaws } from "@/hooks/useClaws";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { toast } from "sonner";
@@ -60,6 +62,10 @@ export default function Library() {
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
   const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({ 
+    authorId: isTeamWorkspace ? undefined : user?.id,
+    teamId: isTeamWorkspace ? currentWorkspace : undefined,
+  });
+  const { data: myClaws, isLoading: clawsLoading } = useClaws({ 
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
@@ -139,6 +145,18 @@ export default function Library() {
         (workflow.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
   }, [myWorkflows, debouncedSearch]);
+
+  const filteredMyClaws = useMemo(() => {
+    if (!debouncedSearch.trim() || !myClaws) return myClaws || [];
+    const search = debouncedSearch.toLowerCase();
+    return myClaws.filter(
+      (claw) =>
+        claw.title.toLowerCase().includes(search) ||
+        (claw.description?.toLowerCase().includes(search) ?? false) ||
+        (claw.content?.toLowerCase().includes(search) ?? false) ||
+        (claw.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [myClaws, debouncedSearch]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -226,7 +244,7 @@ export default function Library() {
     githubSettings?.github_sync_enabled && 
     githubSettings?.github_repo;
 
-  const hasContent = myPrompts.length > 0 || (mySkills?.length || 0) > 0 || (myWorkflows?.length || 0) > 0;
+  const hasContent = myPrompts.length > 0 || (mySkills?.length || 0) > 0 || (myWorkflows?.length || 0) > 0 || (myClaws?.length || 0) > 0;
 
   // Fetch prompts - filtered by workspace
   useEffect(() => {
@@ -328,7 +346,7 @@ export default function Library() {
     return null; // Will redirect
   }
 
-  const isLoading = loading || skillsLoading || workflowsLoading || pinnedLoading || collectionsLoading;
+  const isLoading = loading || skillsLoading || workflowsLoading || clawsLoading || pinnedLoading || collectionsLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -495,6 +513,29 @@ export default function Library() {
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyWorkflows.map((workflow) => (
                         <WorkflowCard key={workflow.id} workflow={workflow} showEditButton />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* My Claws Section */}
+              {(myClaws?.length || 0) > 0 && (
+                <section>
+                  <div className="mb-4 flex items-center gap-2">
+                    <Grab className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {isTeamWorkspace ? "Team Claws" : "My Claws"} ({filteredMyClaws.length}{debouncedSearch ? ` of ${myClaws?.length}` : ""})
+                    </h2>
+                  </div>
+                  {filteredMyClaws.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No claws match your search.
+                    </p>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredMyClaws.map((claw) => (
+                        <ClawCard key={claw.id} claw={claw} showEditButton />
                       ))}
                     </div>
                   )}
