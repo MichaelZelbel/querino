@@ -35,7 +35,7 @@ serve(async (req) => {
       prompt: "https://agentpool.app.n8n.cloud/webhook/prompt-insights",
       skill: "https://agentpool.app.n8n.cloud/webhook/skill-insights",
       workflow: "https://agentpool.app.n8n.cloud/webhook/workflow-insights",
-      claw: "https://agentpool.app.n8n.cloud/webhook-test/claw-insights",
+      claw: "https://agentpool.app.n8n.cloud/webhook/claw-insights",
     };
     const webhookUrl = webhookUrls[item_type];
 
