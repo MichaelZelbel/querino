@@ -27,6 +27,7 @@ export default function BlogList() {
         title="Blog"
         description="Explore articles about AI prompts, workflows, and productivity tips."
         canonicalUrl={`${window.location.origin}/blog`}
+        includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
