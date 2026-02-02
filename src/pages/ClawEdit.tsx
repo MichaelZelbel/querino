@@ -12,23 +12,30 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, X, ArrowLeft, Trash2, Save, Grab } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Loader2, X, ArrowLeft, Trash2, Save, Grab, Sparkles, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import type { Claw } from "@/types/claw";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { ParsedMarkdown } from "@/lib/markdown";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 export default function ClawEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { isPremium } = usePremiumCheck();
+  const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [claw, setClaw] = useState<Claw | null>(null);
   const [formData, setFormData] = useState({ title: "", description: "", content: "", category: "", tags: [] as string[], isPublic: false });
   const [tagInput, setTagInput] = useState("");
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate(`/auth?redirect=/claws/${slug}/edit`, { replace: true });
@@ -58,6 +65,39 @@ export default function ClawEdit() {
     }
   };
   const handleRemoveTag = (tagToRemove: string) => setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
+
+  const handleSuggestMetadata = async () => {
+    if (!checkCredits()) return;
+    if (!formData.content.trim()) {
+      setMetadataError("Please add some claw content first.");
+      return;
+    }
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("suggest-claw-metadata", {
+        body: { claw_content: formData.content.trim(), user_id: user?.id },
+      });
+      if (error) throw new Error("Failed to generate suggestions");
+      const data = result.output || result;
+      if (data.title) setFormData(prev => ({ ...prev, title: data.title }));
+      if (data.description) setFormData(prev => ({ ...prev, description: data.description }));
+      if (data.category) {
+        const matchedCategory = categoryOptions.find(cat => cat.id.toLowerCase() === data.category.toLowerCase());
+        if (matchedCategory) setFormData(prev => ({ ...prev, category: matchedCategory.id }));
+      }
+      if (data.tags && Array.isArray(data.tags)) {
+        const normalizedTags = data.tags.map((tag: string) => normalizeTag(tag)).filter((tag: string) => tag).slice(0, 10);
+        setFormData(prev => ({ ...prev, tags: normalizedTags }));
+      }
+      toast.success("Metadata suggestions applied!");
+    } catch (error) {
+      console.error("Error suggesting metadata:", error);
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
+    }
+  };
 
   const handleSaveChanges = async () => {
     if (!user || !claw?.id) return;
@@ -132,7 +172,24 @@ export default function ClawEdit() {
           </div>
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
             <div className="flex items-center gap-2 mb-4"><Grab className="h-5 w-5 text-amber-500" /><h1 className="text-xl font-semibold">Edit Claw</h1></div>
-            <div className="space-y-2"><Label htmlFor="content">Claw Definition *</Label><Textarea id="content" value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={14} className="font-mono text-sm" /></div>
+            <div className="space-y-2">
+              <Label htmlFor="content">Claw Definition *</Label>
+              <Textarea id="content" value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={14} className="font-mono text-sm" />
+              <div className="pt-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" onClick={handleSuggestMetadata} disabled={isGeneratingMetadata || !isPremium} className="gap-2">
+                        {isGeneratingMetadata ? <Loader2 className="h-4 w-4 animate-spin" /> : isPremium ? <Sparkles className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                        {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                      </Button>
+                    </TooltipTrigger>
+                    {!isPremium && <TooltipContent><p>Premium feature – upgrade to use AI suggestions</p></TooltipContent>}
+                  </Tooltip>
+                </TooltipProvider>
+                {metadataError && <p className="text-sm text-destructive mt-2">{metadataError}</p>}
+              </div>
+            </div>
             <div className="space-y-2"><Label htmlFor="title">Title *</Label><Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} /></div>
             <div className="space-y-2"><Label htmlFor="description">Description</Label><Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} /></div>
             <div className="space-y-2"><Label>Category</Label><Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger><SelectContent>{categoryOptions.map((cat) => <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>)}</SelectContent></Select></div>
