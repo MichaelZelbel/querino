@@ -16,9 +16,9 @@ This guide builds a full-featured blog CMS with:
 
 ---
 
-## Prompt 1 — Project Setup & Intent
+## Prompt 1 — Project Setup & Data Model
 
-Start with this prompt to establish the architecture:
+Start with this prompt to establish the architecture and create the database schema:
 
 ```
 You are building a production-ready blog system for this SaaS product.
@@ -33,16 +33,7 @@ This is NOT a static blog.
 This is a CMS-style system with admin pages, public pages, and APIs.
 
 Assume Supabase is already connected.
-Confirm once the overall architecture is clear, then proceed step by step.
-```
 
----
-
-## Prompt 2 — Supabase Data Model
-
-Create the database schema:
-
-```
 Design the Supabase database schema for a blog CMS.
 
 Create tables:
@@ -84,7 +75,7 @@ Return SQL-ready migration definitions.
 
 ---
 
-## Prompt 3 — Row Level Security (RLS)
+## Prompt 2 — Row Level Security (RLS)
 
 Secure the database:
 
@@ -122,7 +113,7 @@ USING (auth.uid() = author_id AND status = 'draft');
 
 ---
 
-## Prompt 4 — Admin Dashboard Layout
+## Prompt 3 — Admin Dashboard Layout
 
 Build the admin shell:
 
@@ -153,7 +144,7 @@ Create a reusable BlogAdminLayout component that wraps all admin pages.
 
 ---
 
-## Prompt 5 — Post Editor
+## Prompt 4 — Post Editor
 
 Implement the content editor:
 
@@ -183,7 +174,7 @@ The editor should feel fast and minimal, similar to WordPress or Ghost.
 
 ---
 
-## Prompt 6 — Media Library
+## Prompt 5 — Media Library
 
 Create media management:
 
@@ -227,7 +218,7 @@ USING (bucket_id = 'blog-media' AND is_admin(auth.uid()));
 
 ---
 
-## Prompt 7 — Public Blog Pages
+## Prompt 6 — Public Blog Pages
 
 Build the reader-facing pages:
 
@@ -260,7 +251,7 @@ Include a sidebar or section showing:
 
 ---
 
-## Prompt 8 — REST API
+## Prompt 7 — REST API
 
 Expose data for external consumption:
 
@@ -285,11 +276,9 @@ Requirements:
 Configure in supabase/config.toml with verify_jwt = false for public access.
 
 Do NOT attempt WordPress API compatibility - use a clean, simple schema.
-```
 
-### Expected Response Format
+Expected response format:
 
-```json
 {
   "posts": [
     {
@@ -321,7 +310,7 @@ Do NOT attempt WordPress API compatibility - use a clean, simple schema.
 
 ---
 
-## Prompt 9 — SEO & RSS Feed
+## Prompt 8 — SEO & RSS Feed
 
 Add syndication support:
 
@@ -346,11 +335,9 @@ RSS Autodiscovery:
 - Add <link rel="alternate" type="application/rss+xml"> to blog page heads
 
 Configure the RSS function in supabase/config.toml with verify_jwt = false.
-```
 
-### RSS Feed Structure
+Expected RSS feed structure:
 
-```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -373,7 +360,7 @@ Configure the RSS function in supabase/config.toml with verify_jwt = false.
 
 ---
 
-## Prompt 10 — Final Review & Hardening
+## Prompt 9 — Final Review & Hardening
 
 Validate the complete system:
 
