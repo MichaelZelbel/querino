@@ -11,9 +11,9 @@ Copy and paste this into your Lovable chat:
 ```
 Analyze this project and create a comprehensive TEST_CASES.md document for end-to-end browser-based testing.
 
-## Your Task
+Your Task:
 
-1. **Analyze the codebase** to identify:
+1. Analyze the codebase to identify:
    - All entity/artifact types (from database schema, types files, and pages)
    - Authentication mechanism and user roles
    - CRUD operations for each entity
@@ -23,7 +23,7 @@ Analyze this project and create a comprehensive TEST_CASES.md document for end-t
    - AI/LLM features (if any)
    - Third-party integrations (Stripe, etc.)
 
-2. **Generate test cases** covering:
+2. Generate test cases covering:
    - Authentication & onboarding flows
    - Full CRUD lifecycle for each entity type
    - Library/discovery with search, filters, and sorting
@@ -35,35 +35,20 @@ Analyze this project and create a comprehensive TEST_CASES.md document for end-t
    - AI feature usage and credit tracking (if applicable)
    - Cleanup steps to delete all test data
 
-3. **Use this test case format**:
-   ```
+3. Use this test case format:
    ### TC-[SECTION]-00X: [Action Description]
    1. Navigate to [URL]
    2. [Step-by-step browser instructions]
    3. Validate that [expected outcome]
-   ```
 
-4. **Define three test personas** based on the roles in this project (typically Free, Premium, Admin users with test email addresses)
+4. Define three test personas based on the roles in this project (typically Free, Premium, Admin users with test email addresses)
 
-5. **Include an "Expected Test Data" table** summarizing all artifacts created during testing
+5. Include an "Expected Test Data" table summarizing all artifacts created during testing
 
-6. **Save the document** to `docs/TEST_CASES.md`
+6. Save the document to docs/TEST_CASES.md
 
 Make the test cases specific to this project's actual features, URLs, field names, and UI elements. Do not use generic placeholders.
 ```
-
----
-
-## What Lovable AI Will Do
-
-When you give this prompt, Lovable will:
-
-1. Read the database schema (`types.ts`) to identify all entities
-2. Scan the pages directory to understand available routes
-3. Analyze hooks and components to understand feature behavior
-4. Check for authentication, premium gating, and admin features
-5. Generate specific, actionable test cases for every major feature
-6. Save the complete document to `docs/TEST_CASES.md`
 
 ---
 
