@@ -101,11 +101,9 @@ Rules:
 
 Provide SQL policies for each table.
 Assume an is_admin(user_id) helper function already exists in the database.
-```
 
-### Key RLS Patterns
+Key RLS patterns to implement:
 
-```sql
 -- Public read for published content
 CREATE POLICY "Anyone can view published posts"
 ON blog_posts FOR SELECT
@@ -206,11 +204,9 @@ Access control:
 - Public read access for serving images
 
 Show file size in human-readable format (KB, MB).
-```
 
-### Storage Setup
+Storage bucket setup (include in migration):
 
-```sql
 -- Create the storage bucket
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('blog-media', 'blog-media', true);
