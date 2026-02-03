@@ -1,170 +1,75 @@
-# Test Cases Document Generation Prompt
+# Test Cases Generation Prompt for Lovable AI
 
-Use the following prompt template to generate a comprehensive `TEST_CASES.md` document for any SaaS project. Replace all bracketed placeholders with your project-specific values.
+Use this prompt in any Lovable project to automatically generate a comprehensive `TEST_CASES.md` document.
 
 ---
 
-## Prompt Template
+## The Prompt
+
+Copy and paste this into your Lovable chat:
 
 ```
-Create a comprehensive TEST_CASES.md document for end-to-end browser-based testing of [APP_NAME], a [APP_DESCRIPTION].
+Analyze this project and create a comprehensive TEST_CASES.md document for end-to-end browser-based testing.
 
-## Project Context
-- App URL: [APP_URL]
-- Primary entities: [PRIMARY_ENTITY], [SECONDARY_ENTITY], [TERTIARY_ENTITY] (if applicable)
-- User roles: Free, Premium, Admin
-- Key features: [LIST_KEY_FEATURES]
+## Your Task
 
-## Test Users
-Define three test personas:
-1. **Free User**: [FREE_USER_EMAIL] - Tests free tier limitations
-2. **Premium User**: [PREMIUM_USER_EMAIL] - Tests premium features
-3. **Admin User**: [ADMIN_USER_EMAIL] - Tests admin functionality
+1. **Analyze the codebase** to identify:
+   - All entity/artifact types (from database schema, types files, and pages)
+   - Authentication mechanism and user roles
+   - CRUD operations for each entity
+   - Premium/gated features
+   - Admin functionality
+   - Team/workspace features (if any)
+   - AI/LLM features (if any)
+   - Third-party integrations (Stripe, etc.)
 
-## Required Test Sections
+2. **Generate test cases** covering:
+   - Authentication & onboarding flows
+   - Full CRUD lifecycle for each entity type
+   - Library/discovery with search, filters, and sorting
+   - Reviews/ratings/comments (if applicable)
+   - Premium feature gating and upgrade flows
+   - Admin dashboard and user management
+   - Profile and settings management
+   - Team collaboration (if applicable)
+   - AI feature usage and credit tracking (if applicable)
+   - Cleanup steps to delete all test data
 
-### Section 1: Authentication & Onboarding
-- TC-AUTH-001: Email/password signup with email verification
-- TC-AUTH-002: Login with valid credentials
-- TC-AUTH-003: Password reset flow
-- TC-AUTH-004: Logout functionality
-- TC-AUTH-005: OAuth login (if applicable: Google, GitHub, etc.)
+3. **Use this test case format**:
+   ```
+   ### TC-[SECTION]-00X: [Action Description]
+   1. Navigate to [URL]
+   2. [Step-by-step browser instructions]
+   3. Validate that [expected outcome]
+   ```
 
-### Section 2: [PRIMARY_ENTITY] Management
-- TC-[PREFIX]-001: Create new [PRIMARY_ENTITY] (private/draft)
-- TC-[PREFIX]-002: Edit [PRIMARY_ENTITY] with all fields
-- TC-[PREFIX]-003: Publish/make public
-- TC-[PREFIX]-004: Verify public visibility (logged out)
-- TC-[PREFIX]-005: Clone/fork [PRIMARY_ENTITY]
-- TC-[PREFIX]-006: Delete [PRIMARY_ENTITY]
+4. **Define three test personas** based on the roles in this project (typically Free, Premium, Admin users with test email addresses)
 
-### Section 3: [SECONDARY_ENTITY] Management
-(Same pattern as Section 2)
+5. **Include an "Expected Test Data" table** summarizing all artifacts created during testing
 
-### Section 4: [TERTIARY_ENTITY] Management
-(Same pattern as Section 2, if applicable)
+6. **Save the document** to `docs/TEST_CASES.md`
 
-### Section 5: Library & Discovery
-- TC-LIB-001: View personal library with filters
-- TC-LIB-002: Search functionality with keywords
-- TC-LIB-003: Category/tag filtering
-- TC-LIB-004: Sort by date, rating, popularity
-- TC-LIB-005: Pagination behavior
-
-### Section 6: Reviews & Ratings
-- TC-REV-001: Submit review with star rating and comment
-- TC-REV-002: Edit own review
-- TC-REV-003: Delete own review
-- TC-REV-004: Verify rating aggregation updates
-- TC-REV-005: Prevent duplicate reviews from same user
-
-### Section 7: Comments/Discussion (if applicable)
-- TC-COM-001: Add comment to [ENTITY]
-- TC-COM-002: Reply to existing comment (threaded)
-- TC-COM-003: Edit own comment
-- TC-COM-004: Delete own comment
-
-### Section 8: Premium Feature Gating
-- TC-PREM-001: Free user sees upgrade prompts for premium features
-- TC-PREM-002: Premium user accesses gated features
-- TC-PREM-003: Premium badge displays correctly
-- TC-PREM-004: Upsell modal appears at appropriate triggers
-
-### Section 9: Subscription & Billing (if applicable)
-- TC-SUB-001: View current plan details
-- TC-SUB-002: Initiate upgrade flow
-- TC-SUB-003: Access billing portal
-- TC-SUB-004: Verify plan change reflects in UI
-
-### Section 10: Admin Features
-- TC-ADMIN-001: Access admin dashboard
-- TC-ADMIN-002: View all users list
-- TC-ADMIN-003: Modify user roles/permissions
-- TC-ADMIN-004: View platform analytics
-- TC-ADMIN-005: Manage global settings
-
-### Section 11: Profile & Settings
-- TC-PROF-001: View own profile
-- TC-PROF-002: Edit display name and bio
-- TC-PROF-003: Upload/change avatar
-- TC-PROF-004: Update notification preferences
-- TC-PROF-005: View public profile as other user
-
-### Section 12: Teams/Workspaces (if applicable)
-- TC-TEAM-001: Create new team
-- TC-TEAM-002: Invite member to team
-- TC-TEAM-003: Accept team invitation
-- TC-TEAM-004: Change member role
-- TC-TEAM-005: Remove member from team
-- TC-TEAM-006: Transfer [ENTITY] to team
-
-### Section 13: AI Features (if applicable)
-- TC-AI-001: Trigger AI generation feature
-- TC-AI-002: Verify credit/token deduction
-- TC-AI-003: View remaining credits
-- TC-AI-004: Handle insufficient credits gracefully
-
-### Section 14: Cleanup & Validation
-- TC-CLEANUP-001 through TC-CLEANUP-00X: Delete all test entities created
-- TC-CLEANUP-FINAL: Verify global search returns no test data
-
-## Test Case Format
-
-Each test case must follow this structure:
-
-### TC-[SECTION]-00X: [Action Description]
-**Preconditions:** [Required state before test]
-**User:** [Which test user persona]
-
-1. Navigate to [specific URL or UI element]
-2. [Step-by-step browser instructions]
-3. [Include specific form values, button labels]
-4. Validate that [expected outcome with specific assertions]
-
-**Expected Result:** [Clear success criteria]
-
-## Expected Test Data Table
-
-Include a summary table of all test artifacts created:
-
-| Entity Type | Name | Owner | Visibility | Created In |
-|-------------|------|-------|------------|------------|
-| [TYPE] | [NAME] | [USER] | [PUBLIC/PRIVATE] | [TC-XXX-00X] |
-
-## Additional Requirements
-
-1. All test cases must be executable via browser automation
-2. Include explicit wait/validation steps between actions
-3. Test both happy path and key error states
-4. Verify responsive behavior for critical flows
-5. Include accessibility checks where relevant
-6. Document any test data dependencies between sections
+Make the test cases specific to this project's actual features, URLs, field names, and UI elements. Do not use generic placeholders.
 ```
 
 ---
 
-## Placeholder Reference
+## What Lovable AI Will Do
 
-| Placeholder | Description | Example |
-|-------------|-------------|---------|
-| `[APP_NAME]` | Your application name | "PromptHub" |
-| `[APP_DESCRIPTION]` | Brief app description | "prompt management and sharing platform" |
-| `[APP_URL]` | Production or staging URL | "https://app.example.com" |
-| `[PRIMARY_ENTITY]` | Main content type | "Prompt", "Document", "Project" |
-| `[SECONDARY_ENTITY]` | Secondary content type | "Skill", "Template", "Workflow" |
-| `[TERTIARY_ENTITY]` | Third content type (if any) | "Claw", "Collection" |
-| `[PREFIX]` | Short prefix for test IDs | "PROMPT", "DOC", "PROJ" |
-| `[FREE_USER_EMAIL]` | Test email for free user | "test-free@example.com" |
-| `[PREMIUM_USER_EMAIL]` | Test email for premium user | "test-premium@example.com" |
-| `[ADMIN_USER_EMAIL]` | Test email for admin user | "test-admin@example.com" |
-| `[LIST_KEY_FEATURES]` | Comma-separated features | "AI generation, team collaboration, version history" |
+When you give this prompt, Lovable will:
+
+1. Read the database schema (`types.ts`) to identify all entities
+2. Scan the pages directory to understand available routes
+3. Analyze hooks and components to understand feature behavior
+4. Check for authentication, premium gating, and admin features
+5. Generate specific, actionable test cases for every major feature
+6. Save the complete document to `docs/TEST_CASES.md`
 
 ---
 
-## Usage Tips
+## Tips
 
-1. **Customize sections**: Remove sections that don't apply (e.g., Teams if single-user app)
-2. **Add domain-specific tests**: Include tests unique to your business logic
-3. **Maintain order**: Tests should run sequentially with cleanup at the end
-4. **Update regularly**: Keep test cases in sync with feature changes
-5. **Cross-reference**: Link test cases to requirements or user stories if available
+- Run this prompt after your core features are built
+- Review the generated test cases and ask for additions if needed
+- Re-run periodically as you add new features
+- Use "Update docs/TEST_CASES.md with test cases for [new feature]" for incremental updates
