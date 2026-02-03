@@ -19,13 +19,14 @@ This document contains end-to-end test cases for Querino's core functionalities.
 3. [Prompt Management - Premium User](#3-prompt-management---premium-user)
 4. [Skill Management](#4-skill-management)
 5. [Workflow Management](#5-workflow-management)
-6. [Library & Discovery](#6-library--discovery)
-7. [Reviews & Comments](#7-reviews--comments)
-8. [Collections](#8-collections)
-9. [Premium Feature Gating](#9-premium-feature-gating)
-10. [Admin Features](#10-admin-features)
-11. [Profile Management](#11-profile-management)
-12. [Cleanup](#12-cleanup)
+6. [Claw Management](#6-claw-management)
+7. [Library & Discovery](#7-library--discovery)
+8. [Reviews & Comments](#8-reviews--comments)
+9. [Collections](#9-collections)
+10. [Premium Feature Gating](#10-premium-feature-gating)
+11. [Admin Features](#11-admin-features)
+12. [Profile Management](#12-profile-management)
+13. [Cleanup](#13-cleanup)
 
 ---
 
@@ -320,7 +321,154 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 6. Library & Discovery
+## 6. Claw Management
+
+### TC-CLAW-001: Create Private Claw
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Peter
+Navigate to Create New Claw (via header menu or /claws/new)
+Enter the title: "Test Claw - Web Scraper"
+Enter the description: "A test claw for web scraping capabilities"
+Insert the following into "Claw Content":
+  "# Web Scraper Claw
+   
+   ## Purpose
+   Extract structured data from web pages.
+   
+   ## Capabilities
+   - Parse HTML content
+   - Extract text and links
+   - Handle pagination
+   - Rate limiting support"
+Choose a category if available
+Add tags: "scraping", "automation"
+Leave "Make this claw public" turned OFF
+Click "Create Claw"
+Validate that the claw is created successfully
+Validate that it appears in My Library under Claws
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-002: Edit and Publish Claw
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Peter
+Navigate to My Library
+Click on the "Claws" tab
+Find and click on "Test Claw - Web Scraper"
+Click "Edit"
+Add to the description: " - Updated for testing"
+Turn ON "Make this claw public"
+Click "Save Changes"
+Validate that the claw is now public
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-003: Verify Public Claw Visibility
+
+```
+Execute this testcase:
+
+Use your browser to log out
+Navigate to https://querino.ai/discover
+Filter or search for Claws
+Search for "Test Claw - Web Scraper"
+Validate that the claw appears in results
+Validate that it shows Peter as the author
+Validate that the amber/gold Claw badge is displayed
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-004: Clone Public Claw
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Fred
+Navigate to /discover
+Find and click on "Test Claw - Web Scraper" (created by Peter)
+Click the "Clone" button
+Validate that a copy of the claw is created
+Navigate to My Library
+Click on "Claws" tab
+Validate that the cloned claw appears in the list
+Validate that the cloned claw has Fred as the author
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-005: Add Review to Claw
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Fred
+Navigate to /discover
+Find "Test Claw - Web Scraper" (created by Peter)
+Click to open the claw details
+Scroll to the Reviews section
+Click to add a review
+Select a 4-star rating
+Enter comment: "Test review - useful claw for scraping"
+Submit the review
+Validate that the review appears in the reviews section
+Validate that the average rating is updated
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-006: AI Insights for Claw
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Peter
+Navigate to My Library
+Click on "Claws" tab
+Click on "Test Claw - Web Scraper"
+Look for the AI Insights panel (sidebar)
+If no insights exist, click "Generate Insights"
+Validate that AI-generated insights appear (summary, tags, recommendations)
+Validate that the quality assessment is displayed
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-007: Delete Cloned Claw (Fred)
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Fred
+Navigate to My Library
+Click on "Claws" tab
+Find the cloned "Test Claw - Web Scraper"
+Click on it to open details
+Click "Delete"
+Confirm deletion
+Validate that the claw is removed from the library
+Log the results of the validation in your test run document.
+```
+
+### TC-CLAW-008: Delete Review on Claw (Fred)
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Fred
+Navigate to "Test Claw - Web Scraper" (Peter's original)
+Find your previously submitted review
+Click "Delete"
+Confirm the deletion
+Validate that the review is removed
+Log the results of the validation in your test run document.
+```
+
+---
+
+## 7. Library & Discovery
 
 ### TC-LIBRARY-001: Save Public Prompt to Library
 
@@ -379,7 +527,7 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 7. Reviews & Comments
+## 8. Reviews & Comments
 
 ### TC-REVIEW-001: Add Review to Prompt
 
@@ -460,7 +608,7 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 8. Collections
+## 9. Collections
 
 ### TC-COLLECTION-001: Create Collection
 
@@ -527,7 +675,7 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 9. Premium Feature Gating
+## 10. Premium Feature Gating
 
 ### TC-GATE-001: AI Suggestions Blocked for Free User
 
@@ -573,7 +721,7 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 10. Admin Features
+## 11. Admin Features
 
 ### TC-ADMIN-001: Access Admin Dashboard
 
@@ -617,7 +765,7 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 11. Profile Management
+## 12. Profile Management
 
 ### TC-PROFILE-001: Edit Profile
 
@@ -664,7 +812,7 @@ Log the results of the validation in your test run document.
 
 ---
 
-## 12. Cleanup
+## 13. Cleanup
 
 These test cases clean up all test data created during the test run.
 
@@ -721,14 +869,27 @@ Validate that the workflow is removed
 Log the results of the validation in your test run document.
 ```
 
-### TC-CLEANUP-005: Final Validation
+### TC-CLEANUP-005: Delete Test Claw (Peter)
+
+```
+Execute this testcase:
+
+Use your browser to log in at https://querino.ai with the credentials of the test user Peter
+Navigate to My Library
+Click on "Claws" tab
+Find and delete "Test Claw - Web Scraper"
+Validate that the claw is removed
+Log the results of the validation in your test run document.
+```
+
+### TC-CLEANUP-006: Final Validation
 
 ```
 Execute this testcase:
 
 Use your browser to navigate to https://querino.ai/discover
 Search for "Test" 
-Validate that no test prompts, skills, or workflows appear in results
+Validate that no test prompts, skills, workflows, or claws appear in results
 Log the results of the validation in your test run document.
 ```
 
@@ -739,7 +900,7 @@ Log the results of the validation in your test run document.
 ### Running Tests
 
 1. Execute tests in order within each section
-2. The Cleanup section (12) should always be run last
+2. The Cleanup section (13) should always be run last
 3. Log all validation results and any failures
 4. Take screenshots of failures for debugging
 
@@ -752,6 +913,7 @@ Log the results of the validation in your test run document.
 | Test Premium AI Suggestions Prompt | Prompt | Peter | Public | TC-CLEANUP-002 |
 | Test Skill - Code Review Expert | Skill | Peter | Public | TC-CLEANUP-003 |
 | Test Workflow - Content Pipeline | Workflow | Peter | Public | TC-CLEANUP-004 |
+| Test Claw - Web Scraper | Claw | Peter | Public | TC-CLEANUP-005 |
 
 ### Credentials Storage
 
