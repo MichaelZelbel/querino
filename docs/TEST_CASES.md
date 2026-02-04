@@ -4,11 +4,13 @@ This document contains end-to-end test cases for Querino's core functionalities.
 
 ## Test Users
 
-| User  | Email            | Plan         | Role  |
-|-------|------------------|--------------|-------|
-| Fred  | fred@free.com    | Free         | User  |
-| Peter | peter@pro.com    | Premium Gift | User  |
-| Alice | alice@admin.com  | Premium      | Admin |
+Credentials will be provided to the tester before test execution.
+
+| User  | Plan         | Role  |
+|-------|--------------|-------|
+| Fred  | Free         | User  |
+| Peter | Premium Gift | User  |
+| Alice | Premium      | Admin |
 
 ---
 
