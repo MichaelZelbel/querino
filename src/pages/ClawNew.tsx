@@ -24,33 +24,34 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, X, Grab, Sparkles, Lock, FileText, Download, Link, CheckCircle2, ExternalLink, Edit3, Info } from "lucide-react";
+import { Loader2, X, Grab, Sparkles, Lock, FileText, Download, Link, CheckCircle2, ExternalLink, Info } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import type { SkillSourceType } from "@/types/claw";
-import { parseSkillSourceUrl, getSkillSourceDescription } from "@/lib/skillSourceParser";
+import { parseSkillSourceUrl } from "@/lib/skillSourceParser";
 
-const SKILL_MD_TEMPLATE = `# Skill Name
+const SKILL_MD_TEMPLATE = `# Claw Name
 
 ## Description
-This skill defines the interface and behavior for a Clawbot capability.
+This SKILL.md defines the interface and behavior for a Clawbot capability.
 
 ## Parameters
 - \`param1\`: Description of parameter 1
 - \`param2\`: Description of parameter 2
 
 ## Behavior
-Describe what this skill does when invoked...
+Describe what this Claw does when invoked...
 
 ## Example Usage
 \`\`\`
-Example of how Clawbot might call this skill
+Example of how Clawbot might call this Claw
 \`\`\`
 `;
 
-type SkillContentMode = 'inline' | 'remote';
+// Three explicit creation modes
+type ClawCreationMode = 'write' | 'github' | 'external';
 
 export default function ClawNew() {
   const navigate = useNavigate();
@@ -59,20 +60,23 @@ export default function ClawNew() {
   const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Skill content mode
-  const [skillContentMode, setSkillContentMode] = useState<SkillContentMode>('inline');
+  // Creation mode
+  const [creationMode, setCreationMode] = useState<ClawCreationMode>('write');
   
-  // Inline mode state
+  // Write mode state (inline SKILL.md)
   const [skillMdContent, setSkillMdContent] = useState(SKILL_MD_TEMPLATE);
   
-  // Remote mode state - single URL input
-  const [skillSourceUrl, setSkillSourceUrl] = useState("");
+  // GitHub mode state
+  const [githubUrl, setGithubUrl] = useState("");
   const [skillMdCached, setSkillMdCached] = useState<string | null>(null);
   const [isFetchingRemote, setIsFetchingRemote] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   
-  // Parse the skill source URL
-  const parsedSource = useMemo(() => parseSkillSourceUrl(skillSourceUrl), [skillSourceUrl]);
+  // External mode state
+  const [externalUrl, setExternalUrl] = useState("");
+  
+  // Parse the GitHub URL
+  const parsedGithub = useMemo(() => parseSkillSourceUrl(githubUrl), [githubUrl]);
   
   // Metadata
   const [title, setTitle] = useState("");
@@ -123,24 +127,38 @@ export default function ClawNew() {
 
   // Get the active SKILL.md content for validation and AI suggestions
   const getActiveSkillContent = (): string => {
-    if (skillContentMode === 'inline') {
+    if (creationMode === 'write') {
       return skillMdContent;
     }
-    return skillMdCached || "";
+    if (creationMode === 'github') {
+      return skillMdCached || "";
+    }
+    return "";
   };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (skillContentMode === 'inline') {
+    if (creationMode === 'write') {
       if (!skillMdContent.trim()) {
         newErrors.skillMdContent = "SKILL.md content is required";
       }
-    } else {
-      if (!skillSourceUrl.trim()) {
-        newErrors.skillSourceUrl = "Skill Source URL is required";
-      } else if (!parsedSource.isValid) {
-        newErrors.skillSourceUrl = parsedSource.error || "Invalid URL";
+    } else if (creationMode === 'github') {
+      if (!githubUrl.trim()) {
+        newErrors.githubUrl = "GitHub Claw URL is required";
+      } else if (!parsedGithub.isValid || parsedGithub.sourceType !== 'github') {
+        newErrors.githubUrl = "Please enter a valid GitHub URL";
+      }
+    } else if (creationMode === 'external') {
+      if (!externalUrl.trim()) {
+        newErrors.externalUrl = "External Claw URL is required";
+      } else {
+        // Basic URL validation
+        try {
+          new URL(externalUrl.trim());
+        } catch {
+          newErrors.externalUrl = "Please enter a valid URL";
+        }
       }
     }
 
@@ -206,9 +224,9 @@ export default function ClawNew() {
     }
   };
 
-  const handleFetchRemoteSkill = async () => {
-    if (!parsedSource.isValid) {
-      setFetchError(parsedSource.error || "Please enter a valid URL.");
+  const handleFetchGitHubSkill = async () => {
+    if (!parsedGithub.isValid || parsedGithub.sourceType !== 'github') {
+      setFetchError("Please enter a valid GitHub URL.");
       return;
     }
 
@@ -220,11 +238,11 @@ export default function ClawNew() {
       // Use edge function to bypass CORS
       const { data, error } = await supabase.functions.invoke('fetch-skill-md', {
         body: {
-          sourceType: parsedSource.sourceType,
-          sourceRef: parsedSource.sourceRef,
-          sourcePath: parsedSource.sourcePath,
-          sourceVersion: parsedSource.sourceVersion,
-          originalUrl: skillSourceUrl.trim(),
+          sourceType: parsedGithub.sourceType,
+          sourceRef: parsedGithub.sourceRef,
+          sourcePath: parsedGithub.sourcePath,
+          sourceVersion: parsedGithub.sourceVersion,
+          originalUrl: githubUrl.trim(),
         },
       });
 
@@ -244,9 +262,9 @@ export default function ClawNew() {
       setSkillMdCached(data.content);
       toast.success("SKILL.md fetched successfully!");
     } catch (error) {
-      console.error("Error fetching remote skill:", error);
+      console.error("Error fetching SKILL.md:", error);
       setIsFetchingRemote(false);
-      const errorMessage = error instanceof Error ? error.message : "Could not find SKILL.md at this URL.";
+      const errorMessage = error instanceof Error ? error.message : "Could not find SKILL.md at this GitHub URL or folder.";
       setFetchError(errorMessage);
     }
   };
@@ -257,34 +275,14 @@ export default function ClawNew() {
     // Copy cached content to editable content
     setSkillMdContent(skillMdCached);
     
-    // Switch to inline mode
-    setSkillContentMode('inline');
+    // Switch to write mode
+    setCreationMode('write');
     
-    // Clear remote references
-    setSkillSourceUrl("");
+    // Clear GitHub references
+    setGithubUrl("");
     setSkillMdCached(null);
     
     toast.success("Imported as editable copy!");
-  };
-
-  // Switch to manual editor while keeping ClawHub URL as reference
-  const handleSwitchToManualForClawHub = () => {
-    // Store the ClawHub reference in a comment at the top of the template
-    const clawHubRef = skillSourceUrl.trim();
-    const templateWithRef = `<!-- Source: ${clawHubRef} -->\n\n${SKILL_MD_TEMPLATE}`;
-    
-    setSkillMdContent(templateWithRef);
-    setSkillContentMode('inline');
-    
-    toast.success("Switched to manual editor. ClawHub URL saved as reference.");
-  };
-
-  // Open ClawHub URL in new tab
-  const handleOpenClawHub = () => {
-    const url = skillSourceUrl.trim();
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
   };
 
   const handleSubmit = async () => {
@@ -294,43 +292,61 @@ export default function ClawNew() {
     setIsSubmitting(true);
 
     try {
-      // Determine the skill source type for storage from parsed URL
-      const skillSourceType: SkillSourceType = skillContentMode === 'inline' 
-        ? 'inline' 
-        : (parsedSource.sourceType || 'github');
+      // Determine the source type for storage
+      let skillSourceType: SkillSourceType;
+      let skillSourceRef: string | null = null;
+      let skillSourcePath: string | null = null;
+      let skillSourceVersion: string | null = null;
+      let storedSkillMdContent: string | null = null;
+      let storedSkillMdCached: string | null = null;
+
+      if (creationMode === 'write') {
+        skillSourceType = 'inline';
+        storedSkillMdContent = skillMdContent.trim();
+      } else if (creationMode === 'github') {
+        skillSourceType = 'github';
+        skillSourceRef = parsedGithub.sourceRef;
+        skillSourcePath = parsedGithub.sourcePath;
+        skillSourceVersion = parsedGithub.sourceVersion;
+        storedSkillMdCached = skillMdCached;
+      } else {
+        // External reference - store as 'clawhub' type for now (or could be generic 'external')
+        skillSourceType = 'clawhub';
+        skillSourceRef = externalUrl.trim();
+      }
 
       const { data: newClaw, error } = await (supabase
         .from("claws") as any)
         .insert({
           title: title.trim(),
           description: description.trim() || null,
-          content: skillContentMode === 'inline' ? skillMdContent.trim() : null, // Legacy field
+          content: creationMode === 'write' ? skillMdContent.trim() : null, // Legacy field
           category: category,
           tags: tags.length > 0 ? tags : null,
           source: "clawbot",
           author_id: user.id,
           published: isPublic,
-          // New skill source fields
+          // Skill source fields
           skill_source_type: skillSourceType,
-          skill_source_ref: skillContentMode === 'remote' ? parsedSource.sourceRef : null,
-          skill_source_path: skillContentMode === 'remote' ? parsedSource.sourcePath : null,
-          skill_source_version: skillContentMode === 'remote' ? parsedSource.sourceVersion : null,
-          skill_md_content: skillContentMode === 'inline' ? skillMdContent.trim() : null,
-          skill_md_cached: skillContentMode === 'remote' ? skillMdCached : null,
+          skill_source_ref: skillSourceRef,
+          skill_source_path: skillSourcePath,
+          skill_source_version: skillSourceVersion,
+          skill_md_content: storedSkillMdContent,
+          skill_md_cached: storedSkillMdCached,
         })
         .select("slug")
         .single();
 
       if (error) {
-        console.error("Error creating claw:", error);
-        toast.error("Failed to create claw");
+        console.error("Error creating Claw:", error);
+        toast.error("Failed to create Claw");
         return;
       }
 
       toast.success("Claw created!");
       navigate(`/claws/${newClaw.slug}`);
     } catch (err) {
-      console.error("Error creating claw:", err);
+      console.error("Error creating Claw:", err);
       toast.error("Something went wrong");
     } finally {
       setIsSubmitting(false);
@@ -368,41 +384,65 @@ export default function ClawNew() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            {/* Skill Content Mode Selector */}
+            {/* Creation Mode Selector */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-amber-500" />
-                <Label className="text-base font-medium">Skill Content</Label>
-              </div>
+              <Label className="text-base font-medium">
+                How do you want to create this Claw?
+              </Label>
               
               <RadioGroup
-                value={skillContentMode}
-                onValueChange={(value) => setSkillContentMode(value as SkillContentMode)}
+                value={creationMode}
+                onValueChange={(value) => setCreationMode(value as ClawCreationMode)}
                 className="grid gap-3"
               >
-                <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="inline" id="inline" />
-                  <Label htmlFor="inline" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Write SKILL.md manually</div>
-                    <div className="text-sm text-muted-foreground">
-                      Define the skill interface and behavior directly
+                {/* Option 1: Write SKILL.md */}
+                <div className="flex items-start space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="write" id="write" className="mt-1" />
+                  <Label htmlFor="write" className="flex-1 cursor-pointer">
+                    <div className="font-medium flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-amber-500" />
+                      Write SKILL.md
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Define this Claw by writing its SKILL.md file directly in Querino.
                     </div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="remote" id="remote" />
-                  <Label htmlFor="remote" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Link existing skill (GitHub or ClawHub)</div>
-                    <div className="text-sm text-muted-foreground">
-                      Reference an existing SKILL.md from a remote source
+
+                {/* Option 2: Link GitHub Claw */}
+                <div className="flex items-start space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="github" id="github" className="mt-1" />
+                  <Label htmlFor="github" className="flex-1 cursor-pointer">
+                    <div className="font-medium flex items-center gap-2">
+                      <Link className="h-4 w-4 text-amber-500" />
+                      Link GitHub Claw
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Reference an existing Claw whose SKILL.md is stored in a GitHub repository.
+                    </div>
+                  </Label>
+                </div>
+
+                {/* Option 3: External Claw Reference */}
+                <div className="flex items-start space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="external" id="external" className="mt-1" />
+                  <Label htmlFor="external" className="flex-1 cursor-pointer">
+                    <div className="font-medium flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-amber-500" />
+                      External Claw Reference
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Save a link to an external Claw (e.g. ClawHub or documentation). The SKILL.md content is not imported.
                     </div>
                   </Label>
                 </div>
               </RadioGroup>
             </div>
 
-            {/* Inline Mode: SKILL.md Editor */}
-            {skillContentMode === 'inline' && (
+            {/* Mode-specific content */}
+            
+            {/* Write Mode: SKILL.md Editor */}
+            {creationMode === 'write' && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Grab className="h-4 w-4 text-amber-500" />
@@ -420,7 +460,7 @@ export default function ClawNew() {
                   <p className="text-sm text-destructive">{errors.skillMdContent}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  This is the SKILL.md file that defines the Claw's interface and behavior.
+                  This is the SKILL.md file that defines this Claw's interface and behavior.
                 </p>
                 
                 {/* AI Metadata Suggestion */}
@@ -460,117 +500,67 @@ export default function ClawNew() {
               </div>
             )}
 
-            {/* Remote Mode: Source Selector and Fields */}
-            {skillContentMode === 'remote' && (
+            {/* GitHub Mode: URL input and fetch */}
+            {creationMode === 'github' && (
               <div className="space-y-4">
-                {/* Single Skill Source URL Input */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Link className="h-4 w-4 text-amber-500" />
-                    <Label htmlFor="skillSourceUrl">Skill Source URL *</Label>
+                    <Label htmlFor="githubUrl">GitHub Claw URL *</Label>
                   </div>
                   <Input
-                    id="skillSourceUrl"
-                    value={skillSourceUrl}
+                    id="githubUrl"
+                    value={githubUrl}
                     onChange={(e) => {
-                      setSkillSourceUrl(e.target.value);
+                      setGithubUrl(e.target.value);
                       setSkillMdCached(null);
                       setFetchError(null);
                     }}
-                    placeholder="https://github.com/org/repo/tree/main/skills/web-search"
-                    className={errors.skillSourceUrl ? "border-destructive" : ""}
+                    placeholder="https://github.com/org/repo/tree/main/claws/web-search"
+                    className={errors.githubUrl ? "border-destructive" : ""}
                   />
-                  {errors.skillSourceUrl && (
-                    <p className="text-sm text-destructive">{errors.skillSourceUrl}</p>
+                  {errors.githubUrl && (
+                    <p className="text-sm text-destructive">{errors.githubUrl}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    Paste a GitHub URL (auto-fetch supported) or ClawHub URL (manual import only).
-                  </p>
                   
                   {/* URL Parse Status Indicator */}
-                  {skillSourceUrl.trim() && (
+                  {githubUrl.trim() && (
                     <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-                      {parsedSource.isValid ? (
+                      {parsedGithub.isValid && parsedGithub.sourceType === 'github' ? (
                         <div className="flex items-start gap-2 text-muted-foreground">
                           <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
                           <div>
-                            <span className="font-medium text-foreground">
-                              {parsedSource.sourceType === 'github' ? 'GitHub' : 'ClawHub'}
-                            </span>
-                            {parsedSource.sourceRef && (
-                              <span className="ml-1">— {parsedSource.sourceRef}</span>
+                            <span className="font-medium text-foreground">GitHub</span>
+                            {parsedGithub.sourceRef && (
+                              <span className="ml-1">— {parsedGithub.sourceRef}</span>
                             )}
-                            {parsedSource.sourcePath && (
+                            {parsedGithub.sourcePath && (
                               <span className="block text-xs">
-                                Path: {parsedSource.sourcePath}
+                                Path: {parsedGithub.sourcePath}
                               </span>
                             )}
-                            {parsedSource.sourceVersion && parsedSource.sourceVersion !== 'latest' && (
+                            {parsedGithub.sourceVersion && parsedGithub.sourceVersion !== 'latest' && (
                               <span className="block text-xs">
-                                Version: {parsedSource.sourceVersion}
+                                Version: {parsedGithub.sourceVersion}
                               </span>
                             )}
                           </div>
                         </div>
                       ) : (
                         <div className="text-destructive">
-                          {parsedSource.error || "Enter a GitHub or ClawHub URL"}
+                          {parsedGithub.error || "Please enter a valid GitHub URL"}
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* ClawHub: Manual import info panel */}
-                {parsedSource.isValid && parsedSource.sourceType === 'clawhub' && (
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="font-medium text-amber-800 dark:text-amber-300">
-                          ClawHub import is manual
-                        </p>
-                        <p className="text-sm text-amber-700/80 dark:text-amber-400/80">
-                          ClawHub currently doesn't provide a raw SKILL.md endpoint. 
-                          Querino can store this link as a reference. To get an editable copy, 
-                          paste SKILL.md content manually.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleOpenClawHub}
-                        className="gap-2"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        Open ClawHub in new tab
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleSwitchToManualForClawHub}
-                        className="gap-2"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                        Switch to manual SKILL.md editor
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Tip: For ClawHub skills, paste SKILL.md manually (until ClawHub provides a raw content API).
-                    </p>
-                  </div>
-                )}
-
-                {/* Fetch Button - only for GitHub */}
-                {parsedSource.isValid && parsedSource.sourceType === 'github' && (
+                {/* Fetch Button */}
+                {parsedGithub.isValid && parsedGithub.sourceType === 'github' && (
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={handleFetchRemoteSkill}
+                    onClick={handleFetchGitHubSkill}
                     disabled={isFetchingRemote}
                     className="gap-2"
                   >
@@ -603,7 +593,7 @@ export default function ClawNew() {
                         Import as editable copy
                       </Button>
                     </div>
-                    <div className="rounded-lg border border-border bg-muted/50 p-4">
+                    <div className="rounded-lg border border-border bg-muted/50 p-4 max-h-64 overflow-auto">
                       <pre className="text-sm font-mono whitespace-pre-wrap text-muted-foreground">
                         {skillMdCached}
                       </pre>
@@ -611,7 +601,7 @@ export default function ClawNew() {
                   </div>
                 )}
 
-                {/* AI Metadata Suggestion for remote mode */}
+                {/* AI Metadata Suggestion for GitHub mode */}
                 {skillMdCached && (
                   <div className="pt-2">
                     <TooltipProvider>
@@ -650,6 +640,36 @@ export default function ClawNew() {
               </div>
             )}
 
+            {/* External Mode: URL input only */}
+            {creationMode === 'external' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4 text-amber-500" />
+                    <Label htmlFor="externalUrl">External Claw URL *</Label>
+                  </div>
+                  <Input
+                    id="externalUrl"
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                    placeholder="https://clawhub.ai/claws/web-search"
+                    className={errors.externalUrl ? "border-destructive" : ""}
+                  />
+                  {errors.externalUrl && (
+                    <p className="text-sm text-destructive">{errors.externalUrl}</p>
+                  )}
+                </div>
+
+                {/* Info text */}
+                <div className="rounded-lg border border-muted bg-muted/30 p-4 flex items-start gap-3">
+                  <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    External Claw references are stored as links only. The SKILL.md content is not imported or cached.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
@@ -657,7 +677,7 @@ export default function ClawNew() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Search Documents Claw"
+                placeholder="e.g., Web Search Claw"
                 className={errors.title ? "border-destructive" : ""}
               />
               {errors.title && (
@@ -672,7 +692,7 @@ export default function ClawNew() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of what this claw does..."
+                placeholder="Brief description of what this Claw does..."
                 rows={2}
               />
             </div>
@@ -729,12 +749,12 @@ export default function ClawNew() {
             <div className="flex items-center justify-between rounded-lg border border-border p-4">
               <div>
                 <Label htmlFor="visibility" className="text-base">
-                  Make this claw public
+                  Make this Claw public
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   {isPublic
-                    ? "Anyone can discover and use this claw"
-                    : "Only you can see this claw"}
+                    ? "Anyone can discover and use this Claw"
+                    : "Only you can see this Claw"}
                 </p>
               </div>
               <Switch
