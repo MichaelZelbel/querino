@@ -241,8 +241,9 @@ export default function ClawEdit() {
       return;
     }
 
-    if (!formData.content.trim()) {
-      toast.error("Claw content is required");
+    // Only require content for inline claws
+    if (formData.skillSourceType === 'inline' && !formData.content.trim()) {
+      toast.error("SKILL.md content is required");
       return;
     }
 
