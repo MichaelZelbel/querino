@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -9,8 +7,6 @@ const corsHeaders = {
 const ALLOWED_DOMAINS = [
   'github.com',
   'raw.githubusercontent.com',
-  'clawhub.ai',
-  'www.clawhub.ai',
 ];
 
 function isAllowedUrl(urlString: string): boolean {
@@ -48,66 +44,17 @@ Deno.serve(async (req) => {
     console.log("Fetch request:", { sourceType, sourceRef, sourcePath, sourceVersion, originalUrl });
 
     let fetchUrl: string;
-    let content: string;
+    let content: string = "";
 
     if (sourceType === 'clawhub') {
-      // For ClawHub, try multiple URL patterns
-      const baseUrl = originalUrl.replace(/\/$/, '');
-      
-      // Try raw endpoint first
-      const urlsToTry = [
-        `${baseUrl}/raw`,
-        `${baseUrl}/SKILL.md`,
-        `${baseUrl}/skill.md`,
-        baseUrl,
-      ];
-
-      let lastError: Error | null = null;
-      
-      for (const url of urlsToTry) {
-        if (!isAllowedUrl(url)) {
-          console.log(`URL not allowed: ${url}`);
-          continue;
-        }
-        
-        console.log(`Trying ClawHub URL: ${url}`);
-        
-        try {
-          const response = await fetch(url, {
-            headers: {
-              'Accept': 'text/plain, text/markdown, */*',
-              'User-Agent': 'Querino/1.0',
-            },
-          });
-
-          if (response.ok) {
-            const text = await response.text();
-            
-            // Check if we got HTML instead of markdown
-            if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-              console.log(`Got HTML from ${url}, trying next...`);
-              continue;
-            }
-            
-            content = text;
-            console.log(`Successfully fetched from ${url}`);
-            break;
-          }
-        } catch (e) {
-          lastError = e as Error;
-          console.log(`Failed to fetch ${url}: ${e}`);
-        }
-      }
-
-      if (!content) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Could not fetch SKILL.md from ClawHub. The skill may not expose raw markdown content.',
-            details: lastError?.message 
-          }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      // ClawHub doesn't expose raw markdown content via public URLs
+      return new Response(
+        JSON.stringify({ 
+          error: 'ClawHub skills cannot be auto-fetched. Please visit the ClawHub page, copy the skill content, and paste it using "Write SKILL.md manually" mode.',
+          isClawHubLimitation: true
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
       
     } else if (sourceType === 'github') {
       // For GitHub, construct raw.githubusercontent.com URL
@@ -128,7 +75,7 @@ Deno.serve(async (req) => {
       }
 
       const [, owner, repo] = repoMatch;
-      const branch = sourceVersion || 'main';
+      const branch = sourceVersion === 'latest' ? 'main' : (sourceVersion || 'main');
       const path = sourcePath ? `${sourcePath}/SKILL.md` : 'SKILL.md';
 
       // Try main branch first, then master
@@ -156,6 +103,8 @@ Deno.serve(async (req) => {
             content = await response.text();
             console.log(`Successfully fetched from ${fetchUrl}`);
             break;
+          } else {
+            console.log(`Failed to fetch ${fetchUrl}: ${response.status}`);
           }
         } catch (e) {
           console.log(`Failed to fetch ${fetchUrl}: ${e}`);
@@ -173,7 +122,7 @@ Deno.serve(async (req) => {
       
     } else {
       return new Response(
-        JSON.stringify({ error: 'Unsupported source type' }),
+        JSON.stringify({ error: 'Unsupported source type. Use GitHub URLs for auto-fetch.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
