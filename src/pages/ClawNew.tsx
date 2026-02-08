@@ -214,6 +214,7 @@ export default function ClawNew() {
 
     setIsFetchingRemote(true);
     setFetchError(null);
+    setSkillMdCached(null); // Clear previous cache before fetching
 
     try {
       // TODO: Implement actual GitHub/ClawHub fetch
@@ -232,13 +233,14 @@ Source: ${sourceDesc}
 *Remote SKILL.md content would be fetched here.*
 `;
       
+      // Set cached content first, then show success
+      setIsFetchingRemote(false);
       setSkillMdCached(fetchedContent);
       toast.success("SKILL.md fetched successfully!");
     } catch (error) {
       console.error("Error fetching remote skill:", error);
-      setFetchError("Could not find SKILL.md at this URL. Please check the link and try again.");
-    } finally {
       setIsFetchingRemote(false);
+      setFetchError("Could not find SKILL.md at this URL. Please check the link and try again.");
     }
   };
 
