@@ -76,6 +76,37 @@ Reusable prompt frameworks and system prompts.
 
 ---
 
+### `claws`
+
+Callable capabilities for Clawbot with inline or remote skill definitions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| title | text | Claw title |
+| description | text | Brief description |
+| content | text | Legacy: Markdown content |
+| category | text | Category |
+| tags | text[] | Array of tags |
+| source | text | Source: clawbot, antigravity, generic |
+| author_id | uuid | Owner (references profiles) |
+| team_id | uuid | Team ownership (optional) |
+| published | boolean | Public visibility |
+| slug | text | URL-friendly slug |
+| rating_avg | numeric | Average rating |
+| rating_count | integer | Number of ratings |
+| embedding | vector(1536) | Semantic search embedding |
+| skill_source_type | text | Source type: inline, github, clawhub |
+| skill_source_ref | text | GitHub URL or ClawHub identifier |
+| skill_source_path | text | Folder path inside repo (GitHub) |
+| skill_source_version | text | Version: latest, tag, or commit SHA |
+| skill_md_content | text | Editable SKILL.md (inline/imported) |
+| skill_md_cached | text | Read-only cache (remote skills) |
+| created_at | timestamptz | Creation timestamp |
+| updated_at | timestamptz | Last update |
+
+---
+
 ### `workflows`
 
 Documented automation sequences.

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -23,29 +24,33 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, X, Grab, Sparkles, Lock } from "lucide-react";
+import { Loader2, X, Grab, Sparkles, Lock, Github, Link2, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import type { SkillSourceType } from "@/types/claw";
 
-const CLAW_TEMPLATE = `# Claw Name
+const SKILL_MD_TEMPLATE = `# Skill Name
 
 ## Description
-This Claw represents a callable capability, typically used by Clawbot.
+This skill defines the interface and behavior for a Clawbot capability.
 
 ## Parameters
 - \`param1\`: Description of parameter 1
 - \`param2\`: Description of parameter 2
 
 ## Behavior
-Describe what this claw does when invoked...
+Describe what this skill does when invoked...
 
 ## Example Usage
 \`\`\`
-Example of how Clawbot might call this claw
+Example of how Clawbot might call this skill
 \`\`\`
 `;
+
+type SkillContentMode = 'inline' | 'remote';
+type RemoteSourceType = 'github' | 'clawhub';
 
 export default function ClawNew() {
   const navigate = useNavigate();
@@ -54,7 +59,22 @@ export default function ClawNew() {
   const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [content, setContent] = useState(CLAW_TEMPLATE);
+  // Skill content mode
+  const [skillContentMode, setSkillContentMode] = useState<SkillContentMode>('inline');
+  const [remoteSourceType, setRemoteSourceType] = useState<RemoteSourceType>('github');
+  
+  // Inline mode state
+  const [skillMdContent, setSkillMdContent] = useState(SKILL_MD_TEMPLATE);
+  
+  // Remote mode state
+  const [skillSourceRef, setSkillSourceRef] = useState("");
+  const [skillSourcePath, setSkillSourcePath] = useState("");
+  const [skillSourceVersion, setSkillSourceVersion] = useState("latest");
+  const [skillMdCached, setSkillMdCached] = useState<string | null>(null);
+  const [isFetchingRemote, setIsFetchingRemote] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  
+  // Metadata
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -79,7 +99,7 @@ export default function ClawNew() {
     if (params.get("title")) setTitle(params.get("title") || "");
     if (params.get("description")) setDescription(params.get("description") || "");
     if (params.get("tags")) setTags(params.get("tags")?.split(",") || []);
-    if (params.get("content")) setContent(params.get("content") || CLAW_TEMPLATE);
+    if (params.get("content")) setSkillMdContent(params.get("content") || SKILL_MD_TEMPLATE);
   }, []);
 
   const normalizeTag = (tag: string) => {
@@ -101,11 +121,27 @@ export default function ClawNew() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
+  // Get the active SKILL.md content for validation and AI suggestions
+  const getActiveSkillContent = (): string => {
+    if (skillContentMode === 'inline') {
+      return skillMdContent;
+    }
+    return skillMdCached || "";
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!content.trim()) {
-      newErrors.content = "Claw content is required";
+    if (skillContentMode === 'inline') {
+      if (!skillMdContent.trim()) {
+        newErrors.skillMdContent = "SKILL.md content is required";
+      }
+    } else {
+      if (!skillSourceRef.trim()) {
+        newErrors.skillSourceRef = remoteSourceType === 'github' 
+          ? "Repository URL is required" 
+          : "ClawHub skill identifier is required";
+      }
     }
 
     if (!title.trim()) {
@@ -123,8 +159,9 @@ export default function ClawNew() {
   const handleSuggestMetadata = async () => {
     if (!checkCredits()) return;
 
-    if (!content.trim()) {
-      setMetadataError("Please add some claw content first.");
+    const activeContent = getActiveSkillContent();
+    if (!activeContent.trim()) {
+      setMetadataError("Please add SKILL.md content first.");
       return;
     }
 
@@ -133,7 +170,7 @@ export default function ClawNew() {
 
     try {
       const { data: result, error } = await supabase.functions.invoke("suggest-claw-metadata", {
-        body: { claw_content: content.trim(), user_id: user?.id },
+        body: { claw_content: activeContent.trim(), user_id: user?.id },
       });
 
       if (error) {
@@ -169,6 +206,60 @@ export default function ClawNew() {
     }
   };
 
+  const handleFetchRemoteSkill = async () => {
+    if (!skillSourceRef.trim()) {
+      setFetchError("Please enter a repository URL or skill identifier.");
+      return;
+    }
+
+    setIsFetchingRemote(true);
+    setFetchError(null);
+
+    try {
+      // TODO: Implement actual GitHub/ClawHub fetch
+      // For now, simulate a fetch with a placeholder
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Placeholder - in production this would fetch from GitHub API or ClawHub
+      const fetchedContent = `# Fetched from ${remoteSourceType === 'github' ? 'GitHub' : 'ClawHub'}
+
+Source: ${skillSourceRef}
+${skillSourcePath ? `Path: ${skillSourcePath}` : ''}
+Version: ${skillSourceVersion}
+
+---
+
+*Remote SKILL.md content would be fetched here.*
+`;
+      
+      setSkillMdCached(fetchedContent);
+      toast.success("SKILL.md fetched successfully!");
+    } catch (error) {
+      console.error("Error fetching remote skill:", error);
+      setFetchError("Could not fetch SKILL.md. Please check the URL and try again.");
+    } finally {
+      setIsFetchingRemote(false);
+    }
+  };
+
+  const handleImportAsEditable = () => {
+    if (!skillMdCached) return;
+    
+    // Copy cached content to editable content
+    setSkillMdContent(skillMdCached);
+    
+    // Switch to inline mode
+    setSkillContentMode('inline');
+    
+    // Clear remote references
+    setSkillSourceRef("");
+    setSkillSourcePath("");
+    setSkillSourceVersion("latest");
+    setSkillMdCached(null);
+    
+    toast.success("Imported as editable copy!");
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
@@ -176,17 +267,29 @@ export default function ClawNew() {
     setIsSubmitting(true);
 
     try {
+      // Determine the skill source type for storage
+      const skillSourceType: SkillSourceType = skillContentMode === 'inline' 
+        ? 'inline' 
+        : remoteSourceType;
+
       const { data: newClaw, error } = await (supabase
         .from("claws") as any)
         .insert({
           title: title.trim(),
           description: description.trim() || null,
-          content: content.trim(),
+          content: skillContentMode === 'inline' ? skillMdContent.trim() : null, // Legacy field
           category: category,
           tags: tags.length > 0 ? tags : null,
           source: "clawbot",
           author_id: user.id,
           published: isPublic,
+          // New skill source fields
+          skill_source_type: skillSourceType,
+          skill_source_ref: skillContentMode === 'remote' ? skillSourceRef.trim() : null,
+          skill_source_path: skillContentMode === 'remote' && skillSourcePath.trim() ? skillSourcePath.trim() : null,
+          skill_source_version: skillContentMode === 'remote' ? skillSourceVersion : null,
+          skill_md_content: skillContentMode === 'inline' ? skillMdContent.trim() : null,
+          skill_md_cached: skillContentMode === 'remote' ? skillMdCached : null,
         })
         .select("slug")
         .single();
@@ -238,62 +341,293 @@ export default function ClawNew() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            {/* Claw Markdown Content - FIRST */}
-            <div className="space-y-2">
+            {/* Skill Content Mode Selector */}
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Grab className="h-4 w-4 text-amber-500" />
-                <Label htmlFor="content">Claw Definition *</Label>
+                <FileText className="h-4 w-4 text-amber-500" />
+                <Label className="text-base font-medium">Skill Content</Label>
               </div>
-              <Textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder={CLAW_TEMPLATE}
-                rows={14}
-                className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
-              />
-              {errors.content && (
-                <p className="text-sm text-destructive">{errors.content}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Define your claw's behavior in Markdown format.
-              </p>
               
-              {/* AI Metadata Suggestion */}
-              <div className="pt-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+              <RadioGroup
+                value={skillContentMode}
+                onValueChange={(value) => setSkillContentMode(value as SkillContentMode)}
+                className="grid gap-3"
+              >
+                <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="inline" id="inline" />
+                  <Label htmlFor="inline" className="flex-1 cursor-pointer">
+                    <div className="font-medium">Write SKILL.md manually</div>
+                    <div className="text-sm text-muted-foreground">
+                      Define the skill interface and behavior directly
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="remote" id="remote" />
+                  <Label htmlFor="remote" className="flex-1 cursor-pointer">
+                    <div className="font-medium">Link existing skill (GitHub or ClawHub)</div>
+                    <div className="text-sm text-muted-foreground">
+                      Reference an existing SKILL.md from a remote source
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Inline Mode: SKILL.md Editor */}
+            {skillContentMode === 'inline' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Grab className="h-4 w-4 text-amber-500" />
+                  <Label htmlFor="skillMdContent">SKILL.md *</Label>
+                </div>
+                <Textarea
+                  id="skillMdContent"
+                  value={skillMdContent}
+                  onChange={(e) => setSkillMdContent(e.target.value)}
+                  placeholder={SKILL_MD_TEMPLATE}
+                  rows={14}
+                  className={`font-mono text-sm ${errors.skillMdContent ? "border-destructive" : ""}`}
+                />
+                {errors.skillMdContent && (
+                  <p className="text-sm text-destructive">{errors.skillMdContent}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  This is the SKILL.md file that defines the Claw's interface and behavior.
+                </p>
+                
+                {/* AI Metadata Suggestion */}
+                <div className="pt-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSuggestMetadata}
+                          disabled={isGeneratingMetadata || !isPremium}
+                          className="gap-2"
+                        >
+                          {isGeneratingMetadata ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isPremium ? (
+                            <Sparkles className="h-4 w-4" />
+                          ) : (
+                            <Lock className="h-4 w-4" />
+                          )}
+                          {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                        </Button>
+                      </TooltipTrigger>
+                      {!isPremium && (
+                        <TooltipContent>
+                          <p>Premium feature – upgrade to use AI suggestions</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                  {metadataError && (
+                    <p className="text-sm text-destructive mt-2">{metadataError}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Remote Mode: Source Selector and Fields */}
+            {skillContentMode === 'remote' && (
+              <div className="space-y-4">
+                {/* Remote Source Type */}
+                <div className="space-y-2">
+                  <Label>Skill Source</Label>
+                  <RadioGroup
+                    value={remoteSourceType}
+                    onValueChange={(value) => {
+                      setRemoteSourceType(value as RemoteSourceType);
+                      setSkillSourceRef("");
+                      setSkillMdCached(null);
+                      setFetchError(null);
+                    }}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="github" id="github" />
+                      <Label htmlFor="github" className="flex items-center gap-1.5 cursor-pointer">
+                        <Github className="h-4 w-4" />
+                        GitHub Repository Folder
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="clawhub" id="clawhub" />
+                      <Label htmlFor="clawhub" className="flex items-center gap-1.5 cursor-pointer">
+                        <Link2 className="h-4 w-4" />
+                        ClawHub Skill
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* GitHub Fields */}
+                {remoteSourceType === 'github' && (
+                  <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
+                    <div className="space-y-2">
+                      <Label htmlFor="repoUrl">Repository URL *</Label>
+                      <Input
+                        id="repoUrl"
+                        value={skillSourceRef}
+                        onChange={(e) => setSkillSourceRef(e.target.value)}
+                        placeholder="https://github.com/owner/repo"
+                        className={errors.skillSourceRef ? "border-destructive" : ""}
+                      />
+                      {errors.skillSourceRef && (
+                        <p className="text-sm text-destructive">{errors.skillSourceRef}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="folderPath">Folder Path (optional)</Label>
+                      <Input
+                        id="folderPath"
+                        value={skillSourcePath}
+                        onChange={(e) => setSkillSourcePath(e.target.value)}
+                        placeholder="e.g., skills/my-skill"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Path to the folder containing SKILL.md
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="version">Version</Label>
+                      <Select value={skillSourceVersion} onValueChange={setSkillSourceVersion}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select version" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="latest">Latest (default branch)</SelectItem>
+                          <SelectItem value="main">main</SelectItem>
+                          <SelectItem value="master">master</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        You can also enter a specific tag or commit SHA
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ClawHub Fields */}
+                {remoteSourceType === 'clawhub' && (
+                  <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
+                    <div className="space-y-2">
+                      <Label htmlFor="clawhubId">ClawHub Skill Identifier *</Label>
+                      <Input
+                        id="clawhubId"
+                        value={skillSourceRef}
+                        onChange={(e) => setSkillSourceRef(e.target.value)}
+                        placeholder="e.g., @author/skill-name"
+                        className={errors.skillSourceRef ? "border-destructive" : ""}
+                      />
+                      {errors.skillSourceRef && (
+                        <p className="text-sm text-destructive">{errors.skillSourceRef}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="clawhubVersion">Version</Label>
+                      <Select value={skillSourceVersion} onValueChange={setSkillSourceVersion}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select version" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="latest">Latest</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fetch Button */}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleFetchRemoteSkill}
+                  disabled={isFetchingRemote || !skillSourceRef.trim()}
+                  className="gap-2"
+                >
+                  {isFetchingRemote ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {isFetchingRemote ? "Fetching..." : "Fetch SKILL.md"}
+                </Button>
+                
+                {fetchError && (
+                  <p className="text-sm text-destructive">{fetchError}</p>
+                )}
+
+                {/* Cached SKILL.md Preview */}
+                {skillMdCached && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>SKILL.md Preview (read-only)</Label>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handleSuggestMetadata}
-                        disabled={isGeneratingMetadata || !isPremium}
+                        onClick={handleImportAsEditable}
                         className="gap-2"
                       >
-                        {isGeneratingMetadata ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : isPremium ? (
-                          <Sparkles className="h-4 w-4" />
-                        ) : (
-                          <Lock className="h-4 w-4" />
-                        )}
-                        {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                        <FileText className="h-4 w-4" />
+                        Import as editable copy
                       </Button>
-                    </TooltipTrigger>
-                    {!isPremium && (
-                      <TooltipContent>
-                        <p>Premium feature – upgrade to use AI suggestions</p>
-                      </TooltipContent>
+                    </div>
+                    <div className="rounded-lg border border-border bg-muted/50 p-4">
+                      <pre className="text-sm font-mono whitespace-pre-wrap text-muted-foreground">
+                        {skillMdCached}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Metadata Suggestion for remote mode */}
+                {skillMdCached && (
+                  <div className="pt-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSuggestMetadata}
+                            disabled={isGeneratingMetadata || !isPremium}
+                            className="gap-2"
+                          >
+                            {isGeneratingMetadata ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : isPremium ? (
+                              <Sparkles className="h-4 w-4" />
+                            ) : (
+                              <Lock className="h-4 w-4" />
+                            )}
+                            {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                          </Button>
+                        </TooltipTrigger>
+                        {!isPremium && (
+                          <TooltipContent>
+                            <p>Premium feature – upgrade to use AI suggestions</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                    {metadataError && (
+                      <p className="text-sm text-destructive mt-2">{metadataError}</p>
                     )}
-                  </Tooltip>
-                </TooltipProvider>
-                {metadataError && (
-                  <p className="text-sm text-destructive mt-2">{metadataError}</p>
+                  </div>
                 )}
               </div>
-            </div>
+            )}
 
             {/* Title */}
             <div className="space-y-2">
