@@ -214,33 +214,91 @@ export default function ClawNew() {
 
     setIsFetchingRemote(true);
     setFetchError(null);
-    setSkillMdCached(null); // Clear previous cache before fetching
+    setSkillMdCached(null);
 
     try {
-      // TODO: Implement actual GitHub/ClawHub fetch
-      // For now, simulate a fetch with a placeholder
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const sourceDesc = getSkillSourceDescription(parsedSource);
-      
-      // Placeholder - in production this would fetch from GitHub API or ClawHub
-      const fetchedContent = `# Fetched Skill
+      let fetchedContent = "";
 
-Source: ${sourceDesc}
+      if (parsedSource.sourceType === "clawhub") {
+        // Fetch from ClawHub - try the direct URL first, then /raw endpoint
+        const clawHubUrl = skillSourceUrl.trim();
+        
+        // Try fetching the raw SKILL.md content
+        // ClawHub URLs like https://clawhub.ai/mukhtharcm/antigravity-quota
+        // should have a raw endpoint or we fetch the page and extract content
+        const rawUrl = clawHubUrl.endsWith("/") 
+          ? `${clawHubUrl}raw` 
+          : `${clawHubUrl}/raw`;
+        
+        let response = await fetch(rawUrl);
+        
+        if (!response.ok) {
+          // Try without /raw - some ClawHub pages serve markdown directly
+          response = await fetch(clawHubUrl);
+        }
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch from ClawHub: ${response.status}`);
+        }
+        
+        fetchedContent = await response.text();
+        
+        // If we got HTML instead of markdown, try to extract content
+        if (fetchedContent.trim().startsWith("<!DOCTYPE") || fetchedContent.trim().startsWith("<html")) {
+          throw new Error("Could not extract SKILL.md content from this URL. The page returned HTML instead of raw markdown.");
+        }
+        
+      } else if (parsedSource.sourceType === "github") {
+        // Fetch from GitHub raw content
+        // Convert github.com URL to raw.githubusercontent.com
+        const { sourceRef, sourcePath, sourceVersion } = parsedSource;
+        
+        if (!sourceRef) {
+          throw new Error("Invalid GitHub repository URL");
+        }
+        
+        // Extract owner/repo from sourceRef (e.g., "https://github.com/owner/repo")
+        const repoMatch = sourceRef.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (!repoMatch) {
+          throw new Error("Could not parse GitHub repository URL");
+        }
+        
+        const [, owner, repo] = repoMatch;
+        const branch = sourceVersion || "main";
+        const path = sourcePath ? `${sourcePath}/SKILL.md` : "SKILL.md";
+        
+        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+        
+        const response = await fetch(rawUrl);
+        
+        if (!response.ok) {
+          // Try with master branch if main failed
+          if (branch === "main") {
+            const masterUrl = `https://raw.githubusercontent.com/${owner}/${repo}/master/${path}`;
+            const masterResponse = await fetch(masterUrl);
+            if (masterResponse.ok) {
+              fetchedContent = await masterResponse.text();
+            } else {
+              throw new Error(`SKILL.md not found at ${rawUrl} or master branch`);
+            }
+          } else {
+            throw new Error(`Failed to fetch SKILL.md: ${response.status}`);
+          }
+        } else {
+          fetchedContent = await response.text();
+        }
+      } else {
+        throw new Error("Unsupported source type");
+      }
 
----
-
-*Remote SKILL.md content would be fetched here.*
-`;
-      
-      // Set cached content first, then show success
       setIsFetchingRemote(false);
       setSkillMdCached(fetchedContent);
       toast.success("SKILL.md fetched successfully!");
     } catch (error) {
       console.error("Error fetching remote skill:", error);
       setIsFetchingRemote(false);
-      setFetchError("Could not find SKILL.md at this URL. Please check the link and try again.");
+      const errorMessage = error instanceof Error ? error.message : "Could not find SKILL.md at this URL.";
+      setFetchError(errorMessage);
     }
   };
 
