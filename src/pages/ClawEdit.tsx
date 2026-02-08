@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -64,6 +65,7 @@ export default function ClawEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { teams } = useWorkspace();
   const { isPremium } = usePremiumCheck();
   const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,7 +120,18 @@ export default function ClawEdit() {
           return;
         }
 
-        if (data.author_id !== user.id) {
+        // Check if user can edit: author OR team member
+        const isAuthor = data.author_id === user.id;
+        const isTeamClaw = !!data.team_id;
+        const userTeamMembership = isTeamClaw 
+          ? teams.find(t => t.id === data.team_id) 
+          : null;
+        const canEditTeamClaw = userTeamMembership?.role === 'owner' || 
+                                 userTeamMembership?.role === 'admin' || 
+                                 userTeamMembership?.role === 'member';
+        const canEdit = isAuthor || canEditTeamClaw;
+
+        if (!canEdit) {
           toast.error("You don't have permission to edit this claw");
           navigate("/library");
           return;
@@ -148,10 +161,10 @@ export default function ClawEdit() {
       }
     }
 
-    if (user) {
+    if (user && teams) {
       fetchClaw();
     }
-  }, [slug, user, navigate]);
+  }, [slug, user, navigate, teams]);
 
   const normalizeTag = (tag: string) => {
     return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
