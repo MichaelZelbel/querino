@@ -501,21 +501,33 @@ export default function ClawNew() {
                   )}
                 </div>
 
-                {/* Fetch Button */}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleFetchRemoteSkill}
-                  disabled={isFetchingRemote || !parsedSource.isValid}
-                  className="gap-2"
-                >
-                  {isFetchingRemote ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  {isFetchingRemote ? "Fetching..." : "Fetch SKILL.md"}
-                </Button>
+                {/* ClawHub limitation notice */}
+                {parsedSource.isValid && parsedSource.sourceType === 'clawhub' && (
+                  <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+                    <p className="text-amber-700 dark:text-amber-400">
+                      <strong>Note:</strong> ClawHub doesn't expose raw SKILL.md content via public URLs. 
+                      Please visit the skill page, copy the content manually, and use "Write SKILL.md manually" mode instead.
+                    </p>
+                  </div>
+                )}
+
+                {/* Fetch Button - only for GitHub */}
+                {parsedSource.sourceType === 'github' && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleFetchRemoteSkill}
+                    disabled={isFetchingRemote || !parsedSource.isValid}
+                    className="gap-2"
+                  >
+                    {isFetchingRemote ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isFetchingRemote ? "Fetching..." : "Fetch SKILL.md"}
+                  </Button>
+                )}
                 
                 {fetchError && (
                   <p className="text-sm text-destructive">{fetchError}</p>
