@@ -53,11 +53,19 @@ export default function ClawDetail() {
   const isAuthor = claw?.author_id && user?.id === claw.author_id;
   const isPinned = claw?.id ? isClawPinned(claw.id) : false;
   
+  // Check if user can edit this Claw (author OR team member with edit rights)
+  const isTeamClaw = !!claw?.team_id;
+  const userTeamMembership = isTeamClaw 
+    ? teams.find(t => t.id === claw?.team_id) 
+    : null;
+  const canEditTeamClaw = userTeamMembership?.role === 'owner' || userTeamMembership?.role === 'admin' || userTeamMembership?.role === 'member';
+  const canEdit = isAuthor || canEditTeamClaw;
+  
   // Premium and team checks for "Copy to team" feature
   const isPersonalWorkspace = currentWorkspace === "personal";
   const hasTeams = teams.length > 0;
   const isPersonalClaw = !claw?.team_id;
-  const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalClaw;
+  const canCopyToTeam = canEdit && isPremium && hasTeams && isPersonalWorkspace && isPersonalClaw;
 
   // Determine source type for display
   const sourceType = claw?.skill_source_type || 'inline';
@@ -318,7 +326,7 @@ export default function ClawDetail() {
                 </Button>
               )}
               
-              {isAuthor && (
+              {canEdit && (
                 <>
                   <Link to={`/claws/${claw.slug}/edit`}>
                     <Button size="lg" variant="outline" className="gap-2">
@@ -352,7 +360,7 @@ export default function ClawDetail() {
                 </>
               )}
               
-              {user && !isAuthor && (
+              {user && !canEdit && (
                 <Button size="lg" variant="outline" onClick={() => cloneClaw(claw, user.id)} disabled={cloning} className="gap-2">
                   <Files className="h-4 w-4" />{cloning ? "Cloning..." : "Clone Claw"}
                 </Button>
@@ -393,7 +401,7 @@ export default function ClawDetail() {
               itemId={claw.id}
             />
 
-            {isAuthor && (
+            {canEdit && (
               <>
                 <ClawVersionHistoryPanel
                   open={showVersionHistory}
