@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,12 +24,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, X, Grab, Sparkles, Lock, Github, Link2, FileText, Download } from "lucide-react";
+import { Loader2, X, Grab, Sparkles, Lock, FileText, Download, Link, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import type { SkillSourceType } from "@/types/claw";
+import { parseSkillSourceUrl, getSkillSourceDescription } from "@/lib/skillSourceParser";
 
 const SKILL_MD_TEMPLATE = `# Skill Name
 
@@ -50,7 +51,6 @@ Example of how Clawbot might call this skill
 `;
 
 type SkillContentMode = 'inline' | 'remote';
-type RemoteSourceType = 'github' | 'clawhub';
 
 export default function ClawNew() {
   const navigate = useNavigate();
@@ -61,18 +61,18 @@ export default function ClawNew() {
   
   // Skill content mode
   const [skillContentMode, setSkillContentMode] = useState<SkillContentMode>('inline');
-  const [remoteSourceType, setRemoteSourceType] = useState<RemoteSourceType>('github');
   
   // Inline mode state
   const [skillMdContent, setSkillMdContent] = useState(SKILL_MD_TEMPLATE);
   
-  // Remote mode state
-  const [skillSourceRef, setSkillSourceRef] = useState("");
-  const [skillSourcePath, setSkillSourcePath] = useState("");
-  const [skillSourceVersion, setSkillSourceVersion] = useState("latest");
+  // Remote mode state - single URL input
+  const [skillSourceUrl, setSkillSourceUrl] = useState("");
   const [skillMdCached, setSkillMdCached] = useState<string | null>(null);
   const [isFetchingRemote, setIsFetchingRemote] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  
+  // Parse the skill source URL
+  const parsedSource = useMemo(() => parseSkillSourceUrl(skillSourceUrl), [skillSourceUrl]);
   
   // Metadata
   const [title, setTitle] = useState("");
@@ -137,10 +137,10 @@ export default function ClawNew() {
         newErrors.skillMdContent = "SKILL.md content is required";
       }
     } else {
-      if (!skillSourceRef.trim()) {
-        newErrors.skillSourceRef = remoteSourceType === 'github' 
-          ? "Repository URL is required" 
-          : "ClawHub skill identifier is required";
+      if (!skillSourceUrl.trim()) {
+        newErrors.skillSourceUrl = "Skill Source URL is required";
+      } else if (!parsedSource.isValid) {
+        newErrors.skillSourceUrl = parsedSource.error || "Invalid URL";
       }
     }
 
@@ -207,8 +207,8 @@ export default function ClawNew() {
   };
 
   const handleFetchRemoteSkill = async () => {
-    if (!skillSourceRef.trim()) {
-      setFetchError("Please enter a repository URL or skill identifier.");
+    if (!parsedSource.isValid) {
+      setFetchError(parsedSource.error || "Please enter a valid URL.");
       return;
     }
 
@@ -220,12 +220,12 @@ export default function ClawNew() {
       // For now, simulate a fetch with a placeholder
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      const sourceDesc = getSkillSourceDescription(parsedSource);
+      
       // Placeholder - in production this would fetch from GitHub API or ClawHub
-      const fetchedContent = `# Fetched from ${remoteSourceType === 'github' ? 'GitHub' : 'ClawHub'}
+      const fetchedContent = `# Fetched Skill
 
-Source: ${skillSourceRef}
-${skillSourcePath ? `Path: ${skillSourcePath}` : ''}
-Version: ${skillSourceVersion}
+Source: ${sourceDesc}
 
 ---
 
@@ -236,7 +236,7 @@ Version: ${skillSourceVersion}
       toast.success("SKILL.md fetched successfully!");
     } catch (error) {
       console.error("Error fetching remote skill:", error);
-      setFetchError("Could not fetch SKILL.md. Please check the URL and try again.");
+      setFetchError("Could not find SKILL.md at this URL. Please check the link and try again.");
     } finally {
       setIsFetchingRemote(false);
     }
@@ -252,9 +252,7 @@ Version: ${skillSourceVersion}
     setSkillContentMode('inline');
     
     // Clear remote references
-    setSkillSourceRef("");
-    setSkillSourcePath("");
-    setSkillSourceVersion("latest");
+    setSkillSourceUrl("");
     setSkillMdCached(null);
     
     toast.success("Imported as editable copy!");
@@ -267,10 +265,10 @@ Version: ${skillSourceVersion}
     setIsSubmitting(true);
 
     try {
-      // Determine the skill source type for storage
+      // Determine the skill source type for storage from parsed URL
       const skillSourceType: SkillSourceType = skillContentMode === 'inline' 
         ? 'inline' 
-        : remoteSourceType;
+        : (parsedSource.sourceType || 'github');
 
       const { data: newClaw, error } = await (supabase
         .from("claws") as any)
@@ -285,9 +283,9 @@ Version: ${skillSourceVersion}
           published: isPublic,
           // New skill source fields
           skill_source_type: skillSourceType,
-          skill_source_ref: skillContentMode === 'remote' ? skillSourceRef.trim() : null,
-          skill_source_path: skillContentMode === 'remote' && skillSourcePath.trim() ? skillSourcePath.trim() : null,
-          skill_source_version: skillContentMode === 'remote' ? skillSourceVersion : null,
+          skill_source_ref: skillContentMode === 'remote' ? parsedSource.sourceRef : null,
+          skill_source_path: skillContentMode === 'remote' ? parsedSource.sourcePath : null,
+          skill_source_version: skillContentMode === 'remote' ? parsedSource.sourceVersion : null,
           skill_md_content: skillContentMode === 'inline' ? skillMdContent.trim() : null,
           skill_md_cached: skillContentMode === 'remote' ? skillMdCached : null,
         })
@@ -436,122 +434,70 @@ Version: ${skillSourceVersion}
             {/* Remote Mode: Source Selector and Fields */}
             {skillContentMode === 'remote' && (
               <div className="space-y-4">
-                {/* Remote Source Type */}
+                {/* Single Skill Source URL Input */}
                 <div className="space-y-2">
-                  <Label>Skill Source</Label>
-                  <RadioGroup
-                    value={remoteSourceType}
-                    onValueChange={(value) => {
-                      setRemoteSourceType(value as RemoteSourceType);
-                      setSkillSourceRef("");
+                  <div className="flex items-center gap-2">
+                    <Link className="h-4 w-4 text-amber-500" />
+                    <Label htmlFor="skillSourceUrl">Skill Source URL *</Label>
+                  </div>
+                  <Input
+                    id="skillSourceUrl"
+                    value={skillSourceUrl}
+                    onChange={(e) => {
+                      setSkillSourceUrl(e.target.value);
                       setSkillMdCached(null);
                       setFetchError(null);
                     }}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="github" id="github" />
-                      <Label htmlFor="github" className="flex items-center gap-1.5 cursor-pointer">
-                        <Github className="h-4 w-4" />
-                        GitHub Repository Folder
-                      </Label>
+                    placeholder="https://github.com/org/repo/tree/main/skills/web-search"
+                    className={errors.skillSourceUrl ? "border-destructive" : ""}
+                  />
+                  {errors.skillSourceUrl && (
+                    <p className="text-sm text-destructive">{errors.skillSourceUrl}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Paste a link to a GitHub repository, a folder containing SKILL.md, or a ClawHub skill.
+                  </p>
+                  
+                  {/* URL Parse Status Indicator */}
+                  {skillSourceUrl.trim() && (
+                    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+                      {parsedSource.isValid ? (
+                        <div className="flex items-start gap-2 text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
+                          <div>
+                            <span className="font-medium text-foreground">
+                              {parsedSource.sourceType === 'github' ? 'GitHub' : 'ClawHub'}
+                            </span>
+                            {parsedSource.sourceRef && (
+                              <span className="ml-1">— {parsedSource.sourceRef}</span>
+                            )}
+                            {parsedSource.sourcePath && (
+                              <span className="block text-xs">
+                                Path: {parsedSource.sourcePath}
+                              </span>
+                            )}
+                            {parsedSource.sourceVersion && parsedSource.sourceVersion !== 'latest' && (
+                              <span className="block text-xs">
+                                Version: {parsedSource.sourceVersion}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-destructive">
+                          {parsedSource.error || "Enter a GitHub or ClawHub URL"}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="clawhub" id="clawhub" />
-                      <Label htmlFor="clawhub" className="flex items-center gap-1.5 cursor-pointer">
-                        <Link2 className="h-4 w-4" />
-                        ClawHub Skill
-                      </Label>
-                    </div>
-                  </RadioGroup>
+                  )}
                 </div>
-
-                {/* GitHub Fields */}
-                {remoteSourceType === 'github' && (
-                  <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
-                    <div className="space-y-2">
-                      <Label htmlFor="repoUrl">Repository URL *</Label>
-                      <Input
-                        id="repoUrl"
-                        value={skillSourceRef}
-                        onChange={(e) => setSkillSourceRef(e.target.value)}
-                        placeholder="https://github.com/owner/repo"
-                        className={errors.skillSourceRef ? "border-destructive" : ""}
-                      />
-                      {errors.skillSourceRef && (
-                        <p className="text-sm text-destructive">{errors.skillSourceRef}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="folderPath">Folder Path (optional)</Label>
-                      <Input
-                        id="folderPath"
-                        value={skillSourcePath}
-                        onChange={(e) => setSkillSourcePath(e.target.value)}
-                        placeholder="e.g., skills/my-skill"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Path to the folder containing SKILL.md
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="version">Version</Label>
-                      <Select value={skillSourceVersion} onValueChange={setSkillSourceVersion}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select version" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="latest">Latest (default branch)</SelectItem>
-                          <SelectItem value="main">main</SelectItem>
-                          <SelectItem value="master">master</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        You can also enter a specific tag or commit SHA
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* ClawHub Fields */}
-                {remoteSourceType === 'clawhub' && (
-                  <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
-                    <div className="space-y-2">
-                      <Label htmlFor="clawhubId">ClawHub Skill Identifier *</Label>
-                      <Input
-                        id="clawhubId"
-                        value={skillSourceRef}
-                        onChange={(e) => setSkillSourceRef(e.target.value)}
-                        placeholder="e.g., @author/skill-name"
-                        className={errors.skillSourceRef ? "border-destructive" : ""}
-                      />
-                      {errors.skillSourceRef && (
-                        <p className="text-sm text-destructive">{errors.skillSourceRef}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="clawhubVersion">Version</Label>
-                      <Select value={skillSourceVersion} onValueChange={setSkillSourceVersion}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select version" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="latest">Latest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
 
                 {/* Fetch Button */}
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={handleFetchRemoteSkill}
-                  disabled={isFetchingRemote || !skillSourceRef.trim()}
+                  disabled={isFetchingRemote || !parsedSource.isValid}
                   className="gap-2"
                 >
                   {isFetchingRemote ? (
