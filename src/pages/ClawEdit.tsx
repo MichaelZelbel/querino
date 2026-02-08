@@ -42,6 +42,7 @@ import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markd
 import type { ParsedMarkdown } from "@/lib/markdown";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import { useClawVersions, useCreateClawVersion } from "@/hooks/useClawVersions";
 
 interface ClawFormData {
   title: string;
@@ -77,6 +78,10 @@ export default function ClawEdit() {
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
   const clawId = claw?.id;
+  
+  // Version hooks
+  const { data: versions = [] } = useClawVersions(clawId);
+  const createVersion = useCreateClawVersion();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -260,6 +265,7 @@ export default function ClawEdit() {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         content: formData.content.trim(),
+        skill_md_content: formData.content.trim(),
         category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
@@ -275,11 +281,24 @@ export default function ClawEdit() {
         return;
       }
 
-      // Note: Claw versioning table doesn't exist yet - this is a placeholder
-      // When claw_versions table is created, add version creation logic here
+      // Create version entry
+      const nextVersionNumber = versions.length > 0 
+        ? Math.max(...versions.map(v => v.version_number)) + 1 
+        : 1;
+
+      await createVersion.mutateAsync({
+        claw_id: clawId,
+        version_number: nextVersionNumber,
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        content: formData.content.trim(),
+        skill_md_content: formData.content.trim(),
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        change_notes: changeNotes.trim() || null,
+      });
 
       setChangeNotes("");
-      toast.success("Claw saved! (Versioning not yet available for claws)");
+      toast.success(`Saved as version v${nextVersionNumber}`);
     } catch (err) {
       console.error("Error saving claw:", err);
       toast.error("Something went wrong");

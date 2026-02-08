@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
+import { usePinnedClaws } from "@/hooks/usePinnedClaws";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,8 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown } from "lucide-react";
+import { 
+  Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown,
+  Pin, PinOff, History, FolderPlus, UsersRound
+} from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
+import { CopyClawToTeamModal } from "@/components/claws/CopyClawToTeamModal";
+import { ClawVersionHistoryPanel } from "@/components/claws/ClawVersionHistoryPanel";
+import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { AIInsightsPanel } from "@/components/insights";
 import { toast } from "sonner";
@@ -27,12 +36,28 @@ export default function ClawDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneClaw, cloning } = useCloneClaw();
+  const { isClawPinned, togglePin } = usePinnedClaws();
+  const { isPremium } = usePremiumCheck();
+  const { teams, currentWorkspace } = useWorkspace();
+  
   const [claw, setClaw] = useState<ClawWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(true);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  
   const isAuthor = claw?.author_id && user?.id === claw.author_id;
+  const isPinned = claw?.id ? isClawPinned(claw.id) : false;
+  
+  // Premium and team checks for "Copy to team" feature
+  const isPersonalWorkspace = currentWorkspace === "personal";
+  const hasTeams = teams.length > 0;
+  const isPersonalClaw = !claw?.team_id;
+  const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalClaw;
 
   useEffect(() => {
     async function fetchClaw() {
@@ -61,14 +86,39 @@ export default function ClawDetail() {
   }, [slug]);
 
   const handleCopy = async () => {
-    if (!claw?.content) return;
+    if (!claw?.content && !claw?.skill_md_content) return;
     try {
-      await navigator.clipboard.writeText(claw.content);
+      const contentToCopy = claw.skill_md_content || claw.content || "";
+      await navigator.clipboard.writeText(contentToCopy);
       setCopied(true);
       toast.success("Claw content copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Failed to copy claw");
+    }
+  };
+
+  const handleTogglePin = async () => {
+    if (!claw?.id) return;
+    
+    if (!user) {
+      navigate(`/auth?redirect=/claws/${claw.slug}`);
+      return;
+    }
+
+    setPinning(true);
+    const { error } = await togglePin(claw.id);
+    setPinning(false);
+
+    if (error) {
+      toast.error("Failed to update pin");
+      return;
+    }
+
+    if (isPinned) {
+      toast.success("Unpinned");
+    } else {
+      toast.success("Pinned!");
     }
   };
 
@@ -78,6 +128,9 @@ export default function ClawDetail() {
     }
     return "U";
   };
+
+  // Get the display content (prefer skill_md_content over legacy content)
+  const displayContent = claw?.skill_md_content || claw?.content || "";
 
   if (loading) {
     return (
@@ -160,7 +213,7 @@ export default function ClawDetail() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">{claw.content}</pre>
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">{displayContent}</pre>
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -169,24 +222,120 @@ export default function ClawDetail() {
               <Button size="lg" variant={copied ? "success" : "default"} onClick={handleCopy} className="gap-2 bg-amber-500 hover:bg-amber-600">
                 {copied ? <><Check className="h-4 w-4" />Copied!</> : <><Copy className="h-4 w-4" />Copy Content</>}
               </Button>
-              {isAuthor && (
-                <Link to={`/claws/${claw.slug}/edit`}><Button size="lg" variant="outline" className="gap-2"><Pencil className="h-4 w-4" />Edit Claw</Button></Link>
+              
+              {/* Pin Button */}
+              {user && (
+                <Button
+                  size="lg"
+                  variant={isPinned ? "secondary" : "outline"}
+                  onClick={handleTogglePin}
+                  disabled={pinning}
+                  className="gap-2"
+                >
+                  {isPinned ? (
+                    <>
+                      <PinOff className="h-4 w-4" />
+                      Unpin
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="h-4 w-4" />
+                      Pin
+                    </>
+                  )}
+                </Button>
               )}
+              
+              {isAuthor && (
+                <>
+                  <Link to={`/claws/${claw.slug}/edit`}>
+                    <Button size="lg" variant="outline" className="gap-2">
+                      <Pencil className="h-4 w-4" />Edit Claw
+                    </Button>
+                  </Link>
+                  
+                  {/* Version History Button */}
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setShowVersionHistory(true)}
+                    className="gap-2"
+                  >
+                    <History className="h-4 w-4" />
+                    Version History
+                  </Button>
+                  
+                  {/* Copy to team - only for personal claws owned by premium users with teams */}
+                  {canCopyToTeam && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => setShowCopyToTeamModal(true)}
+                      className="gap-2"
+                    >
+                      <UsersRound className="h-4 w-4" />
+                      Copy to team…
+                    </Button>
+                  )}
+                </>
+              )}
+              
               {user && !isAuthor && (
                 <Button size="lg" variant="outline" onClick={() => cloneClaw(claw, user.id)} disabled={cloning} className="gap-2">
                   <Files className="h-4 w-4" />{cloning ? "Cloning..." : "Clone Claw"}
                 </Button>
               )}
+              
+              {/* Add to Collection Button */}
+              {user && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowCollectionModal(true)}
+                  className="gap-2"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  Add to Collection
+                </Button>
+              )}
+              
               <DownloadMarkdownButton
                 title={claw.title}
                 type="claw"
                 description={claw.description}
                 tags={claw.tags}
-                content={claw.content || ""}
+                content={displayContent}
                 size="lg"
                 variant="outline"
               />
             </div>
+
+            {/* Modals */}
+            <AddToCollectionModal
+              open={showCollectionModal}
+              onOpenChange={setShowCollectionModal}
+              itemType="claw"
+              itemId={claw.id}
+            />
+
+            {isAuthor && (
+              <>
+                <ClawVersionHistoryPanel
+                  open={showVersionHistory}
+                  onOpenChange={setShowVersionHistory}
+                  clawId={claw.id}
+                  clawTitle={claw.title}
+                />
+
+                {canCopyToTeam && (
+                  <CopyClawToTeamModal
+                    open={showCopyToTeamModal}
+                    onOpenChange={setShowCopyToTeamModal}
+                    claw={claw}
+                  />
+                )}
+              </>
+            )}
 
             <ClawReviewSection clawId={claw.id} authorId={claw.author_id || undefined} />
           </div>

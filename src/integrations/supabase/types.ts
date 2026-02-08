@@ -444,6 +444,35 @@ export type Database = {
         }
         Relationships: []
       }
+      claw_pins: {
+        Row: {
+          claw_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          claw_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          claw_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claw_pins_claw_id_fkey"
+            columns: ["claw_id"]
+            isOneToOne: false
+            referencedRelation: "claws"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claw_reviews: {
         Row: {
           claw_id: string
@@ -485,6 +514,53 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claw_versions: {
+        Row: {
+          change_notes: string | null
+          claw_id: string
+          content: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          skill_md_content: string | null
+          tags: string[] | null
+          title: string
+          version_number: number
+        }
+        Insert: {
+          change_notes?: string | null
+          claw_id: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          skill_md_content?: string | null
+          tags?: string[] | null
+          title: string
+          version_number?: number
+        }
+        Update: {
+          change_notes?: string | null
+          claw_id?: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          skill_md_content?: string | null
+          tags?: string[] | null
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claw_versions_claw_id_fkey"
+            columns: ["claw_id"]
+            isOneToOne: false
+            referencedRelation: "claws"
             referencedColumns: ["id"]
           },
         ]
