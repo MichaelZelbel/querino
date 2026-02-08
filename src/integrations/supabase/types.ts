@@ -501,6 +501,12 @@ export type Database = {
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
+          skill_md_cached: string | null
+          skill_md_content: string | null
+          skill_source_path: string | null
+          skill_source_ref: string | null
+          skill_source_type: string
+          skill_source_version: string | null
           slug: string | null
           source: string | null
           tags: string[] | null
@@ -519,6 +525,12 @@ export type Database = {
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
+          skill_md_cached?: string | null
+          skill_md_content?: string | null
+          skill_source_path?: string | null
+          skill_source_ref?: string | null
+          skill_source_type?: string
+          skill_source_version?: string | null
           slug?: string | null
           source?: string | null
           tags?: string[] | null
@@ -537,6 +549,12 @@ export type Database = {
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
+          skill_md_cached?: string | null
+          skill_md_content?: string | null
+          skill_source_path?: string | null
+          skill_source_ref?: string | null
+          skill_source_type?: string
+          skill_source_version?: string | null
           slug?: string | null
           source?: string | null
           tags?: string[] | null
