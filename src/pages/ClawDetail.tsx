@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown,
-  Pin, PinOff, History, FolderPlus, UsersRound
+  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch
 } from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
 import { CopyClawToTeamModal } from "@/components/claws/CopyClawToTeamModal";
@@ -45,7 +45,7 @@ export default function ClawDetail() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pinning, setPinning] = useState(false);
-  const [isContentOpen, setIsContentOpen] = useState(true);
+  const [isSkillMdOpen, setIsSkillMdOpen] = useState(true);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -58,6 +58,11 @@ export default function ClawDetail() {
   const hasTeams = teams.length > 0;
   const isPersonalClaw = !claw?.team_id;
   const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalClaw;
+
+  // Determine source type for display
+  const sourceType = claw?.skill_source_type || 'inline';
+  const hasSkillMd = !!(claw?.skill_md_content || claw?.skill_md_cached || claw?.content);
+  const displayContent = claw?.skill_md_content || claw?.skill_md_cached || claw?.content || "";
 
   useEffect(() => {
     async function fetchClaw() {
@@ -86,15 +91,14 @@ export default function ClawDetail() {
   }, [slug]);
 
   const handleCopy = async () => {
-    if (!claw?.content && !claw?.skill_md_content) return;
+    if (!displayContent) return;
     try {
-      const contentToCopy = claw.skill_md_content || claw.content || "";
-      await navigator.clipboard.writeText(contentToCopy);
+      await navigator.clipboard.writeText(displayContent);
       setCopied(true);
-      toast.success("Claw content copied!");
+      toast.success("SKILL.md content copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy claw");
+      toast.error("Failed to copy");
     }
   };
 
@@ -115,11 +119,7 @@ export default function ClawDetail() {
       return;
     }
 
-    if (isPinned) {
-      toast.success("Unpinned");
-    } else {
-      toast.success("Pinned!");
-    }
+    toast.success(isPinned ? "Unpinned" : "Pinned!");
   };
 
   const getAuthorInitials = () => {
@@ -129,8 +129,26 @@ export default function ClawDetail() {
     return "U";
   };
 
-  // Get the display content (prefer skill_md_content over legacy content)
-  const displayContent = claw?.skill_md_content || claw?.content || "";
+  const getSourceBadge = () => {
+    switch (sourceType) {
+      case 'github':
+        return (
+          <Badge variant="outline" className="text-sm gap-1">
+            <GitBranch className="h-3 w-3" />
+            GitHub
+          </Badge>
+        );
+      case 'clawhub':
+        return (
+          <Badge variant="outline" className="text-sm gap-1">
+            <ExternalLink className="h-3 w-3" />
+            External
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
 
   if (loading) {
     return (
@@ -179,6 +197,7 @@ export default function ClawDetail() {
                 <Badge variant="secondary" className="text-sm gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                   <Grab className="h-3 w-3" />Claw
                 </Badge>
+                {getSourceBadge()}
                 {claw.tags?.slice(0, 5).map((tag) => (
                   <Badge key={tag} variant="outline" className="text-sm gap-1"><Tag className="h-3 w-3" />{tag}</Badge>
                 ))}
@@ -204,24 +223,77 @@ export default function ClawDetail() {
               </div>
             </div>
 
-            <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen} className="mb-8">
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between mb-4">
-                  <span className="text-lg font-semibold">Claw Definition</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isContentOpen ? "rotate-180" : ""}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">{displayContent}</pre>
+            {/* Source URL - Only for GitHub and External claws */}
+            {sourceType !== 'inline' && claw.skill_source_ref && (
+              <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <Label className="text-xs text-muted-foreground">Source URL</Label>
+                    <a 
+                      href={claw.skill_source_ref} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block text-sm text-primary hover:underline truncate"
+                    >
+                      {claw.skill_source_ref}
+                    </a>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.open(claw.skill_source_ref!, '_blank')}
+                    className="gap-1 shrink-0"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Open
+                  </Button>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
+                {claw.skill_source_path && (
+                  <div className="mt-2">
+                    <Label className="text-xs text-muted-foreground">Path</Label>
+                    <p className="text-sm font-mono">{claw.skill_source_path}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SKILL.md Content - Only show if there's content */}
+            {hasSkillMd && (
+              <Collapsible open={isSkillMdOpen} onOpenChange={setIsSkillMdOpen} className="mb-8">
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between mb-4">
+                    <span className="text-lg font-semibold">
+                      SKILL.md
+                      {sourceType === 'github' && <span className="ml-2 text-xs font-normal text-muted-foreground">(cached)</span>}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isSkillMdOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
+                    <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">{displayContent}</pre>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {/* External Reference Note - Only for clawhub without content */}
+            {sourceType === 'clawhub' && !hasSkillMd && (
+              <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-4">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  This Claw is an external reference. The SKILL.md content is not stored locally.
+                  Use the source URL above to view the full definition.
+                </p>
+              </div>
+            )}
 
             <div className="mb-8 flex flex-wrap gap-3">
-              <Button size="lg" variant={copied ? "success" : "default"} onClick={handleCopy} className="gap-2 bg-amber-500 hover:bg-amber-600">
-                {copied ? <><Check className="h-4 w-4" />Copied!</> : <><Copy className="h-4 w-4" />Copy Content</>}
-              </Button>
+              {/* Copy button - only show if there's content */}
+              {hasSkillMd && (
+                <Button size="lg" variant={copied ? "success" : "default"} onClick={handleCopy} className="gap-2 bg-amber-500 hover:bg-amber-600">
+                  {copied ? <><Check className="h-4 w-4" />Copied!</> : <><Copy className="h-4 w-4" />Copy SKILL.md</>}
+                </Button>
+              )}
               
               {/* Pin Button */}
               {user && (
@@ -265,7 +337,7 @@ export default function ClawDetail() {
                     Version History
                   </Button>
                   
-                  {/* Copy to team - only for personal claws owned by premium users with teams */}
+                  {/* Copy to team */}
                   {canCopyToTeam && (
                     <Button
                       size="lg"
@@ -299,15 +371,18 @@ export default function ClawDetail() {
                 </Button>
               )}
               
-              <DownloadMarkdownButton
-                title={claw.title}
-                type="claw"
-                description={claw.description}
-                tags={claw.tags}
-                content={displayContent}
-                size="lg"
-                variant="outline"
-              />
+              {/* Download - only if there's content */}
+              {hasSkillMd && (
+                <DownloadMarkdownButton
+                  title={claw.title}
+                  type="claw"
+                  description={claw.description}
+                  tags={claw.tags}
+                  content={displayContent}
+                  size="lg"
+                  variant="outline"
+                />
+              )}
             </div>
 
             {/* Modals */}
@@ -351,4 +426,9 @@ export default function ClawDetail() {
       <Footer />
     </div>
   );
+}
+
+// Label component for inline use
+function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <span className={`text-sm font-medium ${className}`}>{children}</span>;
 }

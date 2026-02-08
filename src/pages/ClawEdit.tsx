@@ -47,10 +47,17 @@ import { useClawVersions, useCreateClawVersion } from "@/hooks/useClawVersions";
 interface ClawFormData {
   title: string;
   description: string;
-  content: string;
+  content: string; // Legacy or inline SKILL.md content
   category: string;
   tags: string[];
   isPublic: boolean;
+  // Skill source fields
+  skillSourceType: 'inline' | 'github' | 'clawhub';
+  skillSourceRef: string | null; // URL for github/clawhub
+  skillSourcePath: string | null;
+  skillSourceVersion: string | null;
+  skillMdContent: string | null; // Editable for inline
+  skillMdCached: string | null; // Read-only for github
 }
 
 export default function ClawEdit() {
@@ -71,6 +78,12 @@ export default function ClawEdit() {
     category: "",
     tags: [],
     isPublic: false,
+    skillSourceType: 'inline',
+    skillSourceRef: null,
+    skillSourcePath: null,
+    skillSourceVersion: null,
+    skillMdContent: null,
+    skillMdCached: null,
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
@@ -115,10 +128,16 @@ export default function ClawEdit() {
         setFormData({
           title: data.title,
           description: data.description || "",
-          content: data.content || "",
+          content: data.skill_md_content || data.content || "",
           category: data.category || "",
           tags: data.tags || [],
           isPublic: data.published ?? false,
+          skillSourceType: (data.skill_source_type as 'inline' | 'github' | 'clawhub') || 'inline',
+          skillSourceRef: data.skill_source_ref || null,
+          skillSourcePath: data.skill_source_path || null,
+          skillSourceVersion: data.skill_source_version || null,
+          skillMdContent: data.skill_md_content || null,
+          skillMdCached: data.skill_md_cached || null,
         });
       } catch (err) {
         console.error("Error fetching claw:", err);
@@ -253,8 +272,9 @@ export default function ClawEdit() {
       return;
     }
 
-    if (!formData.content.trim()) {
-      toast.error("Claw content is required");
+    // Only require content for inline claws
+    if (formData.skillSourceType === 'inline' && !formData.content.trim()) {
+      toast.error("SKILL.md content is required");
       return;
     }
 
@@ -329,14 +349,14 @@ export default function ClawEdit() {
   };
 
   const handleImportMarkdown = (data: ParsedMarkdown) => {
-    setFormData({
-      title: data.frontmatter.title || formData.title,
+    setFormData(prev => ({
+      ...prev,
+      title: data.frontmatter.title || prev.title,
       description: data.frontmatter.description || "",
       content: data.content,
-      category: formData.category,
       tags: data.frontmatter.tags || [],
-      isPublic: formData.isPublic,
-    });
+      skillMdContent: data.content,
+    }));
   };
 
   if (authLoading || loading) {
@@ -454,17 +474,57 @@ export default function ClawEdit() {
             </div>
 
             <div className="space-y-6">
-              {/* Claw Content - FIRST */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Grab className="h-4 w-4 text-amber-500" />
-                  <Label htmlFor="content">Claw Definition *</Label>
+              {/* Source Type Info */}
+              {formData.skillSourceType !== 'inline' && (
+                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="capitalize">
+                      {formData.skillSourceType === 'github' ? 'GitHub Claw' : 'External Reference'}
+                    </Badge>
+                  </div>
+                  {formData.skillSourceRef && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Source URL</Label>
+                      <a 
+                        href={formData.skillSourceRef} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block text-sm text-primary hover:underline truncate"
+                      >
+                        {formData.skillSourceRef}
+                      </a>
+                    </div>
+                  )}
+                  {formData.skillSourcePath && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Path</Label>
+                      <p className="text-sm font-mono">{formData.skillSourcePath}</p>
+                    </div>
+                  )}
+                  {formData.skillSourceVersion && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Version</Label>
+                      <p className="text-sm font-mono">{formData.skillSourceVersion}</p>
+                    </div>
+                  )}
                 </div>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder={`# Claw Name
+              )}
+
+              {/* SKILL.md Content - Only show for inline or if there's cached content from GitHub */}
+              {(formData.skillSourceType === 'inline' || formData.skillMdCached || formData.content) && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Grab className="h-4 w-4 text-amber-500" />
+                    <Label htmlFor="content">
+                      {formData.skillSourceType === 'inline' ? 'SKILL.md *' : 'SKILL.md (cached)'}
+                    </Label>
+                  </div>
+                  {formData.skillSourceType === 'inline' ? (
+                    <Textarea
+                      id="content"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      placeholder={`# Claw Name
 
 ## Description
 This Claw represents a callable capability...
@@ -474,13 +534,35 @@ This Claw represents a callable capability...
 
 ## Behavior
 Describe what this claw does when invoked...`}
-                  rows={14}
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Define your claw's behavior in Markdown format.
-                </p>
-              </div>
+                      rows={14}
+                      className="font-mono text-sm"
+                    />
+                  ) : (
+                    <div className="rounded-lg border border-border bg-muted/30 p-4 max-h-[400px] overflow-auto">
+                      <pre className="whitespace-pre-wrap font-mono text-sm text-foreground">
+                        {formData.skillMdCached || formData.content || '(No SKILL.md content available)'}
+                      </pre>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {formData.skillSourceType === 'inline' 
+                      ? "Define your Claw's behavior in Markdown format."
+                      : formData.skillSourceType === 'github'
+                        ? "This content was fetched from GitHub. To edit, change to inline mode."
+                        : "External references don't have editable content."}
+                  </p>
+                </div>
+              )}
+
+              {/* External Reference Note */}
+              {formData.skillSourceType === 'clawhub' && !formData.skillMdCached && !formData.content && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-4">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    This Claw is an external reference. The SKILL.md content is not stored locally.
+                    Visit the source URL to view the full definition.
+                  </p>
+                </div>
+              )}
 
               {/* AI Metadata Suggestion Button */}
               <div className="space-y-2">
