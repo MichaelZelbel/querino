@@ -11,7 +11,7 @@ export interface Collection {
 export interface CollectionItem {
   id: string;
   collection_id: string;
-  item_type: 'prompt' | 'skill' | 'workflow';
+  item_type: 'prompt' | 'skill' | 'workflow' | 'claw';
   item_id: string;
   sort_order: number;
   created_at: string;

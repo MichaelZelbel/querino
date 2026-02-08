@@ -166,7 +166,7 @@ export function useAddToCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { collection_id: string; item_type: 'prompt' | 'skill' | 'workflow'; item_id: string }) => {
+    mutationFn: async (data: { collection_id: string; item_type: 'prompt' | 'skill' | 'workflow' | 'claw'; item_id: string }) => {
       // Get current max sort_order
       const { data: items } = await supabase
         .from("collection_items")

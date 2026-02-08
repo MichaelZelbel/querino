@@ -55,6 +55,12 @@ export function CopyClawToTeamModal({
           source: claw.source,
           team_id: selectedTeamId,
           published: false,
+          skill_source_type: claw.skill_source_type,
+          skill_source_ref: claw.skill_source_ref,
+          skill_source_path: claw.skill_source_path,
+          skill_source_version: claw.skill_source_version,
+          skill_md_content: claw.skill_md_content,
+          skill_md_cached: claw.skill_md_cached,
         });
 
       if (error) throw error;
