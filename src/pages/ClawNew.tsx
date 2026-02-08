@@ -24,7 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, X, Grab, Sparkles, Lock, FileText, Download, Link, CheckCircle2 } from "lucide-react";
+import { Loader2, X, Grab, Sparkles, Lock, FileText, Download, Link, CheckCircle2, ExternalLink, Edit3, Info } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
@@ -267,6 +267,26 @@ export default function ClawNew() {
     toast.success("Imported as editable copy!");
   };
 
+  // Switch to manual editor while keeping ClawHub URL as reference
+  const handleSwitchToManualForClawHub = () => {
+    // Store the ClawHub reference in a comment at the top of the template
+    const clawHubRef = skillSourceUrl.trim();
+    const templateWithRef = `<!-- Source: ${clawHubRef} -->\n\n${SKILL_MD_TEMPLATE}`;
+    
+    setSkillMdContent(templateWithRef);
+    setSkillContentMode('inline');
+    
+    toast.success("Switched to manual editor. ClawHub URL saved as reference.");
+  };
+
+  // Open ClawHub URL in new tab
+  const handleOpenClawHub = () => {
+    const url = skillSourceUrl.trim();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
@@ -464,7 +484,7 @@ export default function ClawNew() {
                     <p className="text-sm text-destructive">{errors.skillSourceUrl}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Paste a link to a GitHub repository, a folder containing SKILL.md, or a ClawHub skill.
+                    Paste a GitHub URL (auto-fetch supported) or ClawHub URL (manual import only).
                   </p>
                   
                   {/* URL Parse Status Indicator */}
@@ -501,23 +521,57 @@ export default function ClawNew() {
                   )}
                 </div>
 
-                {/* ClawHub limitation notice */}
+                {/* ClawHub: Manual import info panel */}
                 {parsedSource.isValid && parsedSource.sourceType === 'clawhub' && (
-                  <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
-                    <p className="text-amber-700 dark:text-amber-400">
-                      <strong>Note:</strong> ClawHub doesn't expose raw SKILL.md content via public URLs. 
-                      Please visit the skill page, copy the content manually, and use "Write SKILL.md manually" mode instead.
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-medium text-amber-800 dark:text-amber-300">
+                          ClawHub import is manual
+                        </p>
+                        <p className="text-sm text-amber-700/80 dark:text-amber-400/80">
+                          ClawHub currently doesn't provide a raw SKILL.md endpoint. 
+                          Querino can store this link as a reference. To get an editable copy, 
+                          paste SKILL.md content manually.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenClawHub}
+                        className="gap-2"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Open ClawHub in new tab
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleSwitchToManualForClawHub}
+                        className="gap-2"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                        Switch to manual SKILL.md editor
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Tip: For ClawHub skills, paste SKILL.md manually (until ClawHub provides a raw content API).
                     </p>
                   </div>
                 )}
 
                 {/* Fetch Button - only for GitHub */}
-                {parsedSource.sourceType === 'github' && (
+                {parsedSource.isValid && parsedSource.sourceType === 'github' && (
                   <Button
                     type="button"
                     variant="secondary"
                     onClick={handleFetchRemoteSkill}
-                    disabled={isFetchingRemote || !parsedSource.isValid}
+                    disabled={isFetchingRemote}
                     className="gap-2"
                   >
                     {isFetchingRemote ? (
