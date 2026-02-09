@@ -8,6 +8,7 @@ import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, Star } from 
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
+import { LanguageBadge } from "@/components/shared/LanguageBadge";
 
 interface WorkflowCardProps {
   workflow: Workflow & { author?: WorkflowAuthor | null };
@@ -85,6 +86,7 @@ export function WorkflowCard({
                     Your workflow
                   </Badge>
                 )}
+                <LanguageBadge language={workflow.language} />
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {workflow.description || "No description"}

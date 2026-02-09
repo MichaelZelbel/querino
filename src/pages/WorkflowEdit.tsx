@@ -42,6 +42,8 @@ import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markd
 import { categoryOptions } from "@/types/prompt";
 import type { Workflow } from "@/types/workflow";
 import type { ParsedMarkdown } from "@/lib/markdown";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 
 interface WorkflowFormData {
   title: string;
@@ -50,6 +52,7 @@ interface WorkflowFormData {
   category: string;
   tags: string[];
   isPublic: boolean;
+  language: string;
 }
 
 export default function WorkflowEdit() {
@@ -75,6 +78,7 @@ export default function WorkflowEdit() {
     category: "",
     tags: [],
     isPublic: false,
+    language: DEFAULT_LANGUAGE,
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
@@ -126,6 +130,7 @@ export default function WorkflowEdit() {
           category: data.category || "",
           tags: data.tags || [],
           isPublic: data.published ?? false,
+          language: data.language || DEFAULT_LANGUAGE,
         });
       } catch (err) {
         console.error("Error fetching workflow:", err);
@@ -240,6 +245,7 @@ export default function WorkflowEdit() {
         category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
+        language: formData.language,
       };
 
       const { error } = await (supabase.from("workflows") as any)
@@ -285,6 +291,7 @@ export default function WorkflowEdit() {
         category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
+        language: formData.language,
       };
 
       const { error } = await (supabase.from("workflows") as any)
@@ -339,6 +346,7 @@ export default function WorkflowEdit() {
       category: formData.category,
       tags: data.frontmatter.tags || [],
       isPublic: formData.isPublic,
+      language: formData.language,
     });
   };
 
@@ -589,6 +597,12 @@ Describe what this workflow does...
                   </div>
                 )}
               </div>
+
+              {/* Language */}
+              <LanguageSelect
+                value={formData.language}
+                onChange={(v) => setFormData({ ...formData, language: v })}
+              />
 
               {/* Visibility Toggle */}
               <div className="flex items-center justify-between rounded-lg border border-border p-4">

@@ -17,6 +17,7 @@ export interface Workflow {
   rating_count?: number;
   // Legacy field - may still exist in DB but not used in new workflows
   json?: Record<string, unknown>;
+  language?: string;
 }
 
 // Author info for display

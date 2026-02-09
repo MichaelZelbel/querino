@@ -8,6 +8,7 @@ import { Copy, Check, Pencil, Files, BookOpen, Pin, Star } from "lucide-react";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
+import { LanguageBadge } from "@/components/shared/LanguageBadge";
 
 interface SkillCardProps {
   skill: Skill & { author?: SkillAuthor | null };
@@ -73,6 +74,7 @@ export function SkillCard({
                     Your skill
                   </Badge>
                 )}
+                <LanguageBadge language={skill.language} />
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {skill.description || "No description"}

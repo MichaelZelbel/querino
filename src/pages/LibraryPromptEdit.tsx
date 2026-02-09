@@ -60,6 +60,8 @@ import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { ParsedMarkdown } from "@/lib/markdown";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 
 interface PromptVersion {
   id: string;
@@ -99,6 +101,7 @@ export default function LibraryPromptEdit() {
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(true);
   const [changeNotes, setChangeNotes] = useState("");
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // AI metadata suggestion state
@@ -152,6 +155,7 @@ export default function LibraryPromptEdit() {
         setCategory(typedPrompt.category);
         setTags(typedPrompt.tags || []);
         setIsPublic(typedPrompt.is_public);
+        setLanguage(typedPrompt.language || DEFAULT_LANGUAGE);
 
         // Fetch versions using the prompt's ID
         const { data: versionsData, error: versionsError } = await supabase
@@ -301,6 +305,7 @@ export default function LibraryPromptEdit() {
           category,
           tags: tags.length > 0 ? tags : null,
           is_public: isPublic,
+          language,
         })
         .eq("id", promptId)
         .eq("author_id", user.id);

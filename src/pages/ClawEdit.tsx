@@ -44,6 +44,8 @@ import type { ParsedMarkdown } from "@/lib/markdown";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { useClawVersions, useCreateClawVersion } from "@/hooks/useClawVersions";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 
 interface ClawFormData {
   title: string;
@@ -59,6 +61,7 @@ interface ClawFormData {
   skillSourceVersion: string | null;
   skillMdContent: string | null; // Editable for inline
   skillMdCached: string | null; // Read-only for github
+  language: string;
 }
 
 export default function ClawEdit() {
@@ -86,6 +89,7 @@ export default function ClawEdit() {
     skillSourceVersion: null,
     skillMdContent: null,
     skillMdCached: null,
+    language: DEFAULT_LANGUAGE,
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
@@ -151,6 +155,7 @@ export default function ClawEdit() {
           skillSourceVersion: data.skill_source_version || null,
           skillMdContent: data.skill_md_content || null,
           skillMdCached: data.skill_md_cached || null,
+          language: data.language || DEFAULT_LANGUAGE,
         });
       } catch (err) {
         console.error("Error fetching claw:", err);
@@ -257,6 +262,7 @@ export default function ClawEdit() {
         category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
+        language: formData.language,
       };
 
       const { error } = await (supabase.from("claws") as any)
