@@ -35,6 +35,7 @@ export default function PromptNew() {
     category: string;
     tags: string[];
     is_public: boolean;
+    language: string;
   }) => {
     if (!user) return;
 
@@ -54,6 +55,7 @@ export default function PromptNew() {
           rating_avg: 0,
           rating_count: 0,
           copies_count: 0,
+          language: data.language,
         })
         .select("id, slug")
         .single();
@@ -120,7 +122,8 @@ export default function PromptNew() {
                 content: prefillContent, 
                 category: prefillCategory, 
                 tags: prefillTags, 
-                is_public: false
+                is_public: false,
+                language: "en",
               } : undefined}
               onSubmit={handleSubmit}
               onCancel={handleCancel}

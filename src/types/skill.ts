@@ -13,6 +13,7 @@ export interface Skill {
   author_id: string | null;
   rating_avg?: number;
   rating_count?: number;
+  language?: string;
 }
 
 // Author info for display

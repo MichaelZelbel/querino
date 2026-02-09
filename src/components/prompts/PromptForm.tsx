@@ -16,6 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { X, Loader2, Sparkles, Lock } from "lucide-react";
 import { categoryOptions } from "@/types/prompt";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import {
@@ -32,6 +34,7 @@ export interface PromptFormData {
   category: string;
   tags: string[];
   is_public: boolean;
+  language: string;
 }
 
 interface PromptFormProps {
@@ -63,6 +66,7 @@ export function PromptForm({
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [isPublic, setIsPublic] = useState(initialData?.is_public ?? true);
+  const [language, setLanguage] = useState(initialData?.language || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // AI metadata suggestion state
@@ -79,8 +83,9 @@ export function PromptForm({
       category,
       tags,
       is_public: isPublic,
+      language,
     });
-  }, [title, description, content, category, tags, isPublic, onChange]);
+  }, [title, description, content, category, tags, isPublic, language, onChange]);
 
   const normalizeTag = (tag: string): string => {
     return tag
@@ -211,6 +216,7 @@ export function PromptForm({
       category,
       tags,
       is_public: isPublic,
+      language,
     });
   };
 
@@ -327,6 +333,9 @@ export function PromptForm({
           <p className="text-sm text-destructive">{errors.category}</p>
         )}
       </div>
+
+      {/* Language */}
+      <LanguageSelect value={language} onChange={setLanguage} />
 
       {/* Tags */}
       <div className="space-y-2">

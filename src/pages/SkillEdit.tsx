@@ -42,6 +42,8 @@ import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markd
 import { categoryOptions } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { ParsedMarkdown } from "@/lib/markdown";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 
 interface SkillFormData {
   title: string;
@@ -50,6 +52,7 @@ interface SkillFormData {
   category: string;
   tags: string[];
   isPublic: boolean;
+  language: string;
 }
 
 export default function SkillEdit() {
@@ -75,6 +78,7 @@ export default function SkillEdit() {
     category: "",
     tags: [],
     isPublic: false,
+    language: DEFAULT_LANGUAGE,
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
@@ -119,6 +123,7 @@ export default function SkillEdit() {
           category: data.category || "",
           tags: data.tags || [],
           isPublic: data.published ?? false,
+          language: data.language || DEFAULT_LANGUAGE,
         });
       } catch (err) {
         console.error("Error fetching skill:", err);
@@ -233,6 +238,7 @@ export default function SkillEdit() {
         category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
+        language: formData.language,
       };
 
       const { error } = await (supabase.from("skills") as any)
@@ -278,6 +284,7 @@ export default function SkillEdit() {
         category: formData.category || null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         published: formData.isPublic,
+        language: formData.language,
       };
 
       const { error } = await (supabase.from("skills") as any)
@@ -332,6 +339,7 @@ export default function SkillEdit() {
       category: formData.category,
       tags: data.frontmatter.tags || [],
       isPublic: formData.isPublic,
+      language: formData.language,
     });
   };
 
@@ -568,6 +576,12 @@ export default function SkillEdit() {
                   </div>
                 )}
               </div>
+
+              {/* Language */}
+              <LanguageSelect
+                value={formData.language}
+                onChange={(v) => setFormData({ ...formData, language: v })}
+              />
 
               {/* Visibility Toggle */}
               <div className="flex items-center justify-between rounded-lg border border-border p-4">

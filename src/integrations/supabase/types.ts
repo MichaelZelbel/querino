@@ -574,6 +574,7 @@ export type Database = {
           description: string | null
           embedding: string | null
           id: string
+          language: string
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
@@ -598,6 +599,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           id?: string
+          language?: string
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -622,6 +624,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           id?: string
+          language?: string
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1040,6 +1043,7 @@ export type Database = {
           example_output: string | null
           id: string
           is_public: boolean | null
+          language: string
           published_at: string | null
           rating_avg: number | null
           rating_count: number | null
@@ -1061,6 +1065,7 @@ export type Database = {
           example_output?: string | null
           id?: string
           is_public?: boolean | null
+          language?: string
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1082,6 +1087,7 @@ export type Database = {
           example_output?: string | null
           id?: string
           is_public?: boolean | null
+          language?: string
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1163,6 +1169,7 @@ export type Database = {
           description: string | null
           embedding: string | null
           id: string
+          language: string
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
@@ -1180,6 +1187,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           id?: string
+          language?: string
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1197,6 +1205,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           id?: string
+          language?: string
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1517,6 +1526,7 @@ export type Database = {
           filename: string | null
           id: string
           json: Json
+          language: string
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
@@ -1537,6 +1547,7 @@ export type Database = {
           filename?: string | null
           id?: string
           json?: Json
+          language?: string
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1557,6 +1568,7 @@ export type Database = {
           filename?: string | null
           id?: string
           json?: Json
+          language?: string
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null

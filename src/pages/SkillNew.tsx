@@ -28,6 +28,8 @@ import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 
 export default function SkillNew() {
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ export default function SkillNew() {
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // AI metadata suggestion state
@@ -171,6 +174,7 @@ export default function SkillNew() {
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
           published: isPublic,
+          language,
         })
         .select("slug")
         .single();
@@ -344,6 +348,9 @@ export default function SkillNew() {
                 </div>
               )}
             </div>
+
+            {/* Language */}
+            <LanguageSelect value={language} onChange={setLanguage} />
 
             {/* Visibility Toggle */}
             <div className="flex items-center justify-between rounded-lg border border-border p-4">

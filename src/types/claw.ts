@@ -27,6 +27,7 @@ export interface Claw {
   skill_source_version: string | null; // 'latest', tag, or commit SHA
   skill_md_content: string | null; // Editable SKILL.md (inline or imported)
   skill_md_cached: string | null; // Read-only cache for remote skills
+  language?: string;
 }
 
 // Author info for display

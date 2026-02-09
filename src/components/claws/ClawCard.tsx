@@ -8,6 +8,7 @@ import { Copy, Check, Pencil, Files, Grab, Pin, Star } from "lucide-react";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
+import { LanguageBadge } from "@/components/shared/LanguageBadge";
 
 interface ClawCardProps {
   claw: Claw & { author?: ClawAuthor | null };
@@ -75,6 +76,7 @@ export function ClawCard({
                     Your claw
                   </Badge>
                 )}
+                <LanguageBadge language={claw.language} />
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {claw.description || "A callable capability for Clawbot."}

@@ -18,6 +18,7 @@ export interface Prompt {
   published_at?: string | null;
   summary?: string | null;
   example_output?: string | null;
+  language?: string;
 }
 
 // Author info for display

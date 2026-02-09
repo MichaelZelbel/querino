@@ -31,6 +31,8 @@ import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import type { SkillSourceType } from "@/types/claw";
 import { parseSkillSourceUrl } from "@/lib/skillSourceParser";
+import { LanguageSelect } from "@/components/shared/LanguageSelect";
+import { DEFAULT_LANGUAGE } from "@/config/languages";
 
 const SKILL_MD_TEMPLATE = `# Claw Name
 
@@ -86,6 +88,7 @@ export default function ClawNew() {
   const [tags, setTags] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
@@ -333,6 +336,7 @@ export default function ClawNew() {
           skill_source_version: skillSourceVersion,
           skill_md_content: storedSkillMdContent,
           skill_md_cached: storedSkillMdCached,
+          language,
         })
         .select("slug")
         .single();
@@ -744,6 +748,9 @@ export default function ClawNew() {
                 </div>
               )}
             </div>
+
+            {/* Language */}
+            <LanguageSelect value={language} onChange={setLanguage} />
 
             {/* Visibility Toggle */}
             <div className="flex items-center justify-between rounded-lg border border-border p-4">

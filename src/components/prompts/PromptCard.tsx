@@ -9,6 +9,7 @@ import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
+import { LanguageBadge } from "@/components/shared/LanguageBadge";
 
 interface PromptCardProps {
   prompt: Prompt & { author?: PromptAuthor | null };
@@ -82,6 +83,7 @@ export function PromptCard({
                     Private
                   </Badge>
                 )}
+                <LanguageBadge language={prompt.language} />
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {prompt.summary || prompt.description}
