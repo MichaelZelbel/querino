@@ -127,10 +127,48 @@ serve(async (req) => {
       );
     }
 
+    // Get user's display name before deletion for the notification
+    let displayName: string | null = null;
+    try {
+      const { data: profileData } = await supabaseAdmin
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+      displayName = profileData?.display_name || null;
+    } catch (e) {
+      console.log("delete-my-account - Could not fetch display name:", e);
+    }
+
     // Cancel Stripe subscriptions first (before deleting any data)
     if (userEmail) {
       console.log("delete-my-account - Cancelling Stripe subscriptions...");
       await cancelStripeSubscriptions(userEmail);
+    }
+
+    // Send admin notification about account deletion
+    try {
+      console.log("delete-my-account - Sending admin notification...");
+      const notifyResponse = await fetch(
+        `${supabaseUrl}/functions/v1/notify-admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            eventType: "delete_account",
+            userEmail,
+            userId,
+            displayName,
+          }),
+        }
+      );
+      console.log("delete-my-account - Admin notification sent:", notifyResponse.status);
+    } catch (notifyError) {
+      console.error("delete-my-account - Failed to send admin notification:", notifyError);
+      // Continue with deletion even if notification fails
     }
 
     // Delete user data from all tables (in order to respect foreign keys)

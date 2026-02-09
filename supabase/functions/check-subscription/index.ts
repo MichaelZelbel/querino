@@ -209,6 +209,41 @@ serve(async (req) => {
       productId: checkResult.productId
     });
 
+    // Detect subscription changes and notify admin
+    const roleChanged = currentRole !== newRole;
+    if (roleChanged) {
+      logStep("Role change detected", { from: currentRole, to: newRole });
+      
+      // Notify admin of subscription/unsubscription
+      try {
+        const eventType = newRole === "premium" ? "subscribe" : "unsubscribe";
+        const notifyResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-admin`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              eventType,
+              userEmail: user.email,
+              userId: user.id,
+              metadata: {
+                mode: requestedMode,
+                productId: checkResult.productId,
+                previousRole: currentRole,
+              },
+            }),
+          }
+        );
+        logStep("Admin notification sent", { status: notifyResponse.status, eventType });
+      } catch (notifyError) {
+        logStep("Failed to send admin notification", { error: String(notifyError) });
+        // Continue even if notification fails
+      }
+    }
+
     // Update user_roles table (the authoritative source)
     const { error: updateError } = await supabaseClient
       .from("user_roles")
