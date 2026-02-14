@@ -32,8 +32,15 @@ Before starting, ensure your Lovable project has:
 
 ---
 
-ToDo
-Add this: https://querino.ai/prompts/admin-notification-email-vibe-coding 
+## ToDo
+1.
+Add this: https://querino.ai/prompts/admin-notification-email-vibe-coding
+
+2. Add something like this:
+Add a success state to the signup form with a clear confirmation message.
+
+When a new user signs up and submits their email address, then there is only a little toast message telling them to check their email. The screen simply stays on the form with the entry boxes just like something was wrong.
+
 
 ## Phase 1: Foundation & Design System
 
