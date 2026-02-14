@@ -32,6 +32,9 @@ Before starting, ensure your Lovable project has:
 
 ---
 
+ToDo
+Add this: https://querino.ai/prompts/admin-notification-email-vibe-coding 
+
 ## Phase 1: Foundation & Design System
 
 ### Prompt 1.1: Initialize Design System
