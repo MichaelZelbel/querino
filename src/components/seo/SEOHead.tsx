@@ -81,18 +81,15 @@ export function SEOHead({
       }
     }
 
-    // Canonical URL
+    // Canonical URL - always set, default to current path (no query params)
+    const finalCanonical = canonicalUrl || (window.location.origin + window.location.pathname);
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
-    if (canonicalUrl) {
-      if (!canonical) {
-        canonical = document.createElement("link");
-        canonical.setAttribute("rel", "canonical");
-        document.head.appendChild(canonical);
-      }
-      canonical.setAttribute("href", canonicalUrl);
-    } else if (canonical) {
-      canonical.remove();
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
     }
+    canonical.setAttribute("href", finalCanonical);
 
     // RSS Feed link
     let rssLink = document.querySelector('link[type="application/rss+xml"]') as HTMLLinkElement;
