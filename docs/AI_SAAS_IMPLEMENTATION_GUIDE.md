@@ -1092,17 +1092,29 @@ Implement SEO best practices:
    - Open Graph tags
    - Twitter Card tags
    - Favicon setup
+   - IMPORTANT: Do NOT put a hardcoded <link rel="canonical"> in index.html.
+     In an SPA, every route serves the same index.html, so a hardcoded canonical
+     tells Google that every page is a duplicate of whatever URL you hardcode.
+     This causes the Google Search Console error:
+     "Alternate page with proper canonical tag" — and Google will skip indexing
+     all pages except the one in the canonical.
 
-2. Create SEO component for dynamic pages:
+2. Create SEOHead component for dynamic pages:
    - Updates document title
-   - Sets meta tags
-   - Structured data (JSON-LD)
+   - Sets meta description, OG tags, Twitter Card tags
+   - ALWAYS sets a canonical URL:
+     - If an explicit canonicalUrl prop is provided, use it
+     - Otherwise, default to: window.location.origin + window.location.pathname
+     - This strips query parameters (e.g. ?page=2) to avoid duplicate canonicals
+     - Every page must declare itself as canonical, not rely on index.html
+   - Structured data (JSON-LD) where applicable
 
-3. Add meta tags to all pages:
-   - Home: Main pitch
+3. Use SEOHead on every page:
+   - Home: Main pitch keywords
    - Pricing: Pricing-focused keywords
    - Docs: Documentation keywords
-   - Dashboard: "Dashboard - [App Name]"
+   - Dashboard: "Dashboard - [App Name]" (with noIndex for private pages)
+   - Blog pages: Pass explicit canonicalUrl with the full post URL
 
 4. Robots.txt:
    - Allow all public pages
@@ -1111,6 +1123,11 @@ Implement SEO best practices:
 5. Sitemap generation (placeholder):
    - List all public routes
    - Update on content changes
+
+KEY LESSON: In a Single Page Application, Google reads the raw HTML *before*
+JavaScript executes. Any SEO-critical tags in index.html apply to ALL routes.
+The only safe approach is to manage canonical tags dynamically via a component
+like SEOHead that runs on each route change.
 ```
 
 ### Prompt 10.2: Performance Optimization
