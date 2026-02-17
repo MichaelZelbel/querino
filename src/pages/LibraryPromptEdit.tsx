@@ -35,6 +35,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
   Loader2,
   ArrowLeft,
   ShieldAlert,
@@ -50,6 +57,7 @@ import {
   Eye,
   Sparkles,
   Lock,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Prompt } from "@/types/prompt";
@@ -62,6 +70,8 @@ import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markd
 import type { ParsedMarkdown } from "@/lib/markdown";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
+import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PromptVersion {
   id: string;
@@ -80,6 +90,7 @@ export default function LibraryPromptEdit() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
+  const isMobile = useIsMobile();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +119,12 @@ export default function LibraryPromptEdit() {
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
+  // Undo state for AI edits
+  const [previousContent, setPreviousContent] = useState<string | null>(null);
+
+  // AI coach panel state (mobile sheet)
+  const [showCoachSheet, setShowCoachSheet] = useState(false);
+
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
 
@@ -124,7 +141,6 @@ export default function LibraryPromptEdit() {
       if (!slug || !user) return;
 
       try {
-        // Fetch prompt by slug
         const { data: promptData, error: promptError } = await supabase
           .from("prompts")
           .select("*")
@@ -157,7 +173,6 @@ export default function LibraryPromptEdit() {
         setIsPublic(typedPrompt.is_public);
         setLanguage(typedPrompt.language || DEFAULT_LANGUAGE);
 
-        // Fetch versions using the prompt's ID
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
           .select("*")
@@ -184,10 +199,10 @@ export default function LibraryPromptEdit() {
     return tag
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9\-\s]/g, '') // Remove special chars except hyphens
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Remove consecutive hyphens
-      .replace(/^-|-$/g, ''); // Trim leading/trailing hyphens
+      .replace(/[^a-z0-9\-\s]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   };
 
   const handleAddTag = () => {
@@ -229,26 +244,16 @@ export default function LibraryPromptEdit() {
 
       const result = response.data;
 
-      // Populate form fields with suggestions (always overwrite)
-      if (result.title) {
-        setTitle(result.title);
-      }
+      if (result.title) setTitle(result.title);
+      if (result.description) setShortDescription(result.description);
       
-      if (result.description) {
-        setShortDescription(result.description);
-      }
-      
-      // Set category if provided and valid
       if (result.category) {
         const matchedCategory = categoryOptions.find(cat => 
           cat.id.toLowerCase() === result.category.toLowerCase()
         );
-        if (matchedCategory) {
-          setCategory(matchedCategory.id);
-        }
+        if (matchedCategory) setCategory(matchedCategory.id);
       }
       
-      // Replace tags with suggested tags
       if (result.tags && Array.isArray(result.tags)) {
         const newTags = result.tags
           .map((tag: string) => normalizeTag(tag))
@@ -330,10 +335,8 @@ export default function LibraryPromptEdit() {
 
     setIsSavingVersion(true);
     try {
-      // Get the next version number
       const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
 
-      // Insert new version with all fields
       const { error: versionError } = await supabase
         .from("prompt_versions")
         .insert({
@@ -352,7 +355,6 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      // Update the main prompt
       const { error: updateError } = await supabase
         .from("prompts")
         .update({
@@ -372,7 +374,6 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      // Refresh versions list
       const { data: newVersions } = await supabase
         .from("prompt_versions")
         .select("*")
@@ -442,7 +443,6 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      // Update local state
       setPrompt((prev) => prev ? {
         ...prev,
         is_public: true,
@@ -491,6 +491,91 @@ export default function LibraryPromptEdit() {
       setIsSaving(false);
     }
   };
+
+  // AI Coach: apply content from AI
+  const handleApplyAIContent = async (newContent: string, changeNote?: string) => {
+    setPreviousContent(content);
+    setContent(newContent);
+
+    // Auto-create version snapshot
+    if (promptId && user) {
+      const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
+      const { error } = await supabase
+        .from("prompt_versions")
+        .insert({
+          prompt_id: promptId,
+          version_number: nextVersionNumber,
+          title: title.trim(),
+          description: shortDescription.trim(),
+          content: newContent,
+          tags: tags.length > 0 ? tags : null,
+          change_notes: changeNote || "AI-assisted edit",
+        });
+
+      if (!error) {
+        const { data: newVersions } = await supabase
+          .from("prompt_versions")
+          .select("*")
+          .eq("prompt_id", promptId)
+          .order("version_number", { ascending: false });
+
+        if (newVersions) {
+          setVersions(newVersions as PromptVersion[]);
+        }
+      }
+    }
+  };
+
+  // AI Coach: undo last AI edit
+  const handleUndoAI = () => {
+    if (previousContent !== null) {
+      setContent(previousContent);
+      setPreviousContent(null);
+      toast.success("AI edit undone.");
+    }
+  };
+
+  // Render the content area with line numbers
+  const renderLineNumberedEditor = () => {
+    const lines = content.split("\n");
+    const lineCount = lines.length;
+
+    return (
+      <div className="relative">
+        <div className="flex">
+          {/* Line numbers */}
+          <div
+            className="select-none pr-3 pt-2 pb-2 text-right font-mono text-xs text-muted-foreground/50 leading-[1.7rem] min-w-[2.5rem] border-r border-border mr-0"
+            aria-hidden="true"
+          >
+            {Array.from({ length: lineCount }, (_, i) => (
+              <div key={i + 1}>{i + 1}</div>
+            ))}
+          </div>
+          {/* Editor */}
+          <Textarea
+            id="content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write your prompt here..."
+            className={`font-mono text-sm border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.7rem] min-h-[300px] resize-y ${errors.content ? "border-destructive" : ""}`}
+            style={{ paddingTop: "0.5rem" }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  // Coach panel element (reused for desktop + mobile sheet)
+  const coachPanel = promptId ? (
+    <PromptCoachPanel
+      artifactId={promptId}
+      canvasContent={content}
+      onApplyContent={handleApplyAIContent}
+      onUndo={handleUndoAI}
+      canUndo={previousContent !== null}
+    />
+  ) : null;
 
   if (authLoading || (loading && user)) {
     return (
@@ -564,7 +649,7 @@ export default function LibraryPromptEdit() {
       <Header />
 
       <main className="flex-1 py-8">
-        <div className="container mx-auto max-w-6xl px-4">
+        <div className="container mx-auto max-w-[1600px] px-4">
           {/* Top Navigation & Actions */}
           <div className="mb-6 flex items-center justify-between">
             <Link
@@ -601,7 +686,6 @@ export default function LibraryPromptEdit() {
                 variant="outline"
               />
 
-              {/* View/Publish buttons */}
               {prompt?.is_public ? (
                 <>
                   <Link to={`/prompts/${slug}`}>
@@ -637,6 +721,25 @@ export default function LibraryPromptEdit() {
                   Version History
                 </Button>
               </Link>
+
+              {/* Mobile: AI Coach toggle */}
+              {isMobile && (
+                <Sheet open={showCoachSheet} onOpenChange={setShowCoachSheet}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Bot className="h-4 w-4" />
+                      AI Coach
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[80vh] p-0">
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Prompt Coach</SheetTitle>
+                    </SheetHeader>
+                    <div className="h-full">{coachPanel}</div>
+                  </SheetContent>
+                </Sheet>
+              )}
+
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSaving || isSavingVersion}
@@ -700,311 +803,319 @@ export default function LibraryPromptEdit() {
             </div>
           </div>
 
-          {/* Two-column layout */}
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* Left Column - Editor */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h1 className="mb-6 text-xl font-semibold text-foreground">
-                  Edit Prompt
-                </h1>
+          {/* Main Studio Layout */}
+          <div className="flex gap-6">
+            {/* Left: Editor + Metadata */}
+            <div className="flex-1 min-w-0 space-y-6">
+              {/* Two-column layout for editor content */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Left Column - Editor */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <h1 className="mb-6 text-xl font-semibold text-foreground">
+                      Edit Prompt
+                    </h1>
 
-                <div className="space-y-6">
-                  {/* Prompt Content - FIRST */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="content">Prompt Content *</Label>
-                      {isPremium ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowRefineModal(true)}
-                          className="gap-2"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          Refine with AI
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate("/pricing")}
-                          className="gap-2"
-                        >
-                          <Lock className="h-4 w-4" />
-                          Refine with AI
-                        </Button>
-                      )}
-                    </div>
-                    <Textarea
-                      id="content"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Write your prompt here..."
-                      rows={12}
-                      className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
-                    />
-                    {errors.content && (
-                      <p className="text-sm text-destructive">{errors.content}</p>
-                    )}
-                  </div>
-
-                  {/* AI Metadata Suggestion Button */}
-                  <div className="space-y-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-block">
+                    <div className="space-y-6">
+                      {/* Prompt Content with line numbers */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="content">Prompt Content *</Label>
+                          {isPremium ? (
                             <Button
                               type="button"
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              onClick={handleSuggestMetadata}
-                              disabled={!isPremium || isGeneratingMetadata || !content.trim()}
-                              className="gap-1.5 text-muted-foreground hover:text-foreground"
+                              onClick={() => setShowRefineModal(true)}
+                              className="gap-2"
                             >
-                              {isGeneratingMetadata ? (
-                                <>
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  Generating…
-                                </>
-                              ) : (
-                                <>
-                                  {!isPremium && <Lock className="h-3.5 w-3.5" />}
-                                  <Sparkles className="h-3.5 w-3.5" />
-                                  Suggest title, description, category & tags
-                                </>
-                              )}
+                              <Sparkles className="h-4 w-4" />
+                              Refine with AI
                             </Button>
-                          </span>
-                        </TooltipTrigger>
-                        {!isPremium && (
-                          <TooltipContent>
-                            <p>AI-assisted metadata is a Premium feature</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    {metadataError && (
-                      <p className="text-sm text-destructive">{metadataError}</p>
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Give your prompt a clear, descriptive title"
-                      className={errors.title ? "border-destructive" : ""}
-                    />
-                    {errors.title && (
-                      <p className="text-sm text-destructive">{errors.title}</p>
-                    )}
-                  </div>
-
-                  {/* Short Description */}
-                  <div className="space-y-2">
-                    <Label htmlFor="shortDescription">Description *</Label>
-                    <Textarea
-                      id="shortDescription"
-                      value={shortDescription}
-                      onChange={(e) => setShortDescription(e.target.value)}
-                      placeholder="Briefly describe what this prompt does"
-                      rows={2}
-                      className={errors.shortDescription ? "border-destructive" : ""}
-                    />
-                    {errors.shortDescription && (
-                      <p className="text-sm text-destructive">{errors.shortDescription}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {shortDescription.length}/2000 characters
-                    </p>
-                  </div>
-
-                  {/* Category */}
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className={errors.category ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryOptions.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.category && (
-                      <p className="text-sm text-destructive">{errors.category}</p>
-                    )}
-                  </div>
-
-                  {/* Tags */}
-                  <div className="space-y-2">
-                    <Label htmlFor="tags">Tags</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="tags"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={handleTagKeyDown}
-                        placeholder="Add tags and press Enter"
-                        disabled={tags.length >= 10}
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={handleAddTag}
-                        disabled={!tagInput.trim() || tags.length >= 10}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="gap-1 pr-1">
-                            {tag}
-                            <button
+                          ) : (
+                            <Button
                               type="button"
-                              onClick={() => handleRemoveTag(tag)}
-                              className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate("/pricing")}
+                              className="gap-2"
                             >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
+                              <Lock className="h-4 w-4" />
+                              Refine with AI
+                            </Button>
+                          )}
+                        </div>
+                        <div className="rounded-md border border-input bg-background overflow-hidden">
+                          {renderLineNumberedEditor()}
+                        </div>
+                        {errors.content && (
+                          <p className="text-sm text-destructive">{errors.content}</p>
+                        )}
+                      </div>
+
+                      {/* AI Metadata Suggestion */}
+                      <div className="space-y-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-block">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleSuggestMetadata}
+                                  disabled={!isPremium || isGeneratingMetadata || !content.trim()}
+                                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                                >
+                                  {isGeneratingMetadata ? (
+                                    <>
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      Generating…
+                                    </>
+                                  ) : (
+                                    <>
+                                      {!isPremium && <Lock className="h-3.5 w-3.5" />}
+                                      <Sparkles className="h-3.5 w-3.5" />
+                                      Suggest title, description, category & tags
+                                    </>
+                                  )}
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {!isPremium && (
+                              <TooltipContent>
+                                <p>AI-assisted metadata is a Premium feature</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        {metadataError && (
+                          <p className="text-sm text-destructive">{metadataError}</p>
+                        )}
+                      </div>
+
+                      {/* Title */}
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Title *</Label>
+                        <Input
+                          id="title"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Give your prompt a clear, descriptive title"
+                          className={errors.title ? "border-destructive" : ""}
+                        />
+                        {errors.title && (
+                          <p className="text-sm text-destructive">{errors.title}</p>
+                        )}
+                      </div>
+
+                      {/* Short Description */}
+                      <div className="space-y-2">
+                        <Label htmlFor="shortDescription">Description *</Label>
+                        <Textarea
+                          id="shortDescription"
+                          value={shortDescription}
+                          onChange={(e) => setShortDescription(e.target.value)}
+                          placeholder="Briefly describe what this prompt does"
+                          rows={2}
+                          className={errors.shortDescription ? "border-destructive" : ""}
+                        />
+                        {errors.shortDescription && (
+                          <p className="text-sm text-destructive">{errors.shortDescription}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {shortDescription.length}/2000 characters
+                        </p>
+                      </div>
+
+                      {/* Category */}
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category *</Label>
+                        <Select value={category} onValueChange={setCategory}>
+                          <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoryOptions.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.category && (
+                          <p className="text-sm text-destructive">{errors.category}</p>
+                        )}
+                      </div>
+
+                      {/* Tags */}
+                      <div className="space-y-2">
+                        <Label htmlFor="tags">Tags</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="tags"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={handleTagKeyDown}
+                            placeholder="Add tags and press Enter"
+                            disabled={tags.length >= 10}
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleAddTag}
+                            disabled={!tagInput.trim() || tags.length >= 10}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {tags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                                {tag}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTag(tag)}
+                                  className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {tags.length}/10 tags
+                        </p>
+                      </div>
+
+                      {/* Visibility Toggle */}
+                      <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                        <div>
+                          <Label htmlFor="visibility" className="text-base">
+                            Make this prompt public
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            {isPublic
+                              ? "Anyone can discover and use this prompt"
+                              : "Only you can see this prompt"}
+                          </p>
+                        </div>
+                        <Switch
+                          id="visibility"
+                          checked={isPublic}
+                          onCheckedChange={setIsPublic}
+                        />
+                      </div>
+
+                      {/* Change Notes */}
+                      <div className="space-y-2">
+                        <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
+                        <Textarea
+                          id="changeNotes"
+                          value={changeNotes}
+                          onChange={(e) => setChangeNotes(e.target.value)}
+                          placeholder="Optional: Describe what changed in this version"
+                          rows={2}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          These notes will be saved when you click "Save as New Version"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Metadata & Versions */}
+                <div className="space-y-6">
+                  {/* Metadata Card */}
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <h2 className="mb-4 text-lg font-semibold text-foreground">
+                      Metadata
+                    </h2>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Created</p>
+                          <p className="text-sm text-muted-foreground">
+                            {prompt?.created_at
+                              ? format(new Date(prompt.created_at), "MMM d, yyyy 'at' h:mm a")
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Last Updated</p>
+                          <p className="text-sm text-muted-foreground">
+                            {prompt?.updated_at
+                              ? format(new Date(prompt.updated_at), "MMM d, yyyy 'at' h:mm a")
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <Layers className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Version Count</p>
+                          <p className="text-sm text-muted-foreground">
+                            {versions.length} version{versions.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Version History Card */}
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    <h2 className="mb-4 text-lg font-semibold text-foreground">
+                      Version History
+                    </h2>
+                    {versions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No versions yet. Click "Save as New Version" to create one.
+                      </p>
+                    ) : (
+                      <div className="space-y-3 max-h-80 overflow-y-auto">
+                        {versions.map((version) => (
+                          <div
+                            key={version.id}
+                            className="rounded-lg border border-border p-3 text-sm"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-foreground">
+                                Version {version.version_number}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(version.created_at), "MMM d, yyyy")}
+                              </span>
+                            </div>
+                            {version.change_notes && (
+                              <p className="text-muted-foreground line-clamp-2">
+                                {version.change_notes}
+                              </p>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      {tags.length}/10 tags
-                    </p>
-                  </div>
-
-                  {/* Visibility Toggle */}
-                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                    <div>
-                      <Label htmlFor="visibility" className="text-base">
-                        Make this prompt public
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {isPublic
-                          ? "Anyone can discover and use this prompt"
-                          : "Only you can see this prompt"}
-                      </p>
-                    </div>
-                    <Switch
-                      id="visibility"
-                      checked={isPublic}
-                      onCheckedChange={setIsPublic}
-                    />
-                  </div>
-
-                  {/* Change Notes (for versioning) */}
-                  <div className="space-y-2">
-                    <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
-                    <Textarea
-                      id="changeNotes"
-                      value={changeNotes}
-                      onChange={(e) => setChangeNotes(e.target.value)}
-                      placeholder="Optional: Describe what changed in this version"
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      These notes will be saved when you click "Save as New Version"
-                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Metadata & Versions */}
-            <div className="space-y-6">
-              {/* Metadata Card */}
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-4 text-lg font-semibold text-foreground">
-                  Metadata
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Created</p>
-                      <p className="text-sm text-muted-foreground">
-                        {prompt?.created_at
-                          ? format(new Date(prompt.created_at), "MMM d, yyyy 'at' h:mm a")
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Last Updated</p>
-                      <p className="text-sm text-muted-foreground">
-                        {prompt?.updated_at
-                          ? format(new Date(prompt.updated_at), "MMM d, yyyy 'at' h:mm a")
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Layers className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Version Count</p>
-                      <p className="text-sm text-muted-foreground">
-                        {versions.length} version{versions.length !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            {/* Right: AI Coach Panel (desktop only) */}
+            {!isMobile && (
+              <div className="w-[380px] shrink-0 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+                {coachPanel}
               </div>
-
-              {/* Version History Card */}
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-4 text-lg font-semibold text-foreground">
-                  Version History
-                </h2>
-                {versions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No versions yet. Click "Save as New Version" to create one.
-                  </p>
-                ) : (
-                  <div className="space-y-3 max-h-80 overflow-y-auto">
-                    {versions.map((version) => (
-                      <div
-                        key={version.id}
-                        className="rounded-lg border border-border p-3 text-sm"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-foreground">
-                            Version {version.version_number}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(version.created_at), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                        {version.change_notes && (
-                          <p className="text-muted-foreground line-clamp-2">
-                            {version.change_notes}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
