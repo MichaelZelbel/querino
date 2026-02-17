@@ -1,0 +1,362 @@
+{
+  "name": "Suggest Workflow Metadata",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "suggest-workflow-metadata",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "6bd32f2b-c435-4800-834b-088746390c87",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        4464,
+        1312
+      ],
+      "webhookId": "3d69b1aa-e2f2-4b35-8ebf-20244b2a1a1d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "id": "98aea775-f10d-4654-8731-d7b90e824ce0",
+      "name": "OpenRouter LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        5056,
+        1536
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "MGQPWNIqP5IqzT9c",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "4d94a7d4-f270-439b-8c4f-af86f05da2c7",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        5408,
+        1312
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title, max 60 characters\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"A one-sentence summary, max 160 characters\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"One of: writing, coding, analysis, creative, business, education, other\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"3-5 relevant keywords\"\n    }\n  }\n}"
+      },
+      "id": "ae22f57e-4a95-48b3-90d4-34aba6af0760",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        5200,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "showWelcomeScreen": false
+        }
+      },
+      "id": "2fdf9ef4-f293-4edd-a55d-ab5bc48bc054",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        4464,
+        1504
+      ],
+      "webhookId": "fabf0504-4fc5-4b78-aaed-33bdabe650b4"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Config').item.json.workflow_content }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an LLM workflow metadata analyzer. Your job is to analyze AI workflow prompts and generate metadata ABOUT the workflow -\n\nCRITICAL DISTINCTION:\n- You are describing THE WORKFLOW PROMPT (the instructions), \n- Think of it like cataloging a recipe: you describe what the recipe teaches you to make, not the taste of the food\n\nFIELD DEFINITIONS:\n\n1. TITLE (max 60 characters):\n   - A short, descriptive name for the workflow\n   - Should indicate what type of content or task the workflow is designed for\n   - Examples: \"Validate Codebase Workflow\", \"Generate Stubs\", \"Book Formatting Workflow\"\n\n2. DESCRIPTION (max 400 characters):\n   - Explains what the workflow INSTRUCTIOS make the AI doing\n   - Describes the workflow's PURPOSE and STRUCTURE\n   - Must start with a verb like \"Generates\", \"Creates\", \"Helps\", \"Guides\", \"Instructs\"\n\n\n3. CATEGORY (choose exactly one):\n   - writing: workflows for written content (articles, emails, stories)\n   - coding: workflows for programming tasks\n   - analysis: workflows for reviewing, summarizing, or evaluating content\n   - creative: workflows for jokes, art descriptions, brainstorming, entertainment\n   - business: workflows for professional/corporate tasks\n   - education: workflows for teaching or learning\n   - other: only if none of the above fit\n\n4. TAGS (3-5 keywords):\n   - Relevant keywords describing the workflow's domain, style, or use case\n   - Use lowercase, no special characters\n\nRespond ONLY with valid JSON in this exact format:\n{\"title\":\"...\",\"description\":\"...\",\"category\":\"...\",\"tags\":[\"tag1\",\"tag2\",\"tag3\"]}"
+        }
+      },
+      "id": "0bedc4ee-e413-41e7-ae64-fd5cafcc60fc",
+      "name": "Metadata Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        5056,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d101327-e4ba-4681-a530-e756298649e3",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "51454097-e33d-46c4-ae6b-06b7053bec4b",
+              "name": "test_content",
+              "value": "=# Lovable Prompt Builder\n\nTransform application documentation into effective Lovable prompts for building data-driven, multi-user, and multi-tenant applications through an iterative, one-prompt-at-a-time workflow.\n\n## When to Use This Skill\n\nUse this skill when:\n- Building applications in Lovable from documentation\n- Converting user journeys into sequential prompts\n- Working with feature lists, wireframes, or user role definitions\n- Creating data-driven apps with complex requirements\n- Building multi-user or multi-tenant SaaS applications\n- Need guidance on prompt sequencing and architecture\n\n## Core Workflow\n\n### Step 1: Analyze Documentation\n### Step 2: Plan Prompt Sequence\n### Step 3: Generate First Prompt\n### Step 4: Wait for User Feedback\n### Step 5: Adapt and Continue",
+              "type": "string"
+            },
+            {
+              "id": "42e06ad6-3114-478a-8cd8-5374352644af",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4640,
+        1504
+      ],
+      "id": "604d173d-0346-4f41-94f9-e534e6ca9b2b",
+      "name": "Test Config"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "workflow_content",
+              "value": "={{ $json.body?.workflow_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "e1f5a251-a52b-4545-8ff1-ac725e619984",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a23cc596-d611-4991-b436-3c7ccc3ba130",
+              "name": "provider",
+              "value": "openai",
+              "type": "string"
+            },
+            {
+              "id": "fd8520cd-0180-4aab-80c4-7173ad4c3600",
+              "name": "model",
+              "value": "chatgpt5.2",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "113249b3-1414-4b6b-8335-df671c8198a3",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4832,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        5424,
+        1504
+      ],
+      "id": "c2b2cc8c-a439-4042-9fde-991831df83d5",
+      "name": "Call Update Token Usage"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Generator": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "versionId": "76e1830b-f20b-4c91-bdcf-16366aae7e45",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
+  },
+  "id": "JFfWghldpcaDAOfd",
+  "tags": []
+}

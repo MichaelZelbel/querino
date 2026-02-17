@@ -1,0 +1,327 @@
+{
+  "name": "Workflow Insights",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "workflow-insights",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e2d7c258-f544-48a2-b55c-4b07662645b3",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        5328,
+        1152
+      ],
+      "webhookId": "fbd0b2ea-13b2-4c6b-85bd-d3f1e5520dd2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o",
+        "options": {}
+      },
+      "id": "53c34f63-1b58-411c-bc73-389346c7a4cb",
+      "name": "OpenRouter LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        5872,
+        1392
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "MGQPWNIqP5IqzT9c",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Config').item.json.prompt_content }}",
+        "options": {
+          "systemMessage": "You are an expert LLM workflow analyst for a workflow management system, for workflows like Antigravity workflows. Your task is to analyze LLM workflows and generate important insights.\n\nThe user will provide workflow data including:\n- The actual workflow text\n- Title and description\n- Tags and categories\n- Comments and metadata\n- Usage context\n\nAnalyze the workflow and provide insights in the following categories:\n\n1. **workflow Quality Assessment**\n   - Clarity and specificity\n   - Structure and organization\n   - Completeness of instructions\n\n2. **Effectiveness Indicators**\n   - Likely performance with target LLM\n   - Potential edge cases or ambiguities\n   - Suggested improvements\n\n3. **Use Case Analysis**\n   - Primary use case identification\n   - Target audience suitability\n   - Domain and context\n\n4. **Technical Characteristics**\n   - workflow engineering techniques used\n   - Token efficiency\n   - Framework or pattern (if any)\n\n5. **Recommendations**\n   - Optimization suggestions\n   - Best practices alignment\n   - Potential variations or alternatives\n\nProvide your analysis in clean, structured Markdown format with clear sections and actionable insights."
+        }
+      },
+      "id": "0e2226e6-6324-4d83-8b25-fc46ba99d298",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        5872,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "id": "221d7ce5-8943-4376-9d21-238c8b0031c1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        6256,
+        1152
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "test_content",
+              "value": "TITLE: Creative Writing Assistant Prompt\n\nDESCRIPTION: A prompt designed to help fiction writers develop compelling narratives\n\nTAGS: creative-writing, fiction, storytelling, narrative-development\n\nPROMPT TEXT:\nYou are a creative writing assistant specializing in fiction. Help the user develop their story by:\n1. Analyzing their plot structure and character development\n2. Suggesting narrative improvements and plot twists\n3. Providing constructive feedback on pacing and dialogue\n4. Offering creative alternatives when they are stuck\n\nMaintain an encouraging tone and ask clarifying questions to understand their vision.\n\nCOMMENTS: Works well with GPT-4, popular among beginner writers\nUSAGE COUNT: 247\nAVERAGE RATING: 4.5/5",
+              "type": "string"
+            },
+            {
+              "id": "2a20a7ff-7bde-4008-baac-36b0bf733615",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7c6f616a-6235-46a3-803e-2429a131f4f8",
+      "name": "Test Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5488,
+        1376
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        5328,
+        1376
+      ],
+      "id": "2f32f1b7-56ad-4e81-8c36-3a1ff34aef74",
+      "name": "Test Chat",
+      "webhookId": "b3c0a443-b173-43d7-b2d9-5ab109613be2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "prompt_content",
+              "value": "={{ $json.body?.content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "77284109-76df-4734-b873-f56008740365",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ee6258ff-0aee-4606-bd09-ec4f95c91835",
+              "name": "provider",
+              "value": "openai",
+              "type": "string"
+            },
+            {
+              "id": "9c69a9e6-ee8e-4c99-aff1-7f27658f4540",
+              "name": "model",
+              "value": "chatgpt5.2",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "503e4f2b-dfde-44aa-857a-b6e65d4056e2",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5680,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        6256,
+        1328
+      ],
+      "id": "c970ba6e-b9b3-49b5-8f6f-36edb7af512a",
+      "name": "Call Update Token Usage"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Chat": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "940de8d2-39a0-48c5-99f2-cc93ec1f53e1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
+  },
+  "id": "HjbTwNSg9wwzLQgH",
+  "tags": []
+}
