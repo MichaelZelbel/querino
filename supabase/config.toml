@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.suggest-claw-metadata]
 verify_jwt = false
+
+[functions.canvas-ai]
+verify_jwt = false
