@@ -1,0 +1,2060 @@
+[
+  {
+    "id": "AUTH-01",
+    "category": "Authentication",
+    "description": "User cannot login with invalid credentials",
+    "priority": "high",
+    "steps": [
+      "Navigate to login page",
+      "Enter 'invalid@example.com' as email",
+      "Enter 'wrongpassword' as password",
+      "Click 'Sign In' button",
+      "Verify error message is displayed indicating invalid credentials"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-02",
+    "category": "Authentication",
+    "description": "Free user Fred can login with valid email/password credentials",
+    "priority": "high",
+    "steps": [
+      "Navigate to login page",
+      "Enter 'fred@free.com' as email",
+      "Enter 'Dell@123' as password",
+      "Click 'Sign In' button",
+      "Verify redirect to dashboard",
+      "Verify user name 'Fred' is displayed in header"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-03",
+    "category": "Authentication",
+    "description": "Premium user Peter can login with valid credentials",
+    "priority": "high",
+    "steps": [
+      "Navigate to login page",
+      "Enter 'peter@pro.com' as email",
+      "Enter 'Dell@123' as password",
+      "Click 'Sign In' button",
+      "Verify redirect to dashboard",
+      "Verify premium features are accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-04",
+    "category": "Authentication",
+    "description": "Google OAuth sign-in button is present and functional",
+    "priority": "high",
+    "steps": [
+      "Navigate to login page",
+      "Verify 'Sign in with Google' button is visible",
+      "Click 'Sign in with Google' button",
+      "Verify OAuth redirect to Google authentication page"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-05",
+    "category": "Authentication",
+    "description": "GitHub OAuth sign-in button is present and functional",
+    "priority": "high",
+    "steps": [
+      "Navigate to login page",
+      "Verify 'Sign in with GitHub' button is visible",
+      "Click 'Sign in with GitHub' button",
+      "Verify OAuth redirect to GitHub authentication page"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-06",
+    "category": "Authentication",
+    "description": "User can sign up with email and password",
+    "priority": "high",
+    "steps": [
+      "Navigate to sign-up page",
+      "Enter a unique email address",
+      "Enter a valid password meeting requirements",
+      "Confirm password",
+      "Click 'Sign Up' button",
+      "Verify account creation success message or redirect to dashboard"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-07",
+    "category": "Authentication",
+    "description": "User can logout successfully",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Click on user profile menu or account icon",
+      "Click 'Logout' button",
+      "Verify redirect to homepage or login page",
+      "Verify user is no longer authenticated"
+    ],
+    "passes": false
+  },
+  {
+    "id": "AUTH-08",
+    "category": "Authentication",
+    "description": "Admin user Alice can login and access admin features",
+    "priority": "high",
+    "steps": [
+      "Navigate to login page",
+      "Enter 'alice@admin.com' as email",
+      "Enter 'Dell@123' as password",
+      "Click 'Sign In' button",
+      "Verify redirect to dashboard",
+      "Verify admin-specific features or menu items are visible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-01",
+    "category": "Public Discovery",
+    "description": "Homepage displays curated gallery of public prompts",
+    "priority": "high",
+    "steps": [
+      "Navigate to homepage without logging in",
+      "Verify prompt cards are displayed in a gallery layout",
+      "Verify each card shows title, description, and star rating",
+      "Verify copy button is visible on each prompt card"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-02",
+    "category": "Public Discovery",
+    "description": "Prompts can be sorted by top-rated",
+    "priority": "medium",
+    "steps": [
+      "Navigate to homepage",
+      "Click or select 'Top Rated' sort option",
+      "Verify prompts are reordered by rating (highest first)",
+      "Verify the first prompt has the highest visible rating"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-03",
+    "category": "Public Discovery",
+    "description": "Prompts can be sorted by trending",
+    "priority": "medium",
+    "steps": [
+      "Navigate to homepage",
+      "Click or select 'Trending' sort option",
+      "Verify prompts are reordered by trending metric"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-04",
+    "category": "Public Discovery",
+    "description": "Prompts can be sorted by newest",
+    "priority": "medium",
+    "steps": [
+      "Navigate to homepage",
+      "Click or select 'Newest' sort option",
+      "Verify prompts are reordered by creation date (newest first)"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-05",
+    "category": "Public Discovery",
+    "description": "Prompts can be filtered by category",
+    "priority": "medium",
+    "steps": [
+      "Navigate to homepage",
+      "Click on a category filter option",
+      "Verify only prompts in that category are displayed",
+      "Verify category filter indicator is shown as active"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-06",
+    "category": "Public Discovery",
+    "description": "Visitor can copy a prompt to clipboard",
+    "priority": "high",
+    "steps": [
+      "Navigate to homepage without logging in",
+      "Find a prompt card",
+      "Click the 'Copy' button on the prompt card",
+      "Verify confirmation message or toast appears",
+      "Verify prompt text is copied to clipboard"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-07",
+    "category": "Public Discovery",
+    "description": "Visitor can view prompt detail page",
+    "priority": "high",
+    "steps": [
+      "Navigate to homepage",
+      "Click on a prompt card to view details",
+      "Verify prompt detail page opens (modal or new page)",
+      "Verify full prompt text is displayed",
+      "Verify star rating is visible",
+      "Verify reviews section is visible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DISC-08",
+    "category": "Public Discovery",
+    "description": "Search functionality works for prompts",
+    "priority": "high",
+    "steps": [
+      "Navigate to homepage",
+      "Enter a search term in the search box",
+      "Press Enter or click search button",
+      "Verify search results are displayed",
+      "Verify results match the search term in title or description"
+    ],
+    "passes": false
+  },
+  {
+    "id": "RATE-01",
+    "category": "Ratings & Reviews",
+    "description": "Logged-in user can rate a public prompt with stars",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to a public prompt detail page",
+      "Click on star rating selector (1-5 stars)",
+      "Verify rating is submitted",
+      "Verify updated average rating is displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "RATE-02",
+    "category": "Ratings & Reviews",
+    "description": "Logged-in user can write a text review for a prompt",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to a public prompt detail page",
+      "Click 'Write Review' or similar button",
+      "Enter review text",
+      "Select star rating",
+      "Submit review",
+      "Verify review appears in the reviews list"
+    ],
+    "passes": false
+  },
+  {
+    "id": "RATE-03",
+    "category": "Ratings & Reviews",
+    "description": "Ratings display Amazon-style star visualization",
+    "priority": "medium",
+    "steps": [
+      "Navigate to a public prompt with reviews",
+      "Verify star rating shows filled and empty stars",
+      "Verify rating count is displayed (e.g., '4.5 stars from 23 reviews')"
+    ],
+    "passes": false
+  },
+  {
+    "id": "RATE-04",
+    "category": "Ratings & Reviews",
+    "description": "Anonymous visitors cannot submit reviews",
+    "priority": "medium",
+    "steps": [
+      "Navigate to a public prompt detail page without logging in",
+      "Attempt to click rating or review button",
+      "Verify login prompt or redirect to login page"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DASH-01",
+    "category": "User Dashboard",
+    "description": "Dashboard shows left sidebar navigation",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Verify left sidebar is visible",
+      "Verify sidebar contains: Library, Wizard, Reviews, GitHub, Settings links"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DASH-02",
+    "category": "User Dashboard",
+    "description": "Dashboard shows pinned prompts section",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Verify 'Pinned Prompts' section is visible",
+      "Verify pinned prompts are displayed as cards if any exist"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DASH-03",
+    "category": "User Dashboard",
+    "description": "Dashboard shows recent prompts section",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Verify 'Recent Prompts' section is visible",
+      "Verify recently created or edited prompts are displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DASH-04",
+    "category": "User Dashboard",
+    "description": "Dashboard shows quick action for Create New Prompt",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Verify 'Create New Prompt' button or card is visible",
+      "Click 'Create New Prompt'",
+      "Verify wizard or creation form opens"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DASH-05",
+    "category": "User Dashboard",
+    "description": "Dashboard shows quick action for Improve Prompt tools",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Verify 'Improve Prompt' button or card is visible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DASH-06",
+    "category": "User Dashboard",
+    "description": "Dashboard displays GitHub sync status for premium users",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Verify GitHub sync status indicator is visible",
+      "Verify status shows 'Connected', 'Not connected', or sync state"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-01",
+    "category": "Prompt Library",
+    "description": "User can view their personal prompt library",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Click 'Library' in sidebar navigation",
+      "Verify library page displays list of user's prompts",
+      "Verify each prompt shows title, description, and actions"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-02",
+    "category": "Prompt Library",
+    "description": "User can create a new prompt manually",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Click 'Create Prompt' or 'New Prompt' button",
+      "Enter prompt title",
+      "Enter prompt description",
+      "Enter prompt content text",
+      "Click 'Save' button",
+      "Verify prompt appears in library"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-03",
+    "category": "Prompt Library",
+    "description": "User can edit an existing prompt",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select an existing prompt",
+      "Click 'Edit' button",
+      "Modify prompt title or content",
+      "Click 'Save' button",
+      "Verify changes are persisted"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-04",
+    "category": "Prompt Library",
+    "description": "User can delete a prompt from library",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a prompt to delete",
+      "Click 'Delete' button",
+      "Confirm deletion in dialog",
+      "Verify prompt is removed from library"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-05",
+    "category": "Prompt Library",
+    "description": "User can pin a prompt to dashboard",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Find a prompt that is not pinned",
+      "Click 'Pin' button or icon",
+      "Navigate to dashboard",
+      "Verify prompt appears in Pinned Prompts section"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-06",
+    "category": "Prompt Library",
+    "description": "User can unpin a prompt from dashboard",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Find a pinned prompt",
+      "Click 'Unpin' button or icon",
+      "Verify prompt is removed from Pinned Prompts section"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-07",
+    "category": "Prompt Library",
+    "description": "User can add tags to a prompt",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a prompt to edit",
+      "Add tags in the tags field",
+      "Save prompt",
+      "Verify tags are displayed on the prompt"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-08",
+    "category": "Prompt Library",
+    "description": "User can filter library by tags",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Click on a tag filter or enter tag in filter",
+      "Verify only prompts with that tag are displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-09",
+    "category": "Prompt Library",
+    "description": "User can search within their library",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Enter search term in library search box",
+      "Verify filtered results match search term"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIB-10",
+    "category": "Prompt Library",
+    "description": "User can save a public prompt to their library",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to homepage or public discovery",
+      "Find a public prompt",
+      "Click 'Save to Library' button",
+      "Navigate to library",
+      "Verify prompt appears in library"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-01",
+    "category": "Prompt Wizard",
+    "description": "User can access the Prompt Creation Wizard",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Click 'Prompt Creation Wizard' or 'Create with Wizard'",
+      "Verify wizard interface opens with first step visible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-02",
+    "category": "Prompt Wizard",
+    "description": "Wizard Step 1: User can enter goal/intent",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Verify 'Goal' or 'Intent' input field is displayed",
+      "Enter a goal description",
+      "Click 'Next' button",
+      "Verify transition to step 2"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-03",
+    "category": "Prompt Wizard",
+    "description": "Wizard Step 2: User can specify domain/context",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Complete step 1",
+      "Verify 'Domain' or 'Context' input is displayed",
+      "Enter domain information",
+      "Click 'Next' button",
+      "Verify transition to step 3"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-04",
+    "category": "Prompt Wizard",
+    "description": "Wizard Step 3: User can specify tone",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Complete steps 1-2",
+      "Verify 'Tone' selection or input is displayed",
+      "Select or enter desired tone",
+      "Click 'Next' button"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-05",
+    "category": "Prompt Wizard",
+    "description": "Wizard Step 4: User can add constraints",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Complete previous steps",
+      "Verify 'Constraints' input is displayed",
+      "Enter constraints or limitations",
+      "Click 'Next' button"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-06",
+    "category": "Prompt Wizard",
+    "description": "Wizard Step 5: User can provide examples",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Complete previous steps",
+      "Verify 'Examples' input area is displayed",
+      "Enter example inputs/outputs",
+      "Click 'Next' button"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-07",
+    "category": "Prompt Wizard",
+    "description": "Wizard Step 6: User can select target LLM",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Complete previous steps",
+      "Verify 'Target LLM' selection is displayed",
+      "Select an LLM (e.g., Claude, GPT-4)",
+      "Click 'Generate' or 'Create' button"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-08",
+    "category": "Prompt Wizard",
+    "description": "Wizard generates a personalized prompt",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Complete all wizard steps",
+      "Click 'Generate' button",
+      "Verify loading state is shown",
+      "Verify generated prompt is displayed",
+      "Verify prompt can be saved to library"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-09",
+    "category": "Prompt Wizard",
+    "description": "Wizard session is saved to database",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Complete wizard and generate prompt",
+      "Verify wizard_sessions table contains new entry",
+      "Verify prompt is saved to prompts table"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-10",
+    "category": "Prompt Wizard",
+    "description": "Free user wizard usage increments counter",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Check current wizard usage count",
+      "Complete wizard and generate prompt",
+      "Verify usage count has incremented"
+    ],
+    "passes": false
+  },
+  {
+    "id": "WIZ-11",
+    "category": "Prompt Wizard",
+    "description": "User can go back to previous wizard steps",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open Prompt Creation Wizard",
+      "Complete step 1 and 2",
+      "Click 'Back' button",
+      "Verify step 1 is displayed with previous input preserved"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-01",
+    "category": "Prompt Refinement",
+    "description": "Premium user can access refinement tools",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a prompt",
+      "Click 'Refine with AI' or 'Improve' button",
+      "Verify refinement tools interface opens"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-02",
+    "category": "Prompt Refinement",
+    "description": "Refinement tool: Improve Clarity",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt for refinement",
+      "Click 'Improve Clarity' tool",
+      "Verify AI processing indicator is shown",
+      "Verify refined prompt with improved clarity is returned"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-03",
+    "category": "Prompt Refinement",
+    "description": "Refinement tool: Expand Detail",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt for refinement",
+      "Click 'Expand Detail' tool",
+      "Verify refined prompt with expanded detail is returned"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-04",
+    "category": "Prompt Refinement",
+    "description": "Refinement tool: Shorten",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt for refinement",
+      "Click 'Shorten' tool",
+      "Verify refined prompt is more concise"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-05",
+    "category": "Prompt Refinement",
+    "description": "Refinement tool: Add Examples",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt for refinement",
+      "Click 'Add Examples' tool",
+      "Verify refined prompt includes generated examples"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-06",
+    "category": "Prompt Refinement",
+    "description": "Refinement tool: Debug prompt",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt for refinement",
+      "Click 'Debug' tool",
+      "Verify AI identifies potential issues or improvements",
+      "Verify suggestions are displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-07",
+    "category": "Prompt Refinement",
+    "description": "Refinement tool: Adapt to different LLM",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt for refinement",
+      "Click 'Adapt for LLM' and select target LLM",
+      "Verify refined prompt is adapted for selected LLM"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-08",
+    "category": "Prompt Refinement",
+    "description": "User can save refined prompt as new version",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt and apply refinement",
+      "Click 'Save as New Version' button",
+      "Verify version is created in prompt_versions table",
+      "Verify version history shows new version"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-09",
+    "category": "Prompt Refinement",
+    "description": "Free user sees upgrade prompt for refinement tools",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a prompt",
+      "Attempt to access refinement tools",
+      "Verify upgrade prompt or paywall is displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "REF-10",
+    "category": "Prompt Refinement",
+    "description": "Original prompt preserved after refinement",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a prompt and note original content",
+      "Apply refinement",
+      "Verify original prompt content is still accessible",
+      "Verify refined content is separate"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COACH-01",
+    "category": "LLM Prompt Coach",
+    "description": "Premium user can access LLM chat assistant",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Click 'Chat' or 'Prompt Coach' button",
+      "Verify chat interface opens in side panel or drawer"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COACH-02",
+    "category": "LLM Prompt Coach",
+    "description": "User can send a message to LLM coach",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open LLM chat assistant",
+      "Type a question about prompting",
+      "Press Enter or click send",
+      "Verify AI response is displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COACH-03",
+    "category": "LLM Prompt Coach",
+    "description": "LLM coach understands context of user's prompts",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open a specific prompt from library",
+      "Open LLM chat assistant",
+      "Ask 'How can I improve this prompt?'",
+      "Verify AI response references the current prompt"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COACH-04",
+    "category": "LLM Prompt Coach",
+    "description": "Conversation history is maintained in session",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open LLM chat assistant",
+      "Send multiple messages",
+      "Verify previous messages are visible",
+      "Verify AI responds contextually to conversation"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COACH-05",
+    "category": "LLM Prompt Coach",
+    "description": "Free user sees limited coach messages remaining",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open LLM chat assistant if available",
+      "Verify message limit indicator is displayed",
+      "Verify limit matches free plan (50/month)"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COACH-06",
+    "category": "LLM Prompt Coach",
+    "description": "LLM coach usage count increments",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Check current coach usage count",
+      "Send message to LLM coach",
+      "Verify usage count increments"
+    ],
+    "passes": false
+  },
+  {
+    "id": "VER-01",
+    "category": "Version History",
+    "description": "User can view version history of a prompt",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a prompt with multiple versions",
+      "Click 'Version History' or 'History' button",
+      "Verify list of versions is displayed with version numbers and dates"
+    ],
+    "passes": false
+  },
+  {
+    "id": "VER-02",
+    "category": "Version History",
+    "description": "User can view content of a specific version",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open version history for a prompt",
+      "Click on a specific version",
+      "Verify version content is displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "VER-03",
+    "category": "Version History",
+    "description": "User can restore a previous version",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Open version history for a prompt",
+      "Select an older version",
+      "Click 'Restore' button",
+      "Verify prompt content is restored to selected version"
+    ],
+    "passes": false
+  },
+  {
+    "id": "VER-04",
+    "category": "Version History",
+    "description": "Version includes change note",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Edit a prompt and save with change note",
+      "Open version history",
+      "Verify change note is displayed for the version"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PUB-01",
+    "category": "Publishing",
+    "description": "User can publish a private prompt to community",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a private prompt",
+      "Click 'Publish' button",
+      "Confirm publishing action",
+      "Verify is_public is set to true",
+      "Verify prompt appears in public discovery feed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PUB-02",
+    "category": "Publishing",
+    "description": "Published prompt gets a public URL with slug",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Publish a prompt",
+      "Verify public URL is generated",
+      "Verify URL format is /prompts/{id}/{slug}",
+      "Navigate to URL without auth",
+      "Verify prompt page is accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PUB-03",
+    "category": "Publishing",
+    "description": "User can unpublish a public prompt",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a public prompt",
+      "Click 'Unpublish' button",
+      "Verify prompt is marked as private",
+      "Verify prompt is removed from public discovery"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PUB-04",
+    "category": "Publishing",
+    "description": "Unpublished prompt returns 404 on public URL",
+    "priority": "medium",
+    "steps": [
+      "Note the public URL of a published prompt",
+      "Unpublish the prompt",
+      "Navigate to the old public URL",
+      "Verify 404 or 410 status is returned"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COL-01",
+    "category": "Collections",
+    "description": "User can create a collection",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Click 'Create Collection' button",
+      "Enter collection name",
+      "Click 'Save'",
+      "Verify collection is created and visible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COL-02",
+    "category": "Collections",
+    "description": "User can add prompts to a collection",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to library",
+      "Select a prompt",
+      "Click 'Add to Collection'",
+      "Select a collection",
+      "Verify prompt is added to collection"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COL-03",
+    "category": "Collections",
+    "description": "Free user limited to 3 collections",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Create 3 collections",
+      "Attempt to create 4th collection",
+      "Verify error message about collection limit"
+    ],
+    "passes": false
+  },
+  {
+    "id": "COL-04",
+    "category": "Collections",
+    "description": "Premium user can create unlimited collections",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Create more than 3 collections",
+      "Verify no limit error is shown"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-01",
+    "category": "GitHub Sync",
+    "description": "Premium user can access GitHub sync settings",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to Settings or GitHub in sidebar",
+      "Verify GitHub sync configuration page is accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-02",
+    "category": "GitHub Sync",
+    "description": "User can connect a GitHub repository",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to GitHub sync settings",
+      "Enter repository name (username/repo)",
+      "Enter branch name (default: main)",
+      "Enter folder path (e.g., /querino)",
+      "Click 'Connect' or 'Save'",
+      "Verify connection status shows success"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-03",
+    "category": "GitHub Sync",
+    "description": "User can enable/disable automatic sync",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to GitHub sync settings",
+      "Toggle 'Automatic Sync' option",
+      "Verify sync_enabled is updated"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-04",
+    "category": "GitHub Sync",
+    "description": "User can choose sync mode (direct commit or PR)",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to GitHub sync settings",
+      "Select 'Direct Commit' or 'Pull Request' mode",
+      "Verify sync_mode is saved"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-05",
+    "category": "GitHub Sync",
+    "description": "Sync creates files in configured folder structure",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Configure GitHub sync with folder path",
+      "Create or update a prompt",
+      "Trigger manual sync",
+      "Verify files are created under /folder_path/prompts/"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-06",
+    "category": "GitHub Sync",
+    "description": "Sync status is displayed correctly",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to GitHub sync settings or dashboard",
+      "Verify last_sync_status is displayed",
+      "Verify last_synced_at timestamp is shown"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-07",
+    "category": "GitHub Sync",
+    "description": "Free user cannot access GitHub sync",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to Settings or GitHub section",
+      "Verify GitHub sync is not accessible or shows upgrade prompt"
+    ],
+    "passes": false
+  },
+  {
+    "id": "GIT-08",
+    "category": "GitHub Sync",
+    "description": "Sync failure populates error message",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Configure invalid GitHub settings",
+      "Trigger sync",
+      "Verify last_sync_status is 'failed'",
+      "Verify last_sync_error contains error description"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-01",
+    "category": "Teams",
+    "description": "Team owner Tina can access team workspace",
+    "priority": "high",
+    "steps": [
+      "Login as 'tina@teamowner.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Verify team 'Acme AI Studio' is visible in team selector",
+      "Switch to team workspace",
+      "Verify team library and settings are accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-02",
+    "category": "Teams",
+    "description": "Team owner can invite new members",
+    "priority": "high",
+    "steps": [
+      "Login as 'tina@teamowner.com' with password 'Dell@123'",
+      "Navigate to team settings",
+      "Click 'Invite Member' button",
+      "Enter email address",
+      "Select role (member or admin)",
+      "Click 'Send Invite'",
+      "Verify invitation is created in team_invitations table"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-03",
+    "category": "Teams",
+    "description": "Team admin Andy can invite members",
+    "priority": "high",
+    "steps": [
+      "Login as 'andy@teamadmin.com' with password 'Dell@123'",
+      "Navigate to team settings",
+      "Verify 'Invite Member' option is available",
+      "Send an invitation",
+      "Verify invitation is created"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-04",
+    "category": "Teams",
+    "description": "Team member Mia cannot invite members",
+    "priority": "medium",
+    "steps": [
+      "Login as 'mia@teammember.com' with password 'Dell@123'",
+      "Navigate to team settings or members page",
+      "Verify 'Invite Member' option is not available or disabled"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-05",
+    "category": "Teams",
+    "description": "Team owner can remove members",
+    "priority": "high",
+    "steps": [
+      "Login as 'tina@teamowner.com' with password 'Dell@123'",
+      "Navigate to team members page",
+      "Find a team member",
+      "Click 'Remove' button",
+      "Confirm removal",
+      "Verify member is removed from team_members"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-06",
+    "category": "Teams",
+    "description": "Team admin can change member roles (except owner)",
+    "priority": "medium",
+    "steps": [
+      "Login as 'andy@teamadmin.com' with password 'Dell@123'",
+      "Navigate to team members page",
+      "Find Mia (member)",
+      "Change role from 'member' to 'admin'",
+      "Verify role is updated",
+      "Verify cannot change owner's role"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-07",
+    "category": "Teams",
+    "description": "Only team owner can access billing",
+    "priority": "high",
+    "steps": [
+      "Login as 'tina@teamowner.com' with password 'Dell@123'",
+      "Navigate to team settings",
+      "Verify 'Billing' section is visible and accessible",
+      "Login as 'andy@teamadmin.com' with password 'Dell@123'",
+      "Navigate to team settings",
+      "Verify 'Billing' section is not accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-08",
+    "category": "Teams",
+    "description": "Team members can access shared team library",
+    "priority": "high",
+    "steps": [
+      "Login as 'mia@teammember.com' with password 'Dell@123'",
+      "Switch to team workspace",
+      "Navigate to team library",
+      "Verify team prompts are visible",
+      "Verify can create prompts in team library"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-09",
+    "category": "Teams",
+    "description": "Team invitation acceptance creates membership",
+    "priority": "high",
+    "steps": [
+      "Create a team invitation for a new email",
+      "Accept invitation via token link",
+      "Verify team_members entry is created",
+      "Verify user can access team workspace"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-10",
+    "category": "Teams",
+    "description": "Team invitation expires after configured time",
+    "priority": "medium",
+    "steps": [
+      "Create a team invitation",
+      "Wait for expiration period to pass",
+      "Attempt to accept invitation",
+      "Verify invitation status is 'expired'",
+      "Verify acceptance fails"
+    ],
+    "passes": false
+  },
+  {
+    "id": "TEAM-11",
+    "category": "Teams",
+    "description": "Team admin can configure team GitHub folder path",
+    "priority": "medium",
+    "steps": [
+      "Login as 'andy@teamadmin.com' with password 'Dell@123'",
+      "Navigate to team GitHub settings",
+      "Configure folder path",
+      "Verify team folder path is saved"
+    ],
+    "passes": false
+  },
+  {
+    "id": "BILL-01",
+    "category": "Billing",
+    "description": "Free user can view pricing page",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to pricing or upgrade page",
+      "Verify Free, Premium, and Team tiers are displayed",
+      "Verify pricing is shown correctly"
+    ],
+    "passes": false
+  },
+  {
+    "id": "BILL-02",
+    "category": "Billing",
+    "description": "Free user can start Premium checkout",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Navigate to pricing page",
+      "Click 'Upgrade to Premium' button",
+      "Verify redirect to Stripe Checkout"
+    ],
+    "passes": false
+  },
+  {
+    "id": "BILL-03",
+    "category": "Billing",
+    "description": "Stripe-backed premium user Benny has subscription validated",
+    "priority": "high",
+    "steps": [
+      "Login as 'benny@business.com' with password 'Dell@123'",
+      "Access a premium feature",
+      "Verify Stripe subscription status is checked",
+      "Verify premium features are accessible when subscription is active"
+    ],
+    "passes": false
+  },
+  {
+    "id": "BILL-04",
+    "category": "Billing",
+    "description": "Gifted premium user Grace bypasses Stripe check",
+    "priority": "high",
+    "steps": [
+      "Login as 'grace@gifted.com' with password 'Dell@123'",
+      "Access premium features",
+      "Verify Stripe is not called (plan_source = gifted)",
+      "Verify premium features are accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "BILL-05",
+    "category": "Billing",
+    "description": "Premium user can access Stripe Customer Portal",
+    "priority": "medium",
+    "steps": [
+      "Login as 'benny@business.com' with password 'Dell@123'",
+      "Navigate to billing settings",
+      "Click 'Manage Subscription' button",
+      "Verify redirect to Stripe Customer Portal"
+    ],
+    "passes": false
+  },
+  {
+    "id": "BILL-06",
+    "category": "Billing",
+    "description": "Subscription status is cached and refreshed",
+    "priority": "medium",
+    "steps": [
+      "Login as 'benny@business.com' with password 'Dell@123'",
+      "Access premium feature",
+      "Verify stripe_status_cache is updated",
+      "Verify last_stripe_check_at timestamp is recent"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-01",
+    "category": "Usage Limits",
+    "description": "Free user blocked after 20 wizard runs",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Verify wizard usage is at limit (20/month)",
+      "Attempt to run wizard",
+      "Verify error message about wizard limit",
+      "Verify prompt mentions upgrade option"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-02",
+    "category": "Usage Limits",
+    "description": "Free user blocked after 50 refinement operations",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Verify refinement usage is at limit (50/month)",
+      "Attempt refinement operation",
+      "Verify error message about refinement limit"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-03",
+    "category": "Usage Limits",
+    "description": "Free user blocked after 50 LLM coach messages",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Verify coach usage is at limit (50/month)",
+      "Attempt to send message to coach",
+      "Verify error message about message limit"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-04",
+    "category": "Usage Limits",
+    "description": "Free user limited to 25 private prompts",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Verify user has 25 private prompts",
+      "Attempt to create new prompt",
+      "Verify error message about storage limit",
+      "Verify message mentions upgrade to Premium"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-05",
+    "category": "Usage Limits",
+    "description": "Premium user has higher limits",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Verify wizard limit is 5000/month",
+      "Verify refinement limit is 5000/month",
+      "Verify coach message limit is 5000/month",
+      "Verify unlimited private prompts"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-06",
+    "category": "Usage Limits",
+    "description": "Usage counters reset on billing cycle",
+    "priority": "medium",
+    "steps": [
+      "Verify usage counter tracking includes reset date",
+      "Verify counters reset to zero on billing cycle date"
+    ],
+    "passes": false
+  },
+  {
+    "id": "LIMIT-07",
+    "category": "Usage Limits",
+    "description": "Token consumption is tracked",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Use wizard or refinement tool",
+      "Verify token count is recorded",
+      "Verify approaching 50,000 token limit shows warning"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ACCESS-01",
+    "category": "Access Control",
+    "description": "Free user cannot access GitHub sync",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Attempt to access GitHub sync settings",
+      "Verify feature is gated with upgrade prompt"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ACCESS-02",
+    "category": "Access Control",
+    "description": "Free user has limited refinement access",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Verify refinement tools show usage limit",
+      "Use up limit",
+      "Verify tools are locked with upgrade prompt"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ACCESS-03",
+    "category": "Access Control",
+    "description": "Non-team member cannot access team workspace",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Attempt to access 'Acme AI Studio' team workspace",
+      "Verify access is denied",
+      "Verify appropriate error message"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ACCESS-04",
+    "category": "Access Control",
+    "description": "Unauthenticated user redirected to login for protected pages",
+    "priority": "high",
+    "steps": [
+      "Logout if logged in",
+      "Navigate directly to /dashboard",
+      "Verify redirect to login page"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ACCESS-05",
+    "category": "Access Control",
+    "description": "Feature matrix matches plan types",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' (free plan)",
+      "Verify can browse public prompts",
+      "Verify can rate and review",
+      "Verify can save up to 25 prompts",
+      "Verify wizard is limited",
+      "Verify refinement is limited",
+      "Verify no team library access",
+      "Verify no GitHub sync"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEO-01",
+    "category": "SEO & Public Pages",
+    "description": "Public prompt page has correct meta tags",
+    "priority": "medium",
+    "steps": [
+      "Navigate to a public prompt page",
+      "Verify <title> tag contains prompt title",
+      "Verify <meta name='description'> contains prompt description",
+      "Verify Open Graph tags are present",
+      "Verify Twitter Card tags are present"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEO-02",
+    "category": "SEO & Public Pages",
+    "description": "Public prompts are accessible without authentication",
+    "priority": "high",
+    "steps": [
+      "Logout if logged in",
+      "Navigate to a public prompt URL /prompts/{id}/{slug}",
+      "Verify prompt content is displayed",
+      "Verify no login required to view"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEO-03",
+    "category": "SEO & Public Pages",
+    "description": "Sitemap includes public prompts",
+    "priority": "medium",
+    "steps": [
+      "Navigate to /sitemap.xml",
+      "Verify sitemap is valid XML",
+      "Verify public prompt URLs are included"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEO-04",
+    "category": "SEO & Public Pages",
+    "description": "Robots.txt allows crawling of public pages",
+    "priority": "medium",
+    "steps": [
+      "Navigate to /robots.txt",
+      "Verify public prompt paths are not disallowed",
+      "Verify sitemap location is specified"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEO-05",
+    "category": "SEO & Public Pages",
+    "description": "Unpublished prompts excluded from sitemap",
+    "priority": "medium",
+    "steps": [
+      "Note URL of a public prompt in sitemap",
+      "Unpublish the prompt",
+      "Verify URL is removed from sitemap after update"
+    ],
+    "passes": false
+  },
+  {
+    "id": "MOBILE-01",
+    "category": "Mobile & Responsive",
+    "description": "Homepage is responsive on mobile",
+    "priority": "high",
+    "steps": [
+      "Open homepage on mobile viewport (375px width)",
+      "Verify prompt cards stack vertically",
+      "Verify all content is readable",
+      "Verify no horizontal scrolling required"
+    ],
+    "passes": false
+  },
+  {
+    "id": "MOBILE-02",
+    "category": "Mobile & Responsive",
+    "description": "Dashboard sidebar collapses on mobile",
+    "priority": "high",
+    "steps": [
+      "Login on mobile viewport",
+      "Navigate to dashboard",
+      "Verify sidebar is collapsed or hidden",
+      "Verify floating menu icon is visible",
+      "Click menu icon",
+      "Verify sidebar navigation appears"
+    ],
+    "passes": false
+  },
+  {
+    "id": "MOBILE-03",
+    "category": "Mobile & Responsive",
+    "description": "Wizard is swipe-friendly on mobile",
+    "priority": "medium",
+    "steps": [
+      "Open wizard on mobile viewport",
+      "Verify step navigation works with swipe gestures",
+      "Verify input fields are usable on mobile"
+    ],
+    "passes": false
+  },
+  {
+    "id": "MOBILE-04",
+    "category": "Mobile & Responsive",
+    "description": "LLM chat assistant works on mobile",
+    "priority": "medium",
+    "steps": [
+      "Login as premium user on mobile",
+      "Open LLM chat assistant",
+      "Verify chat interface fits mobile screen",
+      "Verify can type and send messages"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ERR-01",
+    "category": "Error Handling",
+    "description": "AI pipeline error shows user-friendly message",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Trigger an AI operation that fails (e.g., n8n timeout)",
+      "Verify error message is displayed",
+      "Verify user content is not modified or lost"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ERR-02",
+    "category": "Error Handling",
+    "description": "Stripe network error does not downgrade user",
+    "priority": "high",
+    "steps": [
+      "Login as 'benny@business.com' with password 'Dell@123'",
+      "Simulate Stripe API network failure",
+      "Verify user is not immediately downgraded",
+      "Verify 'temporarily unverified' state is handled"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ERR-03",
+    "category": "Error Handling",
+    "description": "GitHub sync failure preserves local data",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Configure GitHub sync",
+      "Create a prompt",
+      "Trigger sync with simulated failure",
+      "Verify prompt data is intact in local database",
+      "Verify sync status is 'failed'"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ERR-04",
+    "category": "Error Handling",
+    "description": "Token limit error links to pricing page",
+    "priority": "medium",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Reach token usage limit",
+      "Attempt AI operation",
+      "Verify error message includes link to pricing page"
+    ],
+    "passes": false
+  },
+  {
+    "id": "ERR-05",
+    "category": "Error Handling",
+    "description": "Invalid form input shows validation errors",
+    "priority": "medium",
+    "steps": [
+      "Navigate to sign-up page",
+      "Enter invalid email format",
+      "Enter weak password",
+      "Submit form",
+      "Verify validation error messages are displayed"
+    ],
+    "passes": false
+  },
+  {
+    "id": "N8N-01",
+    "category": "n8n Integration",
+    "description": "Wizard calls n8n workflow for prompt generation",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Complete wizard steps",
+      "Click 'Generate'",
+      "Verify n8n webhook is called with wizard inputs",
+      "Verify response contains generated prompt"
+    ],
+    "passes": false
+  },
+  {
+    "id": "N8N-02",
+    "category": "n8n Integration",
+    "description": "Refinement calls n8n workflow with correct transformation",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Select a prompt",
+      "Choose 'Improve Clarity' refinement",
+      "Verify n8n webhook receives prompt and transformation type",
+      "Verify refined prompt is returned"
+    ],
+    "passes": false
+  },
+  {
+    "id": "N8N-03",
+    "category": "n8n Integration",
+    "description": "LLM coach calls n8n workflow for chat",
+    "priority": "high",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Open LLM chat assistant",
+      "Send a message",
+      "Verify n8n workflow handles the chat request",
+      "Verify response is returned to UI"
+    ],
+    "passes": false
+  },
+  {
+    "id": "N8N-04",
+    "category": "n8n Integration",
+    "description": "n8n workflow errors are logged",
+    "priority": "medium",
+    "steps": [
+      "Trigger an AI operation",
+      "Simulate n8n workflow failure",
+      "Verify error is logged with workflow ID and payload size"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DB-01",
+    "category": "Data Model",
+    "description": "Prompt creation saves to prompts table",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Create a new prompt",
+      "Verify record in prompts table with correct user_id",
+      "Verify title, description, content are saved"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DB-02",
+    "category": "Data Model",
+    "description": "Version creation saves to prompt_versions table",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Create a prompt and save",
+      "Verify initial version in prompt_versions table",
+      "Edit and save prompt",
+      "Verify new version with incremented version_number"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DB-03",
+    "category": "Data Model",
+    "description": "Review creation saves to reviews table",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' with password 'Dell@123'",
+      "Rate and review a public prompt",
+      "Verify record in reviews table",
+      "Verify stars and text are saved correctly"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DB-04",
+    "category": "Data Model",
+    "description": "Rating average is computed correctly",
+    "priority": "medium",
+    "steps": [
+      "Find a prompt with multiple reviews",
+      "Calculate expected average from reviews table",
+      "Verify rating_avg in prompts table matches"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DB-05",
+    "category": "Data Model",
+    "description": "GitHub sync config saves to github_sync table",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Configure GitHub sync settings",
+      "Verify github_sync record with correct repo, branch, folder_path"
+    ],
+    "passes": false
+  },
+  {
+    "id": "DB-06",
+    "category": "Data Model",
+    "description": "Team membership saves to team_members table",
+    "priority": "high",
+    "steps": [
+      "Verify team_members records for Acme AI Studio team",
+      "Verify Tina has role 'owner'",
+      "Verify Andy has role 'admin'",
+      "Verify Mia has role 'member'"
+    ],
+    "passes": false
+  },
+  {
+    "id": "STATE-01",
+    "category": "State Transitions",
+    "description": "Canceled subscription limits to Free features",
+    "priority": "high",
+    "steps": [
+      "Simulate Stripe subscription status change to 'canceled'",
+      "Verify stripe_status_cache is updated",
+      "Verify premium features are no longer accessible",
+      "Verify Free tier limits apply"
+    ],
+    "passes": false
+  },
+  {
+    "id": "STATE-02",
+    "category": "State Transitions",
+    "description": "Active subscription restores Premium features",
+    "priority": "high",
+    "steps": [
+      "Simulate subscription status change to 'active'",
+      "Verify stripe_status_cache is updated",
+      "Verify premium features are accessible"
+    ],
+    "passes": false
+  },
+  {
+    "id": "STATE-03",
+    "category": "State Transitions",
+    "description": "Team invitation state transitions correctly",
+    "priority": "medium",
+    "steps": [
+      "Create invitation with status 'pending'",
+      "Accept invitation",
+      "Verify status changes to 'accepted'",
+      "Verify team_members entry is created"
+    ],
+    "passes": false
+  },
+  {
+    "id": "STATE-04",
+    "category": "State Transitions",
+    "description": "Revoked invitation cannot be accepted",
+    "priority": "medium",
+    "steps": [
+      "Create invitation with status 'pending'",
+      "Revoke invitation",
+      "Verify status changes to 'revoked'",
+      "Attempt to accept invitation",
+      "Verify acceptance fails"
+    ],
+    "passes": false
+  },
+  {
+    "id": "STATE-05",
+    "category": "State Transitions",
+    "description": "GitHub sync state transitions on enable/disable",
+    "priority": "medium",
+    "steps": [
+      "Enable GitHub sync",
+      "Verify status is 'pending'",
+      "After successful sync verify status is 'success'",
+      "Disable sync",
+      "Verify status is 'disabled'"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PERF-01",
+    "category": "Performance",
+    "description": "Homepage loads within acceptable time",
+    "priority": "medium",
+    "steps": [
+      "Navigate to homepage",
+      "Measure page load time",
+      "Verify load time is under 3 seconds"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PERF-02",
+    "category": "Performance",
+    "description": "Dashboard loads within acceptable time",
+    "priority": "medium",
+    "steps": [
+      "Login as 'peter@pro.com' with password 'Dell@123'",
+      "Navigate to dashboard",
+      "Measure load time",
+      "Verify load time is under 2 seconds"
+    ],
+    "passes": false
+  },
+  {
+    "id": "PERF-03",
+    "category": "Performance",
+    "description": "Library with many prompts loads efficiently",
+    "priority": "medium",
+    "steps": [
+      "Login as user with 50+ prompts",
+      "Navigate to library",
+      "Verify pagination or lazy loading is implemented",
+      "Verify page remains responsive"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEC-01",
+    "category": "Security",
+    "description": "Private prompts not accessible to other users",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com' and create a private prompt",
+      "Note the prompt ID",
+      "Login as 'peter@pro.com'",
+      "Attempt to access Fred's private prompt directly",
+      "Verify access is denied"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEC-02",
+    "category": "Security",
+    "description": "API endpoints require authentication",
+    "priority": "high",
+    "steps": [
+      "Attempt to call protected API endpoint without auth token",
+      "Verify 401 Unauthorized response"
+    ],
+    "passes": false
+  },
+  {
+    "id": "SEC-03",
+    "category": "Security",
+    "description": "User can only modify their own prompts",
+    "priority": "high",
+    "steps": [
+      "Login as 'fred@free.com'",
+      "Attempt to edit or delete a prompt owned by 'peter@pro.com'",
+      "Verify operation is denied"
+    ],
+    "passes": false
+  },
+  {
+    "id": "UI-01",
+    "category": "UI/UX",
+    "description": "Copy button provides visual feedback",
+    "priority": "medium",
+    "steps": [
+      "Navigate to public prompt",
+      "Click 'Copy' button",
+      "Verify button state changes or toast appears",
+      "Verify feedback indicates successful copy"
+    ],
+    "passes": false
+  },
+  {
+    "id": "UI-02",
+    "category": "UI/UX",
+    "description": "Loading states are shown during async operations",
+    "priority": "medium",
+    "steps": [
+      "Login and trigger AI refinement",
+      "Verify loading spinner or skeleton is shown",
+      "Verify loading state ends when operation completes"
+    ],
+    "passes": false
+  },
+  {
+    "id": "UI-03",
+    "category": "UI/UX",
+    "description": "Error messages are user-friendly",
+    "priority": "medium",
+    "steps": [
+      "Trigger various error conditions",
+      "Verify error messages are clear and actionable",
+      "Verify no technical jargon or stack traces shown to user"
+    ],
+    "passes": false
+  },
+  {
+    "id": "UI-04",
+    "category": "UI/UX",
+    "description": "Navigation between pages is smooth",
+    "priority": "medium",
+    "steps": [
+      "Login and navigate between dashboard, library, settings",
+      "Verify transitions are smooth",
+      "Verify no full page reloads if SPA"
+    ],
+    "passes": false
+  },
+  {
+    "id": "UI-05",
+    "category": "UI/UX",
+    "description": "Forms preserve data on validation error",
+    "priority": "medium",
+    "steps": [
+      "Fill out a form with some valid and invalid data",
+      "Submit form",
+      "Verify validation errors appear",
+      "Verify valid data is preserved in form fields"
+    ],
+    "passes": false
+  }
+]
