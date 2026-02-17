@@ -1,0 +1,15 @@
+  {
+    "mcpServers": {
+      "n8n-mcp": {
+        "command": "cmd",
+        "args": ["/c npx n8n-mcp"],
+        "env": {
+          "MCP_MODE": "stdio",
+          "LOG_LEVEL": "error",
+          "DISABLE_CONSOLE_OUTPUT": "true",
+          "N8N_API_URL": "https://n8n-querino.agentpool.cloud",
+          "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NTE2ZTUzNC1iMmM2LTQwM2UtOGFjYy1kN2U5NjExNWY4NDEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY3ODE0Mzc3fQ.ToG6KwuQupob9b6hIHVPN9GB8dpj8Z7mgKXbtk55MqA"
+        }
+      }
+    }
+  }
