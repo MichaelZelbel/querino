@@ -55,7 +55,7 @@ serve(async (req) => {
     const { artifactType, artifactId, mode, message, canvasContent, selection } =
       await req.json();
 
-    if (!message || !canvasContent) {
+    if (!message) {
       return new Response(
         JSON.stringify({ error: "message and canvasContent are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
