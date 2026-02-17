@@ -41,6 +41,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2,
   ArrowLeft,
@@ -64,7 +66,7 @@ import type { Prompt } from "@/types/prompt";
 import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
-import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
+
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { ParsedMarkdown } from "@/lib/markdown";
@@ -101,7 +103,8 @@ export default function LibraryPromptEdit() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const [showRefineModal, setShowRefineModal] = useState(false);
+  
+  const [showVersionDrawer, setShowVersionDrawer] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -715,12 +718,10 @@ export default function LibraryPromptEdit() {
                 </Button>
               )}
 
-              <Link to={`/library/${slug}/versions`}>
-                <Button variant="outline" className="gap-2">
-                  <History className="h-4 w-4" />
-                  Version History
-                </Button>
-              </Link>
+              <Button variant="outline" className="gap-2" onClick={() => setShowVersionDrawer(true)}>
+                <History className="h-4 w-4" />
+                Version History
+              </Button>
 
               {/* Mobile: AI Coach toggle */}
               {isMobile && (
@@ -807,10 +808,9 @@ export default function LibraryPromptEdit() {
           <div className="flex gap-6">
             {/* Left: Editor + Metadata */}
             <div className="flex-1 min-w-0 space-y-6">
-              {/* Two-column layout for editor content */}
-              <div className="grid gap-6 lg:grid-cols-3">
-                {/* Left Column - Editor */}
-                <div className="lg:col-span-2 space-y-6">
+              {/* Editor */}
+              <div className="space-y-6">
+                <div className="space-y-6">
                   <div className="rounded-xl border border-border bg-card p-6">
                     <h1 className="mb-6 text-xl font-semibold text-foreground">
                       Edit Prompt
@@ -819,32 +819,7 @@ export default function LibraryPromptEdit() {
                     <div className="space-y-6">
                       {/* Prompt Content with line numbers */}
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="content">Prompt Content *</Label>
-                          {isPremium ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowRefineModal(true)}
-                              className="gap-2"
-                            >
-                              <Sparkles className="h-4 w-4" />
-                              Refine with AI
-                            </Button>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate("/pricing")}
-                              className="gap-2"
-                            >
-                              <Lock className="h-4 w-4" />
-                              Refine with AI
-                            </Button>
-                          )}
-                        </div>
+                        <Label htmlFor="content">Prompt Content *</Label>
                         <div className="rounded-md border border-input bg-background overflow-hidden">
                           {renderLineNumberedEditor()}
                         </div>
@@ -1028,85 +1003,6 @@ export default function LibraryPromptEdit() {
                   </div>
                 </div>
 
-                {/* Right Column - Metadata & Versions */}
-                <div className="space-y-6">
-                  {/* Metadata Card */}
-                  <div className="rounded-xl border border-border bg-card p-6">
-                    <h2 className="mb-4 text-lg font-semibold text-foreground">
-                      Metadata
-                    </h2>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Created</p>
-                          <p className="text-sm text-muted-foreground">
-                            {prompt?.created_at
-                              ? format(new Date(prompt.created_at), "MMM d, yyyy 'at' h:mm a")
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Last Updated</p>
-                          <p className="text-sm text-muted-foreground">
-                            {prompt?.updated_at
-                              ? format(new Date(prompt.updated_at), "MMM d, yyyy 'at' h:mm a")
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <Layers className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Version Count</p>
-                          <p className="text-sm text-muted-foreground">
-                            {versions.length} version{versions.length !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Version History Card */}
-                  <div className="rounded-xl border border-border bg-card p-6">
-                    <h2 className="mb-4 text-lg font-semibold text-foreground">
-                      Version History
-                    </h2>
-                    {versions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No versions yet. Click "Save as New Version" to create one.
-                      </p>
-                    ) : (
-                      <div className="space-y-3 max-h-80 overflow-y-auto">
-                        {versions.map((version) => (
-                          <div
-                            key={version.id}
-                            className="rounded-lg border border-border p-3 text-sm"
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium text-foreground">
-                                Version {version.version_number}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(version.created_at), "MMM d, yyyy")}
-                              </span>
-                            </div>
-                            {version.change_notes && (
-                              <p className="text-muted-foreground line-clamp-2">
-                                {version.change_notes}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -1130,15 +1026,100 @@ export default function LibraryPromptEdit() {
         isPublishing={isPublishing}
       />
 
-      {/* Refine Prompt Modal */}
-      <RefinePromptModal
-        isOpen={showRefineModal}
-        onClose={() => setShowRefineModal(false)}
-        promptContent={content}
-        promptTitle={title}
-        onApplyRefinedPrompt={(refinedPrompt) => setContent(refinedPrompt)}
-        userId={user?.id}
-      />
+      {/* Version History & Details Drawer */}
+      <Sheet open={showVersionDrawer} onOpenChange={setShowVersionDrawer}>
+        <SheetContent className="w-full sm:max-w-md p-0">
+          <SheetHeader className="px-4 py-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Version History & Details
+            </SheetTitle>
+          </SheetHeader>
+          <Tabs defaultValue="versions" className="h-[calc(100vh-80px)]">
+            <TabsList className="w-full rounded-none border-b border-border bg-transparent px-4 pt-2">
+              <TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger>
+              <TabsTrigger value="details" className="flex-1">Details</TabsTrigger>
+            </TabsList>
+            <TabsContent value="versions" className="mt-0 h-[calc(100%-44px)]">
+              <ScrollArea className="h-full">
+                <div className="p-4 space-y-3">
+                  {versions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      No versions yet. Click "Save as New Version" to create one.
+                    </p>
+                  ) : (
+                    versions.map((version) => (
+                      <div
+                        key={version.id}
+                        className="rounded-lg border border-border bg-card p-4 text-sm"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <Badge variant={version === versions[0] ? "default" : "secondary"} className="text-xs">
+                            v{version.version_number}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(version.created_at), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                        <p className="font-medium text-foreground mt-2 truncate">{version.title}</p>
+                        {version.change_notes && (
+                          <p className="text-muted-foreground mt-1 line-clamp-2 italic">
+                            "{version.change_notes}"
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="details" className="mt-0">
+              <div className="p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Created</p>
+                    <p className="text-sm text-muted-foreground">
+                      {prompt?.created_at
+                        ? format(new Date(prompt.created_at), "MMM d, yyyy 'at' h:mm a")
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Last Updated</p>
+                    <p className="text-sm text-muted-foreground">
+                      {prompt?.updated_at
+                        ? format(new Date(prompt.updated_at), "MMM d, yyyy 'at' h:mm a")
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Layers className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Version Count</p>
+                    <p className="text-sm text-muted-foreground">
+                      {versions.length} version{versions.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Visibility</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isPublic ? "Public" : "Private"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
