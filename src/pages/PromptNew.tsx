@@ -245,6 +245,7 @@ export default function PromptNew() {
   // Coach panel element
   const coachPanel = (
     <PromptCoachPanel
+      isNewPrompt
       artifactId="draft"
       canvasContent={content}
       onApplyContent={handleApplyAIContent}

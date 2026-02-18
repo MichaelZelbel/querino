@@ -26,6 +26,7 @@ interface PromptCoachPanelProps {
   onApplyContent: (content: string, changeNote?: string) => void;
   onUndo: () => void;
   canUndo: boolean;
+  isNewPrompt?: boolean;
 }
 
 const QUICK_ACTIONS = [
@@ -42,8 +43,13 @@ export function PromptCoachPanel({
   onApplyContent,
   onUndo,
   canUndo,
+  isNewPrompt = false,
 }: PromptCoachPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    isNewPrompt
+      ? [{ role: "assistant", content: "What do you want this prompt to do?" }]
+      : []
+  );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<"chat_only" | "collab_edit">("collab_edit");
