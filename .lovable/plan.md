@@ -1,40 +1,53 @@
 
+## Add Welcome Message to Prompt Coach on New Prompt Page
 
-## Fix: "Alternate page with proper canonical tag" Google Indexing Error
+### What needs to change
 
-### Root Cause
+Only **one file** needs a small change: `src/components/studio/PromptCoachPanel.tsx`.
 
-Every page on your site is telling Google: "I'm just an alternate version of the homepage." This happens because:
+### How it works today
 
-- `index.html` contains a hardcoded `<link rel="canonical" href="https://querino.app" />` that ships with every page
-- Google reads this from the raw HTML before JavaScript runs, so the dynamic override in `SEOHead` is ignored
-- Google then skips indexing those pages because it thinks they're duplicates of the homepage
+The `messages` state is initialized as an empty array:
+```ts
+const [messages, setMessages] = useState<ChatMessage[]>([]);
+```
+When the array is empty, the component renders a static placeholder (bot icon + italic text). No AI call is made on load.
 
-### Changes
+### The fix
 
-**1. Remove hardcoded canonical from `index.html`**
-- Delete the line `<link rel="canonical" href="https://querino.app" />`
-- The canonical will be managed entirely by the `SEOHead` component at runtime
+The `PromptCoachPanel` already receives props from its parent page. We add one optional boolean prop — `isNewPrompt` — to the component. When `true`, the initial state of `messages` is pre-seeded with the coach's greeting instead of an empty array.
 
-**2. Update `SEOHead` to always set a canonical URL**
-- When no explicit `canonicalUrl` is provided, default to the current page URL (cleaned of query params where appropriate)
-- This ensures every page declares itself as the canonical version
-- Pages that already pass `canonicalUrl` (blog pages) continue working as before
+```ts
+// NEW optional prop
+interface PromptCoachPanelProps {
+  ...
+  isNewPrompt?: boolean;  // <-- add this
+}
 
-**3. Fix the `notify-admin` build error (bonus)**
-- The Resend import `npm:resend@4.0.0` is failing in Deno. Switch to using the Resend REST API directly via `fetch`, which is the standard pattern for Supabase Edge Functions and requires no external dependency.
+// Pre-seed the greeting when on the new prompt page
+const [messages, setMessages] = useState<ChatMessage[]>(
+  isNewPrompt
+    ? [{ role: "assistant", content: "What do you want this prompt to do?" }]
+    : []
+);
+```
 
-### Technical Details
+The greeting is **hardcoded locally** — no AI API call is fired on page load. This keeps it fast, free, and simple.
 
-#### `index.html`
-- Remove line 13: `<link rel="canonical" href="https://querino.app" />`
+### Where the prop gets passed
 
-#### `src/components/seo/SEOHead.tsx`
-- Change the canonical logic from "set if provided, remove if not" to "always set"
-- Default: `canonicalUrl || window.location.origin + window.location.pathname`
-- This strips query parameters by default (e.g., `?page=2`) to avoid duplicate canonical URLs for paginated views
+We need to check where `PromptCoachPanel` is used and pass `isNewPrompt={true}` on the New Prompt page only (not on the Edit page).
 
-#### `supabase/functions/notify-admin/index.ts`
-- Replace the `npm:resend` import with a direct `fetch` call to `https://api.resend.com/emails`
-- This eliminates the Deno module resolution error while maintaining identical functionality
+### Files to change
 
+| File | Change |
+|---|---|
+| `src/components/studio/PromptCoachPanel.tsx` | Add optional `isNewPrompt` prop; change `useState` initial value |
+| New Prompt page (wherever `PromptCoachPanel` is rendered for `/prompts/new`) | Pass `isNewPrompt={true}` |
+
+### No risk
+
+- No edge function changes
+- No database changes
+- No new dependencies
+- The empty-state placeholder (`messages.length === 0`) already handles the Edit page correctly since `isNewPrompt` defaults to `false`
