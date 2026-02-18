@@ -51,15 +51,49 @@ export function PromptCoachPanel({
   workspaceId,
   sessionId,
 }: PromptCoachPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(
-    isNewPrompt
+  // Persist chat history in localStorage keyed by sessionId so it survives navigation
+  const storageKey = `prompt_coach_messages:${sessionId}`;
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) return JSON.parse(stored) as ChatMessage[];
+    } catch {
+      // ignore parse errors
+    }
+    return isNewPrompt
       ? [{ role: "assistant", content: "What do you want this prompt to do?" }]
-      : []
-  );
+      : [];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<"chat_only" | "collab_edit">("collab_edit");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Persist messages whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch {
+      // ignore storage errors (e.g. private browsing quota)
+    }
+  }, [messages, storageKey]);
+
+  // When sessionId changes (draft promoted to real prompt), migrate messages to new key
+  useEffect(() => {
+    // Re-read from new key in case messages were already stored there (e.g. returning to edit page)
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as ChatMessage[];
+        if (parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [storageKey]);
 
   useEffect(() => {
     if (scrollRef.current) {
