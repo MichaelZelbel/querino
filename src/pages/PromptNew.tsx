@@ -286,7 +286,7 @@ export default function PromptNew() {
                 className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
                 <Wand2 className="h-4 w-4" />
-                Prompt Wizard
+                Kickstart Template
               </Link>
 
               {/* Mobile: AI Coach toggle */}

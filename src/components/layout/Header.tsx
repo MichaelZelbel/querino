@@ -177,7 +177,7 @@ export function Header() {
                   <DropdownMenuItem asChild>
                     <Link to="/prompts/wizard" className="flex items-center gap-2 cursor-pointer">
                       <Wand2 className="h-4 w-4" />
-                      Prompt Wizard
+                      Kickstart Template
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
@@ -377,7 +377,7 @@ export function Header() {
                 <Link to="/prompts/wizard" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <Wand2 className="h-4 w-4" />
-                    Prompt Wizard
+                    Kickstart Template
                   </Button>
                 </Link>
                 <Button 
