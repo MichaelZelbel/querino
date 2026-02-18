@@ -19,7 +19,7 @@ export default function UserActivity() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, display_name, avatar_url, bio, website, twitter, github")
         .eq("display_name", username)
         .single();
 
