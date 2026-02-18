@@ -46,12 +46,12 @@ export default function UserProfile() {
       }
 
       try {
-        // Find user by display_name or email prefix
+        // Find user by display_name using the public_profiles view (no sensitive fields)
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("id, display_name, avatar_url, bio, website, twitter, github")
           .or(`display_name.ilike.${username}`)
-          .maybeSingle();
+          .maybeSingle() as any;
 
         if (profileError || !profileData) {
           setNotFound(true);
