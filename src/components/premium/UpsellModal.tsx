@@ -28,7 +28,7 @@ interface UpsellModalProps {
 
 const premiumFeatures = [
   { icon: Sparkles, label: 'AI Insights', description: 'Get AI-powered summaries & recommendations' },
-  { icon: Wand2, label: 'Prompt Wizard', description: 'Generate prompts from simple descriptions' },
+  { icon: Wand2, label: 'Kickstart Template', description: 'Generate prompts from simple descriptions' },
   { icon: Search, label: 'Semantic Search', description: 'Find conceptually similar artefacts' },
   { icon: Infinity, label: 'Unlimited Artefacts', description: 'No limits on prompts, skills, workflows' },
   { icon: Github, label: 'GitHub Sync', description: 'Sync your library to any repository' },

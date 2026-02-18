@@ -76,7 +76,7 @@ export const featureComparison: FeatureComparison[] = [
     features: [
       { name: "AI Insights & summaries", free: false, premium: true, isPremium: true },
       { name: "AI recommendations", free: false, premium: true, isPremium: true },
-      { name: "Prompt Wizard", free: false, premium: true, isPremium: true },
+      { name: "Kickstart Template", free: false, premium: true, isPremium: true },
     ],
   },
   {
