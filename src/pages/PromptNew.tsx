@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -38,11 +39,13 @@ import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
 
 export default function PromptNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuthContext();
+  const { currentWorkspace } = useWorkspace();
   const { isPremium } = usePremiumCheck();
   const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -190,6 +193,10 @@ export default function PromptNew() {
         change_notes: "Initial version",
       });
 
+      // Promote draft coach session to deterministic session for this prompt
+      const workspaceScope = currentWorkspace ?? "personal";
+      promoteDraftSession(workspaceScope, user.id, newPrompt.id);
+
       toast.success("Prompt created successfully!");
       navigate(`/library/${newPrompt.slug}/edit`);
     } catch (err) {
@@ -243,6 +250,9 @@ export default function PromptNew() {
   };
 
   // Coach panel element
+  const workspaceScope = currentWorkspace ?? "personal";
+  const draftSessionId = user ? getOrCreateDraftSessionId(workspaceScope, user.id) : "draft";
+
   const coachPanel = (
     <PromptCoachPanel
       isNewPrompt
@@ -251,6 +261,9 @@ export default function PromptNew() {
       onApplyContent={handleApplyAIContent}
       onUndo={handleUndoAI}
       canUndo={previousContent !== null}
+      userId={user?.id ?? ""}
+      workspaceId={currentWorkspace === "personal" ? null : currentWorkspace}
+      sessionId={draftSessionId}
     />
   );
 
