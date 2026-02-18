@@ -64,11 +64,25 @@ export function promoteDraftSession(
   userId: string,
   newPromptId: string,
 ): string {
+  const draftId = getOrCreateDraftSessionId(workspaceScope, userId);
   const finalSessionId = deterministicSessionId(workspaceScope, userId, newPromptId);
   const finalKey = promptSessionKey(workspaceScope, userId, newPromptId);
   localStorage.setItem(finalKey, finalSessionId);
 
-  // Remove the draft key
+  // Migrate chat messages from draft session key to final session key
+  const draftMsgKey = `prompt_coach_messages:${draftId}`;
+  const finalMsgKey = `prompt_coach_messages:${finalSessionId}`;
+  try {
+    const draftMessages = localStorage.getItem(draftMsgKey);
+    if (draftMessages) {
+      localStorage.setItem(finalMsgKey, draftMessages);
+      localStorage.removeItem(draftMsgKey);
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  // Remove the draft session key
   const draftKey = draftSessionKey(workspaceScope, userId);
   localStorage.removeItem(draftKey);
 
