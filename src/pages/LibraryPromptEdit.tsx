@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -74,6 +75,7 @@ import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { deterministicSessionId } from "@/lib/runCanvasAI";
 
 interface PromptVersion {
   id: string;
@@ -91,6 +93,7 @@ export default function LibraryPromptEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { currentWorkspace } = useWorkspace();
   const { isPremium } = usePremiumCheck();
   const isMobile = useIsMobile();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
@@ -570,6 +573,11 @@ export default function LibraryPromptEdit() {
   };
 
   // Coach panel element (reused for desktop + mobile sheet)
+  const workspaceScope = currentWorkspace ?? "personal";
+  const coachSessionId = promptId && user
+    ? deterministicSessionId(workspaceScope, user.id, promptId)
+    : "draft";
+
   const coachPanel = promptId ? (
     <PromptCoachPanel
       artifactId={promptId}
@@ -577,6 +585,9 @@ export default function LibraryPromptEdit() {
       onApplyContent={handleApplyAIContent}
       onUndo={handleUndoAI}
       canUndo={previousContent !== null}
+      userId={user?.id ?? ""}
+      workspaceId={currentWorkspace === "personal" ? null : currentWorkspace}
+      sessionId={coachSessionId}
     />
   ) : null;
 

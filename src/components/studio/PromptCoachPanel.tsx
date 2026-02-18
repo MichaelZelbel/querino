@@ -27,6 +27,9 @@ interface PromptCoachPanelProps {
   onUndo: () => void;
   canUndo: boolean;
   isNewPrompt?: boolean;
+  userId: string;
+  workspaceId?: string | null;
+  sessionId: string;
 }
 
 const QUICK_ACTIONS = [
@@ -44,6 +47,9 @@ export function PromptCoachPanel({
   onUndo,
   canUndo,
   isNewPrompt = false,
+  userId,
+  workspaceId,
+  sessionId,
 }: PromptCoachPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(
     isNewPrompt
@@ -77,6 +83,9 @@ export function PromptCoachPanel({
         mode: overrideMessage ? "collab_edit" : mode,
         message: msg,
         canvasContent,
+        userId,
+        workspaceId,
+        sessionId,
       });
 
       const assistantMsg: ChatMessage = {
