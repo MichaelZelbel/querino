@@ -1,0 +1,529 @@
+{
+  "name": "Prompt Coach",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prompt-coach",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b90aa680-c74c-4327-9130-a821e55790b4",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "531fd31c-74a7-44df-99a4-b4f53ba37bd3",
+              "name": "user_id",
+              "value": "={{ $json.body.user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "8d1528d8-b300-4f25-a140-eb47ae4e9c2c",
+              "name": "workspace_id",
+              "value": "={{ $json.body.workspace_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "eb17f1e4-b5a2-4d2b-a3b1-0d579f7cc826",
+              "name": "prompt_id",
+              "value": "={{ $json.body.prompt_id || 'draft' }}",
+              "type": "string"
+            },
+            {
+              "id": "b0221799-f49b-43f8-966c-f454602c4f5f",
+              "name": "mode",
+              "value": "={{ $json.body.mode || 'chat_only' }}",
+              "type": "string"
+            },
+            {
+              "id": "7609f13f-d26e-4dc0-bf1c-b1d98f8defc9",
+              "name": "message",
+              "value": "={{ $json.body.message || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "724c155c-9889-49c7-bf95-dd32a54eafdd",
+              "name": "canvas_content",
+              "value": "={{ $json.body.canvas_content || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "fc3f88a7-e0ff-4a24-95a9-d3ff9cf72ceb",
+              "name": "selection",
+              "value": "={{ $json.body.selection ?? null }}",
+              "type": "object"
+            },
+            {
+              "id": "65ec4e51-b729-4649-aee8-0defba6ac501",
+              "name": "provider",
+              "value": "openrouter",
+              "type": "string"
+            },
+            {
+              "id": "c2f53137-2a80-46fb-8381-e9d8dcfb1ed8",
+              "name": "model",
+              "value": "openai/gpt-4o-mini",
+              "type": "string"
+            },
+            {
+              "id": "6048187a-7e5d-40d8-af44-313f6dd5a646",
+              "name": "session_id",
+              "value": "={{ $json.body.session_id || `${$json.body.workspace_id || 'personal'}:${$json.body.user_id}:${$json.body.prompt_id || 'draft'}` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0935e2da-21f3-4d8f-bf56-3891de8e8a0a",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO prompt_coach_sessions (id, user_id, workspace_id, prompt_id, updated_at)\nVALUES (\n  '{{ $('Config').item.json.session_id.replace(/'/g, \"''\") }}',\n  '{{ $('Config').item.json.user_id }}'::uuid,\n  {{ $('Config').item.json.workspace_id ? String.fromCharCode(39) + $('Config').item.json.workspace_id + String.fromCharCode(39) + '::uuid' : 'NULL' }},\n  '{{ $('Config').item.json.prompt_id.replace(/'/g, \"''\") }}',\n  now()\n)\nON CONFLICT (id) DO UPDATE SET\n  user_id = EXCLUDED.user_id,\n  workspace_id = EXCLUDED.workspace_id,\n  prompt_id = EXCLUDED.prompt_id,\n  updated_at = now();",
+        "options": {}
+      },
+      "id": "40741e3f-f997-4f08-bb48-6c97cafe856f",
+      "name": "Upsert Session",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        620,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO prompt_coach_messages (session_id, role, content, canvas_updated)\nVALUES (\n  '{{ $('Config').item.json.session_id.replace(/'/g, \"''\") }}',\n  'user',\n  '{{ $('Config').item.json.message.replace(/'/g, \"''\") }}',\n  false\n);",
+        "options": {}
+      },
+      "id": "39350a65-a784-4dce-b3ca-df73e89635fd",
+      "name": "Insert User Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        840,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT role, content, created_at\nFROM (\n  SELECT role, content, created_at\n  FROM prompt_coach_messages\n  WHERE session_id = '{{ $('Config').item.json.session_id.replace(/'/g, \"''\") }}'\n  ORDER BY created_at DESC\n  LIMIT 12\n) recent\nORDER BY created_at ASC;",
+        "options": {}
+      },
+      "id": "64345e11-dfdd-4e79-b02c-5968f3801cb6",
+      "name": "Get Recent Messages",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1060,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5b718ff5-8ede-4e5b-a671-0730f4b3fe52",
+              "name": "conversation_context",
+              "value": "={{ $input.all().filter(item => item.json.role && item.json.content).map(item => `${item.json.role}: ${item.json.content}`).join('\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "648090ec-fbd5-4f91-95f9-a4c8ca029c9c",
+      "name": "Build Memory Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "id": "f6c26336-4501-4cc4-9a35-db5ee43f6327",
+      "name": "OpenRouter LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        520
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "MGQPWNIqP5IqzT9c",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}"
+      },
+      "id": "765df4c4-c7c3-4066-b447-ae35cd58a3c9",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}\n\nrecent_conversation_context (oldest to newest, can be empty):\n{{ $json.conversation_context || '' }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are \"Prompt Coach\", an expert prompt engineer helping the user refine prompts.\nYou always see the current prompt canvas content.\nYou must follow the selected mode:\n- chat_only: explain, ask clarifying questions, suggest improvements, but DO NOT modify the canvas.\n- collab_edit: you MAY modify the canvas. Keep original intent, make minimal/safe improvements.\n\nYou MUST return ONLY valid JSON matching the Response Contract schema.\nNever return diffs. If updating, return the full updated canvas text.\n\nAdditional rules:\n- If mode is chat_only, set canvas.updated=false and do not include new canvas content.\n- If mode is collab_edit and you changed the prompt, set canvas.updated=true and include full updated canvas content in canvas.content.\n- Keep assistantMessage concise and helpful.\n- Use the provided conversation context to stay consistent with prior turns."
+        }
+      },
+      "id": "79abdcdb-917f-4794-801d-d28089aa2b81",
+      "name": "Prompt Coach Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f95c8fa6-0133-4435-b4a4-dbc480148fe2",
+              "name": "assistantMessage",
+              "value": "={{ $json.output.assistantMessage || $json.assistantMessage }}",
+              "type": "string"
+            },
+            {
+              "id": "a23b37c3-9817-4344-9458-1407c23f6c08",
+              "name": "canvas",
+              "value": "={{ $json.output.canvas || $json.canvas }}",
+              "type": "object"
+            },
+            {
+              "id": "187ef291-9392-4ec1-b20f-fca576fd4ac5",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2db95b1d-bb4d-410e-8f93-f2ab4698f60b",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO prompt_coach_messages (session_id, role, content, canvas_updated, change_note)\nVALUES (\n  '{{ $('Config').item.json.session_id.replace(/'/g, \"''\") }}',\n  'assistant',\n  '{{ ($('Build Response').item.json.assistantMessage || '').replace(/'/g, \"''\") }}',\n  {{ $('Build Response').item.json.canvas?.updated ? 'true' : 'false' }},\n  {{ $('Build Response').item.json.canvas?.changeNote ? String.fromCharCode(39) + $('Build Response').item.json.canvas.changeNote.replace(/'/g, \"''\") + String.fromCharCode(39) : 'NULL' }}\n);",
+        "options": {}
+      },
+      "id": "76435340-576d-4cf2-b9e9-183abf5773e7",
+      "name": "Insert Assistant Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1960,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Build Response').item.json }}",
+        "options": {}
+      },
+      "id": "b99e2d1e-025f-4098-a42f-5be3d47e545a",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2180,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "e295f7e9-2fcb-4c0d-8905-84455df2956d",
+      "name": "Call Update Token Usage",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2180,
+        500
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Upsert Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Session": {
+      "main": [
+        [
+          {
+            "node": "Insert User Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert User Message": {
+      "main": [
+        [
+          {
+            "node": "Get Recent Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recent Messages": {
+      "main": [
+        [
+          {
+            "node": "Build Memory Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Memory Context": {
+      "main": [
+        [
+          {
+            "node": "Prompt Coach Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Prompt Coach Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Prompt Coach Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt Coach Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Insert Assistant Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Assistant Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "tags": []
+}
