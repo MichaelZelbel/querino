@@ -156,7 +156,7 @@ export default function Docs() {
 
               <h3 className="text-lg font-semibold mt-8 mb-4">AI Assistance</h3>
               <p className="text-muted-foreground">
-                Use the <Link to="/prompts/wizard" className="text-primary hover:underline">Prompt Wizard</Link> to generate prompts from a brief description. You can also use the "Suggest with AI" button when editing to auto-fill title, description, and tags based on your prompt content.
+                Use the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> to generate prompts from a brief description. You can also use the "Suggest with AI" button when editing to auto-fill title, description, and tags based on your prompt content.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Best Practices</h3>

@@ -178,23 +178,11 @@ export default function PromptWizard() {
                 <Lock className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-display-md font-bold text-foreground">
-                Prompt Wizard
+                Kickstart Template
               </h1>
               <p className="mt-2 text-muted-foreground">
-                Answer a few questions and let Querino draft a powerful prompt for you.
-              </p>
-            </div>
-
-            {/* Premium Gate Card */}
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <Crown className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">
-                Premium Feature
-              </h2>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                The Prompt Wizard uses AI to craft powerful prompts tailored to your needs. 
+...
+                The Kickstart Template uses AI to craft powerful prompts tailored to your needs. 
                 Upgrade to Premium to unlock this feature.
               </p>
               <Button onClick={() => navigate("/pricing")} className="gap-2">
@@ -232,7 +220,7 @@ export default function PromptWizard() {
               <Wand2 className="h-6 w-6 text-primary" />
             </div>
             <h1 className="text-display-md font-bold text-foreground">
-              Prompt Wizard
+              Kickstart Template
             </h1>
             <p className="mt-2 text-muted-foreground">
               Answer a few questions and let Querino draft a powerful prompt for you.
