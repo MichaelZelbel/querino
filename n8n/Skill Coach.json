@@ -305,7 +305,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { assistantMessage: $('Build Response').item.json.assistantMessage, canvas: $('Build Response').item.json.canvas, session: $('Build Response').item.json.session } }}",
+        "responseBody": "={{ { assistantMessage: ($('Build Response').isExecuted ? $('Build Response').item.json.assistantMessage : $('Build Response Error').item.json.assistantMessage), canvas: ($('Build Response').isExecuted ? $('Build Response').item.json.canvas : $('Build Response Error').item.json.canvas), session: ($('Build Response').isExecuted ? $('Build Response').item.json.session : $('Build Response Error').item.json.session) } }}",
         "options": {}
       },
       "id": "0403f527-43ac-4e12-b22d-ac62cafc1dd6",
@@ -445,6 +445,26 @@
           "name": "SerpAPI account"
         }
       }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-5.2-chat",
+        "options": {}
+      },
+      "id": "parser-llm-skill-coach-001",
+      "name": "OpenRouter LLM for Parser",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        6992,
+        2224
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "MGQPWNIqP5IqzT9c",
+          "name": "OpenRouter account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -532,6 +552,17 @@
           {
             "node": "Skill Coach Agent",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter LLM for Parser": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
