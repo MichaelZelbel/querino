@@ -236,7 +236,8 @@
       "parameters": {
         "schemaType": "manual",
         "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}",
-        "autoFix": true
+        "autoFix": true,
+        "customRetryPrompt": "Your output was wrapped in an extra key (likely \"output\"). Remove all wrapper keys. Return ONLY a raw JSON object with \"assistantMessage\" and \"canvas\" as top-level keys. Example: {\"assistantMessage\": \"...\", \"canvas\": {\"updated\": false}}"
       },
       "id": "aabbccdd-ff00-1122-3344-aa0011223344",
       "name": "Structured Output Parser",
@@ -465,6 +466,19 @@
           "name": "OpenRouter account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unwrap the \"output\" envelope if the LLM wrapped its response\nconst raw = $input.all();\nconst results = [];\nfor (const item of raw) {\n  let data = item.json;\n  // If wrapped in \"output\", unwrap\n  if (data.output && typeof data.output === 'object' && data.output.assistantMessage) {\n    data = { ...data.output };\n  }\n  results.push({ json: data });\n}\nreturn results;"
+      },
+      "id": "unwrap-output-wf-coach-001",
+      "name": "Unwrap Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6880,
+        1968
+      ]
     }
   ],
   "pinData": {},
@@ -572,7 +586,7 @@
       "main": [
         [
           {
-            "node": "Build Response",
+            "node": "Unwrap Output",
             "type": "main",
             "index": 0
           }
@@ -580,6 +594,17 @@
         [
           {
             "node": "Build Response Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unwrap Output": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
             "type": "main",
             "index": 0
           }
