@@ -28,8 +28,9 @@ serve(async (req) => {
       body: JSON.stringify(body),
     });
 
+    const text = await response.text();
+
     if (!response.ok) {
-      const text = await response.text();
       console.error("[workflow-coach] n8n error:", response.status, text.slice(0, 200));
       return new Response(
         JSON.stringify({ error: `Upstream error: ${response.status}` }),
@@ -37,9 +38,26 @@ serve(async (req) => {
       );
     }
 
-    const data = await response.json();
+    if (!text || text.trim() === "") {
+      console.error("[workflow-coach] n8n returned empty body");
+      return new Response(
+        JSON.stringify({ error: "Upstream returned empty response" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    return new Response(JSON.stringify(data), {
+    let data: unknown;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.error("[workflow-coach] JSON parse error:", parseErr, "body:", text.slice(0, 200));
+      return new Response(
+        JSON.stringify({ error: "Upstream returned invalid JSON" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    return new Response(JSON.stringify(data as Record<string, unknown>), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
