@@ -1,0 +1,510 @@
+{
+  "name": "Workflow Coach",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "workflow-coach",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "11223344-5566-7788-99aa-bbccddeeff00",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        3600,
+        1888
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "showWelcomeScreen": false
+        }
+      },
+      "id": "22334455-6677-8899-aabb-ccddeeff0011",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        3600,
+        2096
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "33445566-7788-99aa-bbcc-ddeeff001122",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            },
+            {
+              "id": "44556677-8899-aabb-ccdd-eeff00112233",
+              "name": "test_workspace_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "55667788-99aa-bbcc-ddee-ff0011223344",
+              "name": "test_workflow_id",
+              "value": "draft",
+              "type": "string"
+            },
+            {
+              "id": "66778899-aabb-ccdd-eeff-001122334455",
+              "name": "test_mode",
+              "value": "chat_only",
+              "type": "string"
+            },
+            {
+              "id": "7788aabb-bbcc-ddee-ff00-112233445566",
+              "name": "test_message",
+              "value": "={{ $json.chatInput || 'Can you help me improve this workflow description?' }}",
+              "type": "string"
+            },
+            {
+              "id": "8899aabb-ccdd-eeff-0011-223344556677",
+              "name": "test_canvas_content",
+              "value": "Trigger: Webhook (POST /process-order)\nStep 1: Validate the incoming order payload using a Function node.\nStep 2: Insert the order into the Supabase orders table.\nStep 3: Send a confirmation email via the Gmail node.\nExpected output: HTTP 200 response with order ID.",
+              "type": "string"
+            },
+            {
+              "id": "99aabbcc-ddee-ff00-1122-334455667788",
+              "name": "test_selection",
+              "value": "={{ null }}",
+              "type": "object"
+            },
+            {
+              "id": "aabbccdd-eeff-0011-2233-445566778899",
+              "name": "test_session_id",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bbccddee-ff00-1122-3344-556677889900",
+      "name": "Test Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3792,
+        2096
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ccddeeff-0011-2233-4455-667788990011",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "ddeeff00-1122-3344-5566-778899001122",
+              "name": "workspace_id",
+              "value": "={{ $json.body?.workspace_id ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "eeff0011-2233-4455-6677-889900112233",
+              "name": "artifact_type",
+              "value": "={{ $json.body?.artifact_type || 'workflow' }}",
+              "type": "string"
+            },
+            {
+              "id": "ff001122-3344-5566-7788-990011223344",
+              "name": "workflow_id",
+              "value": "={{ $json.body?.workflow_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workflow_id : 'draft') || 'draft' }}",
+              "type": "string"
+            },
+            {
+              "id": "00112233-4455-6677-8899-001122334455",
+              "name": "mode",
+              "value": "={{ $json.body?.mode || ($('Test Config').isExecuted ? $('Test Config').item.json.test_mode : 'chat_only') || 'chat_only' }}",
+              "type": "string"
+            },
+            {
+              "id": "11223344-5566-7788-99aa-112233445566",
+              "name": "message",
+              "value": "={{ $json.body?.message || ($('Test Config').isExecuted ? $('Test Config').item.json.test_message : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "22334455-6677-8899-aabb-223344556677",
+              "name": "canvas_content",
+              "value": "={{ $json.body?.canvas_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_canvas_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "33445566-7788-99aa-bbcc-334455667788",
+              "name": "selection",
+              "value": "={{ $json.body?.selection ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_selection : null) }}",
+              "type": "object"
+            },
+            {
+              "id": "44556677-8899-aabb-ccdd-445566778899",
+              "name": "provider",
+              "value": "openrouter",
+              "type": "string"
+            },
+            {
+              "id": "55667788-99aa-bbcc-ddee-556677889900",
+              "name": "model",
+              "value": "openai/gpt-4o-mini",
+              "type": "string"
+            },
+            {
+              "id": "66778899-aabb-ccdd-eeff-667788990011",
+              "name": "session_id",
+              "value": "={{ $json.body?.session_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_session_id : '') || `${($json.body?.workspace_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') || 'personal')}:${($json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : ''))}:${($json.body?.workflow_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workflow_id : 'draft') || 'draft')}` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7788aabb-ccdd-eeff-0011-778899001122",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3984,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Config').item.json.session_id }}",
+        "tableName": "prompt_coach_messages",
+        "contextWindowLength": 12
+      },
+      "id": "8899aabb-ddee-ff00-1122-889900112233",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        4224,
+        2112
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "id": "99aabbcc-eeff-0011-2233-990011223344",
+      "name": "OpenRouter LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        4416,
+        2112
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "MGQPWNIqP5IqzT9c",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}"
+      },
+      "id": "aabbccdd-ff00-1122-3344-aa0011223344",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        4608,
+        2112
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are \"Workflow Coach\", an expert n8n automation architect helping the user design and refine n8n workflow descriptions.\nA \"workflow\" in Querino is a natural-language description or specification of an n8n automation — explaining what the workflow does, its trigger, nodes, and expected behavior.\nYou always see the current workflow canvas content.\nYou must follow the selected mode:\n- chat_only: explain, ask clarifying questions, suggest improvements, but DO NOT modify the canvas.\n- collab_edit: you MAY modify the canvas. Keep original intent, make minimal/safe improvements.\n\nYou MUST return ONLY valid JSON matching the Response Contract schema.\nNever return diffs. If updating, return the full updated canvas text.\n\nAdditional rules:\n- If mode is chat_only, return canvas.updated=false and do not provide canvas.content.\n- If mode is collab_edit and workflow description is updated, set canvas.updated=true and provide full updated canvas in canvas.content.\n- If mode is collab_edit and no changes are needed, return canvas.updated=false.\n\nWorkflow descriptions can be long — focus on completeness, node-by-node clarity, and automation logic."
+        }
+      },
+      "id": "bbccddee-0011-2233-4455-bb1122334455",
+      "name": "Workflow Coach Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        4416,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ccddeeff-1122-3344-5566-cc2233445566",
+              "name": "assistantMessage",
+              "value": "={{ $json.output?.assistantMessage || $json.assistantMessage || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "ddeeff00-2233-4455-6677-dd3344556677",
+              "name": "canvas",
+              "value": "={{ $('Config').item.json.mode === 'chat_only' ? { updated: false } : (($json.output?.canvas || $json.canvas || {}).updated ? { updated: true, content: ($json.output?.canvas?.content || $json.canvas?.content || ''), changeNote: ($json.output?.canvas?.changeNote || $json.canvas?.changeNote || '') } : { updated: false }) }}",
+              "type": "object"
+            },
+            {
+              "id": "eeff0011-3344-5566-7788-ee4455667788",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ff001122-4455-6677-8899-ff5566778899",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4800,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { assistantMessage: $('Build Response').item.json.assistantMessage, canvas: $('Build Response').item.json.canvas, session: $('Build Response').item.json.session } }}",
+        "options": {}
+      },
+      "id": "00112233-5566-7788-99aa-006677889900",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        5008,
+        1888
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "11223344-6677-8899-aabb-117788990011",
+      "name": "Call Update Token Usage",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        5008,
+        2096
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Coach Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "versionId": "2b3c4d5e-6f7a-8901-bcde-f23456789012",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
+  },
+  "id": "WorkflowCoach01QRino",
+  "tags": []
+}
