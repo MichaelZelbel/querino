@@ -198,7 +198,7 @@ export default function PromptNew() {
       promoteDraftSession(workspaceScope, user.id, newPrompt.id);
 
       toast.success("Prompt created successfully!");
-      navigate(`/library/${newPrompt.slug}/edit`);
+      navigate(`/prompts/${newPrompt.slug}`);
     } catch (err) {
       console.error("Error creating prompt:", err);
       toast.error("Something went wrong. Please try again.");
