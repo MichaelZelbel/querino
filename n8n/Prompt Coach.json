@@ -9,14 +9,15 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "b90aa680-c74c-4327-9130-a821e55790b4",
+      "id": "bf93bd8b-d18c-4250-b6f6-913ae447f629",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        3600,
-        1888
+        6096,
+        1968
       ],
+      "webhookId": "2de67521-37f5-4a84-ba77-aa3cddae2f6a",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Y2M2gm8PMqf8Owkp",
@@ -31,14 +32,15 @@
           "showWelcomeScreen": false
         }
       },
-      "id": "8e8b0e1c-6bb6-4d00-a21f-a4d0b8810fef",
+      "id": "9da95608-4fd2-40f5-90c5-e9fb2a82bb9f",
       "name": "Chat Trigger",
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
       "position": [
-        3600,
-        2096
-      ]
+        6096,
+        2128
+      ],
+      "webhookId": "ba615044-18fa-479e-83a0-c23d900cb52a"
     },
     {
       "parameters": {
@@ -59,7 +61,7 @@
             {
               "id": "f95d73dc-abf4-4389-a9c9-6cbefe6e9ba8",
               "name": "test_prompt_id",
-              "value": "draft",
+              "value": "draft234234",
               "type": "string"
             },
             {
@@ -77,7 +79,7 @@
             {
               "id": "29f8bd5c-c329-40af-b6fb-2f84d4afcc23",
               "name": "test_canvas_content",
-              "value": "You are a helpful assistant. Answer the user briefly.",
+              "value": "You are a helpful assistant. Say \"Hello World\" and then tell the user what time it is.",
               "type": "string"
             },
             {
@@ -89,20 +91,20 @@
             {
               "id": "5a8d5220-a03f-4483-b744-d7f32f9dc7f4",
               "name": "test_session_id",
-              "value": "",
+              "value": "23423423423423424234",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "60cebb15-c2ab-4c8c-b7f2-39281f9682cd",
+      "id": "3e936a31-215d-4669-bfbe-4aba7f9f7a09",
       "name": "Test Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3792,
-        2096
+        6272,
+        2128
       ]
     },
     {
@@ -117,7 +119,7 @@
             },
             {
               "id": "ddd26bcb-9b0d-4e6e-9fcb-f3fef69c592c",
-              "name": "workspace_id",
+              "name": "=workspace_id",
               "value": "={{ $json.body?.workspace_id ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') }}",
               "type": "string"
             },
@@ -166,7 +168,7 @@
             {
               "id": "f3e8bb87-f9e7-4a95-87cb-7a303ef5f864",
               "name": "model",
-              "value": "openai/gpt-4o-mini",
+              "value": "openai/gpt-5.2- chat",
               "type": "string"
             },
             {
@@ -179,13 +181,13 @@
         },
         "options": {}
       },
-      "id": "bc95d8bf-ac2d-48a5-8730-3626f871ed4f",
+      "id": "a3054126-c51d-4585-868b-1aabe88703e2",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3984,
-        1888
+        6448,
+        1968
       ]
     },
     {
@@ -195,33 +197,33 @@
         "tableName": "prompt_coach_messages",
         "contextWindowLength": 12
       },
-      "id": "89d95a4a-f0b1-4ece-94ea-4f3998e01dca",
+      "id": "77afa1c1-7e36-4f80-8035-2fd753928c7c",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        4224,
-        2112
+        6608,
+        2224
       ],
       "credentials": {
         "postgres": {
-          "id": "supabase-postgres",
-          "name": "Supabase Postgres"
+          "id": "CyI690FAp59G2LzY",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "model": "openai/gpt-4o-mini",
+        "model": "openai/gpt-5.2-chat",
         "options": {}
       },
-      "id": "f6c26336-4501-4cc4-9a35-db5ee43f6327",
+      "id": "12f920f4-0719-4a06-95f3-3218bb7fcf5d",
       "name": "OpenRouter LLM",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        4416,
-        2112
+        6480,
+        2224
       ],
       "credentials": {
         "openRouterApi": {
@@ -235,13 +237,13 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}"
       },
-      "id": "765df4c4-c7c3-4066-b447-ae35cd58a3c9",
+      "id": "fa124ee8-533a-4627-952d-2efffe242848",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        4608,
-        2112
+        6864,
+        2224
       ]
     },
     {
@@ -250,17 +252,19 @@
         "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "You are \"Prompt Coach\", an expert prompt engineer helping the user refine prompts.\nYou always see the current prompt canvas content.\nYou must follow the selected mode:\n- chat_only: explain, ask clarifying questions, suggest improvements, but DO NOT modify the canvas.\n- collab_edit: you MAY modify the canvas. Keep original intent, make minimal/safe improvements.\n\nYou MUST return ONLY valid JSON matching the Response Contract schema.\nNever return diffs. If updating, return the full updated canvas text.\n\nAdditional rules:\n- If mode is chat_only, return canvas.updated=false and do not provide canvas.content.\n- If mode is collab_edit and prompt is updated, set canvas.updated=true and provide full updated canvas in canvas.content.\n- If mode is collab_edit and no changes are needed, return canvas.updated=false."
+          "systemMessage": "You are \"Prompt Coach\", an expert prompt engineer helping users refine prompts.\n\nYou always receive:\n- mode: \"chat_only\" or \"collab_edit\"\n- message: the user's request\n- canvas_content: the full current prompt text\n- optional selection\n\nYou have access to a SerpAPI web search tool.\n\nWhen using SerpAPI web search:\n- Extract only key search terms from the user's question\n- Add relevant context (year, location) if applicable\n- Keep queries concise and keyword-focused\n- Example: Instead of searching full sentences, search \"trending greetings USA 2026\n\n----------------------------------------\nCRITICAL OUTPUT RULE\n----------------------------------------\n\nYou MUST produce your FINAL ANSWER by using the Structured Output Parser tool.\nYour final answer MUST be a single JSON object matching the parser schema EXACTLY.\nDo NOT output normal text as the final answer.\nDo NOT wrap your JSON in outer keys like \"output\" or \"response\".\nDo NOT use Markdown.\n\n----------------------------------------\nWEB SEARCH POLICY\n----------------------------------------\n\nYou may use the SerpAPI search tool ONLY if external, factual, or up-to-date information is required to answer properly.\n\nUse search when:\n- The user explicitly asks for current information (e.g., \"latest\", \"current\", \"today\", \"recent changes\").\n- The prompt references laws, policies, APIs, product features, pricing, regulations, or documentation that may change over time.\n- Accurate factual data is required to improve the prompt.\n\nDo NOT use search when:\n- Improving wording, clarity, tone, formatting, structure, or logic.\n- The request is purely stylistic or structural.\n- The answer can be derived from the canvas content and general knowledge.\n\nIf search is used:\n- Keep the number of searches minimal.\n- Extract only relevant information.\n- Do not include raw search result dumps.\n- Integrate findings cleanly into your reasoning.\n- Do NOT mention internal tool calls in the final output.\n\n----------------------------------------\nMODE RULES\n----------------------------------------\n\nIf mode == \"chat_only\":\n- Do NOT modify the canvas.\n- If the user asks you to change/rewrite/shorten the prompt, explain that edits are disabled in Chat mode and they should switch to Edit mode.\n- You may suggest improvements verbally.\n- canvas must be: { \"updated\": false }\n\nIf mode == \"collab_edit\":\n- You MAY modify the canvas.\n- If you apply changes:\n  - canvas.updated = true\n  - canvas.content = FULL updated canvas text (no diffs)\n  - canvas.changeNote = short summary of what you changed\n- If no changes are necessary:\n  - canvas.updated = false\n\n----------------------------------------\nGENERAL RULES\n----------------------------------------\n\n- Preserve original intent unless explicitly told otherwise.\n- Keep edits minimal and safe.\n- Never return diffs.\n- If search was used, ensure the response remains concise and focused.\n"
         }
       },
-      "id": "79abdcdb-917f-4794-801d-d28089aa2b81",
+      "id": "c73e595c-1dfd-4a0b-97cf-6e10421b149a",
       "name": "Prompt Coach Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        4416,
-        1888
-      ]
+        6640,
+        1968
+      ],
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -288,13 +292,13 @@
         },
         "options": {}
       },
-      "id": "2db95b1d-bb4d-410e-8f93-f2ab4698f60b",
+      "id": "e9370b99-d0f9-415c-a754-8f4b3a029235",
       "name": "Build Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        4800,
-        1888
+        7008,
+        1952
       ]
     },
     {
@@ -303,13 +307,13 @@
         "responseBody": "={{ { assistantMessage: $('Build Response').item.json.assistantMessage, canvas: $('Build Response').item.json.canvas, session: $('Build Response').item.json.session } }}",
         "options": {}
       },
-      "id": "b99e2d1e-025f-4098-a42f-5be3d47e545a",
+      "id": "0403f527-43ac-4e12-b22d-ac62cafc1dd6",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        5008,
-        1888
+        7248,
+        2128
       ],
       "alwaysOutputData": true
     },
@@ -377,15 +381,69 @@
           "waitForSubWorkflow": false
         }
       },
-      "id": "e295f7e9-2fcb-4c0d-8905-84455df2956d",
+      "id": "b358183e-c4ca-4bc6-9ff3-86192a9e4c77",
       "name": "Call Update Token Usage",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        5008,
-        2096
+        7248,
+        1952
       ],
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "assistantMessage",
+              "value": "I apologize, but I encountered an error while processing your request. Please try again or rephrase your message.",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "canvas",
+              "value": "={{ { updated: false } }}",
+              "type": "object"
+            },
+            {
+              "id": "id-3",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f3f68ad-e03d-4676-ae90-8fbf79a51f38",
+      "name": "Build Response Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7008,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        6736,
+        2224
+      ],
+      "id": "425b55a4-6ffb-4ad3-b9ac-ec53ed981097",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "RMwYDoSL8zn4eQOq",
+          "name": "SerpAPI account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -475,6 +533,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Build Response Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -493,12 +558,40 @@
           }
         ]
       ]
+    },
+    "Build Response Error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "Prompt Coach Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true
+    "availableInMCP": false
   },
+  "versionId": "a5c57c47-ca17-46fa-abac-458911ca1c0f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
+  },
+  "id": "IpRgmWITewtLwNe7",
   "tags": []
 }
