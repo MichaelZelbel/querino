@@ -20,34 +20,49 @@ export type RunCanvasAIResult = {
 };
 
 // ---------------------------------------------------------------------------
+// Edge function routing per artifact type
+// ---------------------------------------------------------------------------
+
+const EDGE_FUNCTION_BY_TYPE: Record<ArtifactType, string> = {
+  prompt: "prompt-coach",
+  skill: "skill-coach",
+  workflow: "workflow-coach",
+};
+
+// ---------------------------------------------------------------------------
 // Session ID helpers
 // ---------------------------------------------------------------------------
 
-/** Key for storing a draft session id in localStorage (new prompt, not yet saved). */
-export function draftSessionKey(workspaceScope: string, userId: string): string {
-  return `prompt_coach_session:new:${workspaceScope}:${userId}`;
+/** Key for storing a draft session id in localStorage (new artifact, not yet saved). */
+export function draftSessionKey(artifactType: ArtifactType, workspaceScope: string, userId: string): string {
+  return `prompt_coach_session:new:${artifactType}:${workspaceScope}:${userId}`;
 }
 
-/** Key for storing a saved-prompt session id in localStorage. */
-export function promptSessionKey(workspaceScope: string, userId: string, promptId: string): string {
-  return `prompt_coach_session:prompt:${workspaceScope}:${userId}:${promptId}`;
+/** Key for storing a saved-artifact session id in localStorage. */
+export function artifactSessionKey(artifactType: ArtifactType, workspaceScope: string, userId: string, artifactId: string): string {
+  return `prompt_coach_session:${artifactType}:${workspaceScope}:${userId}:${artifactId}`;
 }
 
-/** Deterministic session id for an existing prompt. */
+/** Deterministic session id for an existing artifact. */
 export function deterministicSessionId(
   workspaceScope: string,
   userId: string,
-  promptId: string,
+  artifactId: string,
 ): string {
-  return `${workspaceScope}:${userId}:${promptId}`;
+  return `${workspaceScope}:${userId}:${artifactId}`;
+}
+
+// Legacy aliases for backward compatibility with PromptCoachPanel and LibraryPromptEdit
+export function promptSessionKey(workspaceScope: string, userId: string, promptId: string): string {
+  return artifactSessionKey("prompt", workspaceScope, userId, promptId);
 }
 
 /**
- * Get or create a draft session id for the /prompts/new page.
+ * Get or create a draft session id for a new artifact page.
  * Persisted in localStorage so it survives refreshes.
  */
-export function getOrCreateDraftSessionId(workspaceScope: string, userId: string): string {
-  const key = draftSessionKey(workspaceScope, userId);
+export function getOrCreateDraftSessionId(workspaceScope: string, userId: string, artifactType: ArtifactType = "prompt"): string {
+  const key = draftSessionKey(artifactType, workspaceScope, userId);
   const existing = localStorage.getItem(key);
   if (existing) return existing;
   const id = crypto.randomUUID();
@@ -56,17 +71,18 @@ export function getOrCreateDraftSessionId(workspaceScope: string, userId: string
 }
 
 /**
- * After a new prompt is created, "promote" the draft session to the final
+ * After a new artifact is created, "promote" the draft session to the final
  * deterministic session id and clean up the draft key.
  */
 export function promoteDraftSession(
   workspaceScope: string,
   userId: string,
-  newPromptId: string,
+  newArtifactId: string,
+  artifactType: ArtifactType = "prompt",
 ): string {
-  const draftId = getOrCreateDraftSessionId(workspaceScope, userId);
-  const finalSessionId = deterministicSessionId(workspaceScope, userId, newPromptId);
-  const finalKey = promptSessionKey(workspaceScope, userId, newPromptId);
+  const draftId = getOrCreateDraftSessionId(workspaceScope, userId, artifactType);
+  const finalSessionId = deterministicSessionId(workspaceScope, userId, newArtifactId);
+  const finalKey = artifactSessionKey(artifactType, workspaceScope, userId, newArtifactId);
   localStorage.setItem(finalKey, finalSessionId);
 
   // Migrate chat messages from draft session key to final session key
@@ -83,7 +99,7 @@ export function promoteDraftSession(
   }
 
   // Remove the draft session key
-  const draftKey = draftSessionKey(workspaceScope, userId);
+  const draftKey = draftSessionKey(artifactType, workspaceScope, userId);
   localStorage.removeItem(draftKey);
 
   return finalSessionId;
@@ -95,7 +111,7 @@ export function promoteDraftSession(
 
 /**
  * Provider abstraction for canvas AI.
- * Calls the Supabase Edge Function `prompt-coach` which proxies to n8n.
+ * Routes to the appropriate Supabase Edge Function based on artifact type.
  */
 export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIResult> {
   const {
@@ -110,11 +126,15 @@ export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIRes
     sessionId,
   } = args;
 
+  const edgeFunction = EDGE_FUNCTION_BY_TYPE[artifactType];
+
   const body = {
     user_id: userId,
     workspace_id: workspaceId ?? null,
     artifact_type: artifactType,
     prompt_id: artifactId === "draft" ? "draft" : artifactId,
+    skill_id: artifactId === "draft" ? "draft" : artifactId,
+    workflow_id: artifactId === "draft" ? "draft" : artifactId,
     mode,
     message,
     canvas_content: canvasContent,
@@ -122,12 +142,12 @@ export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIRes
     session_id: sessionId,
   };
 
-  const { data, error } = await supabase.functions.invoke("prompt-coach", {
+  const { data, error } = await supabase.functions.invoke(edgeFunction, {
     body,
   });
 
   if (error) {
-    console.error("[runCanvasAI] Edge function error:", error);
+    console.error(`[runCanvasAI:${artifactType}] Edge function error:`, error);
     throw new Error(error.message || "AI request failed");
   }
 
@@ -135,7 +155,7 @@ export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIRes
   if (data?.session?.id) {
     const workspaceScope = workspaceId ?? "personal";
     if (artifactId && artifactId !== "draft") {
-      const key = promptSessionKey(workspaceScope, userId, artifactId);
+      const key = artifactSessionKey(artifactType, workspaceScope, userId, artifactId);
       localStorage.setItem(key, data.session.id);
     }
   }
