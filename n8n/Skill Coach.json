@@ -14,9 +14,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        3600,
-        1888
+        6096,
+        1968
       ],
+      "webhookId": "skill-coach-webhook-id",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Y2M2gm8PMqf8Owkp",
@@ -31,63 +32,64 @@
           "showWelcomeScreen": false
         }
       },
-      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "id": "9da95608-4fd2-40f5-90c5-e9fb2a82bb9f",
       "name": "Chat Trigger",
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
       "position": [
-        3600,
-        2096
-      ]
+        6096,
+        2128
+      ],
+      "webhookId": "skill-coach-chat-trigger-id"
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+              "id": "831fa55e-12b7-4328-b762-8ea5d690dd93",
               "name": "test_user_id",
               "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
               "type": "string"
             },
             {
-              "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+              "id": "6f9234d0-10e8-447e-b310-c86c06f5f398",
               "name": "test_workspace_id",
               "value": "",
               "type": "string"
             },
             {
-              "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+              "id": "f95d73dc-abf4-4389-a9c9-6cbefe6e9ba8",
               "name": "test_skill_id",
               "value": "draft",
               "type": "string"
             },
             {
-              "id": "f6a7b8c9-d0e1-2345-f012-456789012345",
+              "id": "99f5755c-9f5c-40a6-a932-1454f9638d76",
               "name": "test_mode",
               "value": "chat_only",
               "type": "string"
             },
             {
-              "id": "a7b8c9d0-e1f2-3456-0123-567890123456",
+              "id": "45c95ca4-8ecf-4773-a3d0-c5a07042257c",
               "name": "test_message",
               "value": "={{ $json.chatInput || 'Can you help me improve this skill?' }}",
               "type": "string"
             },
             {
-              "id": "b8c9d0e1-f2a3-4567-1234-678901234567",
+              "id": "29f8bd5c-c329-40af-b6fb-2f84d4afcc23",
               "name": "test_canvas_content",
               "value": "You are an expert assistant. When answering questions, follow a chain-of-thought approach: first reason step by step, then provide a concise final answer.",
               "type": "string"
             },
             {
-              "id": "c9d0e1f2-a3b4-5678-2345-789012345678",
+              "id": "89d8dc15-3d09-4c4e-aefe-f67b7f4b72dd",
               "name": "test_selection",
               "value": "={{ null }}",
               "type": "object"
             },
             {
-              "id": "d0e1f2a3-b4c5-6789-3456-890123456789",
+              "id": "5a8d5220-a03f-4483-b744-d7f32f9dc7f4",
               "name": "test_session_id",
               "value": "",
               "type": "string"
@@ -96,13 +98,13 @@
         },
         "options": {}
       },
-      "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
+      "id": "3e936a31-215d-4669-bfbe-4aba7f9f7a09",
       "name": "Test Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3792,
-        2096
+        6272,
+        2128
       ]
     },
     {
@@ -110,67 +112,67 @@
         "assignments": {
           "assignments": [
             {
-              "id": "f2a3b4c5-d6e7-8901-5678-012345678901",
+              "id": "0f43744f-823f-4481-849f-b4b7f4f06ea8",
               "name": "user_id",
               "value": "={{ $json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : '') }}",
               "type": "string"
             },
             {
-              "id": "a3b4c5d6-e7f8-9012-6789-123456789012",
+              "id": "ddd26bcb-9b0d-4e6e-9fcb-f3fef69c592c",
               "name": "workspace_id",
               "value": "={{ $json.body?.workspace_id ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') }}",
               "type": "string"
             },
             {
-              "id": "b4c5d6e7-f8a9-0123-7890-234567890123",
+              "id": "7e73ebbe-4f93-4a67-97b3-4940279cab00",
               "name": "artifact_type",
               "value": "={{ $json.body?.artifact_type || 'skill' }}",
               "type": "string"
             },
             {
-              "id": "c5d6e7f8-a9b0-1234-8901-345678901234",
+              "id": "4d72f06e-cf33-47d1-be6e-028f84e7ec7e",
               "name": "skill_id",
               "value": "={{ $json.body?.skill_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_skill_id : 'draft') || 'draft' }}",
               "type": "string"
             },
             {
-              "id": "d6e7f8a9-b0c1-2345-9012-456789012345",
+              "id": "98f83ea7-70f1-481b-a7fb-530fbcfb50c7",
               "name": "mode",
               "value": "={{ $json.body?.mode || ($('Test Config').isExecuted ? $('Test Config').item.json.test_mode : 'chat_only') || 'chat_only' }}",
               "type": "string"
             },
             {
-              "id": "e7f8a9b0-c1d2-3456-0123-567890123456",
+              "id": "5e50c250-4a4d-476c-a3ef-ec6783d6faeb",
               "name": "message",
               "value": "={{ $json.body?.message || ($('Test Config').isExecuted ? $('Test Config').item.json.test_message : '') }}",
               "type": "string"
             },
             {
-              "id": "f8a9b0c1-d2e3-4567-1234-678901234567",
+              "id": "0c9185d8-0202-493c-8681-653130f29511",
               "name": "canvas_content",
               "value": "={{ $json.body?.canvas_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_canvas_content : '') }}",
               "type": "string"
             },
             {
-              "id": "a9b0c1d2-e3f4-5678-2345-789012345678",
+              "id": "a4424ad8-2b77-4f99-90a5-479f26237ed7",
               "name": "selection",
               "value": "={{ $json.body?.selection ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_selection : null) }}",
               "type": "object"
             },
             {
-              "id": "b0c1d2e3-f4a5-6789-3456-890123456789",
+              "id": "6e71e2f7-825f-42cc-a193-4479f24d94dd",
               "name": "provider",
               "value": "openrouter",
               "type": "string"
             },
             {
-              "id": "c1d2e3f4-a5b6-7890-4567-901234567890",
+              "id": "f3e8bb87-f9e7-4a95-87cb-7a303ef5f864",
               "name": "model",
-              "value": "openai/gpt-4o-mini",
+              "value": "openai/gpt-5.2-chat",
               "type": "string"
             },
             {
-              "id": "d2e3f4a5-b6c7-8901-5678-012345678901",
+              "id": "82daa95f-17f5-4c56-be87-0d8ea2f903a3",
               "name": "session_id",
               "value": "={{ $json.body?.session_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_session_id : '') || `${($json.body?.workspace_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') || 'personal')}:${($json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : ''))}:${($json.body?.skill_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_skill_id : 'draft') || 'draft')}` }}",
               "type": "string"
@@ -179,13 +181,13 @@
         },
         "options": {}
       },
-      "id": "e3f4a5b6-c7d8-9012-6789-123456789013",
+      "id": "a3054126-c51d-4585-868b-1aabe88703e2",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3984,
-        1888
+        6448,
+        1968
       ]
     },
     {
@@ -195,33 +197,33 @@
         "tableName": "prompt_coach_messages",
         "contextWindowLength": 12
       },
-      "id": "f4a5b6c7-d8e9-0123-7890-234567890124",
+      "id": "77afa1c1-7e36-4f80-8035-2fd753928c7c",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        4224,
-        2112
+        6608,
+        2224
       ],
       "credentials": {
         "postgres": {
-          "id": "supabase-postgres",
-          "name": "Supabase Postgres"
+          "id": "CyI690FAp59G2LzY",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "model": "openai/gpt-4o-mini",
+        "model": "openai/gpt-5.2-chat",
         "options": {}
       },
-      "id": "a5b6c7d8-e9f0-1234-8901-345678901235",
+      "id": "12f920f4-0719-4a06-95f3-3218bb7fcf5d",
       "name": "OpenRouter LLM",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        4416,
-        2112
+        6480,
+        2224
       ],
       "credentials": {
         "openRouterApi": {
@@ -235,13 +237,13 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}"
       },
-      "id": "b6c7d8e9-f0a1-2345-9012-456789012346",
+      "id": "fa124ee8-533a-4627-952d-2efffe242848",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        4608,
-        2112
+        6864,
+        2224
       ]
     },
     {
@@ -250,36 +252,38 @@
         "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "You are \"Skill Coach\", an expert LLM framework designer helping the user write and refine skills.\nA \"skill\" in Querino is a reusable LLM prompt framework (e.g. a structured system prompt, a chain-of-thought template, or a role definition) that can be applied across many tasks.\nYou always see the current skill canvas content.\nYou must follow the selected mode:\n- chat_only: explain, ask clarifying questions, suggest improvements, but DO NOT modify the canvas.\n- collab_edit: you MAY modify the canvas. Keep original intent, make minimal/safe improvements.\n\nYou MUST return ONLY valid JSON matching the Response Contract schema.\nOutput the JSON object DIRECTLY at the root level. Do NOT wrap it in an \"output\" key or any other envelope. The very first character of your response must be `{`.\nNever return diffs. If updating, return the full updated canvas text.\n\nResponse Contract schema:\n{\n  \"assistantMessage\": \"<your reply to the user>\",\n  \"canvas\": {\n    \"updated\": true | false,\n    \"content\": \"<full updated canvas text — only when updated=true>\",\n    \"changeNote\": \"<one-line summary of changes — only when updated=true>\"\n  }\n}\n\nAdditional rules:\n- If mode is chat_only, return canvas.updated=false and do not provide canvas.content.\n- If mode is collab_edit and skill is updated, set canvas.updated=true and provide full updated canvas in canvas.content.\n- If mode is collab_edit and no changes are needed, return canvas.updated=false.\n\nSkills can be long — focus on structure, clarity, and reusability rather than brevity."
+          "systemMessage": "You are \"Skill Coach\", an expert LLM framework designer helping users write and refine skills.\nA \"skill\" in Querino is a reusable LLM prompt framework — such as a structured system prompt, a chain-of-thought template, a role definition, or a multi-step reasoning guide — that can be applied across many tasks.\n\nYou always receive:\n- mode: \"chat_only\" or \"collab_edit\"\n- message: the user's request\n- canvas_content: the full current skill text\n- optional selection\n\nYou have access to a SerpAPI web search tool.\n\nWhen using SerpAPI web search:\n- Extract only key search terms from the user's question\n- Add relevant context (year, domain) if applicable\n- Keep queries concise and keyword-focused\n- Example: Instead of searching full sentences, search \"chain-of-thought prompting best practices 2026\"\n\n----------------------------------------\nCRITICAL OUTPUT RULE\n----------------------------------------\n\nYou MUST produce your FINAL ANSWER by using the Structured Output Parser tool.\nYour final answer MUST be a single JSON object matching the parser schema EXACTLY.\nDo NOT output normal text as the final answer.\nDo NOT wrap your JSON in outer keys like \"output\" or \"response\".\nDo NOT use Markdown.\n\n----------------------------------------\nWEB SEARCH POLICY\n----------------------------------------\n\nYou may use the SerpAPI search tool ONLY if external, factual, or up-to-date information is required to answer properly.\n\nUse search when:\n- The user explicitly asks for current information (e.g., \"latest\", \"current\", \"recent\").\n- The skill references specific APIs, frameworks, tools, or best practices that may have evolved.\n- Accurate factual data is required to improve the skill.\n\nDo NOT use search when:\n- Improving wording, clarity, tone, formatting, structure, or logic.\n- The request is purely stylistic or structural.\n- The answer can be derived from the canvas content and general knowledge.\n\nIf search is used:\n- Keep the number of searches minimal.\n- Extract only relevant information.\n- Do not include raw search result dumps.\n- Integrate findings cleanly into your reasoning.\n- Do NOT mention internal tool calls in the final output.\n\n----------------------------------------\nMODE RULES\n----------------------------------------\n\nIf mode == \"chat_only\":\n- Do NOT modify the canvas.\n- If the user asks you to change/rewrite/restructure the skill, explain that edits are disabled in Chat mode and they should switch to Edit mode.\n- You may suggest improvements verbally.\n- canvas must be: { \"updated\": false }\n\nIf mode == \"collab_edit\":\n- You MAY modify the canvas.\n- If you apply changes:\n  - canvas.updated = true\n  - canvas.content = FULL updated canvas text (no diffs)\n  - canvas.changeNote = short summary of what you changed\n- If no changes are necessary:\n  - canvas.updated = false\n\n----------------------------------------\nGENERAL RULES\n----------------------------------------\n\n- Preserve original intent unless explicitly told otherwise.\n- Keep edits minimal and safe.\n- Never return diffs.\n- Skills can be long — focus on structure, clarity, and reusability.\n- If search was used, ensure the response remains concise and focused.\n"
         }
       },
-      "id": "c7d8e9f0-a1b2-3456-0123-567890123457",
+      "id": "c73e595c-1dfd-4a0b-97cf-6e10421b149a",
       "name": "Skill Coach Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        4416,
-        1888
-      ]
+        6640,
+        1968
+      ],
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "d8e9f0a1-b2c3-4567-1234-678901234568",
+              "id": "f95c8fa6-0133-4435-b4a4-dbc480148fe2",
               "name": "assistantMessage",
               "value": "={{ $json.output?.assistantMessage || $json.assistantMessage || '' }}",
               "type": "string"
             },
             {
-              "id": "e9f0a1b2-c3d4-5678-2345-789012345679",
+              "id": "a23b37c3-9817-4344-9458-1407c23f6c08",
               "name": "canvas",
               "value": "={{ $('Config').item.json.mode === 'chat_only' ? { updated: false } : (($json.output?.canvas || $json.canvas || {}).updated ? { updated: true, content: ($json.output?.canvas?.content || $json.canvas?.content || ''), changeNote: ($json.output?.canvas?.changeNote || $json.canvas?.changeNote || '') } : { updated: false }) }}",
               "type": "object"
             },
             {
-              "id": "f0a1b2c3-d4e5-6789-3456-890123456780",
+              "id": "187ef291-9392-4ec1-b20f-fca576fd4ac5",
               "name": "session",
               "value": "={{ { id: $('Config').item.json.session_id } }}",
               "type": "object"
@@ -288,13 +292,13 @@
         },
         "options": {}
       },
-      "id": "a1b2c3d4-e5f6-7891-4567-901234567891",
+      "id": "e9370b99-d0f9-415c-a754-8f4b3a029235",
       "name": "Build Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        4800,
-        1888
+        7008,
+        1952
       ]
     },
     {
@@ -303,13 +307,13 @@
         "responseBody": "={{ { assistantMessage: $('Build Response').item.json.assistantMessage, canvas: $('Build Response').item.json.canvas, session: $('Build Response').item.json.session } }}",
         "options": {}
       },
-      "id": "b2c3d4e5-f6a7-8902-5678-012345678902",
+      "id": "0403f527-43ac-4e12-b22d-ac62cafc1dd6",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        5008,
-        1888
+        7248,
+        2128
       ],
       "alwaysOutputData": true
     },
@@ -377,15 +381,69 @@
           "waitForSubWorkflow": false
         }
       },
-      "id": "c3d4e5f6-a7b8-9013-6789-123456789013",
+      "id": "b358183e-c4ca-4bc6-9ff3-86192a9e4c77",
       "name": "Call Update Token Usage",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        5008,
-        2096
+        7248,
+        1952
       ],
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "assistantMessage",
+              "value": "I apologize, but I encountered an error while processing your request. Please try again or rephrase your message.",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "canvas",
+              "value": "={{ { updated: false } }}",
+              "type": "object"
+            },
+            {
+              "id": "id-3",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f3f68ad-e03d-4676-ae90-8fbf79a51f38",
+      "name": "Build Response Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7008,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        6736,
+        2224
+      ],
+      "id": "425b55a4-6ffb-4ad3-b9ac-ec53ed981097",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "RMwYDoSL8zn4eQOq",
+          "name": "SerpAPI account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -467,11 +525,29 @@
         ]
       ]
     },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "Skill Coach Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Skill Coach Agent": {
       "main": [
         [
           {
             "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Response Error",
             "type": "main",
             "index": 0
           }
@@ -493,14 +569,25 @@
           }
         ]
       ]
+    },
+    "Build Response Error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true
+    "availableInMCP": false
   },
-  "versionId": "1a2b3c4d-5e6f-7890-abcd-ef1234567890",
+  "versionId": "skill-coach-v2-querino",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"

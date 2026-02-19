@@ -14,9 +14,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        3600,
-        1888
+        6096,
+        1968
       ],
+      "webhookId": "workflow-coach-webhook-id",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Y2M2gm8PMqf8Owkp",
@@ -36,9 +37,10 @@
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
       "position": [
-        3600,
-        2096
-      ]
+        6096,
+        2128
+      ],
+      "webhookId": "workflow-coach-chat-trigger-id"
     },
     {
       "parameters": {
@@ -71,7 +73,7 @@
             {
               "id": "7788aabb-bbcc-ddee-ff00-112233445566",
               "name": "test_message",
-              "value": "={{ $json.chatInput || 'Can you help me improve this workflow description?' }}",
+              "value": "={{ $json.chatInput || 'Can you help me improve this workflow?' }}",
               "type": "string"
             },
             {
@@ -101,8 +103,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3792,
-        2096
+        6272,
+        2128
       ]
     },
     {
@@ -166,7 +168,7 @@
             {
               "id": "55667788-99aa-bbcc-ddee-556677889900",
               "name": "model",
-              "value": "openai/gpt-4o-mini",
+              "value": "openai/gpt-5.2-chat",
               "type": "string"
             },
             {
@@ -184,8 +186,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3984,
-        1888
+        6448,
+        1968
       ]
     },
     {
@@ -200,19 +202,19 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        4224,
-        2112
+        6608,
+        2224
       ],
       "credentials": {
         "postgres": {
-          "id": "supabase-postgres",
-          "name": "Supabase Postgres"
+          "id": "CyI690FAp59G2LzY",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "model": "openai/gpt-4o-mini",
+        "model": "openai/gpt-5.2-chat",
         "options": {}
       },
       "id": "99aabbcc-eeff-0011-2233-990011223344",
@@ -220,8 +222,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        4416,
-        2112
+        6480,
+        2224
       ],
       "credentials": {
         "openRouterApi": {
@@ -240,8 +242,8 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        4608,
-        2112
+        6864,
+        2224
       ]
     },
     {
@@ -250,7 +252,7 @@
         "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "You are \"Workflow Coach\", an expert n8n automation architect helping the user design and refine n8n workflow descriptions.\nA \"workflow\" in Querino is a natural-language description or specification of an n8n automation — explaining what the workflow does, its trigger, nodes, and expected behavior.\nYou always see the current workflow canvas content.\nYou must follow the selected mode:\n- chat_only: explain, ask clarifying questions, suggest improvements, but DO NOT modify the canvas.\n- collab_edit: you MAY modify the canvas. Keep original intent, make minimal/safe improvements.\n\nYou MUST return ONLY valid JSON matching the Response Contract schema.\nNever return diffs. If updating, return the full updated canvas text.\n\nAdditional rules:\n- If mode is chat_only, return canvas.updated=false and do not provide canvas.content.\n- If mode is collab_edit and workflow description is updated, set canvas.updated=true and provide full updated canvas in canvas.content.\n- If mode is collab_edit and no changes are needed, return canvas.updated=false.\n\nWorkflow descriptions can be long — focus on completeness, node-by-node clarity, and automation logic."
+          "systemMessage": "You are \"Workflow Coach\", an expert n8n automation architect helping users design and refine n8n workflow descriptions.\nA \"workflow\" in Querino is a natural-language description or specification of an n8n automation — explaining what the workflow does, its trigger, the nodes involved, data transformations, and expected behavior.\n\nYou always receive:\n- mode: \"chat_only\" or \"collab_edit\"\n- message: the user's request\n- canvas_content: the full current workflow description\n- optional selection\n\nYou have access to a SerpAPI web search tool.\n\nWhen using SerpAPI web search:\n- Extract only key search terms from the user's question\n- Add relevant context (year, platform) if applicable\n- Keep queries concise and keyword-focused\n- Example: Instead of searching full sentences, search \"n8n HTTP Request node authentication 2026\"\n\n----------------------------------------\nCRITICAL OUTPUT RULE\n----------------------------------------\n\nYou MUST produce your FINAL ANSWER by using the Structured Output Parser tool.\nYour final answer MUST be a single JSON object matching the parser schema EXACTLY.\nDo NOT output normal text as the final answer.\nDo NOT wrap your JSON in outer keys like \"output\" or \"response\".\nDo NOT use Markdown.\n\n----------------------------------------\nWEB SEARCH POLICY\n----------------------------------------\n\nYou may use the SerpAPI search tool ONLY if external, factual, or up-to-date information is required to answer properly.\n\nUse search when:\n- The user asks about specific n8n nodes, integrations, or features that may have changed.\n- The workflow references external APIs, services, or authentication methods with evolving documentation.\n- Accurate factual data is required to improve the workflow description.\n\nDo NOT use search when:\n- Improving wording, clarity, structure, or logical flow of the description.\n- The request is purely stylistic or organizational.\n- The answer can be derived from the canvas content and general n8n knowledge.\n\nIf search is used:\n- Keep the number of searches minimal.\n- Extract only relevant information.\n- Do not include raw search result dumps.\n- Integrate findings cleanly into your reasoning.\n- Do NOT mention internal tool calls in the final output.\n\n----------------------------------------\nMODE RULES\n----------------------------------------\n\nIf mode == \"chat_only\":\n- Do NOT modify the canvas.\n- If the user asks you to change/rewrite/restructure the workflow description, explain that edits are disabled in Chat mode and they should switch to Edit mode.\n- You may suggest improvements verbally.\n- canvas must be: { \"updated\": false }\n\nIf mode == \"collab_edit\":\n- You MAY modify the canvas.\n- If you apply changes:\n  - canvas.updated = true\n  - canvas.content = FULL updated canvas text (no diffs)\n  - canvas.changeNote = short summary of what you changed\n- If no changes are necessary:\n  - canvas.updated = false\n\n----------------------------------------\nGENERAL RULES\n----------------------------------------\n\n- Preserve original intent unless explicitly told otherwise.\n- Keep edits minimal and safe.\n- Never return diffs.\n- Workflow descriptions can be long — focus on completeness, node-by-node clarity, and automation logic.\n- If search was used, ensure the response remains concise and focused.\n"
         }
       },
       "id": "bbccddee-0011-2233-4455-bb1122334455",
@@ -258,9 +260,11 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        4416,
-        1888
-      ]
+        6640,
+        1968
+      ],
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -293,8 +297,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        4800,
-        1888
+        7008,
+        1952
       ]
     },
     {
@@ -308,8 +312,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        5008,
-        1888
+        7248,
+        2128
       ],
       "alwaysOutputData": true
     },
@@ -382,10 +386,64 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        5008,
-        2096
+        7248,
+        1952
       ],
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-err-1",
+              "name": "assistantMessage",
+              "value": "I apologize, but I encountered an error while processing your request. Please try again or rephrase your message.",
+              "type": "string"
+            },
+            {
+              "id": "id-err-2",
+              "name": "canvas",
+              "value": "={{ { updated: false } }}",
+              "type": "object"
+            },
+            {
+              "id": "id-err-3",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "err-build-wf-coach-001",
+      "name": "Build Response Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7008,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        6736,
+        2224
+      ],
+      "id": "serpapi-wf-coach-001",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "RMwYDoSL8zn4eQOq",
+          "name": "SerpAPI account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -467,11 +525,29 @@
         ]
       ]
     },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Workflow Coach Agent": {
       "main": [
         [
           {
             "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Response Error",
             "type": "main",
             "index": 0
           }
@@ -493,14 +569,25 @@
           }
         ]
       ]
+    },
+    "Build Response Error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true
+    "availableInMCP": false
   },
-  "versionId": "2b3c4d5e-6f7a-8901-bcde-f23456789012",
+  "versionId": "workflow-coach-v2-querino",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
