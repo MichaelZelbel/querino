@@ -466,19 +466,6 @@
           "name": "OpenRouter account"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Unwrap the \"output\" envelope if the LLM wrapped its response\nconst raw = $input.all();\nconst results = [];\nfor (const item of raw) {\n  let data = item.json;\n  // If wrapped in \"output\", unwrap\n  if (data.output && typeof data.output === 'object' && data.output.assistantMessage) {\n    data = { ...data.output };\n  }\n  results.push({ json: data });\n}\nreturn results;"
-      },
-      "id": "unwrap-output-wf-coach-001",
-      "name": "Unwrap Output",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        6880,
-        1968
-      ]
     }
   ],
   "pinData": {},
@@ -586,7 +573,7 @@
       "main": [
         [
           {
-            "node": "Unwrap Output",
+            "node": "Build Response",
             "type": "main",
             "index": 0
           }
@@ -594,17 +581,6 @@
         [
           {
             "node": "Build Response Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Unwrap Output": {
-      "main": [
-        [
-          {
-            "node": "Build Response",
             "type": "main",
             "index": 0
           }
