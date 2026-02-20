@@ -117,22 +117,11 @@ export function Header() {
             </Button>
           </Link>
           {!user && (
-            <>
-              <a href="/#features">
-                <Button variant="ghost" size="sm">
-                  Features
-                </Button>
-              </a>
-              <Link to="/pricing">
-                <Button 
-                  variant={isActive("/pricing") ? "secondary" : "ghost"} 
-                  size="sm"
-                  className={cn(isActive("/pricing") && "bg-secondary font-medium")}
-                >
-                  Pricing
-                </Button>
-              </Link>
-            </>
+            <a href="/#features">
+              <Button variant="ghost" size="sm">
+                Features
+              </Button>
+            </a>
           )}
         </nav>
 
@@ -347,21 +336,11 @@ export function Header() {
               </Button>
             </Link>
             {!user && (
-              <>
-                <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    Features
-                  </Button>
-                </a>
-                <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
-                  <Button 
-                    variant={isActive("/pricing") ? "secondary" : "ghost"} 
-                    className={cn("w-full justify-start", isActive("/pricing") && "font-medium")}
-                  >
-                    Pricing
-                  </Button>
-                </Link>
-              </>
+              <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  Features
+                </Button>
+              </a>
             )}
             
             {/* Mobile Create Section */}

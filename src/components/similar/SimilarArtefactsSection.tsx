@@ -61,14 +61,13 @@ function PremiumLockedSection({ title, icon: Icon }: { title: string; icon: Reac
             <Lock className="h-6 w-6 text-primary" />
           </div>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-            Upgrade to Premium to see AI-powered similar artefact recommendations.
+            Similar artefact recommendations are a Premium feature. Contact support to learn more.
           </p>
-          <Link to="/pricing">
-            <Button size="sm" className="gap-2">
-              <Crown className="h-4 w-4" />
-              Upgrade to Premium
+          <a href="mailto:support@querino.ai">
+            <Button size="sm" variant="outline" className="gap-2">
+              Contact Support
             </Button>
-          </Link>
+          </a>
         </CardContent>
       </Card>
     </div>

@@ -192,28 +192,6 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Upgrade Banner */}
-          <Card variant="accent" className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
-            <CardContent className="flex flex-col items-start gap-4 p-6 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
-                  <Crown className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">Unlock Premium Features</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Get AI refinement tools, unlimited storage, and GitHub sync
-                  </p>
-                </div>
-              </div>
-              <Link to="/pricing?from=dashboard">
-                <Button variant="hero" className="gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Upgrade to Premium
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
 
           {/* Pinned Prompts */}
           <section className="mb-10">
