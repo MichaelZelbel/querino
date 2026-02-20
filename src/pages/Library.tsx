@@ -390,6 +390,13 @@ export default function Library() {
                   {syncing ? "Syncing..." : "Sync to GitHub"}
                 </Button>
               )}
+              <Button
+                className="gap-2"
+                onClick={() => navigate("/prompts/new")}
+              >
+                <Plus className="h-4 w-4" />
+                Create
+              </Button>
             </div>
           </div>
 
