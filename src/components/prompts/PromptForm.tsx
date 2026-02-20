@@ -244,13 +244,13 @@ export function PromptForm({
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-block">
-                <Button
+                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={handleSuggestMetadata}
                   disabled={!isPremium || isGeneratingMetadata || !content.trim()}
-                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                  className="gap-1.5"
                 >
                   {isGeneratingMetadata ? (
                     <>
