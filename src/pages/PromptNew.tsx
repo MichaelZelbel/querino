@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { LineNumberedEditor } from "@/components/editors/LineNumberedEditor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -222,32 +223,6 @@ export default function PromptNew() {
     }
   };
 
-  // Line-numbered editor
-  const renderLineNumberedEditor = () => {
-    const lines = content.split("\n");
-    return (
-      <div className="relative">
-        <div className="flex">
-          <div
-            className="select-none pr-3 pt-2 pb-2 text-right font-mono text-xs text-muted-foreground/50 leading-[1.7rem] min-w-[2.5rem] border-r border-border mr-0"
-            aria-hidden="true"
-          >
-            {Array.from({ length: lines.length }, (_, i) => (
-              <div key={i + 1}>{i + 1}</div>
-            ))}
-          </div>
-          <Textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write your prompt here..."
-            className={`font-mono text-sm border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.7rem] min-h-[300px] resize-y ${errors.content ? "border-destructive" : ""}`}
-            style={{ paddingTop: "0.5rem" }}
-          />
-        </div>
-      </div>
-    );
-  };
 
   // Coach panel element
   const workspaceScope = currentWorkspace ?? "personal";
@@ -348,9 +323,13 @@ export default function PromptNew() {
                   {/* Prompt Content with line numbers */}
                   <div className="space-y-2">
                     <Label htmlFor="content">Prompt Content *</Label>
-                    <div className="rounded-md border border-input bg-background overflow-hidden">
-                      {renderLineNumberedEditor()}
-                    </div>
+                    <LineNumberedEditor
+                      id="content"
+                      value={content}
+                      onChange={setContent}
+                      placeholder="Write your prompt here..."
+                      error={!!errors.content}
+                    />
                     {errors.content && (
                       <p className="text-sm text-destructive">{errors.content}</p>
                     )}
