@@ -1,8 +1,7 @@
 import { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Lock, Crown } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +24,7 @@ export function PremiumGate({
 }: PremiumGateProps) {
   const { user } = useAuthContext();
   const { isPremium, isLoading } = useUserRole();
-  const location = useLocation();
+  
 
   // Show nothing while loading to prevent flash
   if (isLoading) {
@@ -47,9 +46,6 @@ export function PremiumGate({
     return <>{children}</>;
   }
 
-  // Build upgrade URL with current path
-  const upgradeUrl = `/pricing?from=${encodeURIComponent(location.pathname)}`;
-
   // Locked state for logged-in users without premium
   if (user && !hasAccess) {
     if (variant === 'sidebar') {
@@ -60,14 +56,13 @@ export function PremiumGate({
           </div>
           <h4 className="font-semibold text-foreground mb-2">Premium Feature</h4>
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            {featureName} is a Premium feature. Upgrade to unlock advanced capabilities.
+            {featureName} is a Premium feature. Contact support to learn more.
           </p>
-          <Link to={upgradeUrl}>
-            <Button size="sm" className="gap-2">
-              <Crown className="h-4 w-4" />
-              Upgrade to Premium
+          <a href="mailto:support@querino.ai">
+            <Button size="sm" variant="outline" className="gap-2">
+              Contact Support
             </Button>
-          </Link>
+          </a>
         </div>
       );
     }
@@ -77,12 +72,11 @@ export function PremiumGate({
         <div className={cn("flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border", className)}>
           <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground flex-1">{featureName} requires Premium</span>
-          <Link to={upgradeUrl}>
+          <a href="mailto:support@querino.ai">
             <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
-              <Crown className="h-3 w-3" />
-              Upgrade
+              Contact Support
             </Button>
-          </Link>
+          </a>
         </div>
       );
     }
@@ -90,10 +84,7 @@ export function PremiumGate({
     // Default card variant with blur effect
     return (
       <div className={cn("relative overflow-hidden rounded-xl", className)}>
-        {/* Blurred background content placeholder */}
         <div className="absolute inset-0 bg-gradient-to-br from-muted/80 to-muted/40 backdrop-blur-sm" />
-        
-        {/* Lock overlay */}
         <div className="relative z-10 flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Lock className="h-8 w-8 text-primary" />
@@ -102,14 +93,13 @@ export function PremiumGate({
             {featureName}
           </h4>
           <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
-            This feature requires Querino Premium. Upgrade to unlock advanced summaries, recommendations, and more.
+            This feature requires Querino Premium. Contact support for more information.
           </p>
-          <Link to={upgradeUrl}>
-            <Button className="gap-2">
-              <Crown className="h-4 w-4" />
-              Upgrade Now
+          <a href="mailto:support@querino.ai">
+            <Button variant="outline" className="gap-2">
+              Contact Support
             </Button>
-          </Link>
+          </a>
         </div>
       </div>
     );

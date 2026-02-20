@@ -181,14 +181,14 @@ export default function PromptWizard() {
                 Kickstart Template
               </h1>
               <p className="mt-2 text-muted-foreground">
-...
                 The Kickstart Template uses AI to craft powerful prompts tailored to your needs. 
-                Upgrade to Premium to unlock this feature.
+                Contact support to learn more about this feature.
               </p>
-              <Button onClick={() => navigate("/pricing")} className="gap-2">
-                <Crown className="h-4 w-4" />
-                Upgrade to Premium
-              </Button>
+              <a href="mailto:support@querino.ai">
+                <Button variant="outline" className="gap-2">
+                  Contact Support
+                </Button>
+              </a>
             </div>
 
             {/* Back link */}

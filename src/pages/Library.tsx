@@ -652,17 +652,10 @@ export default function Library() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {profile?.plan_type === "free" 
-                    ? "Upgrade to Premium for unlimited prompts and AI refinement tools" 
+                    ? "Contact support for more information about premium features" 
                     : "You have access to all premium features"}
                 </p>
               </div>
-              {profile?.plan_type === "free" && (
-                <Link to="/pricing?from=library">
-                  <Button size="sm" variant="default">
-                    Upgrade
-                  </Button>
-                </Link>
-              )}
             </div>
           </div>
         </div>
