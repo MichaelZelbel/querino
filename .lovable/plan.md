@@ -1,39 +1,34 @@
 
 
-# Add Line-Numbered Editor to Skills and Workflows
+# Make "Suggest metadata" button subtly visible
 
-## What changes
+## Problem
+The "Suggest title, description, category & tags" button uses `variant="ghost"` with `text-muted-foreground`, making it essentially invisible (white-on-white) until hovered.
 
-Extract the line-numbered editor pattern already used in Prompt creation/editing into a shared component, then use it across all content editors for consistency.
+## Solution
+Change from `variant="ghost"` to `variant="outline"` and remove the forced `text-muted-foreground` class. This gives the button a subtle border so it's discoverable, without being loud or attention-grabbing. The Sparkles icon already provides a visual hint of its AI nature.
 
-## Pages affected
+## Files to update (9 occurrences across 9 files)
 
-| Page | File | Current editor |
-|------|------|----------------|
-| Create Skill | `src/pages/SkillNew.tsx` | Plain `<Textarea>` |
-| Edit Skill | `src/pages/SkillEdit.tsx` | Plain `<Textarea>` |
-| Create Workflow | `src/pages/WorkflowNew.tsx` | Plain `<Textarea>` |
-| Edit Workflow | `src/pages/WorkflowEdit.tsx` | Plain `<Textarea>` |
+All use the same pattern -- change:
+```
+variant="ghost"
+className="gap-1.5 text-muted-foreground hover:text-foreground"
+```
+to:
+```
+variant="outline"
+className="gap-1.5"
+```
 
-The two Prompt pages (`PromptNew.tsx`, `LibraryPromptEdit.tsx`) already have inline versions of this editor and will be refactored to use the shared component too, reducing duplication.
+1. `src/pages/PromptNew.tsx`
+2. `src/pages/LibraryPromptEdit.tsx`
+3. `src/pages/SkillNew.tsx`
+4. `src/pages/SkillEdit.tsx`
+5. `src/pages/WorkflowNew.tsx`
+6. `src/pages/WorkflowEdit.tsx`
+7. `src/pages/ClawNew.tsx` (2 occurrences)
+8. `src/pages/ClawEdit.tsx`
+9. `src/components/prompts/PromptForm.tsx`
 
-## Implementation
-
-### Step 1: Create shared component
-Create `src/components/editors/LineNumberedEditor.tsx` -- a reusable wrapper that renders a line-number gutter alongside a `<Textarea>`. Props: `value`, `onChange`, `placeholder`, `error` (boolean), `minHeight` (optional, default 300px).
-
-### Step 2: Replace plain textareas in 4 pages
-Swap the content `<Textarea>` in `SkillNew`, `SkillEdit`, `WorkflowNew`, and `WorkflowEdit` with the new `<LineNumberedEditor>` component.
-
-### Step 3: Refactor existing Prompt pages
-Replace the inline `renderLineNumberedEditor()` functions in `PromptNew.tsx` and `LibraryPromptEdit.tsx` with the shared component to eliminate code duplication.
-
-## Technical details
-
-The shared component mirrors the existing pattern from `PromptNew.tsx`:
-- A flex container with a line-number gutter (monospace, right-aligned, muted color, border-right)
-- The textarea sits next to it with matching `leading-[1.7rem]` line height
-- Line numbers update dynamically based on newline count in the value
-- The outer wrapper has `rounded-md border border-input bg-background overflow-hidden`
-- Supports `resize-y` and `min-h-[300px]` by default
-
+This is a minimal, consistent change -- the outline variant provides just enough visual weight (a thin border) to be discoverable without being pushy.
