@@ -207,13 +207,13 @@ export default function SkillDetail() {
       <div className="flex flex-1">
         <main className="flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
-          <Link
-            to="/discover" 
+          <button
+            onClick={() => navigate(-1)} 
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Discover
-          </Link>
+            Back
+          </button>
 
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -275,18 +275,8 @@ export default function SkillDetail() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="mb-4 text-lg font-semibold text-foreground">
-              Skill Content
-            </h2>
-            <div className="relative rounded-xl border border-border bg-muted/30 p-6">
-              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
-                {skill.content}
-              </pre>
-            </div>
-          </div>
-
-          <div className="mb-8 flex flex-wrap gap-3">
+          {/* Action Bar - above content */}
+          <div className="mb-6 flex flex-wrap gap-3">
             <Button
               size="lg"
               variant={copied ? "success" : "default"}
@@ -371,6 +361,25 @@ export default function SkillDetail() {
               tags={skill.tags}
               content={skill.content}
             />
+          </div>
+
+          {/* Skill Content */}
+          <div className="mb-8">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
+              Skill Content
+            </h2>
+            <div className="relative rounded-xl border border-border bg-muted/30 p-6">
+              <button
+                onClick={handleCopy}
+                className="absolute top-3 right-3 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                title="Copy to clipboard"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </button>
+              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                {skill.content}
+              </pre>
+            </div>
           </div>
 
           {/* Modals */}

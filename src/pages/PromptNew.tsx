@@ -511,6 +511,21 @@ export default function PromptNew() {
                       onCheckedChange={setIsPublic}
                     />
                   </div>
+
+                  {/* Bottom Create Button */}
+                  <Button
+                    onClick={handleCreate}
+                    disabled={isSubmitting}
+                    className="w-full gap-2"
+                    size="lg"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Create Prompt
+                  </Button>
                 </div>
               </div>
             </div>
