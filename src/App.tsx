@@ -84,11 +84,11 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/public-prompt-discovery-copy" element={<PublicPromptDiscovery />} />
             <Route path="/free-user-sign-up-initial-exploration" element={<SignUp />} />
-            <Route path="/premium-feature-upgrade" element={<Pricing />} />
+            <Route path="/premium-feature-upgrade" element={<NotFound />} />
             <Route path="/prompt-creation-publishing-premium-free-" element={<PromptCreation />} />
             <Route path="/prompt-refinement-with-ai-tools-premium-" element={<PromptRefinement />} />
             <Route path="/organizing-managing-prompt-library-free-premium-" element={<PromptLibrary />} />
-            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/pricing" element={<NotFound />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/cookies" element={<Cookies />} />

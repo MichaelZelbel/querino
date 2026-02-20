@@ -168,12 +168,11 @@ export function WorkspacePicker() {
                   </p>
                 </div>
               </div>
-              <Link to="/pricing" className="block">
+              <a href="mailto:support@querino.ai" className="block">
                 <Button size="sm" variant="outline" className="w-full gap-1.5 h-8">
-                  <Crown className="h-3.5 w-3.5" />
-                  Upgrade to Premium
+                  Contact Support
                 </Button>
-              </Link>
+              </a>
             </div>
           )}
         </DropdownMenuContent>

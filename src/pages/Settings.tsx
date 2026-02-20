@@ -418,14 +418,7 @@ export default function Settings() {
                     <CreditCard className="h-4 w-4" />
                     Manage Billing
                   </Button>
-                ) : (
-                  <Link to="/pricing?from=settings">
-                    <Button variant="hero" className="gap-2">
-                      <Sparkles className="h-4 w-4" />
-                      Upgrade to Premium
-                    </Button>
-                  </Link>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -638,14 +631,13 @@ export default function Settings() {
                     </div>
                     <h4 className="font-semibold text-foreground mb-2">Premium Feature</h4>
                     <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
-                      GitHub Sync is a Premium feature. Upgrade to sync your artefacts to any GitHub repository.
+                      GitHub Sync is a Premium feature. Contact support to learn more.
                     </p>
-                    <Link to="/pricing">
-                      <Button className="gap-2">
-                        <Crown className="h-4 w-4" />
-                        Upgrade to Premium
+                    <a href="mailto:support@querino.ai">
+                      <Button variant="outline" className="gap-2">
+                        Contact Support
                       </Button>
-                    </Link>
+                    </a>
                   </div>
                 ) : showTeamGithub ? (
                   // Team GitHub Settings
