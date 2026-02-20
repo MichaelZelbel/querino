@@ -385,6 +385,17 @@ export default function WorkflowNew() {
                     </div>
                     <Switch id="visibility" checked={isPublic} onCheckedChange={setIsPublic} />
                   </div>
+
+                  {/* Bottom Create Button */}
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="w-full gap-2"
+                    size="lg"
+                  >
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Create Workflow
+                  </Button>
                 </div>
               </div>
             </div>

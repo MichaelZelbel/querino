@@ -285,13 +285,13 @@ export default function PromptDetail() {
         <main className="flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
           {/* Back Link */}
-          <Link 
-            to="/discover" 
+          <button 
+            onClick={() => navigate(-1)} 
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Discover
-          </Link>
+            Back
+          </button>
 
           {/* Header Section */}
           <div className="mb-8">
@@ -378,34 +378,8 @@ export default function PromptDetail() {
             </div>
           )}
 
-          {/* Prompt Content */}
-          <div className="mb-8">
-            <h2 className="mb-4 text-lg font-semibold text-foreground">
-              Prompt
-            </h2>
-            <div className="relative rounded-xl border border-border bg-muted/30 p-6">
-              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
-                {prompt.content}
-              </pre>
-            </div>
-          </div>
-
-          {/* Example Output Section */}
-          {prompt.example_output && (
-            <div className="mb-8">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">
-                Example Output
-              </h2>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground leading-relaxed">
-                  {prompt.example_output}
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* Action Bar */}
-          <div className="mb-8 flex flex-wrap gap-3">
+          {/* Action Bar - above content */}
+          <div className="mb-6 flex flex-wrap gap-3">
             <Button
               size="lg"
               variant={copied ? "success" : "default"}
@@ -488,7 +462,6 @@ export default function PromptDetail() {
                   Version History
                 </Button>
                 
-                {/* Copy to team - only for personal prompts owned by premium users with teams */}
                 {canCopyToTeam && (
                   <Button
                     size="lg"
@@ -551,7 +524,6 @@ export default function PromptDetail() {
               )
             )}
 
-
             {user && (
               <Button
                 size="lg"
@@ -572,6 +544,44 @@ export default function PromptDetail() {
               content={prompt.content}
             />
           </div>
+
+          {/* Send to LLM - directly above content */}
+          <div className="mb-6 rounded-xl border border-border bg-card p-6">
+            <SendToLLMButtons title={prompt.title} content={prompt.content} />
+          </div>
+
+          {/* Prompt Content */}
+          <div className="mb-8">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
+              Prompt
+            </h2>
+            <div className="relative rounded-xl border border-border bg-muted/30 p-6">
+              <button
+                onClick={handleCopy}
+                className="absolute top-3 right-3 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                title="Copy to clipboard"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </button>
+              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                {prompt.content}
+              </pre>
+            </div>
+          </div>
+
+          {/* Example Output Section */}
+          {prompt.example_output && (
+            <div className="mb-8">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
+                Example Output
+              </h2>
+              <div className="rounded-xl border border-border bg-card p-6">
+                <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground leading-relaxed">
+                  {prompt.example_output}
+                </pre>
+              </div>
+            </div>
+          )}
 
           {/* Modals */}
           <RefinePromptModal
@@ -624,11 +634,6 @@ export default function PromptDetail() {
               }}
             />
           )}
-
-          {/* Send to LLM */}
-          <div className="mb-12 rounded-xl border border-border bg-card p-6">
-            <SendToLLMButtons title={prompt.title} content={prompt.content} />
-          </div>
 
           {/* Ratings & Reviews Section */}
           <ReviewSection
