@@ -95,7 +95,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     { label: "Go to Dashboard", icon: LayoutDashboard, action: () => navigate("/dashboard"), requiresAuth: true },
     { label: "Go to Discover", icon: Compass, action: () => navigate("/discover"), requiresAuth: false },
     { label: "Go to Activity Feed", icon: Activity, action: () => navigate("/activity"), requiresAuth: false },
-    { label: "Pricing", icon: CreditCard, action: () => navigate("/pricing"), requiresAuth: false },
+    
   ];
 
   // Filter quick actions based on query

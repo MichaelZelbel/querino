@@ -21,7 +21,7 @@ export function useAICreditsGate() {
     }
 
     if (!credits || credits.remainingCredits <= 0) {
-      toast.error("Please wait until your AI Credits reset.");
+      toast.error("You've used all your AI Credits. Please wait until they reset or contact support@querino.ai.");
       return false;
     }
 

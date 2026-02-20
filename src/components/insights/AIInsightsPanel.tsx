@@ -94,14 +94,13 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
           </div>
           <h4 className="font-semibold text-foreground mb-2">Premium Feature</h4>
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-            AI Insights is a Premium feature. Upgrade to unlock advanced summaries & recommendations.
+            AI Insights is a Premium feature. Contact support to learn more.
           </p>
-          <Link to="/pricing">
-            <Button className="gap-2">
-              <Crown className="h-4 w-4" />
-              Upgrade to Premium
+          <a href="mailto:support@querino.ai">
+            <Button variant="outline" className="gap-2">
+              Contact Support
             </Button>
-          </Link>
+          </a>
         </div>
       </div>
     );
