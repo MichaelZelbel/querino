@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { LineNumberedEditor } from "@/components/editors/LineNumberedEditor";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -428,13 +429,11 @@ export default function SkillEdit() {
                   {/* Skill Content */}
                   <div className="space-y-2">
                     <Label htmlFor="content">Skill Content *</Label>
-                    <Textarea
+                    <LineNumberedEditor
                       id="content"
                       value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      onChange={(val) => setFormData({ ...formData, content: val })}
                       placeholder="Enter the skill file content..."
-                      rows={14}
-                      className="font-mono text-sm"
                     />
                   </div>
 

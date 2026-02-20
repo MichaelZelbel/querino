@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { LineNumberedEditor } from "@/components/editors/LineNumberedEditor";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -265,13 +266,12 @@ export default function WorkflowNew() {
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <Label htmlFor="content">Workflow Markdown *</Label>
                     </div>
-                    <Textarea
+                    <LineNumberedEditor
                       id="content"
                       value={content}
-                      onChange={(e) => setContent(e.target.value)}
+                      onChange={setContent}
                       placeholder={`# My Workflow\n\n## Description\nDescribe what this workflow does...\n\n## Steps\n1. First step...\n2. Second step...`}
-                      rows={14}
-                      className={`font-mono text-sm ${errors.content ? "border-destructive" : ""}`}
+                      error={!!errors.content}
                     />
                     {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
                     <p className="text-xs text-muted-foreground">Write your workflow instructions in Markdown format.</p>
