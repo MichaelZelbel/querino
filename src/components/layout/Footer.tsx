@@ -27,9 +27,6 @@ export function Footer() {
               <Link to="/dashboard" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 My Library
               </Link>
-              <a href="mailto:support@querino.ai" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Contact Support
-              </a>
             </nav>
           </div>
 
