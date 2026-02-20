@@ -222,13 +222,13 @@ export default function WorkflowDetail() {
       <div className="flex flex-1">
         <main className="flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
-          <Link
-            to="/discover" 
+          <button
+            onClick={() => navigate(-1)} 
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Discover
-          </Link>
+            Back
+          </button>
 
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -298,25 +298,8 @@ export default function WorkflowDetail() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between mb-4">
-                  <span className="text-lg font-semibold">Workflow Content</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isContentOpen ? "rotate-180" : ""}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
-                    {workflowContent}
-                  </pre>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          <div className="mb-8 flex flex-wrap gap-3">
+          {/* Action Bar - above content */}
+          <div className="mb-6 flex flex-wrap gap-3">
             <Button
               size="lg"
               variant={copied ? "success" : "default"}
@@ -401,6 +384,32 @@ export default function WorkflowDetail() {
               tags={workflow.tags}
               content={workflowContent}
             />
+          </div>
+
+          {/* Workflow Content */}
+          <div className="mb-8">
+            <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between mb-4">
+                  <span className="text-lg font-semibold">Workflow Content</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isContentOpen ? "rotate-180" : ""}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="relative rounded-xl border border-border bg-muted/30 p-6 max-h-[500px] overflow-auto">
+                  <button
+                    onClick={handleCopy}
+                    className="absolute top-3 right-3 z-10 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                    {workflowContent}
+                  </pre>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Modals */}
