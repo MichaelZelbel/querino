@@ -1,0 +1,765 @@
+{
+  "createdAt": "2026-01-08T15:01:49.790Z",
+  "id": "3eB3BoCAxru8NyiPn_PoA",
+  "name": "Prompt Refinement",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prompt-refinement",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "31bf97d1-bb99-4445-8f15-ec3d7f97e1fe",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        448
+      ],
+      "webhookId": "5a830bf6-ee4b-4ad8-a6a5-b131a0cc0a46",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d101327-e4ba-4681-a530-e756298649e3",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "51454097-e33d-46c4-ae6b-06b7053bec4b",
+              "name": "test_content",
+              "value": "=**Context**  \nYou are ChatGPT, generating humor for members of a friendly bowling club.\n\n**Request**  \nTell a funny dad joke.\n\n**I (Intent)**  \nProduce a lighthearted, non-discriminatory joke suitable for a general audience.\n\n**S (Style)**  \nUse a warm, goofy dad-joke tone and present the joke in fluent sentences.\n\n**P (Persona)**  \nAdopt the persona of a cheerful, wholesome dad who loves bowling and making people laugh.\n\n**E (Examples)**  \nExample tone: “The kind of joke that makes people groan, smile, and shake their heads.”\n\n**Final Task**  \nCreate a dad-style joke tailored to a bowling club audience, ensuring it is inclusive and avoids any discrimination against minorities.",
+              "type": "string"
+            },
+            {
+              "id": "764ce740-10f1-4395-8c41-7d4cde590dbb",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            },
+            {
+              "id": "9aef0b78-6655-4f8d-8190-121dd5d710ac",
+              "name": "test_framework",
+              "value": "RISEN",
+              "type": "string"
+            },
+            {
+              "id": "dee6e4cb-c7d9-40b8-9d2f-927da11ed10e",
+              "name": "test_goal",
+              "value": "Improve the prompt",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        256
+      ],
+      "id": "a83b2f34-d63b-40a4-97e3-2316d2abf193",
+      "name": "Test Config"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "prompt_original",
+              "value": "={{ $json.body?.prompt || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "150ead3e-49fe-4e62-b477-dc0cff5c069b",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "fc0634ee-7ec5-4a99-b6fc-a845ec598a82",
+              "name": "provider",
+              "value": "openai",
+              "type": "string"
+            },
+            {
+              "id": "49b81e63-318f-4a33-a5d5-42dacd4c2b0c",
+              "name": "model",
+              "value": "chatgpt5.2",
+              "type": "string"
+            },
+            {
+              "id": "c9cc78e8-caf1-423c-9962-82a010596f56",
+              "name": "framework",
+              "value": "={{ $json.body?.framework ?? $('Test Config').item.json.test_framework }}",
+              "type": "string"
+            },
+            {
+              "id": "3271bacf-1dc5-47d5-a3dd-53c2e3227c61",
+              "name": "goal",
+              "value": "={{ $json.body?.goal ?? $('Test Config').item.json.test_goal }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "77aeec13-a5e2-46bd-a9c0-ed209527e7bf",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        352
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        448
+      ],
+      "id": "8a327b43-a36a-45d3-8ef1-a3c9831ad0f1",
+      "name": "Call Update Token Usage"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "b9c08d13-487a-4d20-a8f4-81a30e2150c7",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        480,
+        256
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Framework: {{ $('Config').item.json.framework }}\n\nGoal: {{ $('Config').item.json.goal }}\n\nOriginal Prompt:\n{{ $('Config').item.json.prompt_original }}\n\nRewrite this as a production-grade prompt. No commentary.",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a senior prompt engineer for Querino. Rewrite user prompts according to best practices. Return ONLY the improved prompt."
+        }
+      },
+      "id": "bba96feb-ad93-4d6d-a265-eb67f4304824",
+      "name": "Prompt Improver",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        80,
+        352
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -592,
+        256
+      ],
+      "id": "688f730f-a029-446b-b9ba-168ff563ff96",
+      "name": "Test Chat Trigger",
+      "webhookId": "0edd1502-2ba6-4a56-90e5-98726706f0f5"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        576
+      ],
+      "id": "d3290926-5999-413a-8f38-697d524d58ca",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8CuSxQ6wXk1W313i",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        112,
+        576
+      ],
+      "id": "7194b32f-f1a6-4b7e-883b-3d22ba8884e6",
+      "name": "Azure gpt-5.2-chat",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Prompt Improver",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt Improver": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Prompt Improver",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Prompt Improver",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "activeVersionId": "e4849d56-fb70-4753-8a50-0e6841c7db11",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-01-08T15:01:49.794Z",
+      "createdAt": "2026-01-08T15:01:49.794Z",
+      "role": "workflow:owner",
+      "workflowId": "3eB3BoCAxru8NyiPn_PoA",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-01-28T15:07:48.000Z",
+    "createdAt": "2026-01-28T15:07:45.533Z",
+    "versionId": "e4849d56-fb70-4753-8a50-0e6841c7db11",
+    "workflowId": "3eB3BoCAxru8NyiPn_PoA",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "prompt-refinement",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "31bf97d1-bb99-4445-8f15-ec3d7f97e1fe",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -592,
+          256
+        ],
+        "webhookId": "5a830bf6-ee4b-4ad8-a6a5-b131a0cc0a46",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "openai/gpt-4o-mini",
+          "options": {}
+        },
+        "id": "38ac08af-ef2c-4946-90a4-b0276775c0b0",
+        "name": "OpenRouter LLM",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1,
+        "position": [
+          0,
+          480
+        ],
+        "credentials": {
+          "openRouterApi": {
+            "id": "MGQPWNIqP5IqzT9c",
+            "name": "OpenRouter account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "2d101327-e4ba-4681-a530-e756298649e3",
+                "name": "chatInput",
+                "value": "={{ $json.chatInput }}",
+                "type": "string"
+              },
+              {
+                "id": "51454097-e33d-46c4-ae6b-06b7053bec4b",
+                "name": "test_content",
+                "value": "=**Context**  \nYou are ChatGPT, generating humor for members of a friendly bowling club.\n\n**Request**  \nTell a funny dad joke.\n\n**I (Intent)**  \nProduce a lighthearted, non-discriminatory joke suitable for a general audience.\n\n**S (Style)**  \nUse a warm, goofy dad-joke tone and present the joke in fluent sentences.\n\n**P (Persona)**  \nAdopt the persona of a cheerful, wholesome dad who loves bowling and making people laugh.\n\n**E (Examples)**  \nExample tone: “The kind of joke that makes people groan, smile, and shake their heads.”\n\n**Final Task**  \nCreate a dad-style joke tailored to a bowling club audience, ensuring it is inclusive and avoids any discrimination against minorities.",
+                "type": "string"
+              },
+              {
+                "id": "764ce740-10f1-4395-8c41-7d4cde590dbb",
+                "name": "test_user_id",
+                "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+                "type": "string"
+              },
+              {
+                "id": "9aef0b78-6655-4f8d-8190-121dd5d710ac",
+                "name": "test_framework",
+                "value": "RISEN",
+                "type": "string"
+              },
+              {
+                "id": "dee6e4cb-c7d9-40b8-9d2f-927da11ed10e",
+                "name": "test_goal",
+                "value": "Improve the prompt",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -416,
+          448
+        ],
+        "id": "a83b2f34-d63b-40a4-97e3-2316d2abf193",
+        "name": "Test Config"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "prompt_original",
+                "value": "={{ $json.body?.prompt || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "150ead3e-49fe-4e62-b477-dc0cff5c069b",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "fc0634ee-7ec5-4a99-b6fc-a845ec598a82",
+                "name": "provider",
+                "value": "openai",
+                "type": "string"
+              },
+              {
+                "id": "49b81e63-318f-4a33-a5d5-42dacd4c2b0c",
+                "name": "model",
+                "value": "chatgpt5.2",
+                "type": "string"
+              },
+              {
+                "id": "c9cc78e8-caf1-423c-9962-82a010596f56",
+                "name": "framework",
+                "value": "={{ $json.body?.framework ?? $('Test Config').item.json.test_framework }}",
+                "type": "string"
+              },
+              {
+                "id": "3271bacf-1dc5-47d5-a3dd-53c2e3227c61",
+                "name": "goal",
+                "value": "={{ $json.body?.goal ?? $('Test Config').item.json.test_goal }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "77aeec13-a5e2-46bd-a9c0-ed209527e7bf",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -224,
+          256
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          352,
+          448
+        ],
+        "id": "8a327b43-a36a-45d3-8ef1-a3c9831ad0f1",
+        "name": "Call Update Token Usage"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "b9c08d13-487a-4d20-a8f4-81a30e2150c7",
+        "name": "Respond to Webhook1",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          352,
+          256
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Framework: {{ $('Config').item.json.framework }}\n\nGoal: {{ $('Config').item.json.goal }}\n\nOriginal Prompt:\n{{ $('Config').item.json.prompt_original }}\n\nRewrite this as a production-grade prompt. No commentary.",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "You are a senior prompt engineer for Querino. Rewrite user prompts according to best practices. Return ONLY the improved prompt."
+          }
+        },
+        "id": "bba96feb-ad93-4d6d-a265-eb67f4304824",
+        "name": "Prompt Improver",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          0,
+          256
+        ]
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          -592,
+          448
+        ],
+        "id": "688f730f-a029-446b-b9ba-168ff563ff96",
+        "name": "Test Chat Trigger",
+        "webhookId": "0edd1502-2ba6-4a56-90e5-98726706f0f5"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenRouter LLM": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Prompt Improver",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Prompt Improver",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prompt Improver": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook1",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Chat Trigger": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version e4849d56",
+    "description": "",
+    "autosaved": false
+  },
+  "tags": []
+}
