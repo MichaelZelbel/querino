@@ -335,9 +335,23 @@ const Privacy = () => {
                         Lovable acts as a Data Processor under GDPR Article 28 for data transmitted through its hosting infrastructure, including HTTP request metadata and deployment-related data.
                       </p>
                       <p className="text-sm mt-2">
-                        <strong className="text-foreground">Privacy & Legal:</strong>{" "}
-                        <a href="https://lovable.dev/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          Lovable Privacy Policy
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://lovable.dev/data-processing-agreement" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Lovable Data Processing Agreement
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">Hostinger</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> Domain registration and DNS management.</p>
+                      <p className="text-sm mt-1">
+                        Hostinger acts as a Data Processor under GDPR Article 28 for domain-related data and DNS query metadata processed through its infrastructure.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://www.hostinger.com/legal/dpa" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Hostinger Data Processing Agreement
                         </a>
                       </p>
                     </div>
