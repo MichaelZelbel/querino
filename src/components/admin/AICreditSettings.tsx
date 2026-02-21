@@ -18,18 +18,21 @@ const SETTING_KEYS = [
   "tokens_per_credit",
   "credits_free_per_month",
   "credits_premium_per_month",
+  "max_free_accounts",
 ] as const;
 
 const SETTING_LABELS: Record<string, string> = {
   tokens_per_credit: "Tokens per AI Credit",
   credits_free_per_month: "Free Plan – AI Credits per Month",
   credits_premium_per_month: "Premium Plan – AI Credits per Month",
+  max_free_accounts: "Max Free Accounts (Signup Cap)",
 };
 
 const SETTING_MIN_VALUES: Record<string, number> = {
   tokens_per_credit: 1,
   credits_free_per_month: 0,
   credits_premium_per_month: 0,
+  max_free_accounts: 1,
 };
 
 export function AICreditSettings() {

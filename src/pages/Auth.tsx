@@ -33,7 +33,21 @@ export default function Auth() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [signupEmail, setSignupEmail] = useState("");
+  const [signupsClosed, setSignupsClosed] = useState(false);
 
+  // Check signup availability on mount
+  useEffect(() => {
+    const checkCap = async () => {
+      try {
+        const { data } = await (await import("@/integrations/supabase/client")).supabase.rpc("check_signup_allowed");
+        const result = data as unknown as { allowed: boolean; current_count: number; max_count: number };
+        if (result && !result.allowed) {
+          setSignupsClosed(true);
+        }
+      } catch { /* ignore */ }
+    };
+    checkCap();
+  }, []);
   // Redirect if already logged in (handles OAuth return)
   useEffect(() => {
     if (!authLoading && user && !hasRedirected.current) {
@@ -239,10 +253,32 @@ export default function Auth() {
               </TabsContent>
               
               <TabsContent value="signup" className="mt-6 space-y-4">
-                {signupSuccess ? (
+                {signupsClosed ? (
                   <div className="flex flex-col items-center text-center py-6 space-y-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                      <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                      <Mail className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold">Early access limit reached</h3>
+                      <p className="text-sm text-muted-foreground max-w-sm">
+                        We've reached our early access limit. Join the waitlist to be notified when new spots open up.
+                      </p>
+                    </div>
+                    <Button asChild variant="outline" className="w-full">
+                      <a href="mailto:support@querino.ai">Join the Waitlist</a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setActiveTab("signin")}
+                    >
+                      Already have an account? Sign in
+                    </Button>
+                  </div>
+                ) : signupSuccess ? (
+                  <div className="flex flex-col items-center text-center py-6 space-y-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                      <CheckCircle2 className="h-8 w-8 text-primary" />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold">Check your email</h3>
