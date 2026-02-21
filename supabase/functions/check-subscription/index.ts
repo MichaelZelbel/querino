@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -12,85 +11,9 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for premium plan - keyed by mode
-const PREMIUM_PRODUCTS = {
-  live: [
-    "prod_TpqhlvF6bKNQIk",
-    "prod_Tpqih5nfN3NUhI",
-  ],
-  sandbox: [
-    "prod_Tpqq1Ng9whtnlI",
-    "prod_Tpqqzh9Ejs24xh",
-  ],
-};
-
-// Roles that are admin-controlled - when set, skip Stripe check entirely
-// These users keep their role regardless of Stripe status
-const ADMIN_CONTROLLED_ROLES = ["admin", "premium_gift"];
-
-interface StripeCheckResult {
-  hasActiveSub: boolean;
-  productId?: string;
-  subscriptionEnd?: string;
-  reason?: string;
-  customerId?: string;
-}
-
-async function checkStripeAccount(email: string, stripeKey: string, mode: string): Promise<StripeCheckResult> {
-  logStep(`Checking ${mode} Stripe`, { email });
-  
-  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-  
-  const customers = await stripe.customers.list({ email, limit: 1 });
-  logStep(`${mode} customer search`, { found: customers.data.length > 0 });
-
-  if (customers.data.length === 0) {
-    return { hasActiveSub: false, reason: "no_customer" };
-  }
-
-  const customerId = customers.data[0].id;
-  logStep(`${mode} found customer`, { customerId });
-  
-  const subscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-    status: "active",
-    limit: 10,
-  });
-  
-  logStep(`${mode} subscriptions`, { 
-    count: subscriptions.data.length,
-    statuses: subscriptions.data.map((s: { status: string }) => s.status)
-  });
-
-  if (subscriptions.data.length === 0) {
-    return { hasActiveSub: false, customerId, reason: "no_active_subscription" };
-  }
-
-  const subscription = subscriptions.data[0];
-  const productId = subscription.items.data[0]?.price?.product as string;
-  
-  let subscriptionEnd: string | undefined;
-  try {
-    if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-    }
-  } catch (dateError) {
-    logStep(`${mode} date parsing error`, { error: String(dateError) });
-  }
-  
-  logStep(`${mode} active subscription found`, { 
-    subscriptionId: subscription.id,
-    productId,
-    subscriptionEnd
-  });
-  
-  return {
-    hasActiveSub: true,
-    customerId,
-    productId,
-    subscriptionEnd,
-  };
-}
+// NOTE: Stripe SDK removed. Subscription status is now determined solely
+// from the user_roles table (admin-managed). To re-enable Stripe, restore
+// the checkStripeAccount() logic and Stripe SDK import from git history.
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -104,23 +27,10 @@ serve(async (req) => {
   );
 
   try {
-    logStep("Function started");
-
-    // Parse request body to get the mode
-    let requestedMode: "live" | "sandbox" = "live";
-    try {
-      const body = await req.json();
-      if (body.mode === "sandbox" || body.mode === "live") {
-        requestedMode = body.mode;
-      }
-    } catch {
-      // No body or invalid JSON - use default
-    }
-    logStep("Requested mode", { mode: requestedMode });
+    logStep("Function started (DB-only mode)");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
@@ -138,132 +48,19 @@ serve(async (req) => {
       .single();
     
     const currentRole = roleData?.role || "free";
-    logStep("Current role", { role: currentRole });
+    logStep("Role from DB", { role: currentRole });
 
-    // If role is admin-controlled, return current values WITHOUT checking Stripe
-    // Admin and premium_gift users keep their status regardless of Stripe
-    if (ADMIN_CONTROLLED_ROLES.includes(currentRole)) {
-      logStep("Admin-controlled role - skipping Stripe check", { role: currentRole });
-      
-      const isPremium = currentRole === "admin" || currentRole === "premium_gift";
-      
-      return new Response(JSON.stringify({
-        subscribed: isPremium,
-        role: currentRole,
-        plan_type: isPremium ? "premium" : "free", // Legacy field for compatibility
-        plan_source: currentRole === "admin" ? "admin" : "gift", // Legacy field
-        product_id: null,
-        subscription_end: null,
-        mode: null,
-        admin_override: true,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    // Check ONLY the requested Stripe environment
-    const stripeKey = requestedMode === "sandbox" 
-      ? Deno.env.get("STRIPE_SANDBOX_SECRET_KEY")
-      : Deno.env.get("STRIPE_SECRET_KEY");
-    
-    if (!stripeKey) {
-      logStep("Stripe key not configured for mode", { mode: requestedMode });
-      return new Response(JSON.stringify({
-        subscribed: false,
-        role: "free",
-        plan_type: "free",
-        plan_source: null,
-        product_id: null,
-        subscription_end: null,
-        mode: requestedMode,
-        error: `Stripe ${requestedMode} key not configured`,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    logStep("Checking Stripe", { mode: requestedMode });
-
-    const checkResult = await checkStripeAccount(user.email, stripeKey, requestedMode);
-    
-    logStep("Stripe check result", { 
-      hasActiveSub: checkResult.hasActiveSub, 
-      productId: checkResult.productId,
-      reason: checkResult.reason
-    });
-
-    // Determine plan based on Stripe result for THIS mode only
-    const validProducts = PREMIUM_PRODUCTS[requestedMode];
-    const isPremium = checkResult.hasActiveSub && 
-                      checkResult.productId && 
-                      validProducts.includes(checkResult.productId);
-
-    const newRole = isPremium ? "premium" : "free";
-
-    logStep("Role determined", { 
-      newRole, 
-      mode: requestedMode,
-      isPremium,
-      productId: checkResult.productId
-    });
-
-    // Detect subscription changes and notify admin
-    const roleChanged = currentRole !== newRole;
-    if (roleChanged) {
-      logStep("Role change detected", { from: currentRole, to: newRole });
-      
-      // Notify admin of subscription/unsubscription
-      try {
-        const eventType = newRole === "premium" ? "subscribe" : "unsubscribe";
-        const notifyResponse = await fetch(
-          `${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-admin`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-            },
-            body: JSON.stringify({
-              eventType,
-              userEmail: user.email,
-              userId: user.id,
-              metadata: {
-                mode: requestedMode,
-                productId: checkResult.productId,
-                previousRole: currentRole,
-              },
-            }),
-          }
-        );
-        logStep("Admin notification sent", { status: notifyResponse.status, eventType });
-      } catch (notifyError) {
-        logStep("Failed to send admin notification", { error: String(notifyError) });
-        // Continue even if notification fails
-      }
-    }
-
-    // Update user_roles table (the authoritative source)
-    const { error: updateError } = await supabaseClient
-      .from("user_roles")
-      .update({ role: newRole })
-      .eq("user_id", user.id);
-
-    if (updateError) {
-      logStep("Role update error", { error: updateError.message });
-    } else {
-      logStep("Role updated", { role: newRole });
-    }
+    const isPremium = currentRole === "premium" || currentRole === "premium_gift" || currentRole === "admin";
 
     return new Response(JSON.stringify({
       subscribed: isPremium,
-      role: newRole,
-      plan_type: newRole === "premium" ? "premium" : "free", // Legacy field
-      plan_source: isPremium ? "stripe" : null, // Legacy field
-      product_id: checkResult.productId || null,
-      subscription_end: checkResult.subscriptionEnd || null,
-      mode: requestedMode,
+      role: currentRole,
+      plan_type: isPremium ? "premium" : "free",
+      plan_source: currentRole === "admin" ? "admin" : (currentRole === "premium_gift" ? "gift" : (isPremium ? "stripe" : null)),
+      product_id: null,
+      subscription_end: null,
+      mode: null,
+      admin_override: currentRole === "admin" || currentRole === "premium_gift",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

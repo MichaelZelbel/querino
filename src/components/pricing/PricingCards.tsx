@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { pricingPlans, type PricingPlan } from "@/config/pricing";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 interface PricingCardsProps {
@@ -15,23 +14,15 @@ interface PricingCardsProps {
 export function PricingCards({ fromDashboard = false }: PricingCardsProps) {
   const { user } = useAuthContext();
   const { isPremium, isLoading: isSubLoading } = useSubscription();
-  const { createCheckoutSession, isLoading: isCheckoutLoading } = useStripeCheckout();
 
   const handleGetStarted = async (plan: PricingPlan) => {
     if (plan.id === "free") {
-      // Navigate to sign up
       window.location.href = plan.ctaLink;
       return;
     }
     
-    if (!user) {
-      // Redirect to auth first
-      window.location.href = "/auth?redirect=/pricing";
-      return;
-    }
-    
-    // Start checkout for premium
-    await createCheckoutSession("monthly");
+    // Premium plan: redirect to contact support
+    window.location.href = "mailto:support@querino.ai?subject=Premium%20Plan%20Inquiry";
   };
 
   const getButtonContent = (plan: PricingPlan) => {
@@ -55,7 +46,7 @@ export function PricingCards({ fromDashboard = false }: PricingCardsProps) {
     <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
       {pricingPlans.map((plan, index) => {
         const buttonContent = getButtonContent(plan);
-        const isLoading = plan.id === "premium" && isCheckoutLoading;
+        const isLoading = false;
         
         return (
           <Card 
