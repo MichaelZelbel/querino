@@ -1,5 +1,9 @@
 {
+  "createdAt": "2026-01-15T16:39:57.900Z",
+  "id": "U7IbShYCPj0xktPI",
   "name": "Suggest Skill Metadata",
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -14,34 +18,14 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        4464,
-        1312
+        4688,
+        1504
       ],
       "webhookId": "b0a468b6-c6c0-44df-b6fd-8f14830b7331",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Y2M2gm8PMqf8Owkp",
           "name": "Auth Header"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "model": "openai/gpt-4o-mini",
-        "options": {}
-      },
-      "id": "85a8e166-8109-4686-a16d-3d8e88981851",
-      "name": "OpenRouter LLM",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
-      "typeVersion": 1,
-      "position": [
-        5056,
-        1536
-      ],
-      "credentials": {
-        "openRouterApi": {
-          "id": "MGQPWNIqP5IqzT9c",
-          "name": "OpenRouter account"
         }
       }
     },
@@ -56,7 +40,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        5408,
+        5760,
         1312
       ],
       "alwaysOutputData": true
@@ -64,15 +48,16 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title, max 60 characters\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"A one-sentence summary, max 160 characters\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"One of: writing, coding, analysis, creative, business, education, other\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"3-5 relevant keywords\"\n    }\n  }\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title, max 60 characters\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"A one-sentence summary, max 160 characters\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"One of: writing, coding, analysis, creative, business, education, other\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"3-5 relevant keywords\"\n    }\n  }\n}",
+        "autoFix": true
       },
       "id": "0ab0787b-7d4b-4afd-896f-f397b76f445e",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        5200,
-        1536
+        5392,
+        1632
       ]
     },
     {
@@ -88,7 +73,7 @@
       "typeVersion": 1.4,
       "position": [
         4464,
-        1504
+        1312
       ],
       "webhookId": "f4e4b0f4-66ea-49ca-8508-080d5e8a4442"
     },
@@ -97,6 +82,7 @@
         "promptType": "define",
         "text": "={{ $('Config').item.json.skill_content }}",
         "hasOutputParser": true,
+        "needsFallback": true,
         "options": {
           "systemMessage": "You are a skill metadata analyzer. Your job is to analyze AI skill prompts and generate metadata ABOUT the skill -\n\nCRITICAL DISTINCTION:\n- You are describing THE SKILL PROMPT (the instructions), \n- Think of it like cataloging a recipe: you describe what the recipe teaches you to make, not the taste of the food\n\nFIELD DEFINITIONS:\n\n1. TITLE (max 60 characters):\n   - A short, descriptive name for the skill\n   - Should indicate what type of content or task the skill is designed for\n   - Examples: \"Python Coding Skill\", \"Data Analysis\", \"Story Writing Skill\"\n\n2. DESCRIPTION (max 400 characters):\n   - Explains what the skill INSTRUCTS the AI to do\n   - Describes the prompt's PURPOSE and STRUCTURE\n   - Must start with a verb like \"Generates\", \"Creates\", \"Helps\", \"Guides\", \"Instructs\"\n\n\n3. CATEGORY (choose exactly one):\n   - writing: skills for written content (articles, emails, stories)\n   - coding: skills for programming tasks\n   - analysis: skills for reviewing, summarizing, or evaluating content\n   - creative: skills for jokes, art descriptions, brainstorming, entertainment\n   - business: skills for professional/corporate tasks\n   - education: skills for teaching or learning\n   - other: only if none of the above fit\n\n4. TAGS (3-5 keywords):\n   - Relevant keywords describing the skill's domain, style, or use case\n   - Use lowercase, no special characters\n\nRespond ONLY with valid JSON in this exact format:\n{\"title\":\"...\",\"description\":\"...\",\"category\":\"...\",\"tags\":[\"tag1\",\"tag2\",\"tag3\"]}"
         }
@@ -106,9 +92,12 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        5056,
-        1312
-      ]
+        5168,
+        1408
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -139,8 +128,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        4640,
-        1504
+        4688,
+        1312
       ],
       "id": "89bd8711-2f14-4181-b97d-d8c498223eb1",
       "name": "Test Config"
@@ -182,9 +171,12 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        4832,
-        1312
-      ]
+        4912,
+        1408
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -255,26 +247,79 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        5408,
-        1536
+        5760,
+        1504
       ],
       "id": "0af1e0f4-1e90-428c-89c8-5119086fa5fa",
       "name": "Call Update Token Usage"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        5264,
+        1632
+      ],
+      "id": "a66132a3-2796-4288-8b12-aba01e03a51f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8CuSxQ6wXk1W313i",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        5136,
+        1632
+      ],
+      "id": "f44297a6-8db8-4fc2-90de-f09afc06f21c",
+      "name": "Azure gpt-5.2-chat",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        5472,
+        1840
+      ],
+      "id": "b17198e0-f74b-47f5-8a69-a1d2ea57ac9e",
+      "name": "Azure gpt-5.2-chat Parser",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
     }
   ],
-  "pinData": {},
   "connections": {
-    "OpenRouter LLM": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Metadata Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Webhook Trigger": {
       "main": [
         [
@@ -345,18 +390,491 @@
           }
         ]
       ]
+    },
+    "Azure gpt-5.2-chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat Parser": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": true,
   "settings": {
     "executionOrder": "v1",
     "availableInMCP": true
   },
-  "versionId": "ee7194e0-940a-4766-9c6b-6924ba857f2c",
+  "staticData": null,
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
+    "templateCredsSetupCompleted": true
   },
-  "id": "U7IbShYCPj0xktPI",
+  "pinData": {},
+  "activeVersionId": "3a0f2d85-9bbb-4b8f-979b-4cbfbab93ed1",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-01-15T16:39:57.904Z",
+      "createdAt": "2026-01-15T16:39:57.904Z",
+      "role": "workflow:owner",
+      "workflowId": "U7IbShYCPj0xktPI",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T19:12:22.000Z",
+    "createdAt": "2026-02-21T19:12:19.775Z",
+    "versionId": "3a0f2d85-9bbb-4b8f-979b-4cbfbab93ed1",
+    "workflowId": "U7IbShYCPj0xktPI",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "suggest-skill-metadata",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "bb485923-16ff-4d8d-8a65-6c6c6318f11c",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          4688,
+          1504
+        ],
+        "webhookId": "b0a468b6-c6c0-44df-b6fd-8f14830b7331",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "58a68a78-6e63-43d8-bbf3-95f28fc695b7",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          5760,
+          1312
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title, max 60 characters\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"A one-sentence summary, max 160 characters\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"One of: writing, coding, analysis, creative, business, education, other\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"3-5 relevant keywords\"\n    }\n  }\n}",
+          "autoFix": true
+        },
+        "id": "0ab0787b-7d4b-4afd-896f-f397b76f445e",
+        "name": "Structured Output Parser",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          5392,
+          1632
+        ]
+      },
+      {
+        "parameters": {
+          "public": true,
+          "options": {
+            "showWelcomeScreen": false
+          }
+        },
+        "id": "9592b42f-8aba-4dfd-be80-e20de76b5861",
+        "name": "Chat Trigger",
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          4464,
+          1312
+        ],
+        "webhookId": "f4e4b0f4-66ea-49ca-8508-080d5e8a4442"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $('Config').item.json.skill_content }}",
+          "hasOutputParser": true,
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "You are a skill metadata analyzer. Your job is to analyze AI skill prompts and generate metadata ABOUT the skill -\n\nCRITICAL DISTINCTION:\n- You are describing THE SKILL PROMPT (the instructions), \n- Think of it like cataloging a recipe: you describe what the recipe teaches you to make, not the taste of the food\n\nFIELD DEFINITIONS:\n\n1. TITLE (max 60 characters):\n   - A short, descriptive name for the skill\n   - Should indicate what type of content or task the skill is designed for\n   - Examples: \"Python Coding Skill\", \"Data Analysis\", \"Story Writing Skill\"\n\n2. DESCRIPTION (max 400 characters):\n   - Explains what the skill INSTRUCTS the AI to do\n   - Describes the prompt's PURPOSE and STRUCTURE\n   - Must start with a verb like \"Generates\", \"Creates\", \"Helps\", \"Guides\", \"Instructs\"\n\n\n3. CATEGORY (choose exactly one):\n   - writing: skills for written content (articles, emails, stories)\n   - coding: skills for programming tasks\n   - analysis: skills for reviewing, summarizing, or evaluating content\n   - creative: skills for jokes, art descriptions, brainstorming, entertainment\n   - business: skills for professional/corporate tasks\n   - education: skills for teaching or learning\n   - other: only if none of the above fit\n\n4. TAGS (3-5 keywords):\n   - Relevant keywords describing the skill's domain, style, or use case\n   - Use lowercase, no special characters\n\nRespond ONLY with valid JSON in this exact format:\n{\"title\":\"...\",\"description\":\"...\",\"category\":\"...\",\"tags\":[\"tag1\",\"tag2\",\"tag3\"]}"
+          }
+        },
+        "id": "9b1e12fa-5c7a-48e0-9a0f-496d3cbe2b45",
+        "name": "Metadata Generator",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          5168,
+          1408
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "2d101327-e4ba-4681-a530-e756298649e3",
+                "name": "chatInput",
+                "value": "={{ $json.chatInput }}",
+                "type": "string"
+              },
+              {
+                "id": "51454097-e33d-46c4-ae6b-06b7053bec4b",
+                "name": "test_content",
+                "value": "=# Lovable Prompt Builder\n\nTransform application documentation into effective Lovable prompts for building data-driven, multi-user, and multi-tenant applications through an iterative, one-prompt-at-a-time workflow.\n\n## When to Use This Skill\n\nUse this skill when:\n- Building applications in Lovable from documentation\n- Converting user journeys into sequential prompts\n- Working with feature lists, wireframes, or user role definitions\n- Creating data-driven apps with complex requirements\n- Building multi-user or multi-tenant SaaS applications\n- Need guidance on prompt sequencing and architecture\n\n## Core Workflow\n\n### Step 1: Analyze Documentation\n### Step 2: Plan Prompt Sequence\n### Step 3: Generate First Prompt\n### Step 4: Wait for User Feedback\n### Step 5: Adapt and Continue",
+                "type": "string"
+              },
+              {
+                "id": "226ef29b-865c-47a5-a2a9-a366a7aad1f1",
+                "name": "test_user_id",
+                "value": "1f2cff11-1f32-4fde-960d-4cbbcac181cc",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          4688,
+          1312
+        ],
+        "id": "89bd8711-2f14-4181-b97d-d8c498223eb1",
+        "name": "Test Config"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "skill_content",
+                "value": "={{ $json.body?.skill_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "f54f36c1-a067-4552-8b7f-640f2f7b267d",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "97836d3e-7121-4c68-94bd-908935eb950f",
+                "name": "provider",
+                "value": "openai",
+                "type": "string"
+              },
+              {
+                "id": "675088f6-a6aa-40eb-84ce-838ab3748508",
+                "name": "model",
+                "value": "chatgpt5.2",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "0168716d-04a7-4f13-9e05-f7147bf2eaa8",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          4912,
+          1408
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          5760,
+          1504
+        ],
+        "id": "0af1e0f4-1e90-428c-89c8-5119086fa5fa",
+        "name": "Call Update Token Usage"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          5264,
+          1632
+        ],
+        "id": "a66132a3-2796-4288-8b12-aba01e03a51f",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "8CuSxQ6wXk1W313i",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          5136,
+          1632
+        ],
+        "id": "f44297a6-8db8-4fc2-90de-f09afc06f21c",
+        "name": "Azure gpt-5.2-chat",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          5472,
+          1840
+        ],
+        "id": "b17198e0-f74b-47f5-8a69-a1d2ea57ac9e",
+        "name": "Azure gpt-5.2-chat Parser",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chat Trigger": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Metadata Generator": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat Parser": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Structured Output Parser",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version 3a0f2d85",
+    "description": "",
+    "autosaved": false
+  },
   "tags": []
 }
