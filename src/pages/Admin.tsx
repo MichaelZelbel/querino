@@ -24,9 +24,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Shield, Save, Users, Trash2, CreditCard, Coins } from "lucide-react";
+import { Search, Shield, Save, Users, Trash2, Coins } from "lucide-react";
 import { format } from "date-fns";
-import { StripeModeToggle } from "@/components/stripe/StripeModeToggle";
 import { AICreditSettings } from "@/components/admin/AICreditSettings";
 import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
 import { UserTokenModal } from "@/components/admin/UserTokenModal";
@@ -338,22 +337,6 @@ export default function Admin() {
             <p className="text-muted-foreground">Manage users and roles</p>
           </div>
         </div>
-
-        {/* Stripe Mode Toggle */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Stripe Environment</CardTitle>
-            </div>
-            <CardDescription>
-              Toggle between Live and Sandbox mode for testing payments
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StripeModeToggle showInProduction={true} />
-          </CardContent>
-        </Card>
 
         {/* AI Credit Settings */}
         <div className="mb-8">

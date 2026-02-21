@@ -32,7 +32,7 @@ export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Subscription status
-  const { subscription, isPremium, isLoading: subscriptionLoading, openCustomerPortal } = useSubscription();
+  const { subscription, isPremium, isLoading: subscriptionLoading } = useSubscription();
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
   
   // Check for checkout success
@@ -414,9 +414,11 @@ export default function Settings() {
               </div>
               <div className="flex gap-2 shrink-0">
                 {isPremium ? (
-                  <Button variant="outline" onClick={openCustomerPortal} className="gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Manage Billing
+                  <Button variant="outline" asChild className="gap-2">
+                    <a href="mailto:support@querino.ai">
+                      <CreditCard className="h-4 w-4" />
+                      Contact Support
+                    </a>
                   </Button>
                 ) : null}
               </div>
