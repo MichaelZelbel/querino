@@ -383,6 +383,20 @@ const Privacy = () => {
                         </a>
                       </p>
                     </div>
+
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">n8n</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> Workflow automation and AI orchestration platform.</p>
+                      <p className="text-sm mt-1">
+                        n8n acts as a Data Processor under GDPR Article 28 for data processed through automated workflows, including AI inference orchestration, webhook payloads, and integration data flows.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://n8n.io/legal/data-processing-agreement/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          n8n Data Processing Agreement
+                        </a>
+                      </p>
+                    </div>
                   </div>
 
                   <p className="mt-6">
