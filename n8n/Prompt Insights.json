@@ -1,5 +1,9 @@
 {
+  "createdAt": "2026-01-12T17:40:36.893Z",
+  "id": "YFHORM0ojJjIzOG1",
   "name": "Prompt Insights",
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -14,8 +18,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        5328,
-        1152
+        5552,
+        1344
       ],
       "webhookId": "9f3d508e-43e9-4ddf-8b4e-7f1a21f9b20c",
       "credentials": {
@@ -27,28 +31,9 @@
     },
     {
       "parameters": {
-        "model": "openai/gpt-4o",
-        "options": {}
-      },
-      "id": "d32c60e0-f4e8-44f0-abf3-471b7f7a75c8",
-      "name": "OpenRouter LLM",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
-      "typeVersion": 1,
-      "position": [
-        5872,
-        1392
-      ],
-      "credentials": {
-        "openRouterApi": {
-          "id": "MGQPWNIqP5IqzT9c",
-          "name": "OpenRouter account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "promptType": "define",
         "text": "={{ $('Config').item.json.prompt_content }}",
+        "needsFallback": true,
         "options": {
           "systemMessage": "You are an expert prompt analyst for a prompt management system. Your task is to analyze LLM prompts and generate important insights.\n\nThe user will provide prompt data including:\n- The actual prompt text\n- Title and description\n- Tags and categories\n- Comments and metadata\n- Usage context\n\nAnalyze the prompt and provide insights in the following categories:\n\n1. **Prompt Quality Assessment**\n   - Clarity and specificity\n   - Structure and organization\n   - Completeness of instructions\n\n2. **Effectiveness Indicators**\n   - Likely performance with target LLM\n   - Potential edge cases or ambiguities\n   - Suggested improvements\n\n3. **Use Case Analysis**\n   - Primary use case identification\n   - Target audience suitability\n   - Domain and context\n\n4. **Technical Characteristics**\n   - Prompt engineering techniques used\n   - Token efficiency\n   - Framework or pattern (if any)\n\n5. **Recommendations**\n   - Optimization suggestions\n   - Best practices alignment\n   - Potential variations or alternatives\n\nProvide your analysis in clean, structured Markdown format with clear sections and actionable insights."
         }
@@ -58,9 +43,11 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        5872,
-        1152
-      ]
+        6000,
+        1248
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -73,7 +60,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        6256,
+        6352,
         1152
       ],
       "alwaysOutputData": true
@@ -103,8 +90,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        5488,
-        1376
+        5552,
+        1152
       ]
     },
     {
@@ -115,7 +102,7 @@
       "typeVersion": 1.4,
       "position": [
         5328,
-        1376
+        1152
       ],
       "id": "e65a8d48-84ce-4156-bd8b-1138e3b7d1ac",
       "name": "Test Chat",
@@ -158,9 +145,12 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        5680,
-        1152
-      ]
+        5776,
+        1248
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -231,14 +221,58 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        6256,
-        1328
+        6352,
+        1344
       ],
       "id": "d7bcef90-e17f-4215-96d7-4ffac3e1a2c8",
       "name": "Call Update Token Usage"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        6048,
+        1472
+      ],
+      "id": "a7cfc58e-0dea-49e4-8e78-e3c96ed0785b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8CuSxQ6wXk1W313i",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        5920,
+        1472
+      ],
+      "id": "50812181-4477-42dc-9976-bd0bc5e86a08",
+      "name": "Azure gpt-5.2-chat",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
     }
   ],
-  "pinData": {},
   "connections": {
     "Webhook Trigger": {
       "main": [
@@ -246,17 +280,6 @@
           {
             "node": "Config",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenRouter LLM": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -310,18 +333,412 @@
           }
         ]
       ]
+    },
+    "Azure gpt-5.2-chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
-  "active": true,
   "settings": {
     "executionOrder": "v1",
     "availableInMCP": true
   },
-  "versionId": "741aff16-c35f-4ad5-ae38-e32541609642",
+  "staticData": null,
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "8c9a4e588d0c5a974e84e6ed4f6e56a2fb8570105db112657c26f9a39af9136b"
+    "templateCredsSetupCompleted": true
   },
-  "id": "YFHORM0ojJjIzOG1",
+  "pinData": {},
+  "activeVersionId": "9d44f94c-cba8-4814-9c88-e8beba74b51d",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-01-12T17:40:36.895Z",
+      "createdAt": "2026-01-12T17:40:36.895Z",
+      "role": "workflow:owner",
+      "workflowId": "YFHORM0ojJjIzOG1",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T19:24:48.000Z",
+    "createdAt": "2026-02-21T19:24:45.661Z",
+    "versionId": "9d44f94c-cba8-4814-9c88-e8beba74b51d",
+    "workflowId": "YFHORM0ojJjIzOG1",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "prompt-insights",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "a7a2e33c-4eff-4e89-9699-f13d993eaa03",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          5552,
+          1344
+        ],
+        "webhookId": "9f3d508e-43e9-4ddf-8b4e-7f1a21f9b20c",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $('Config').item.json.prompt_content }}",
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "You are an expert prompt analyst for a prompt management system. Your task is to analyze LLM prompts and generate important insights.\n\nThe user will provide prompt data including:\n- The actual prompt text\n- Title and description\n- Tags and categories\n- Comments and metadata\n- Usage context\n\nAnalyze the prompt and provide insights in the following categories:\n\n1. **Prompt Quality Assessment**\n   - Clarity and specificity\n   - Structure and organization\n   - Completeness of instructions\n\n2. **Effectiveness Indicators**\n   - Likely performance with target LLM\n   - Potential edge cases or ambiguities\n   - Suggested improvements\n\n3. **Use Case Analysis**\n   - Primary use case identification\n   - Target audience suitability\n   - Domain and context\n\n4. **Technical Characteristics**\n   - Prompt engineering techniques used\n   - Token efficiency\n   - Framework or pattern (if any)\n\n5. **Recommendations**\n   - Optimization suggestions\n   - Best practices alignment\n   - Potential variations or alternatives\n\nProvide your analysis in clean, structured Markdown format with clear sections and actionable insights."
+          }
+        },
+        "id": "bc8196ab-808e-4426-bac7-5e59164c5100",
+        "name": "AI Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          6000,
+          1248
+        ],
+        "retryOnFail": true,
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.output }}",
+          "options": {}
+        },
+        "id": "942926f2-067e-459f-9c81-fd16b670f0f5",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          6352,
+          1152
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "test_content",
+                "value": "TITLE: Creative Writing Assistant Prompt\n\nDESCRIPTION: A prompt designed to help fiction writers develop compelling narratives\n\nTAGS: creative-writing, fiction, storytelling, narrative-development\n\nPROMPT TEXT:\nYou are a creative writing assistant specializing in fiction. Help the user develop their story by:\n1. Analyzing their plot structure and character development\n2. Suggesting narrative improvements and plot twists\n3. Providing constructive feedback on pacing and dialogue\n4. Offering creative alternatives when they are stuck\n\nMaintain an encouraging tone and ask clarifying questions to understand their vision.\n\nCOMMENTS: Works well with GPT-4, popular among beginner writers\nUSAGE COUNT: 247\nAVERAGE RATING: 4.5/5",
+                "type": "string"
+              },
+              {
+                "id": "2a20a7ff-7bde-4008-baac-36b0bf733615",
+                "name": "test_user_id",
+                "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "80400446-5be6-482d-b129-824ef4eaa619",
+        "name": "Test Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          5552,
+          1152
+        ]
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          5328,
+          1152
+        ],
+        "id": "e65a8d48-84ce-4156-bd8b-1138e3b7d1ac",
+        "name": "Test Chat",
+        "webhookId": "812d0d62-a8ed-4a6e-be7e-f8fc31ea4976"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "prompt_content",
+                "value": "={{ $json.body?.prompt_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "77284109-76df-4734-b873-f56008740365",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "ee6258ff-0aee-4606-bd09-ec4f95c91835",
+                "name": "provider",
+                "value": "openai",
+                "type": "string"
+              },
+              {
+                "id": "9c69a9e6-ee8e-4c99-aff1-7f27658f4540",
+                "name": "model",
+                "value": "chatgpt5.2",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "beda3349-bd1a-4dae-93ba-0102a2678d6c",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          5776,
+          1248
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          6352,
+          1344
+        ],
+        "id": "d7bcef90-e17f-4215-96d7-4ffac3e1a2c8",
+        "name": "Call Update Token Usage"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          6048,
+          1472
+        ],
+        "id": "a7cfc58e-0dea-49e4-8e78-e3c96ed0785b",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "8CuSxQ6wXk1W313i",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          5920,
+          1472
+        ],
+        "id": "50812181-4477-42dc-9976-bd0bc5e86a08",
+        "name": "Azure gpt-5.2-chat",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Agent": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Chat": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version 9d44f94c",
+    "description": "",
+    "autosaved": false
+  },
   "tags": []
 }
