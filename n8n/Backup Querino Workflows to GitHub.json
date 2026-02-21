@@ -22,7 +22,7 @@
       "typeVersion": 1.2,
       "position": [
         -3600,
-        112
+        216
       ]
     },
     {
@@ -36,8 +36,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -3200,
-        112
+        -3376,
+        216
       ]
     },
     {
@@ -56,8 +56,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2800,
-        112
+        -3152,
+        216
       ],
       "credentials": {
         "n8nApi": {
@@ -75,8 +75,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2400,
-        112
+        -2928,
+        216
       ]
     },
     {
@@ -88,8 +88,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -1728,
-        96
+        -2704,
+        216
       ]
     },
     {
@@ -117,8 +117,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1200,
-        112
+        -2480,
+        0
       ],
       "credentials": {
         "githubApi": {
@@ -138,8 +138,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -800,
-        112
+        -2256,
+        0
       ]
     },
     {
@@ -170,8 +170,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -400,
-        112
+        -2032,
+        0
       ]
     },
     {
@@ -190,8 +190,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
-        0
+        -1808,
+        72
       ],
       "credentials": {
         "githubApi": {
@@ -207,8 +207,8 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        0,
-        304
+        -1808,
+        264
       ]
     }
   ],
@@ -339,7 +339,7 @@
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "activeVersionId": "1142ccad-4894-4cd5-bced-ad590ea25e20",
+  "activeVersionId": "019ec3c7-06da-414f-bced-bcb91d8ccb1a",
   "triggerCount": 1,
   "shared": [
     {
@@ -351,9 +351,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-21T21:07:16.000Z",
-    "createdAt": "2026-02-21T21:05:01.249Z",
-    "versionId": "1142ccad-4894-4cd5-bced-ad590ea25e20",
+    "updatedAt": "2026-02-21T21:09:36.000Z",
+    "createdAt": "2026-02-21T21:09:33.590Z",
+    "versionId": "019ec3c7-06da-414f-bced-bcb91d8ccb1a",
     "workflowId": "WwZgGwYIcI7KJAmFA7RD5",
     "nodes": [
       {
@@ -373,7 +373,7 @@
         "typeVersion": 1.2,
         "position": [
           -3600,
-          112
+          216
         ]
       },
       {
@@ -387,8 +387,8 @@
         "type": "n8n-nodes-base.set",
         "typeVersion": 3.4,
         "position": [
-          -3200,
-          112
+          -3376,
+          216
         ]
       },
       {
@@ -407,8 +407,8 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          -2800,
-          112
+          -3152,
+          216
         ],
         "credentials": {
           "n8nApi": {
@@ -426,8 +426,8 @@
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          -2400,
-          112
+          -2928,
+          216
         ]
       },
       {
@@ -439,8 +439,8 @@
         "type": "n8n-nodes-base.splitInBatches",
         "typeVersion": 3,
         "position": [
-          -1728,
-          96
+          -2704,
+          216
         ]
       },
       {
@@ -468,8 +468,8 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          -1200,
-          112
+          -2480,
+          0
         ],
         "credentials": {
           "githubApi": {
@@ -489,8 +489,8 @@
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          -800,
-          112
+          -2256,
+          0
         ]
       },
       {
@@ -521,8 +521,8 @@
         "type": "n8n-nodes-base.if",
         "typeVersion": 2,
         "position": [
-          -400,
-          112
+          -2032,
+          0
         ]
       },
       {
@@ -541,8 +541,8 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          0,
-          0
+          -1808,
+          72
         ],
         "credentials": {
           "githubApi": {
@@ -558,8 +558,8 @@
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
         "position": [
-          0,
-          304
+          -1808,
+          264
         ]
       }
     ],
@@ -684,7 +684,7 @@
       }
     },
     "authors": "Michael Zelbel",
-    "name": "Version 1142ccad",
+    "name": "Version 019ec3c7",
     "description": "",
     "autosaved": false
   },
