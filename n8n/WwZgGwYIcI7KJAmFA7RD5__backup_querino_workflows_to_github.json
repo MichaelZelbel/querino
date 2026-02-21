@@ -1,0 +1,824 @@
+{
+  "createdAt": "2026-02-21T20:35:14.119Z",
+  "id": "WwZgGwYIcI7KJAmFA7RD5",
+  "name": "Backup Querino Workflows to GitHub",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "d21e88da-958d-48b5-a3fa-2ee46b2faa5f",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3600,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"N8N_BASE_URL\": \"https://agentpool.app.n8n.cloud\",\n  \"PROJECT_ID\": \"KAIlKHCcR6KpTc3t\",\n  \"FOLDER_ID\": \"OUvtvogX8T2Aazih\",\n  \"FILTER_TAGS\": \"\",\n  \"REPO_OWNER\": \"MichaelZelbel\",\n  \"REPO_NAME\": \"querino\",\n  \"BRANCH\": \"main\",\n  \"GITHUB_FOLDER\": \"n8n\"\n}",
+        "options": {}
+      },
+      "id": "5b39667f-2f5b-4a13-a304-c9483d4506de",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3200,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.N8N_BASE_URL }}/api/v1/workflows?projectId={{ $json.PROJECT_ID }}&limit=250",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "id": "92ddc904-9cac-483f-959a-d47e8cbccc4e",
+      "name": "Fetch Project Workflows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2800,
+        112
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "GWf5EjtAOxwCJUaI",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Configuration').first().json;\nconst response = $input.first().json;\n\n// The API returns { data: [...workflows] }\nlet workflows = response.data || response;\n\n// If FILTER_TAGS is set, filter workflows that have ALL specified tags\nif (config.FILTER_TAGS && config.FILTER_TAGS.trim() !== '') {\n  const requiredTags = config.FILTER_TAGS.split(',').map(t => t.trim().toLowerCase());\n  workflows = workflows.filter(wf => {\n    const wfTags = (wf.tags || []).map(t => (t.name || t).toLowerCase());\n    return requiredTags.every(rt => wfTags.includes(rt));\n  });\n}\n\nif (workflows.length === 0) {\n  return [];\n}\n\nreturn workflows.map(wf => {\n  const safeName = wf.name\n    .replace(/[^a-zA-Z0-9_-]/g, '_')\n    .replace(/_+/g, '_')\n    .replace(/^_|_$/g, '')\n    .toLowerCase();\n\n  const fileName = `${config.GITHUB_FOLDER}/${wf.id}__${safeName}.json`;\n\n  // Strip volatile fields that cause false diffs\n  const cleanWf = { ...wf };\n  delete cleanWf.updatedAt;\n  delete cleanWf.statisticsData;\n  delete cleanWf.versionId;\n\n  return {\n    json: {\n      fileName,\n      workflowId: wf.id,\n      workflowName: wf.name,\n      content: JSON.stringify(cleanWf, null, 2)\n    }\n  };\n});"
+      },
+      "id": "ec766cc3-98c8-43a5-8b40-f23e10699937",
+      "name": "Format and Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition-has-workflows",
+              "leftValue": "={{ $json._noWorkflows }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notTrue"
+              }
+            },
+            {
+              "id": "0af8bc8e-26ca-4cbb-bd33-0fcee32d214d",
+              "leftValue": "={{ $json.fileName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "23316b33-8541-4296-ba38-3c24c35251e7",
+      "name": "Has Workflows",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3357a35d-7220-4362-b3fe-76cda048961b",
+      "name": "Loop Workflows",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1712,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $('Configuration').first().json.REPO_OWNER }}/{{ $('Configuration').first().json.REPO_NAME }}/contents/{{ $json.fileName }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "={{ $('Configuration').first().json.BRANCH }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "id": "18748b6f-d27c-48e7-a454-3b79a358632d",
+      "name": "Get Existing File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1200,
+        112
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "1nPMv7n4FIkquMZS",
+          "name": "GitHub account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const original = $('Loop Workflows').first().json;\nconst getResult = $input.item.json;\n\n// Check if file exists on GitHub (GET returned sha)\nconst fileExists = !!getResult.sha;\n\nlet shouldUpdate = true;\n\nif (fileExists) {\n  try {\n    // Decode existing content from GitHub (base64)\n    // GitHub returns content with newlines, strip them\n    const rawContent = (getResult.content || '').replace(/\\n/g, '');\n    const existingContent = Buffer.from(rawContent, 'base64').toString('utf8');\n    // Compare with current workflow content\n    if (existingContent.trim() === original.content.trim()) {\n      shouldUpdate = false;\n    }\n  } catch (e) {\n    // If decode fails, push update to be safe\n    shouldUpdate = true;\n  }\n}\n\n// Prepare the PUT payload\nconst contentBase64 = Buffer.from(original.content).toString('base64');\n\nconst putBody = {\n  message: `backup: ${original.workflowName} [${new Date().toISOString().split('T')[0]}]`,\n  content: contentBase64,\n  branch: $('Configuration').first().json.BRANCH\n};\n\n// Include SHA for updates (required by GitHub API)\nif (fileExists && getResult.sha) {\n  putBody.sha = getResult.sha;\n}\n\nreturn {\n  json: {\n    ...original,\n    shouldUpdate,\n    fileExists,\n    putBody\n  }\n};"
+      },
+      "id": "13225acb-9d49-4c64-9783-19e3b7c7738e",
+      "name": "Prepare Upsert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-changed",
+              "leftValue": "={{ $json.shouldUpdate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "90816cb2-bf72-4542-b912-9c70bd2cfcfc",
+      "name": "Content Changed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $('Configuration').first().json.REPO_OWNER }}/{{ $('Configuration').first().json.REPO_NAME }}/contents/{{ $json.fileName }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.putBody) }}",
+        "options": {}
+      },
+      "id": "555841fa-c88e-46af-933f-896ed63a7c1b",
+      "name": "Push to GitHub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "1nPMv7n4FIkquMZS",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "02a91c54-3f3c-4ea5-b820-1d5ba3fec1ac",
+      "name": "Skip Unchanged",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        304
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4f43a3e7-d0ce-46fa-91ca-3595e4db0aec",
+      "name": "No Workflows Found",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        624
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Project Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Project Workflows": {
+      "main": [
+        [
+          {
+            "node": "Format and Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format and Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Workflows": {
+      "main": [
+        [],
+        [
+          {
+            "node": "No Workflows Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Workflows": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Existing File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing File": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upsert": {
+      "main": [
+        [
+          {
+            "node": "Content Changed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Changed": {
+      "main": [
+        [
+          {
+            "node": "Push to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Unchanged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push to GitHub": {
+      "main": [
+        [
+          {
+            "node": "Loop Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Unchanged": {
+      "main": [
+        [
+          {
+            "node": "Loop Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "activeVersionId": "6a953685-60b8-4090-8a2d-49439e978ea0",
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-21T20:35:14.136Z",
+      "createdAt": "2026-02-21T20:35:14.136Z",
+      "role": "workflow:owner",
+      "workflowId": "WwZgGwYIcI7KJAmFA7RD5",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T21:00:06.000Z",
+    "createdAt": "2026-02-21T21:00:04.920Z",
+    "versionId": "6a953685-60b8-4090-8a2d-49439e978ea0",
+    "workflowId": "WwZgGwYIcI7KJAmFA7RD5",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "hours",
+                "hoursInterval": 6
+              }
+            ]
+          }
+        },
+        "id": "d21e88da-958d-48b5-a3fa-2ee46b2faa5f",
+        "name": "Schedule Trigger",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -3600,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "raw",
+          "jsonOutput": "{\n  \"N8N_BASE_URL\": \"https://agentpool.app.n8n.cloud\",\n  \"PROJECT_ID\": \"KAIlKHCcR6KpTc3t\",\n  \"FOLDER_ID\": \"OUvtvogX8T2Aazih\",\n  \"FILTER_TAGS\": \"\",\n  \"REPO_OWNER\": \"MichaelZelbel\",\n  \"REPO_NAME\": \"querino\",\n  \"BRANCH\": \"main\",\n  \"GITHUB_FOLDER\": \"n8n\"\n}",
+          "options": {}
+        },
+        "id": "5b39667f-2f5b-4a13-a304-c9483d4506de",
+        "name": "Configuration",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -3200,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.N8N_BASE_URL }}/api/v1/workflows?projectId={{ $json.PROJECT_ID }}&limit=250",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "n8nApi",
+          "options": {
+            "response": {
+              "response": {}
+            }
+          }
+        },
+        "id": "92ddc904-9cac-483f-959a-d47e8cbccc4e",
+        "name": "Fetch Project Workflows",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -2800,
+          112
+        ],
+        "credentials": {
+          "n8nApi": {
+            "id": "GWf5EjtAOxwCJUaI",
+            "name": "n8n account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const config = $('Configuration').first().json;\nconst response = $input.first().json;\n\n// The API returns { data: [...workflows] }\nlet workflows = response.data || response;\n\n// If FILTER_TAGS is set, filter workflows that have ALL specified tags\nif (config.FILTER_TAGS && config.FILTER_TAGS.trim() !== '') {\n  const requiredTags = config.FILTER_TAGS.split(',').map(t => t.trim().toLowerCase());\n  workflows = workflows.filter(wf => {\n    const wfTags = (wf.tags || []).map(t => (t.name || t).toLowerCase());\n    return requiredTags.every(rt => wfTags.includes(rt));\n  });\n}\n\nif (workflows.length === 0) {\n  return [];\n}\n\nreturn workflows.map(wf => {\n  const safeName = wf.name\n    .replace(/[^a-zA-Z0-9_-]/g, '_')\n    .replace(/_+/g, '_')\n    .replace(/^_|_$/g, '')\n    .toLowerCase();\n\n  const fileName = `${config.GITHUB_FOLDER}/${wf.id}__${safeName}.json`;\n\n  // Strip volatile fields that cause false diffs\n  const cleanWf = { ...wf };\n  delete cleanWf.updatedAt;\n  delete cleanWf.statisticsData;\n  delete cleanWf.versionId;\n\n  return {\n    json: {\n      fileName,\n      workflowId: wf.id,\n      workflowName: wf.name,\n      content: JSON.stringify(cleanWf, null, 2)\n    }\n  };\n});"
+        },
+        "id": "ec766cc3-98c8-43a5-8b40-f23e10699937",
+        "name": "Format and Filter",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -2400,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "condition-has-workflows",
+                "leftValue": "={{ $json._noWorkflows }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "notTrue"
+                }
+              },
+              {
+                "id": "0af8bc8e-26ca-4cbb-bd33-0fcee32d214d",
+                "leftValue": "={{ $json.fileName }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "23316b33-8541-4296-ba38-3c24c35251e7",
+        "name": "Has Workflows",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -2080,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "id": "3357a35d-7220-4362-b3fe-76cda048961b",
+        "name": "Loop Workflows",
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          -1712,
+          64
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.github.com/repos/{{ $('Configuration').first().json.REPO_OWNER }}/{{ $('Configuration').first().json.REPO_NAME }}/contents/{{ $json.fileName }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "githubApi",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "ref",
+                "value": "={{ $('Configuration').first().json.BRANCH }}"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {}
+            }
+          }
+        },
+        "id": "18748b6f-d27c-48e7-a454-3b79a358632d",
+        "name": "Get Existing File",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -1200,
+          112
+        ],
+        "credentials": {
+          "githubApi": {
+            "id": "1nPMv7n4FIkquMZS",
+            "name": "GitHub account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "const original = $('Loop Workflows').first().json;\nconst getResult = $input.item.json;\n\n// Check if file exists on GitHub (GET returned sha)\nconst fileExists = !!getResult.sha;\n\nlet shouldUpdate = true;\n\nif (fileExists) {\n  try {\n    // Decode existing content from GitHub (base64)\n    // GitHub returns content with newlines, strip them\n    const rawContent = (getResult.content || '').replace(/\\n/g, '');\n    const existingContent = Buffer.from(rawContent, 'base64').toString('utf8');\n    // Compare with current workflow content\n    if (existingContent.trim() === original.content.trim()) {\n      shouldUpdate = false;\n    }\n  } catch (e) {\n    // If decode fails, push update to be safe\n    shouldUpdate = true;\n  }\n}\n\n// Prepare the PUT payload\nconst contentBase64 = Buffer.from(original.content).toString('base64');\n\nconst putBody = {\n  message: `backup: ${original.workflowName} [${new Date().toISOString().split('T')[0]}]`,\n  content: contentBase64,\n  branch: $('Configuration').first().json.BRANCH\n};\n\n// Include SHA for updates (required by GitHub API)\nif (fileExists && getResult.sha) {\n  putBody.sha = getResult.sha;\n}\n\nreturn {\n  json: {\n    ...original,\n    shouldUpdate,\n    fileExists,\n    putBody\n  }\n};"
+        },
+        "id": "13225acb-9d49-4c64-9783-19e3b7c7738e",
+        "name": "Prepare Upsert",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -800,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "condition-changed",
+                "leftValue": "={{ $json.shouldUpdate }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "90816cb2-bf72-4542-b912-9c70bd2cfcfc",
+        "name": "Content Changed",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -400,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://api.github.com/repos/{{ $('Configuration').first().json.REPO_OWNER }}/{{ $('Configuration').first().json.REPO_NAME }}/contents/{{ $json.fileName }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "githubApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.putBody) }}",
+          "options": {}
+        },
+        "id": "555841fa-c88e-46af-933f-896ed63a7c1b",
+        "name": "Push to GitHub",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          0,
+          0
+        ],
+        "credentials": {
+          "githubApi": {
+            "id": "1nPMv7n4FIkquMZS",
+            "name": "GitHub account"
+          }
+        }
+      },
+      {
+        "parameters": {},
+        "id": "02a91c54-3f3c-4ea5-b820-1d5ba3fec1ac",
+        "name": "Skip Unchanged",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          0,
+          304
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "4f43a3e7-d0ce-46fa-91ca-3595e4db0aec",
+        "name": "No Workflows Found",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          -1840,
+          624
+        ]
+      }
+    ],
+    "connections": {
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "node": "Configuration",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Configuration": {
+        "main": [
+          [
+            {
+              "node": "Fetch Project Workflows",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Project Workflows": {
+        "main": [
+          [
+            {
+              "node": "Format and Filter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format and Filter": {
+        "main": [
+          [
+            {
+              "node": "Loop Workflows",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Workflows": {
+        "main": [
+          [],
+          [
+            {
+              "node": "No Workflows Found",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Workflows": {
+        "main": [
+          [],
+          [
+            {
+              "node": "Get Existing File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Existing File": {
+        "main": [
+          [
+            {
+              "node": "Prepare Upsert",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Upsert": {
+        "main": [
+          [
+            {
+              "node": "Content Changed",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Content Changed": {
+        "main": [
+          [
+            {
+              "node": "Push to GitHub",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Skip Unchanged",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Push to GitHub": {
+        "main": [
+          [
+            {
+              "node": "Loop Workflows",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Skip Unchanged": {
+        "main": [
+          [
+            {
+              "node": "Loop Workflows",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version 6a953685",
+    "description": "",
+    "autosaved": false
+  },
+  "tags": []
+}
