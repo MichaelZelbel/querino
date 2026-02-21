@@ -1,0 +1,880 @@
+{
+  "createdAt": "2026-01-08T18:41:03.698Z",
+  "id": "WFLRNeU1Ni3w2tp5",
+  "name": "Suggest Prompt Metadata",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "suggest-metadata",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2ce2dfd1-9803-4542-8eec-1e016f21fbd9",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        3920,
+        2240
+      ],
+      "webhookId": "d9c96d9b-f373-4167-a157-dadbb009bd3a",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "0a3566cb-a256-48ee-a608-59f254eb9133",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4992,
+        2048
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title, max 60 characters\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"A one-sentence summary, max 160 characters\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"One of: writing, coding, analysis, creative, business, education, other\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"3-5 relevant keywords\"\n    }\n  }\n}",
+        "autoFix": true
+      },
+      "id": "6b5130c0-fc77-4dbd-8b87-47c3d073ea6e",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        4624,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "showWelcomeScreen": false
+        }
+      },
+      "id": "1d3f8df2-c6b8-4471-baee-dc7f9f9bc115",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        3696,
+        2048
+      ],
+      "webhookId": "0736f352-d66e-498b-b372-5ab388867063"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following LLM prompt and generate metadata ABOUT the prompt itself, NOT about what the prompt would generate.\nThe prompt:\n{{ $('Config').item.json.prompt_content }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a prompt metadata analyzer. Your job is to analyze AI prompts and generate metadata ABOUT the prompt itself, NOT about what the prompt would generate.\n\nCRITICAL DISTINCTION:\n- You are describing THE PROMPT (the instructions), not THE OUTPUT the prompt would produce\n- Think of it like cataloging a recipe: you describe what the recipe teaches you to make, not the taste of the food\n\nFIELD DEFINITIONS:\n\n1. TITLE (max 60 characters):\n   - A short, descriptive name for the prompt\n   - Should indicate what type of content or task the prompt is designed for\n   - Examples: \"Dad Joke Generator\", \"Code Review Assistant\", \"Email Summarizer\"\n\n2. DESCRIPTION (max 400 characters):\n   - Explains what the prompt INSTRUCTS the AI to do\n   - Describes the prompt's PURPOSE and STRUCTURE\n   - Must start with a verb like \"Generates\", \"Creates\", \"Helps\", \"Guides\", \"Instructs\"\n   - WRONG: \"Why did the chicken cross the road?\" (this is output, not description)\n   - RIGHT: \"Generates family-friendly dad jokes tailored for a bowling club audience using a warm, goofy tone.\"\n\n3. CATEGORY (choose exactly one):\n   - writing: prompts for written content (articles, emails, stories)\n   - coding: prompts for programming tasks\n   - analysis: prompts for reviewing, summarizing, or evaluating content\n   - creative: prompts for jokes, art descriptions, brainstorming, entertainment\n   - business: prompts for professional/corporate tasks\n   - education: prompts for teaching or learning\n   - other: only if none of the above fit\n\n4. TAGS (3-5 keywords):\n   - Relevant keywords describing the prompt's domain, style, or use case\n   - Use lowercase, no special characters\n\nRespond ONLY with valid JSON in this exact format:\n{\"title\":\"...\",\"description\":\"...\",\"category\":\"...\",\"tags\":[\"tag1\",\"tag2\",\"tag3\"]}"
+        }
+      },
+      "id": "ce0a4600-2e54-4acb-a9ee-96e4ba1b218e",
+      "name": "Metadata Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        4400,
+        2144
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d101327-e4ba-4681-a530-e756298649e3",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "51454097-e33d-46c4-ae6b-06b7053bec4b",
+              "name": "test_content",
+              "value": "=**Context**  \nYou are ChatGPT, generating humor for members of a friendly bowling club.\n\n**Request**  \nTell a funny dad joke.\n\n**I (Intent)**  \nProduce a lighthearted, non-discriminatory joke suitable for a general audience.\n\n**S (Style)**  \nUse a warm, goofy dad-joke tone and present the joke in fluent sentences.\n\n**P (Persona)**  \nAdopt the persona of a cheerful, wholesome dad who loves bowling and making people laugh.\n\n**E (Examples)**  \nExample tone: “The kind of joke that makes people groan, smile, and shake their heads.”\n\n**Final Task**  \nCreate a dad-style joke tailored to a bowling club audience, ensuring it is inclusive and avoids any discrimination against minorities.",
+              "type": "string"
+            },
+            {
+              "id": "764ce740-10f1-4395-8c41-7d4cde590dbb",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3920,
+        2048
+      ],
+      "id": "9131f077-b196-4c6f-a1ec-ac88b2707ddb",
+      "name": "Test Config"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "prompt_content",
+              "value": "={{ $json.body?.prompt_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "150ead3e-49fe-4e62-b477-dc0cff5c069b",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "fc0634ee-7ec5-4a99-b6fc-a845ec598a82",
+              "name": "provider",
+              "value": "openai",
+              "type": "string"
+            },
+            {
+              "id": "49b81e63-318f-4a33-a5d5-42dacd4c2b0c",
+              "name": "model",
+              "value": "chatgpt5.2",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3715c10d-2442-408e-a1d1-590e8adc6734",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4144,
+        2144
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4992,
+        2240
+      ],
+      "id": "5503c23b-01d0-4d70-951f-0de257cc2e7f",
+      "name": "Call Update Token Usage"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        4496,
+        2368
+      ],
+      "id": "e93b2b82-b070-409b-8cea-8a1a441d3006",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8CuSxQ6wXk1W313i",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        4368,
+        2368
+      ],
+      "id": "c9eb740a-c3b9-4f01-aa72-a4b3e1b2d490",
+      "name": "Azure gpt-5.2-chat",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        4704,
+        2576
+      ],
+      "id": "a5d17471-e2dc-440d-836c-09c7ac6f9f85",
+      "name": "Azure gpt-5.2-chat Parser",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Generator": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Metadata Generator",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat Parser": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "activeVersionId": "a28062ad-158a-4c9e-b219-63660e482bd8",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-01-08T18:41:03.703Z",
+      "createdAt": "2026-01-08T18:41:03.703Z",
+      "role": "workflow:owner",
+      "workflowId": "WFLRNeU1Ni3w2tp5",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T19:13:22.000Z",
+    "createdAt": "2026-02-21T19:13:20.612Z",
+    "versionId": "a28062ad-158a-4c9e-b219-63660e482bd8",
+    "workflowId": "WFLRNeU1Ni3w2tp5",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "suggest-metadata",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "2ce2dfd1-9803-4542-8eec-1e016f21fbd9",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          3920,
+          2240
+        ],
+        "webhookId": "d9c96d9b-f373-4167-a157-dadbb009bd3a",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "0a3566cb-a256-48ee-a608-59f254eb9133",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          4992,
+          2048
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"A concise title, max 60 characters\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"A one-sentence summary, max 160 characters\"\n    },\n    \"category\": {\n      \"type\": \"string\",\n      \"description\": \"One of: writing, coding, analysis, creative, business, education, other\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"3-5 relevant keywords\"\n    }\n  }\n}",
+          "autoFix": true
+        },
+        "id": "6b5130c0-fc77-4dbd-8b87-47c3d073ea6e",
+        "name": "Structured Output Parser",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          4624,
+          2368
+        ]
+      },
+      {
+        "parameters": {
+          "public": true,
+          "options": {
+            "showWelcomeScreen": false
+          }
+        },
+        "id": "1d3f8df2-c6b8-4471-baee-dc7f9f9bc115",
+        "name": "Chat Trigger",
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          3696,
+          2048
+        ],
+        "webhookId": "0736f352-d66e-498b-b372-5ab388867063"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Analyze the following LLM prompt and generate metadata ABOUT the prompt itself, NOT about what the prompt would generate.\nThe prompt:\n{{ $('Config').item.json.prompt_content }}",
+          "hasOutputParser": true,
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "You are a prompt metadata analyzer. Your job is to analyze AI prompts and generate metadata ABOUT the prompt itself, NOT about what the prompt would generate.\n\nCRITICAL DISTINCTION:\n- You are describing THE PROMPT (the instructions), not THE OUTPUT the prompt would produce\n- Think of it like cataloging a recipe: you describe what the recipe teaches you to make, not the taste of the food\n\nFIELD DEFINITIONS:\n\n1. TITLE (max 60 characters):\n   - A short, descriptive name for the prompt\n   - Should indicate what type of content or task the prompt is designed for\n   - Examples: \"Dad Joke Generator\", \"Code Review Assistant\", \"Email Summarizer\"\n\n2. DESCRIPTION (max 400 characters):\n   - Explains what the prompt INSTRUCTS the AI to do\n   - Describes the prompt's PURPOSE and STRUCTURE\n   - Must start with a verb like \"Generates\", \"Creates\", \"Helps\", \"Guides\", \"Instructs\"\n   - WRONG: \"Why did the chicken cross the road?\" (this is output, not description)\n   - RIGHT: \"Generates family-friendly dad jokes tailored for a bowling club audience using a warm, goofy tone.\"\n\n3. CATEGORY (choose exactly one):\n   - writing: prompts for written content (articles, emails, stories)\n   - coding: prompts for programming tasks\n   - analysis: prompts for reviewing, summarizing, or evaluating content\n   - creative: prompts for jokes, art descriptions, brainstorming, entertainment\n   - business: prompts for professional/corporate tasks\n   - education: prompts for teaching or learning\n   - other: only if none of the above fit\n\n4. TAGS (3-5 keywords):\n   - Relevant keywords describing the prompt's domain, style, or use case\n   - Use lowercase, no special characters\n\nRespond ONLY with valid JSON in this exact format:\n{\"title\":\"...\",\"description\":\"...\",\"category\":\"...\",\"tags\":[\"tag1\",\"tag2\",\"tag3\"]}"
+          }
+        },
+        "id": "ce0a4600-2e54-4acb-a9ee-96e4ba1b218e",
+        "name": "Metadata Generator",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          4400,
+          2144
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "2d101327-e4ba-4681-a530-e756298649e3",
+                "name": "chatInput",
+                "value": "={{ $json.chatInput }}",
+                "type": "string"
+              },
+              {
+                "id": "51454097-e33d-46c4-ae6b-06b7053bec4b",
+                "name": "test_content",
+                "value": "=**Context**  \nYou are ChatGPT, generating humor for members of a friendly bowling club.\n\n**Request**  \nTell a funny dad joke.\n\n**I (Intent)**  \nProduce a lighthearted, non-discriminatory joke suitable for a general audience.\n\n**S (Style)**  \nUse a warm, goofy dad-joke tone and present the joke in fluent sentences.\n\n**P (Persona)**  \nAdopt the persona of a cheerful, wholesome dad who loves bowling and making people laugh.\n\n**E (Examples)**  \nExample tone: “The kind of joke that makes people groan, smile, and shake their heads.”\n\n**Final Task**  \nCreate a dad-style joke tailored to a bowling club audience, ensuring it is inclusive and avoids any discrimination against minorities.",
+                "type": "string"
+              },
+              {
+                "id": "764ce740-10f1-4395-8c41-7d4cde590dbb",
+                "name": "test_user_id",
+                "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3920,
+          2048
+        ],
+        "id": "9131f077-b196-4c6f-a1ec-ac88b2707ddb",
+        "name": "Test Config"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "prompt_content",
+                "value": "={{ $json.body?.prompt_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "150ead3e-49fe-4e62-b477-dc0cff5c069b",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "fc0634ee-7ec5-4a99-b6fc-a845ec598a82",
+                "name": "provider",
+                "value": "openai",
+                "type": "string"
+              },
+              {
+                "id": "49b81e63-318f-4a33-a5d5-42dacd4c2b0c",
+                "name": "model",
+                "value": "chatgpt5.2",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "3715c10d-2442-408e-a1d1-590e8adc6734",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          4144,
+          2144
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          4992,
+          2240
+        ],
+        "id": "5503c23b-01d0-4d70-951f-0de257cc2e7f",
+        "name": "Call Update Token Usage"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          4496,
+          2368
+        ],
+        "id": "e93b2b82-b070-409b-8cea-8a1a441d3006",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "8CuSxQ6wXk1W313i",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          4368,
+          2368
+        ],
+        "id": "c9eb740a-c3b9-4f01-aa72-a4b3e1b2d490",
+        "name": "Azure gpt-5.2-chat",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          4704,
+          2576
+        ],
+        "id": "a5d17471-e2dc-440d-836c-09c7ac6f9f85",
+        "name": "Azure gpt-5.2-chat Parser",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chat Trigger": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Metadata Generator": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Metadata Generator",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat Parser": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Structured Output Parser",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version a28062ad",
+    "description": "",
+    "autosaved": false
+  },
+  "tags": []
+}
