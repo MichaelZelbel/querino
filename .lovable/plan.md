@@ -1,85 +1,82 @@
 
-# Remove Active Stripe Calls While Preserving Data Structures
 
-## Summary
-Remove all runtime Stripe API calls and UI components that reference Stripe, while keeping the configuration files, types, and data structures intact so Stripe can be re-enabled later.
+# Cap Free Account Signups
 
-## What Changes
+## Problem
+Every free account gets AI tokens you subsidize. Without a cap, an attacker (or organic growth past your budget) could create unlimited accounts and burn through your Azure LLM budget.
 
-### 1. Edge Functions: Disable Stripe API calls
+## Approach
 
-**`supabase/functions/check-subscription/index.ts`**
-- Remove the Stripe SDK import and all `checkStripeAccount()` logic
-- Simplify to: check `user_roles` table only (admin-controlled roles already bypass Stripe)
-- For non-admin users, just return their current role from `user_roles` without querying Stripe
-- Keep the same response shape so the frontend works unchanged
-- Keep admin notification logic for role changes (but no Stripe-triggered changes will occur)
+### 1. New setting in `ai_credit_settings`
 
-**`supabase/functions/create-checkout/index.ts`**
-- Replace the function body with a simple response: `{ error: "Checkout is currently disabled. Contact support@querino.ai" }`
-- Keep the file structure intact
+Add a `max_free_accounts` row (value: 1000) so you can adjust the cap from the Admin panel without code changes.
 
-**`supabase/functions/customer-portal/index.ts`**
-- Same approach: return `{ error: "Billing portal is currently disabled. Contact support@querino.ai" }`
-- Keep file structure intact
+### 2. New database function: `check_signup_allowed()`
 
-### 2. Frontend: Remove Stripe-specific UI
+A simple RPC that counts rows in `profiles` and compares to the `max_free_accounts` setting. Returns `{ allowed: boolean, current_count: integer, max_count: integer }`.
 
-**`src/hooks/useSubscription.ts`**
-- Remove Stripe mode logic (`getStripeMode()` calls)
-- Simplify `checkSubscription` to call the edge function without a `mode` parameter
-- Remove `openCustomerPortal` (or make it show a toast saying "Contact support")
-- Remove localStorage-based mode listener
-- Keep the same hook API shape (`isPremium`, `subscription`, etc.)
+### 3. Gate email signups (frontend)
 
-**`src/hooks/useStripeCheckout.ts`**
-- Replace `createCheckoutSession` with a function that shows a toast: "Contact support@querino.ai to upgrade"
-- Keep the hook export shape identical
+In `src/hooks/useAuth.ts`, call `check_signup_allowed()` before `supabase.auth.signUp()`. If not allowed, return an error: "We've reached our early access limit. Join the waitlist at support@querino.ai."
 
-**`src/components/stripe/StripeModeToggle.tsx`**
-- Make it return `null` always (or remove the component)
-- Keep the file so imports don't break
+### 4. Gate OAuth signups (post-login check)
 
-**`src/pages/Admin.tsx`**
-- Remove the "Stripe Environment" card section (lines ~342-356)
+OAuth redirects can't be blocked before they happen. Instead, after an OAuth login completes in `useAuth.ts`, check if the user's profile was just created (within the last 60 seconds) AND if we're over the limit. If so:
+- Show a "waitlist" toast message
+- Sign the user out
+- The profile/user_roles row already exists but they can't use the app
 
-**`src/pages/Settings.tsx`**
-- Replace the "Manage Billing" button with a "Contact Support" mailto link
-- Remove `openCustomerPortal` usage
+### 5. Admin visibility
 
-**`src/components/pricing/PricingCards.tsx`**
-- Remove `useStripeCheckout` import
-- For the premium plan button, link to `mailto:support@querino.ai` instead of starting checkout
-
-### 3. Files Kept Intact (for future re-enablement)
-- `src/config/stripe.ts` -- all price IDs, product IDs, mode helpers preserved
-- `src/types/profile.ts` -- plan_type and plan_source types unchanged
-- `src/types/userRole.ts` -- AppRole type unchanged
-- `user_roles` table -- no schema changes
-- All Stripe secret keys remain configured in Supabase secrets
-- `src/components/premium/usePremiumCheck.ts` -- unchanged, reads from `user_roles`
+Add `max_free_accounts` to the `AICreditSettings` component so you can see and adjust the cap. Also show the current user count.
 
 ## Technical Details
 
-The key insight is that `usePremiumCheck` (used everywhere for gating) reads from the `user_roles` table directly via `useUserRole`, not from Stripe. So premium gating continues to work based on admin-assigned roles. Only the automated Stripe-to-role sync is removed.
+### SQL Migration
+
+```sql
+-- New setting
+INSERT INTO ai_credit_settings (key, value_int, description)
+VALUES ('max_free_accounts', 1000, 'Maximum number of free accounts allowed before signups are closed');
+
+-- RPC function
+CREATE OR REPLACE FUNCTION public.check_signup_allowed()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  current_count INTEGER;
+  max_count INTEGER;
+BEGIN
+  SELECT COUNT(*)::integer INTO current_count FROM public.profiles;
+  SELECT COALESCE(
+    (SELECT value_int FROM public.ai_credit_settings WHERE key = 'max_free_accounts'),
+    1000
+  ) INTO max_count;
+  
+  RETURN jsonb_build_object(
+    'allowed', current_count < max_count,
+    'current_count', current_count,
+    'max_count', max_count
+  );
+END;
+$$;
+```
 
 ### Files Modified
+
 | File | Change |
 |------|--------|
-| `supabase/functions/check-subscription/index.ts` | Remove Stripe SDK, return role from DB only |
-| `supabase/functions/create-checkout/index.ts` | Return "disabled" message |
-| `supabase/functions/customer-portal/index.ts` | Return "disabled" message |
-| `src/hooks/useSubscription.ts` | Remove Stripe mode logic, simplify to DB-only check |
-| `src/hooks/useStripeCheckout.ts` | Replace with "contact support" toast |
-| `src/components/stripe/StripeModeToggle.tsx` | Return null |
-| `src/pages/Admin.tsx` | Remove Stripe Environment card |
-| `src/pages/Settings.tsx` | Replace "Manage Billing" with "Contact Support" |
-| `src/components/pricing/PricingCards.tsx` | Remove checkout, use mailto instead |
+| SQL migration | Add setting row + `check_signup_allowed()` RPC |
+| `src/hooks/useAuth.ts` | Call RPC before email signup; post-login check for OAuth |
+| `src/pages/Auth.tsx` | Show "signups closed" state when over limit |
+| `src/components/admin/AICreditSettings.tsx` | Add `max_free_accounts` to the settings list |
 
-### Files Preserved (no changes)
-- `src/config/stripe.ts`
-- `src/types/profile.ts`
-- `src/types/userRole.ts`
-- `src/components/premium/usePremiumCheck.ts`
-- `src/components/premium/PremiumGate.tsx`
-- Database schema (user_roles, profiles tables)
+### What happens when the cap is reached
+
+- **Email signup**: User sees "We've reached our early access limit" message directly on the signup form. The Supabase `signUp` call is never made.
+- **OAuth signup**: User completes OAuth but is immediately signed out with a toast explaining the limit. Their auth record exists but they cannot access the app.
+- **Existing users**: Unaffected. Only new signups are blocked.
+- **Admin override**: You can raise `max_free_accounts` from the Admin panel at any time to let more users in.
