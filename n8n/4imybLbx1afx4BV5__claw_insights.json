@@ -1,0 +1,746 @@
+{
+  "createdAt": "2026-02-02T20:12:04.991Z",
+  "id": "4imybLbx1afx4BV5",
+  "name": "Claw Insights",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "claw-insights",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f8553c18-8f92-4526-8225-887bfa804c1f",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        5552,
+        1344
+      ],
+      "webhookId": "25bb418b-4feb-41b2-ae0b-581f0b51b550",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Config').item.json.prompt_content }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are an expert LLM claw analyst for a claw management system, for claws like for Clawdbot / Moltbot / OpenClaw. Your task is to analyze LLM claws and generate important insights.\n\nThe user will provide claw data including:\n- The actual claw text\n- Title and description\n- Tags and categories\n- Comments and metadata\n- Usage context\n\nAnalyze the claw and provide insights in the following categories:\n\n1. **claw Quality Assessment**\n   - Clarity and specificity\n   - Structure and organization\n   - Completeness of instructions\n\n2. **Effectiveness Indicators**\n   - Likely performance with target LLM\n   - Potential edge cases or ambiguities\n   - Suggested improvements\n\n3. **Use Case Analysis**\n   - Primary use case identification\n   - Target audience suitability\n   - Domain and context\n\n4. **Technical Characteristics**\n   - claw engineering techniques used\n   - Token efficiency\n   - Framework or pattern (if any)\n\n5. **Recommendations**\n   - Optimization suggestions\n   - Best practices alignment\n   - Potential variations or alternatives\n\nProvide your analysis in clean, structured Markdown format with clear sections and actionable insights."
+        }
+      },
+      "id": "ed8c90a2-90d6-4e5e-bbe2-8066112d11ad",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        6000,
+        1248
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "id": "8e781a44-968c-429c-a589-2f0c83b3ebb6",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        6352,
+        1152
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "test_content",
+              "value": "TITLE: Creative Writing Assistant Prompt\n\nDESCRIPTION: A prompt designed to help fiction writers develop compelling narratives\n\nTAGS: creative-writing, fiction, storytelling, narrative-development\n\nPROMPT TEXT:\nYou are a creative writing assistant specializing in fiction. Help the user develop their story by:\n1. Analyzing their plot structure and character development\n2. Suggesting narrative improvements and plot twists\n3. Providing constructive feedback on pacing and dialogue\n4. Offering creative alternatives when they are stuck\n\nMaintain an encouraging tone and ask clarifying questions to understand their vision.\n\nCOMMENTS: Works well with GPT-4, popular among beginner writers\nUSAGE COUNT: 247\nAVERAGE RATING: 4.5/5",
+              "type": "string"
+            },
+            {
+              "id": "2a20a7ff-7bde-4008-baac-36b0bf733615",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf89298a-8ead-40d4-8598-207387268190",
+      "name": "Test Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5552,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        5328,
+        1152
+      ],
+      "id": "5239a5b6-b3b5-4428-9145-8c0bf6f42659",
+      "name": "Test Chat",
+      "webhookId": "b2490983-5dec-4bf7-af13-9ecdef0d3873"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "prompt_content",
+              "value": "={{ $json.body?.content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "77284109-76df-4734-b873-f56008740365",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ee6258ff-0aee-4606-bd09-ec4f95c91835",
+              "name": "provider",
+              "value": "openai",
+              "type": "string"
+            },
+            {
+              "id": "9c69a9e6-ee8e-4c99-aff1-7f27658f4540",
+              "name": "model",
+              "value": "chatgpt5.2",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b21f4ebe-6468-4fd5-becc-ae6d6f808e60",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5776,
+        1248
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        6352,
+        1344
+      ],
+      "id": "baa25beb-36fe-4267-840d-ff953078cfd9",
+      "name": "Call Update Token Usage"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        6136,
+        1472
+      ],
+      "id": "77172754-f0a0-4583-83b6-425da991d654",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8CuSxQ6wXk1W313i",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        6008,
+        1472
+      ],
+      "id": "2ab8c157-c8ac-4a80-82f3-f739d04c8cbc",
+      "name": "Azure gpt-5.2-chat",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Chat": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "activeVersionId": "4ea19dc3-74ed-4379-972c-1e6ca08e63bb",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-02-02T20:12:04.993Z",
+      "createdAt": "2026-02-02T20:12:04.993Z",
+      "role": "workflow:owner",
+      "workflowId": "4imybLbx1afx4BV5",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T19:16:26.000Z",
+    "createdAt": "2026-02-21T19:16:21.257Z",
+    "versionId": "4ea19dc3-74ed-4379-972c-1e6ca08e63bb",
+    "workflowId": "4imybLbx1afx4BV5",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "claw-insights",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "f8553c18-8f92-4526-8225-887bfa804c1f",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          5552,
+          1344
+        ],
+        "webhookId": "25bb418b-4feb-41b2-ae0b-581f0b51b550",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $('Config').item.json.prompt_content }}",
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "You are an expert LLM claw analyst for a claw management system, for claws like for Clawdbot / Moltbot / OpenClaw. Your task is to analyze LLM claws and generate important insights.\n\nThe user will provide claw data including:\n- The actual claw text\n- Title and description\n- Tags and categories\n- Comments and metadata\n- Usage context\n\nAnalyze the claw and provide insights in the following categories:\n\n1. **claw Quality Assessment**\n   - Clarity and specificity\n   - Structure and organization\n   - Completeness of instructions\n\n2. **Effectiveness Indicators**\n   - Likely performance with target LLM\n   - Potential edge cases or ambiguities\n   - Suggested improvements\n\n3. **Use Case Analysis**\n   - Primary use case identification\n   - Target audience suitability\n   - Domain and context\n\n4. **Technical Characteristics**\n   - claw engineering techniques used\n   - Token efficiency\n   - Framework or pattern (if any)\n\n5. **Recommendations**\n   - Optimization suggestions\n   - Best practices alignment\n   - Potential variations or alternatives\n\nProvide your analysis in clean, structured Markdown format with clear sections and actionable insights."
+          }
+        },
+        "id": "ed8c90a2-90d6-4e5e-bbe2-8066112d11ad",
+        "name": "AI Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          6000,
+          1248
+        ],
+        "retryOnFail": true,
+        "alwaysOutputData": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.output }}",
+          "options": {}
+        },
+        "id": "8e781a44-968c-429c-a589-2f0c83b3ebb6",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          6352,
+          1152
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "test_content",
+                "value": "TITLE: Creative Writing Assistant Prompt\n\nDESCRIPTION: A prompt designed to help fiction writers develop compelling narratives\n\nTAGS: creative-writing, fiction, storytelling, narrative-development\n\nPROMPT TEXT:\nYou are a creative writing assistant specializing in fiction. Help the user develop their story by:\n1. Analyzing their plot structure and character development\n2. Suggesting narrative improvements and plot twists\n3. Providing constructive feedback on pacing and dialogue\n4. Offering creative alternatives when they are stuck\n\nMaintain an encouraging tone and ask clarifying questions to understand their vision.\n\nCOMMENTS: Works well with GPT-4, popular among beginner writers\nUSAGE COUNT: 247\nAVERAGE RATING: 4.5/5",
+                "type": "string"
+              },
+              {
+                "id": "2a20a7ff-7bde-4008-baac-36b0bf733615",
+                "name": "test_user_id",
+                "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "cf89298a-8ead-40d4-8598-207387268190",
+        "name": "Test Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          5552,
+          1152
+        ]
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          5328,
+          1152
+        ],
+        "id": "5239a5b6-b3b5-4428-9145-8c0bf6f42659",
+        "name": "Test Chat",
+        "webhookId": "b2490983-5dec-4bf7-af13-9ecdef0d3873"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-1",
+                "name": "prompt_content",
+                "value": "={{ $json.body?.content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "77284109-76df-4734-b873-f56008740365",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+                "type": "string"
+              },
+              {
+                "id": "ee6258ff-0aee-4606-bd09-ec4f95c91835",
+                "name": "provider",
+                "value": "openai",
+                "type": "string"
+              },
+              {
+                "id": "9c69a9e6-ee8e-4c99-aff1-7f27658f4540",
+                "name": "model",
+                "value": "chatgpt5.2",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "b21f4ebe-6468-4fd5-becc-ae6d6f808e60",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          5776,
+          1248
+        ],
+        "retryOnFail": true,
+        "alwaysOutputData": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          6352,
+          1344
+        ],
+        "id": "baa25beb-36fe-4267-840d-ff953078cfd9",
+        "name": "Call Update Token Usage"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          6136,
+          1472
+        ],
+        "id": "77172754-f0a0-4583-83b6-425da991d654",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "8CuSxQ6wXk1W313i",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          6008,
+          1472
+        ],
+        "id": "2ab8c157-c8ac-4a80-82f3-f739d04c8cbc",
+        "name": "Azure gpt-5.2-chat",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Agent": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Chat": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version 4ea19dc3",
+    "description": "",
+    "autosaved": false
+  },
+  "tags": []
+}
