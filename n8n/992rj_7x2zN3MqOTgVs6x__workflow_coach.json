@@ -1,0 +1,1374 @@
+{
+  "createdAt": "2026-02-19T16:06:15.617Z",
+  "id": "992rj_7x2zN3MqOTgVs6x",
+  "name": "Workflow Coach",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "workflow-coach",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8bcf65ed-3927-45d6-bbeb-fa2e4d051fff",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        -336
+      ],
+      "webhookId": "workflow-coach-webhook-id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Y2M2gm8PMqf8Owkp",
+          "name": "Auth Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "showWelcomeScreen": false
+        }
+      },
+      "id": "7bb9385c-35b0-4450-affa-9693ead247b2",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        384,
+        -528
+      ],
+      "webhookId": "workflow-coach-chat-trigger-id"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "33445566-7788-99aa-bbcc-ddeeff001122",
+              "name": "test_user_id",
+              "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+              "type": "string"
+            },
+            {
+              "id": "44556677-8899-aabb-ccdd-eeff00112233",
+              "name": "test_workspace_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "55667788-99aa-bbcc-ddee-ff0011223344",
+              "name": "test_workflow_id",
+              "value": "draft",
+              "type": "string"
+            },
+            {
+              "id": "66778899-aabb-ccdd-eeff-001122334455",
+              "name": "test_mode",
+              "value": "chat_only",
+              "type": "string"
+            },
+            {
+              "id": "7788aabb-bbcc-ddee-ff00-112233445566",
+              "name": "test_message",
+              "value": "={{ $json.chatInput || 'Can you help me improve this workflow?' }}",
+              "type": "string"
+            },
+            {
+              "id": "8899aabb-ccdd-eeff-0011-223344556677",
+              "name": "test_canvas_content",
+              "value": "Trigger: Webhook (POST /process-order)\nStep 1: Validate the incoming order payload using a Function node.\nStep 2: Insert the order into the Supabase orders table.\nStep 3: Send a confirmation email via the Gmail node.\nExpected output: HTTP 200 response with order ID.",
+              "type": "string"
+            },
+            {
+              "id": "99aabbcc-ddee-ff00-1122-334455667788",
+              "name": "test_selection",
+              "value": "={{ null }}",
+              "type": "object"
+            },
+            {
+              "id": "aabbccdd-eeff-0011-2233-445566778899",
+              "name": "test_session_id",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "db557e16-9a0a-4af2-a556-825204ab9e6e",
+      "name": "Test Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        -528
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ccddeeff-0011-2233-4455-667788990011",
+              "name": "user_id",
+              "value": "={{ $json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "ddeeff00-1122-3344-5566-778899001122",
+              "name": "workspace_id",
+              "value": "={{ $json.body?.workspace_id ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "eeff0011-2233-4455-6677-889900112233",
+              "name": "artifact_type",
+              "value": "={{ $json.body?.artifact_type || 'workflow' }}",
+              "type": "string"
+            },
+            {
+              "id": "ff001122-3344-5566-7788-990011223344",
+              "name": "workflow_id",
+              "value": "={{ $json.body?.workflow_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workflow_id : 'draft') || 'draft' }}",
+              "type": "string"
+            },
+            {
+              "id": "00112233-4455-6677-8899-001122334455",
+              "name": "mode",
+              "value": "={{ $json.body?.mode || ($('Test Config').isExecuted ? $('Test Config').item.json.test_mode : 'chat_only') || 'chat_only' }}",
+              "type": "string"
+            },
+            {
+              "id": "11223344-5566-7788-99aa-112233445566",
+              "name": "message",
+              "value": "={{ $json.body?.message || ($('Test Config').isExecuted ? $('Test Config').item.json.test_message : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "22334455-6677-8899-aabb-223344556677",
+              "name": "canvas_content",
+              "value": "={{ $json.body?.canvas_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_canvas_content : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "33445566-7788-99aa-bbcc-334455667788",
+              "name": "selection",
+              "value": "={{ $json.body?.selection ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_selection : null) }}",
+              "type": "object"
+            },
+            {
+              "id": "44556677-8899-aabb-ccdd-445566778899",
+              "name": "provider",
+              "value": "openrouter",
+              "type": "string"
+            },
+            {
+              "id": "55667788-99aa-bbcc-ddee-556677889900",
+              "name": "model",
+              "value": "openai/gpt-5.2-chat",
+              "type": "string"
+            },
+            {
+              "id": "66778899-aabb-ccdd-eeff-667788990011",
+              "name": "session_id",
+              "value": "={{ $json.body?.session_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_session_id : '') || `${($json.body?.workspace_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') || 'personal')}:${($json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : ''))}:${($json.body?.workflow_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workflow_id : 'draft') || 'draft')}` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "219c18a2-2945-437a-ab99-c42cb04b1fd2",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        -432
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Config').item.json.session_id }}",
+        "tableName": "prompt_coach_messages",
+        "contextWindowLength": 12
+      },
+      "id": "2c48a81c-fb71-444e-b54a-857f8e104486",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        -208
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "CyI690FAp59G2LzY",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}",
+        "autoFix": true,
+        "customizeRetryPrompt": true,
+        "prompt": "=If your output was wrapped in an extra key (likely \"output\"), remove all wrapper keys. Return ONLY a raw JSON object with \"assistantMessage\" and \"canvas\" as top-level keys. Do NOT wrap your response in an \"output\" key.\n\nInstructions: {instructions}\n\nCompletion: {completion}\n\nError: {error}\n\nPlease try again. Only respond with an answer that satisfies the constraints laid out in the Instructions."
+      },
+      "id": "d3a4133b-d695-480c-b854-d7bac25c4a42",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1568,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are \"Workflow Coach\", an expert n8n automation architect helping users design and refine n8n workflow descriptions.\nA \"workflow\" in Querino is a natural-language description or specification of an n8n automation — explaining what the workflow does, its trigger, the nodes involved, data transformations, and expected behavior.\n\nYou always receive:\n- mode: \"chat_only\" or \"collab_edit\"\n- message: the user's request\n- canvas_content: the full current workflow description\n- optional selection\n\nYou have access to a SerpAPI web search tool.\n\nWhen using SerpAPI web search:\n- Extract only key search terms from the user's question\n- Add relevant context (year, platform) if applicable\n- Keep queries concise and keyword-focused\n- Example: Instead of searching full sentences, search \"n8n HTTP Request node authentication 2026\"\n\n----------------------------------------\nCRITICAL OUTPUT RULE — READ CAREFULLY\n----------------------------------------\n\nYou MUST produce your FINAL ANSWER by passing it to the Structured Output Parser tool.\nYour final answer MUST be a raw JSON object that matches the parser schema EXACTLY at the ROOT level.\n\nFORBIDDEN — NEVER wrap your answer like this:\n  { \"output\": { \"assistantMessage\": \"...\", \"canvas\": { ... } } }\n\nCORRECT — ALWAYS output like this:\n  { \"assistantMessage\": \"...\", \"canvas\": { \"updated\": false } }\n\nThe very first character of your final answer must be { and assistantMessage must be a top-level key.\nDo NOT output normal text as the final answer.\nDo NOT use Markdown code blocks.\nDo NOT add any wrapper keys such as \"output\", \"response\", \"result\", or \"data\".\n\n----------------------------------------\nWEB SEARCH POLICY\n----------------------------------------\n\nYou may use the SerpAPI search tool ONLY if external, factual, or up-to-date information is required to answer properly.\n\nUse search when:\n- The user asks about specific n8n nodes, integrations, or features that may have changed.\n- The workflow references external APIs, services, or authentication methods with evolving documentation.\n- Accurate factual data is required to improve the workflow description.\n\nDo NOT use search when:\n- Improving wording, clarity, structure, or logical flow of the description.\n- The request is purely stylistic or organizational.\n- The answer can be derived from the canvas content and general n8n knowledge.\n\nIf search is used:\n- Keep the number of searches minimal.\n- Extract only relevant information.\n- Do not include raw search result dumps.\n- Integrate findings cleanly into your reasoning.\n- Do NOT mention internal tool calls in the final output.\n\n----------------------------------------\nMODE RULES\n----------------------------------------\n\nIf mode == \"chat_only\":\n- Do NOT modify the canvas.\n- If the user asks you to change/rewrite/restructure the workflow description, explain that edits are disabled in Chat mode and they should switch to Edit mode.\n- You may suggest improvements verbally.\n- canvas must be: { \"updated\": false }\n\nIf mode == \"collab_edit\":\n- You MAY modify the canvas.\n- If you apply changes:\n  - canvas.updated = true\n  - canvas.content = FULL updated canvas text (no diffs)\n  - canvas.changeNote = short summary of what you changed\n- If no changes are necessary:\n  - canvas.updated = false\n\n----------------------------------------\nGENERAL RULES\n----------------------------------------\n\n- Preserve original intent unless explicitly told otherwise.\n- Keep edits minimal and safe.\n- Never return diffs.\n- Workflow descriptions can be long — focus on completeness, node-by-node clarity, and automation logic.\n- If search was used, ensure the response remains concise and focused.\n"
+        }
+      },
+      "id": "aeecd5af-3856-4aa7-b3e1-b0a4677dfac1",
+      "name": "Workflow Coach Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1216,
+        -432
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ccddeeff-1122-3344-5566-cc2233445566",
+              "name": "assistantMessage",
+              "value": "={{ $json.output?.assistantMessage || $json.assistantMessage || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "ddeeff00-2233-4455-6677-dd3344556677",
+              "name": "canvas",
+              "value": "={{ $('Config').item.json.mode === 'chat_only' ? { updated: false } : (($json.output?.canvas || $json.canvas || {}).updated ? { updated: true, content: ($json.output?.canvas?.content || $json.canvas?.content || ''), changeNote: ($json.output?.canvas?.changeNote || $json.canvas?.changeNote || '') } : { updated: false }) }}",
+              "type": "object"
+            },
+            {
+              "id": "eeff0011-3344-5566-7788-ee4455667788",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "738e9da1-ca51-4209-82c2-c88a2fb8ad6f",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1936,
+        -528
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { assistantMessage: ($('Build Response').isExecuted ? $('Build Response').item.json.assistantMessage : $('Build Response Error').item.json.assistantMessage), canvas: ($('Build Response').isExecuted ? $('Build Response').item.json.canvas : $('Build Response Error').item.json.canvas), session: ($('Build Response').isExecuted ? $('Build Response').item.json.session : $('Build Response Error').item.json.session) } }}",
+        "options": {}
+      },
+      "id": "c102b4c3-f55e-4ea0-b6f7-9a24251553fa",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2384,
+        -432
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3H8d67oO7uOGswkPWASZL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+          "cachedResultName": "Update Token Usage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Config').item.json.user_id }}",
+            "provider": "={{ $('Config').item.json.provider }}",
+            "model": "={{ $('Config').item.json.model }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "c50297c0-bd84-458c-8f8d-b33ad65f9a05",
+      "name": "Call Update Token Usage",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        -688
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-err-1",
+              "name": "assistantMessage",
+              "value": "I apologize, but I encountered an error while processing your request. Please try again or rephrase your message.",
+              "type": "string"
+            },
+            {
+              "id": "id-err-2",
+              "name": "canvas",
+              "value": "={{ { updated: false } }}",
+              "type": "object"
+            },
+            {
+              "id": "id-err-3",
+              "name": "session",
+              "value": "={{ { id: $('Config').item.json.session_id } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "62da6a1c-98ed-49b0-bdd1-30906c4754ad",
+      "name": "Build Response Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        -352
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        -208
+      ],
+      "id": "92978d95-893e-42b8-966e-ec6af2f1f35a",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "RMwYDoSL8zn4eQOq",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        -208
+      ],
+      "id": "c8e9d18d-9fd8-4bc9-8051-07b226ed8a8e",
+      "name": "Azure gpt-5.2-chat",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        -208
+      ],
+      "id": "1ddd75dc-3e87-4722-bd03-50e2c9c61e18",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8CuSxQ6wXk1W313i",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        16
+      ],
+      "id": "5899d38f-320d-4d64-80db-9718880bbc7f",
+      "name": "Azure gpt-5.2-chat Parser",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "sxHNB4I1TmPFfLdr",
+          "name": "Azure gpt-5.2-chat"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Config": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Coach Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Response Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Update Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Response Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response Error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Workflow Coach Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Azure gpt-5.2-chat Parser": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "activeVersionId": "d431c9bb-92f0-4aba-a838-d9fb00c5a122",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-02-19T16:06:15.622Z",
+      "createdAt": "2026-02-19T16:06:15.622Z",
+      "role": "workflow:owner",
+      "workflowId": "992rj_7x2zN3MqOTgVs6x",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T19:15:18.000Z",
+    "createdAt": "2026-02-21T19:15:16.557Z",
+    "versionId": "d431c9bb-92f0-4aba-a838-d9fb00c5a122",
+    "workflowId": "992rj_7x2zN3MqOTgVs6x",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "workflow-coach",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "8bcf65ed-3927-45d6-bbeb-fa2e4d051fff",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          608,
+          -336
+        ],
+        "webhookId": "workflow-coach-webhook-id",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "public": true,
+          "options": {
+            "showWelcomeScreen": false
+          }
+        },
+        "id": "7bb9385c-35b0-4450-affa-9693ead247b2",
+        "name": "Chat Trigger",
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          384,
+          -528
+        ],
+        "webhookId": "workflow-coach-chat-trigger-id"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "33445566-7788-99aa-bbcc-ddeeff001122",
+                "name": "test_user_id",
+                "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+                "type": "string"
+              },
+              {
+                "id": "44556677-8899-aabb-ccdd-eeff00112233",
+                "name": "test_workspace_id",
+                "value": "",
+                "type": "string"
+              },
+              {
+                "id": "55667788-99aa-bbcc-ddee-ff0011223344",
+                "name": "test_workflow_id",
+                "value": "draft",
+                "type": "string"
+              },
+              {
+                "id": "66778899-aabb-ccdd-eeff-001122334455",
+                "name": "test_mode",
+                "value": "chat_only",
+                "type": "string"
+              },
+              {
+                "id": "7788aabb-bbcc-ddee-ff00-112233445566",
+                "name": "test_message",
+                "value": "={{ $json.chatInput || 'Can you help me improve this workflow?' }}",
+                "type": "string"
+              },
+              {
+                "id": "8899aabb-ccdd-eeff-0011-223344556677",
+                "name": "test_canvas_content",
+                "value": "Trigger: Webhook (POST /process-order)\nStep 1: Validate the incoming order payload using a Function node.\nStep 2: Insert the order into the Supabase orders table.\nStep 3: Send a confirmation email via the Gmail node.\nExpected output: HTTP 200 response with order ID.",
+                "type": "string"
+              },
+              {
+                "id": "99aabbcc-ddee-ff00-1122-334455667788",
+                "name": "test_selection",
+                "value": "={{ null }}",
+                "type": "object"
+              },
+              {
+                "id": "aabbccdd-eeff-0011-2233-445566778899",
+                "name": "test_session_id",
+                "value": "",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "db557e16-9a0a-4af2-a556-825204ab9e6e",
+        "name": "Test Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          608,
+          -528
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "ccddeeff-0011-2233-4455-667788990011",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "ddeeff00-1122-3344-5566-778899001122",
+                "name": "workspace_id",
+                "value": "={{ $json.body?.workspace_id ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "eeff0011-2233-4455-6677-889900112233",
+                "name": "artifact_type",
+                "value": "={{ $json.body?.artifact_type || 'workflow' }}",
+                "type": "string"
+              },
+              {
+                "id": "ff001122-3344-5566-7788-990011223344",
+                "name": "workflow_id",
+                "value": "={{ $json.body?.workflow_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workflow_id : 'draft') || 'draft' }}",
+                "type": "string"
+              },
+              {
+                "id": "00112233-4455-6677-8899-001122334455",
+                "name": "mode",
+                "value": "={{ $json.body?.mode || ($('Test Config').isExecuted ? $('Test Config').item.json.test_mode : 'chat_only') || 'chat_only' }}",
+                "type": "string"
+              },
+              {
+                "id": "11223344-5566-7788-99aa-112233445566",
+                "name": "message",
+                "value": "={{ $json.body?.message || ($('Test Config').isExecuted ? $('Test Config').item.json.test_message : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "22334455-6677-8899-aabb-223344556677",
+                "name": "canvas_content",
+                "value": "={{ $json.body?.canvas_content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_canvas_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "33445566-7788-99aa-bbcc-334455667788",
+                "name": "selection",
+                "value": "={{ $json.body?.selection ?? ($('Test Config').isExecuted ? $('Test Config').item.json.test_selection : null) }}",
+                "type": "object"
+              },
+              {
+                "id": "44556677-8899-aabb-ccdd-445566778899",
+                "name": "provider",
+                "value": "openrouter",
+                "type": "string"
+              },
+              {
+                "id": "55667788-99aa-bbcc-ddee-556677889900",
+                "name": "model",
+                "value": "openai/gpt-5.2-chat",
+                "type": "string"
+              },
+              {
+                "id": "66778899-aabb-ccdd-eeff-667788990011",
+                "name": "session_id",
+                "value": "={{ $json.body?.session_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_session_id : '') || `${($json.body?.workspace_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workspace_id : '') || 'personal')}:${($json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : ''))}:${($json.body?.workflow_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_workflow_id : 'draft') || 'draft')}` }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "219c18a2-2945-437a-ab99-c42cb04b1fd2",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          832,
+          -432
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('Config').item.json.session_id }}",
+          "tableName": "prompt_coach_messages",
+          "contextWindowLength": 12
+        },
+        "id": "2c48a81c-fb71-444e-b54a-857f8e104486",
+        "name": "Postgres Chat Memory",
+        "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+        "typeVersion": 1.3,
+        "position": [
+          1312,
+          -208
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "CyI690FAp59G2LzY",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"assistantMessage\": { \"type\": \"string\" },\n    \"canvas\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"updated\": { \"type\": \"boolean\" },\n        \"content\": { \"type\": \"string\" },\n        \"changeNote\": { \"type\": \"string\" }\n      },\n      \"required\": [\"updated\"]\n    }\n  },\n  \"required\": [\"assistantMessage\", \"canvas\"]\n}",
+          "autoFix": true,
+          "customizeRetryPrompt": true,
+          "prompt": "=If your output was wrapped in an extra key (likely \"output\"), remove all wrapper keys. Return ONLY a raw JSON object with \"assistantMessage\" and \"canvas\" as top-level keys. Do NOT wrap your response in an \"output\" key.\n\nInstructions: {instructions}\n\nCompletion: {completion}\n\nError: {error}\n\nPlease try again. Only respond with an answer that satisfies the constraints laid out in the Instructions."
+        },
+        "id": "d3a4133b-d695-480c-b854-d7bac25c4a42",
+        "name": "Structured Output Parser",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          1568,
+          -208
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=mode: {{ $('Config').item.json.mode }}\n\nuser_message:\n{{ $('Config').item.json.message }}\n\ncurrent_canvas_content:\n{{ $('Config').item.json.canvas_content }}\n\nselection:\n{{ JSON.stringify($('Config').item.json.selection) }}",
+          "hasOutputParser": true,
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "You are \"Workflow Coach\", an expert n8n automation architect helping users design and refine n8n workflow descriptions.\nA \"workflow\" in Querino is a natural-language description or specification of an n8n automation — explaining what the workflow does, its trigger, the nodes involved, data transformations, and expected behavior.\n\nYou always receive:\n- mode: \"chat_only\" or \"collab_edit\"\n- message: the user's request\n- canvas_content: the full current workflow description\n- optional selection\n\nYou have access to a SerpAPI web search tool.\n\nWhen using SerpAPI web search:\n- Extract only key search terms from the user's question\n- Add relevant context (year, platform) if applicable\n- Keep queries concise and keyword-focused\n- Example: Instead of searching full sentences, search \"n8n HTTP Request node authentication 2026\"\n\n----------------------------------------\nCRITICAL OUTPUT RULE — READ CAREFULLY\n----------------------------------------\n\nYou MUST produce your FINAL ANSWER by passing it to the Structured Output Parser tool.\nYour final answer MUST be a raw JSON object that matches the parser schema EXACTLY at the ROOT level.\n\nFORBIDDEN — NEVER wrap your answer like this:\n  { \"output\": { \"assistantMessage\": \"...\", \"canvas\": { ... } } }\n\nCORRECT — ALWAYS output like this:\n  { \"assistantMessage\": \"...\", \"canvas\": { \"updated\": false } }\n\nThe very first character of your final answer must be { and assistantMessage must be a top-level key.\nDo NOT output normal text as the final answer.\nDo NOT use Markdown code blocks.\nDo NOT add any wrapper keys such as \"output\", \"response\", \"result\", or \"data\".\n\n----------------------------------------\nWEB SEARCH POLICY\n----------------------------------------\n\nYou may use the SerpAPI search tool ONLY if external, factual, or up-to-date information is required to answer properly.\n\nUse search when:\n- The user asks about specific n8n nodes, integrations, or features that may have changed.\n- The workflow references external APIs, services, or authentication methods with evolving documentation.\n- Accurate factual data is required to improve the workflow description.\n\nDo NOT use search when:\n- Improving wording, clarity, structure, or logical flow of the description.\n- The request is purely stylistic or organizational.\n- The answer can be derived from the canvas content and general n8n knowledge.\n\nIf search is used:\n- Keep the number of searches minimal.\n- Extract only relevant information.\n- Do not include raw search result dumps.\n- Integrate findings cleanly into your reasoning.\n- Do NOT mention internal tool calls in the final output.\n\n----------------------------------------\nMODE RULES\n----------------------------------------\n\nIf mode == \"chat_only\":\n- Do NOT modify the canvas.\n- If the user asks you to change/rewrite/restructure the workflow description, explain that edits are disabled in Chat mode and they should switch to Edit mode.\n- You may suggest improvements verbally.\n- canvas must be: { \"updated\": false }\n\nIf mode == \"collab_edit\":\n- You MAY modify the canvas.\n- If you apply changes:\n  - canvas.updated = true\n  - canvas.content = FULL updated canvas text (no diffs)\n  - canvas.changeNote = short summary of what you changed\n- If no changes are necessary:\n  - canvas.updated = false\n\n----------------------------------------\nGENERAL RULES\n----------------------------------------\n\n- Preserve original intent unless explicitly told otherwise.\n- Keep edits minimal and safe.\n- Never return diffs.\n- Workflow descriptions can be long — focus on completeness, node-by-node clarity, and automation logic.\n- If search was used, ensure the response remains concise and focused.\n"
+          }
+        },
+        "id": "aeecd5af-3856-4aa7-b3e1-b0a4677dfac1",
+        "name": "Workflow Coach Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          1216,
+          -432
+        ],
+        "retryOnFail": true,
+        "alwaysOutputData": true,
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "ccddeeff-1122-3344-5566-cc2233445566",
+                "name": "assistantMessage",
+                "value": "={{ $json.output?.assistantMessage || $json.assistantMessage || '' }}",
+                "type": "string"
+              },
+              {
+                "id": "ddeeff00-2233-4455-6677-dd3344556677",
+                "name": "canvas",
+                "value": "={{ $('Config').item.json.mode === 'chat_only' ? { updated: false } : (($json.output?.canvas || $json.canvas || {}).updated ? { updated: true, content: ($json.output?.canvas?.content || $json.canvas?.content || ''), changeNote: ($json.output?.canvas?.changeNote || $json.canvas?.changeNote || '') } : { updated: false }) }}",
+                "type": "object"
+              },
+              {
+                "id": "eeff0011-3344-5566-7788-ee4455667788",
+                "name": "session",
+                "value": "={{ { id: $('Config').item.json.session_id } }}",
+                "type": "object"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "738e9da1-ca51-4209-82c2-c88a2fb8ad6f",
+        "name": "Build Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1936,
+          -528
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { assistantMessage: ($('Build Response').isExecuted ? $('Build Response').item.json.assistantMessage : $('Build Response Error').item.json.assistantMessage), canvas: ($('Build Response').isExecuted ? $('Build Response').item.json.canvas : $('Build Response Error').item.json.canvas), session: ($('Build Response').isExecuted ? $('Build Response').item.json.session : $('Build Response Error').item.json.session) } }}",
+          "options": {}
+        },
+        "id": "c102b4c3-f55e-4ea0-b6f7-9a24251553fa",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          2384,
+          -432
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "id": "c50297c0-bd84-458c-8f8d-b33ad65f9a05",
+        "name": "Call Update Token Usage",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2160,
+          -688
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "id-err-1",
+                "name": "assistantMessage",
+                "value": "I apologize, but I encountered an error while processing your request. Please try again or rephrase your message.",
+                "type": "string"
+              },
+              {
+                "id": "id-err-2",
+                "name": "canvas",
+                "value": "={{ { updated: false } }}",
+                "type": "object"
+              },
+              {
+                "id": "id-err-3",
+                "name": "session",
+                "value": "={{ { id: $('Config').item.json.session_id } }}",
+                "type": "object"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "62da6a1c-98ed-49b0-bdd1-30906c4754ad",
+        "name": "Build Response Error",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2160,
+          -352
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+        "typeVersion": 1,
+        "position": [
+          1440,
+          -208
+        ],
+        "id": "92978d95-893e-42b8-966e-ec6af2f1f35a",
+        "name": "SerpAPI",
+        "credentials": {
+          "serpApi": {
+            "id": "RMwYDoSL8zn4eQOq",
+            "name": "SerpAPI account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          1056,
+          -208
+        ],
+        "id": "c8e9d18d-9fd8-4bc9-8051-07b226ed8a8e",
+        "name": "Azure gpt-5.2-chat",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          1184,
+          -208
+        ],
+        "id": "1ddd75dc-3e87-4722-bd03-50e2c9c61e18",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "8CuSxQ6wXk1W313i",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          1648,
+          16
+        ],
+        "id": "5899d38f-320d-4d64-80db-9718880bbc7f",
+        "name": "Azure gpt-5.2-chat Parser",
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chat Trigger": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Workflow Coach Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Postgres Chat Memory": {
+        "ai_memory": [
+          [
+            {
+              "node": "Workflow Coach Agent",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Workflow Coach Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SerpAPI": {
+        "ai_tool": [
+          [
+            {
+              "node": "Workflow Coach Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Workflow Coach Agent": {
+        "main": [
+          [
+            {
+              "node": "Build Response",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Build Response Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Response": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Build Response Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Response Error": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Workflow Coach Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Workflow Coach Agent",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat Parser": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Structured Output Parser",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version d431c9bb",
+    "description": "",
+    "autosaved": false
+  },
+  "tags": []
+}
