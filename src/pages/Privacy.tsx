@@ -47,6 +47,12 @@ const Privacy = () => {
                     Collecting and Using Your Personal Data
                   </button>
                   <button
+                    onClick={() => scrollToSection("data-processors")}
+                    className="block text-muted-foreground hover:text-foreground transition-colors text-left"
+                  >
+                    Third-Party Data Processors
+                  </button>
+                  <button
                     onClick={() => scrollToSection("children")}
                     className="block text-muted-foreground hover:text-foreground transition-colors text-left"
                   >
@@ -281,6 +287,93 @@ const Privacy = () => {
                   <h3 className="text-xl font-medium text-foreground mt-6 mb-3">Security of Your Personal Data</h3>
                   <p>
                     The security of Your Personal Data is important to Us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While We strive to use commercially acceptable means to protect Your Personal Data, We cannot guarantee its absolute security.
+                  </p>
+                </section>
+
+                <section id="data-processors">
+                  <h2 className="text-2xl font-semibold text-foreground mt-10 mb-4">Third-Party Data Processing / Data Processors</h2>
+                  <p>
+                    In order to provide and operate the Service, We engage certain third-party service providers ("Data Processors") who process Personal Data on Our behalf. In accordance with Article 28 of the General Data Protection Regulation (GDPR), We have entered into Data Processing Agreements (DPAs) with each of these processors to ensure that Your Personal Data is handled securely, lawfully, and in compliance with applicable data protection legislation.
+                  </p>
+                  <p className="mt-2">
+                    The following is a list of Our current Data Processors, their respective roles, and links to their data protection documentation:
+                  </p>
+
+                  <div className="mt-6 space-y-6">
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">Microsoft Azure (including Azure OpenAI Service)</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> Cloud infrastructure, hosting, and AI inference (Azure OpenAI deployments).</p>
+                      <p className="text-sm mt-1">
+                        Microsoft acts as a Data Processor under GDPR Article 28 for data processed through its Azure cloud services. AI inference requests processed via Azure OpenAI are subject to Microsoft's data processing commitments and are not used to train or improve Microsoft's models.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://www.microsoft.com/licensing/docs/view/Microsoft-Products-and-Services-Data-Protection-Addendum-DPA" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Microsoft Products and Services Data Protection Addendum (DPA)
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">Supabase</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> Database hosting, authentication, and backend-as-a-service infrastructure.</p>
+                      <p className="text-sm mt-1">
+                        Supabase acts as a Data Processor under GDPR Article 28 for all user data stored in Our database, including account information, user-generated content, and authentication records.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://supabase.com/legal/dpa" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Supabase GDPR Data Processing Addendum
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">Lovable</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> Website hosting and deployment platform.</p>
+                      <p className="text-sm mt-1">
+                        Lovable acts as a Data Processor under GDPR Article 28 for data transmitted through its hosting infrastructure, including HTTP request metadata and deployment-related data.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">Privacy & Legal:</strong>{" "}
+                        <a href="https://lovable.dev/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Lovable Privacy Policy
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">Resend</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> Transactional email delivery service.</p>
+                      <p className="text-sm mt-1">
+                        Resend acts as a Data Processor under GDPR Article 28 for Personal Data included in transactional emails sent on Our behalf, such as email addresses and message content.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://resend.com/legal/dpa" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Resend Data Processing Agreement
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">OpenAI</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> AI inference provider (fallback for certain AI-powered features).</p>
+                      <p className="text-sm mt-1">
+                        Where OpenAI services are used as a fallback for AI inference, OpenAI acts as a Data Processor under GDPR Article 28. Data submitted via the OpenAI API is processed in accordance with OpenAI's enterprise data processing terms and is not used to train OpenAI's models.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://openai.com/policies/data-processing-addendum" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          OpenAI Data Processing Addendum
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-6">
+                    We regularly review the data protection practices of Our Data Processors and ensure that appropriate technical and organisational measures are in place to safeguard Your Personal Data. If You have any questions about Our use of Data Processors, please contact Us at{" "}
+                    <a href="mailto:support@querino.ai" className="text-primary hover:underline">support@querino.ai</a>.
                   </p>
                 </section>
 
