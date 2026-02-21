@@ -1,0 +1,760 @@
+{
+  "createdAt": "2026-01-26T14:51:26.158Z",
+  "id": "3H8d67oO7uOGswkPWASZL",
+  "name": "Update Token Usage",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e6b9daf-495c-44e3-a39e-40fc8e654eae",
+              "name": "execution_id",
+              "value": "={{ $('Update Tokens Trigger').item.json.execution_id }}",
+              "type": "number"
+            },
+            {
+              "id": "1ba39074-c67e-453c-9a64-07e0376e64bf",
+              "name": "tokenUsage",
+              "value": "={{$jmespath(\n  $json,\n  \"data.resultData.runData.*[].data.ai_languageModel[][].json \\\n  | [].{ \\\n      model: response.generations[0][0].generationInfo.model_name, \\\n      tokenUsage: tokenUsage \\\n    }\"\n)}}",
+              "type": "array"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "includeFields": "workflowData.id, workflowData.name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        -48
+      ],
+      "id": "0199e27e-70ab-499d-98d9-d5fc591fbdf1",
+      "name": "Extract token usage data"
+    },
+    {
+      "parameters": {
+        "resource": "execution",
+        "operation": "get",
+        "executionId": "={{ $json.execution_id }}",
+        "options": {
+          "activeWorkflows": true
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -48
+      ],
+      "id": "8e7b7b7d-674a-4c9b-b8a0-e5071e8a5066",
+      "name": "Get execution data",
+      "credentials": {
+        "n8nApi": {
+          "id": "GWf5EjtAOxwCJUaI",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "tokenUsage",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -48
+      ],
+      "id": "65c60d6f-1017-443b-8fb8-cdf778987522",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "sum",
+              "field": "tokenUsage.tokenUsage.promptTokens"
+            },
+            {
+              "aggregation": "sum",
+              "field": "tokenUsage.tokenUsage.completionTokens"
+            }
+          ]
+        },
+        "fieldsToSplitBy": "id, name, tokenUsage.model, execution_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        -48
+      ],
+      "id": "dc15cffd-f180-4482-8c5e-4a482350083b",
+      "name": "Sum Token Totals - aggregate by model"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "execution_id"
+            },
+            {
+              "name": "user_id"
+            },
+            {
+              "name": "provider"
+            },
+            {
+              "name": "model"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -240,
+        -48
+      ],
+      "id": "3791dd45-e3e4-46ff-866a-7d8657037a41",
+      "name": "Update Tokens Trigger"
+    },
+    {
+      "parameters": {
+        "tableId": "llm_usage_events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Update Tokens Trigger').item.json.user_id }}"
+            },
+            {
+              "fieldId": "idempotency_key",
+              "fieldValue": "={{ $('Update Tokens Trigger').item.json.user_id }}:{{ $('Update Tokens Trigger').item.json.execution_id }}"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $('Update Tokens Trigger').item.json.execution_id }}"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": "provider",
+              "fieldValue": "generic"
+            },
+            {
+              "fieldId": "model",
+              "fieldValue": "generic"
+            },
+            {
+              "fieldId": "prompt_tokens",
+              "fieldValue": "={{ $json.sum_tokenUsage_tokenUsage_promptTokens }}"
+            },
+            {
+              "fieldId": "completion_tokens",
+              "fieldValue": "={{ $json.sum_tokenUsage_tokenUsage_completionTokens }}"
+            },
+            {
+              "fieldId": "total_tokens",
+              "fieldValue": "={{ $json.sum_tokenUsage_tokenUsage_promptTokens + $json.sum_tokenUsage_tokenUsage_completionTokens }}"
+            },
+            {
+              "fieldId": "workflow_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "provider",
+              "fieldValue": "={{ $('Update Tokens Trigger').item.json.provider }}"
+            },
+            {
+              "fieldId": "model",
+              "fieldValue": "={{ $('Update Tokens Trigger').item.json.model }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -48
+      ],
+      "id": "8353b0db-edbf-48bd-b783-048346094e86",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "t5ayUxEMrH7vIF2Y",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ai_allowance_periods",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Update Tokens Trigger').item.json.user_id }}"
+            },
+            {
+              "keyName": "period_start",
+              "condition": "lte",
+              "keyValue": "={{ $now.toISO() }}"
+            },
+            {
+              "keyName": "period_end",
+              "condition": "gt",
+              "keyValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -48
+      ],
+      "id": "bfab44f5-d3b7-4164-bcce-dba6c26ccfab",
+      "name": "Get current allowance period",
+      "credentials": {
+        "supabaseApi": {
+          "id": "t5ayUxEMrH7vIF2Y",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ai_allowance_periods",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get current allowance period').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "tokens_used",
+              "fieldValue": "={{ Number($('Get current allowance period').item.json.tokens_used) + Number($('Create a row').item.json.total_tokens) }}\n"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        -48
+      ],
+      "id": "9dfe6720-390a-49a5-9dc3-56027b15c3a1",
+      "name": "Update allowance period usage",
+      "credentials": {
+        "supabaseApi": {
+          "id": "t5ayUxEMrH7vIF2Y",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Extract token usage data": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get execution data": {
+      "main": [
+        [
+          {
+            "node": "Extract token usage data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Sum Token Totals - aggregate by model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sum Token Totals - aggregate by model": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Tokens Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get execution data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Get current allowance period",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get current allowance period": {
+      "main": [
+        [
+          {
+            "node": "Update allowance period usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "activeVersionId": "ce4fa966-6261-4a7c-a8a4-8e95f2a08405",
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-01-26T14:51:26.162Z",
+      "createdAt": "2026-01-26T14:51:26.162Z",
+      "role": "workflow:owner",
+      "workflowId": "3H8d67oO7uOGswkPWASZL",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-01-27T18:10:08.000Z",
+    "createdAt": "2026-01-27T18:10:05.898Z",
+    "versionId": "ce4fa966-6261-4a7c-a8a4-8e95f2a08405",
+    "workflowId": "3H8d67oO7uOGswkPWASZL",
+    "nodes": [
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "2e6b9daf-495c-44e3-a39e-40fc8e654eae",
+                "name": "execution_id",
+                "value": "={{ $('Update Tokens Trigger').item.json.execution_id }}",
+                "type": "number"
+              },
+              {
+                "id": "1ba39074-c67e-453c-9a64-07e0376e64bf",
+                "name": "tokenUsage",
+                "value": "={{$jmespath(\n  $json,\n  \"data.resultData.runData.*[].data.ai_languageModel[][].json \\\n  | [].{ \\\n      model: response.generations[0][0].generationInfo.model_name, \\\n      tokenUsage: tokenUsage \\\n    }\"\n)}}",
+                "type": "array"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "include": "selected",
+          "includeFields": "workflowData.id, workflowData.name",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          208,
+          -48
+        ],
+        "id": "0199e27e-70ab-499d-98d9-d5fc591fbdf1",
+        "name": "Extract token usage data"
+      },
+      {
+        "parameters": {
+          "resource": "execution",
+          "operation": "get",
+          "executionId": "={{ $json.execution_id }}",
+          "options": {
+            "activeWorkflows": true
+          },
+          "requestOptions": {}
+        },
+        "type": "n8n-nodes-base.n8n",
+        "typeVersion": 1,
+        "position": [
+          -16,
+          -48
+        ],
+        "id": "8e7b7b7d-674a-4c9b-b8a0-e5071e8a5066",
+        "name": "Get execution data",
+        "credentials": {
+          "n8nApi": {
+            "id": "GWf5EjtAOxwCJUaI",
+            "name": "n8n account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "tokenUsage",
+          "include": "allOtherFields",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          416,
+          -48
+        ],
+        "id": "65c60d6f-1017-443b-8fb8-cdf778987522",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "fieldsToSummarize": {
+            "values": [
+              {
+                "aggregation": "sum",
+                "field": "tokenUsage.tokenUsage.promptTokens"
+              },
+              {
+                "aggregation": "sum",
+                "field": "tokenUsage.tokenUsage.completionTokens"
+              }
+            ]
+          },
+          "fieldsToSplitBy": "id, name, tokenUsage.model, execution_id",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.summarize",
+        "typeVersion": 1.1,
+        "position": [
+          624,
+          -48
+        ],
+        "id": "dc15cffd-f180-4482-8c5e-4a482350083b",
+        "name": "Sum Token Totals - aggregate by model"
+      },
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "execution_id"
+              },
+              {
+                "name": "user_id"
+              },
+              {
+                "name": "provider"
+              },
+              {
+                "name": "model"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -240,
+          -48
+        ],
+        "id": "3791dd45-e3e4-46ff-866a-7d8657037a41",
+        "name": "Update Tokens Trigger"
+      },
+      {
+        "parameters": {
+          "tableId": "llm_usage_events",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "user_id",
+                "fieldValue": "={{ $('Update Tokens Trigger').item.json.user_id }}"
+              },
+              {
+                "fieldId": "idempotency_key",
+                "fieldValue": "={{ $('Update Tokens Trigger').item.json.user_id }}:{{ $('Update Tokens Trigger').item.json.execution_id }}"
+              },
+              {
+                "fieldId": "n8n_execution_id",
+                "fieldValue": "={{ $('Update Tokens Trigger').item.json.execution_id }}"
+              },
+              {
+                "fieldId": "workflow_name",
+                "fieldValue": "={{ $json.name }}"
+              },
+              {
+                "fieldId": "provider",
+                "fieldValue": "generic"
+              },
+              {
+                "fieldId": "model",
+                "fieldValue": "generic"
+              },
+              {
+                "fieldId": "prompt_tokens",
+                "fieldValue": "={{ $json.sum_tokenUsage_tokenUsage_promptTokens }}"
+              },
+              {
+                "fieldId": "completion_tokens",
+                "fieldValue": "={{ $json.sum_tokenUsage_tokenUsage_completionTokens }}"
+              },
+              {
+                "fieldId": "total_tokens",
+                "fieldValue": "={{ $json.sum_tokenUsage_tokenUsage_promptTokens + $json.sum_tokenUsage_tokenUsage_completionTokens }}"
+              },
+              {
+                "fieldId": "workflow_id",
+                "fieldValue": "={{ $json.id }}"
+              },
+              {
+                "fieldId": "provider",
+                "fieldValue": "={{ $('Update Tokens Trigger').item.json.provider }}"
+              },
+              {
+                "fieldId": "model",
+                "fieldValue": "={{ $('Update Tokens Trigger').item.json.model }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          832,
+          -48
+        ],
+        "id": "8353b0db-edbf-48bd-b783-048346094e86",
+        "name": "Create a row",
+        "credentials": {
+          "supabaseApi": {
+            "id": "t5ayUxEMrH7vIF2Y",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "ai_allowance_periods",
+          "limit": 1,
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "user_id",
+                "condition": "eq",
+                "keyValue": "={{ $('Update Tokens Trigger').item.json.user_id }}"
+              },
+              {
+                "keyName": "period_start",
+                "condition": "lte",
+                "keyValue": "={{ $now.toISO() }}"
+              },
+              {
+                "keyName": "period_end",
+                "condition": "gt",
+                "keyValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          1072,
+          -48
+        ],
+        "id": "bfab44f5-d3b7-4164-bcce-dba6c26ccfab",
+        "name": "Get current allowance period",
+        "credentials": {
+          "supabaseApi": {
+            "id": "t5ayUxEMrH7vIF2Y",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "ai_allowance_periods",
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Get current allowance period').item.json.id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "tokens_used",
+                "fieldValue": "={{ Number($('Get current allowance period').item.json.tokens_used) + Number($('Create a row').item.json.total_tokens) }}\n"
+              },
+              {
+                "fieldId": "updated_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          1296,
+          -48
+        ],
+        "id": "9dfe6720-390a-49a5-9dc3-56027b15c3a1",
+        "name": "Update allowance period usage",
+        "credentials": {
+          "supabaseApi": {
+            "id": "t5ayUxEMrH7vIF2Y",
+            "name": "Supabase account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Extract token usage data": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get execution data": {
+        "main": [
+          [
+            {
+              "node": "Extract token usage data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Sum Token Totals - aggregate by model",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sum Token Totals - aggregate by model": {
+        "main": [
+          [
+            {
+              "node": "Create a row",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Tokens Trigger": {
+        "main": [
+          [
+            {
+              "node": "Get execution data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create a row": {
+        "main": [
+          [
+            {
+              "node": "Get current allowance period",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get current allowance period": {
+        "main": [
+          [
+            {
+              "node": "Update allowance period usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": "Version ce4fa966",
+    "description": "",
+    "autosaved": false
+  },
+  "tags": []
+}
