@@ -1846,6 +1846,7 @@ export type Database = {
     }
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
+      check_signup_allowed: { Args: never; Returns: Json }
       generate_slug: { Args: { title: string }; Returns: string }
       generate_unique_slug: {
         Args: { p_exclude_id?: string; p_table: string; p_title: string }
