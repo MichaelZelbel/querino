@@ -358,8 +358,8 @@ export default function Docs() {
 
               <div className="bg-muted/50 p-4 rounded-lg mt-4">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Note:</strong> Team membership requires a Premium plan. Free users cannot join teams.
-                </p>
+                   <strong>Note:</strong> Team membership requires an elevated plan. <a href="mailto:support@querino.ai" className="text-primary hover:underline">Contact support</a> for details.
+                 </p>
               </div>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Team Roles</h3>
