@@ -13,7 +13,7 @@ Querino is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 - **Node.js** (latest LTS, 18+)
 - **A Supabase project** (hosted or self-hosted)
 - **An n8n instance** (cloud or self-hosted)
-- **LLM provider account** (Azure OpenAI or OpenAI) for AI-powered features
+- **LLM provider API accounts** (Azure Foundry and OpenAI for fallback, for the example workflows in this repo) for AI-powered features
 - **SerpAPI account** (optional, only if web search features are used)
 
 ## Setup Steps
@@ -42,14 +42,14 @@ cd querino
    npx supabase functions deploy
    ```
 
-4. Set the following environment variables (secrets) on your Supabase project. These are used by Edge Functions to communicate with n8n:
+4. Set the following secrets on your Supabase project. These are used by Edge Functions to communicate with n8n:
 
    | Variable | Description |
    |----------|-------------|
    | `N8N_BASE_URL` | Base URL of your n8n instance (e.g., `https://your-n8n.example.com`) |
    | `N8N_SHARED_SECRET` | A shared secret used in the `Authorization` header for webhook authentication |
 
-   You can set secrets via the Supabase CLI:
+   Set them via the Supabase CLI:
 
    ```bash
    npx supabase secrets set N8N_BASE_URL=https://your-n8n.example.com
@@ -62,24 +62,24 @@ cd querino
 
 2. Create the required credentials in n8n:
 
-   - **HTTP Header Auth** — used for authenticating incoming webhook requests from Supabase. The header name and value must match the shared secret configured in Supabase.
+   - **HTTP Header Auth** — used for authenticating incoming webhook requests from Supabase. The header name and value must match the `N8N_SHARED_SECRET` configured in step 2.
    - **Postgres** — connection to your Supabase PostgreSQL database (use the connection string from your Supabase project settings).
-   - **LLM provider** — OpenAI or Azure OpenAI credentials, depending on your preference.
+   - **LLM provider** — OpenAI or Azure Foundry credentials, depending on your preference.
    - **SerpAPI** (optional) — only required if workflows use web search capabilities.
 
 3. Import the workflow definitions from the `/n8n` directory in the repository. In the n8n UI, use **Settings > Import from File** and select the JSON files.
 
 4. Activate each imported workflow so that their webhook endpoints become live.
 
-### 4. Connect Supabase to n8n
+### 4. Verify Connections
 
-Once both Supabase and n8n are configured:
+Before running the app, confirm that Supabase and n8n are correctly linked:
 
-1. Verify that the `N8N_BASE_URL` secret in Supabase points to the correct n8n instance URL.
+1. **Shared secret**: The `N8N_SHARED_SECRET` value in Supabase must exactly match the HTTP Header Auth credential configured in n8n.
 
-2. Confirm that the `N8N_SHARED_SECRET` matches the HTTP Header Auth credential configured in n8n.
+2. **Base URL**: The `N8N_BASE_URL` secret in Supabase must point to the correct n8n instance URL where the workflows are running.
 
-3. Ensure the webhook paths defined in the n8n workflows match the paths called by the Supabase Edge Functions. You can inspect the Edge Function source code in `supabase/functions/` to verify the expected endpoints.
+3. **Webhook paths**: The webhook paths defined in the n8n workflows must match the paths called by the Supabase Edge Functions. Inspect the Edge Function source code in `supabase/functions/` to verify the expected endpoints.
 
 ### 5. Run the App
 
@@ -90,7 +90,7 @@ npm install
 npm run dev
 ```
 
-Create a `.env` file in the project root with the following variables:
+Create a `.env` file in the project root with the following variables (see `.env.example` if available):
 
 ```env
 VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
