@@ -97,9 +97,8 @@ supabase/
 
 ## License
 
-MIT
+Querino is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
-## Links
+You are free to use, modify, and self-host it under the terms of that license.
 
-- [Live App](https://querino.lovable.app)
-- [Documentation](https://querino.lovable.app/docs)
+
