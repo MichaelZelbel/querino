@@ -43,6 +43,9 @@ export function Footer() {
               <a href="mailto:support@querino.ai" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Support
               </a>
+              <a href="https://github.com/MichaelZelbel/querino" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Source Code
+              </a>
             </nav>
           </div>
 
@@ -66,18 +69,10 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-border pt-6 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-12 border-t border-border pt-6">
+          <p className="text-center text-sm text-muted-foreground">
             © {new Date().getFullYear()} Querino. All rights reserved.
           </p>
-          <a
-            href="https://github.com/MichaelZelbel/querino"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-          >
-            Source Code
-          </a>
         </div>
       </div>
     </footer>
