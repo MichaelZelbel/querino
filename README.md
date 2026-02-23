@@ -95,6 +95,10 @@ supabase/
 - [API Documentation](./docs/API.md) - Edge function endpoints
 - [Database Schema](./docs/SCHEMA.md) - Database tables and relationships
 
+## Why AGPL?
+
+Querino is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). The purpose of using AGPL is to ensure that Querino and any modifications remain open and self-hostable. If someone runs a modified version as a network service, they must also provide the corresponding corresponding source code under the same license. A hosted version of Querino is available at https://querino.ai/. The hosted version does not change the open-source status of the core system.
+
 ## License
 
 Querino is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
