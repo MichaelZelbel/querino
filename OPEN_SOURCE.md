@@ -47,13 +47,13 @@ cd querino
    | Variable | Description |
    |----------|-------------|
    | `N8N_BASE_URL` | Base URL of your n8n instance (e.g., `https://your-n8n.example.com`) |
-   | `N8N_SHARED_SECRET` | A shared secret used in the `Authorization` header for webhook authentication |
+   | `N8N_WEBHOOK_KEY` | A shared secret sent via `X-API-Key` header for webhook authentication |
 
    Set them via the Supabase CLI:
 
    ```bash
    npx supabase secrets set N8N_BASE_URL=https://your-n8n.example.com
-   npx supabase secrets set N8N_SHARED_SECRET=your-shared-secret
+   npx supabase secrets set N8N_WEBHOOK_KEY=your-webhook-secret
    ```
 
 ### 3. Configure n8n
@@ -62,7 +62,7 @@ cd querino
 
 2. Create the required credentials in n8n:
 
-   - **HTTP Header Auth** — used for authenticating incoming webhook requests from Supabase. The header name and value must match the `N8N_SHARED_SECRET` configured in step 2.
+   - **HTTP Header Auth** — used for authenticating incoming webhook requests from Supabase. The header name must be `X-API-Key` and the value must match the `N8N_WEBHOOK_KEY` configured in step 2.
    - **Postgres** — connection to your Supabase PostgreSQL database (use the connection string from your Supabase project settings).
    - **LLM provider** — OpenAI or Azure Foundry credentials, depending on your preference.
    - **SerpAPI** (optional) — only required if workflows use web search capabilities.
@@ -75,7 +75,7 @@ cd querino
 
 Before running the app, confirm that Supabase and n8n are correctly linked:
 
-1. **Shared secret**: The `N8N_SHARED_SECRET` value in Supabase must exactly match the HTTP Header Auth credential configured in n8n.
+1. **Webhook key**: The `N8N_WEBHOOK_KEY` value in Supabase must exactly match the HTTP Header Auth credential (`X-API-Key`) configured in n8n.
 
 2. **Base URL**: The `N8N_BASE_URL` secret in Supabase must point to the correct n8n instance URL where the workflows are running.
 

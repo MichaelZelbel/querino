@@ -14,9 +14,8 @@ serve(async (req) => {
   try {
     const body = await req.json();
 
-    const N8N_SKILL_COACH_URL =
-      Deno.env.get("N8N_SKILL_COACH_URL") ||
-      "https://agentpool.app.n8n.cloud/webhook/skill-coach";
+    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
+    const N8N_SKILL_COACH_URL = `${N8N_BASE_URL}/webhook/skill-coach`;
     const N8N_WEBHOOK_KEY = Deno.env.get("N8N_WEBHOOK_KEY") || "";
 
     const response = await fetch(N8N_SKILL_COACH_URL, {

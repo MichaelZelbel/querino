@@ -23,7 +23,8 @@ serve(async (req) => {
 
     console.log("Calling n8n webhook for claw metadata, content length:", claw_content.length, "user_id:", user_id);
 
-    const response = await fetch("https://agentpool.app.n8n.cloud/webhook/suggest-claw-metadata", {
+    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
+    const response = await fetch(`${N8N_BASE_URL}/webhook/suggest-claw-metadata`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",

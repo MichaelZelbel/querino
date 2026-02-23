@@ -30,14 +30,15 @@ serve(async (req) => {
       );
     }
 
-    // Use specific webhooks for each item type
-    const webhookUrls: Record<string, string> = {
-      prompt: "https://agentpool.app.n8n.cloud/webhook/prompt-insights",
-      skill: "https://agentpool.app.n8n.cloud/webhook/skill-insights",
-      workflow: "https://agentpool.app.n8n.cloud/webhook/workflow-insights",
-      claw: "https://agentpool.app.n8n.cloud/webhook/claw-insights",
+    // Build webhook URL from base URL + item type path
+    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
+    const webhookPaths: Record<string, string> = {
+      prompt: "prompt-insights",
+      skill: "skill-insights",
+      workflow: "workflow-insights",
+      claw: "claw-insights",
     };
-    const webhookUrl = webhookUrls[item_type];
+    const webhookUrl = `${N8N_BASE_URL}/webhook/${webhookPaths[item_type]}`;
 
     console.log("[AI-INSIGHTS] Calling webhook", {
       item_type,
