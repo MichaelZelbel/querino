@@ -5,7 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const N8N_WEBHOOK_URL = "https://agentpool.app.n8n.cloud/webhook/prompt-refinement";
+const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
+const N8N_WEBHOOK_URL = `${N8N_BASE_URL}/webhook/prompt-refinement`;
 
 serve(async (req) => {
   // Handle CORS preflight requests

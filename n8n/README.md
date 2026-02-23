@@ -35,7 +35,7 @@ The file `n8n-workflow-vibe-coding-skill.md` documents the vibe coding skill wor
 1. Open your n8n instance (cloud or self-hosted).
 2. Import all JSON files from this folder via **Settings > Import from File**.
 3. Configure the following credentials in n8n:
-   - **HTTP Header Auth** — must match the `N8N_SHARED_SECRET` configured in your Supabase project secrets.
+   - **HTTP Header Auth** — the header name must be `X-API-Key` and the value must match the `N8N_WEBHOOK_KEY` secret configured in your Supabase project.
    - **Postgres** — connection to your Supabase PostgreSQL database.
    - **LLM provider** — Azure Foundry and/or OpenAI API credentials.
    - **SerpAPI** (optional) — only required if workflows use web search capabilities.

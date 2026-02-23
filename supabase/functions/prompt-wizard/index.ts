@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const N8N_WEBHOOK_URL = "https://agentpool.app.n8n.cloud/webhook/prompt-wizard";
+const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
+const N8N_WEBHOOK_URL = `${N8N_BASE_URL}/webhook/prompt-wizard`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
