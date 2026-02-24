@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, Mail, Github, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, Mail, Github, CheckCircle2 } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { z } from "zod";
 import { storeRedirectPath, getAndClearRedirectPath, getRedirectFromParams } from "@/lib/authRedirect";
 
@@ -159,9 +160,7 @@ export default function Auth() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src={logoImg} alt="Querino" className="mx-auto mb-4 h-12 w-12" />
             <CardTitle className="text-2xl font-bold">Welcome to Querino</CardTitle>
             <CardDescription>
               Sign in to access your prompt library and create amazing AI prompts
