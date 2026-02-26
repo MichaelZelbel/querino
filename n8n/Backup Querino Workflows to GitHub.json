@@ -336,7 +336,11 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": []
+    }
+  },
   "meta": null,
   "pinData": {},
   "activeVersionId": "019ec3c7-06da-414f-bced-bcb91d8ccb1a",
