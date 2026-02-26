@@ -385,6 +385,20 @@ const Privacy = () => {
                     </div>
 
                     <div className="border border-border rounded-lg p-4">
+                      <h4 className="text-lg font-medium text-foreground mb-2">OpenRouter</h4>
+                      <p className="text-sm"><strong className="text-foreground">Role:</strong> AI inference routing provider (multi-model API gateway).</p>
+                      <p className="text-sm mt-1">
+                        OpenRouter acts as a Data Processor under GDPR Article 28 for data processed through its AI inference routing API. Data submitted via the OpenRouter API is processed in accordance with OpenRouter's data processing commitments and is routed to upstream model providers according to their respective data handling policies.
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong className="text-foreground">DPA:</strong>{" "}
+                        <a href="https://trust.openrouter.ai/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          OpenRouter Trust &amp; Data Protection
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="border border-border rounded-lg p-4">
                       <h4 className="text-lg font-medium text-foreground mb-2">n8n</h4>
                       <p className="text-sm"><strong className="text-foreground">Role:</strong> Workflow automation and AI orchestration platform.</p>
                       <p className="text-sm mt-1">
