@@ -29,19 +29,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Loader2, X, ArrowLeft, Trash2, Save, Grab, GitBranch, Sparkles, Lock } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, Save, Grab, GitBranch, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import type { Claw } from "@/types/claw";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { ParsedMarkdown } from "@/lib/markdown";
-import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { useClawVersions, useCreateClawVersion } from "@/hooks/useClawVersions";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
@@ -69,7 +63,6 @@ export default function ClawEdit() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { teams } = useWorkspace();
-  const { isPremium } = usePremiumCheck();
   const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
@@ -584,46 +577,27 @@ Describe what this claw does when invoked...`}
                 </div>
               )}
 
-              {/* AI Metadata Suggestion Button */}
               <div className="space-y-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-block">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSuggestMetadata}
-                          disabled={!isPremium || isGeneratingMetadata || !formData.content.trim()}
-                          className="gap-1.5"
-                        >
-                          {isGeneratingMetadata ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Generating...
-                            </>
-                          ) : isPremium ? (
-                            <>
-                              <Sparkles className="h-4 w-4" />
-                              Suggest title, description, category & tags
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="h-4 w-4" />
-                              Suggest title, description, category & tags
-                            </>
-                          )}
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {!isPremium && (
-                      <TooltipContent>
-                        <p>Premium feature – upgrade to use AI suggestions</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSuggestMetadata}
+                  disabled={isGeneratingMetadata || !formData.content.trim()}
+                  className="gap-1.5"
+                >
+                  {isGeneratingMetadata ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Suggest title, description, category & tags
+                    </>
+                  )}
+                </Button>
                 {metadataError && (
                   <p className="text-sm text-destructive">{metadataError}</p>
                 )}

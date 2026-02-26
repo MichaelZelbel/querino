@@ -18,16 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Loader2, X, Grab, Sparkles, Lock, FileText, Download, Link, CheckCircle2, ExternalLink, Info } from "lucide-react";
+import { Loader2, X, Grab, Sparkles, FileText, Download, Link, CheckCircle2, ExternalLink, Info } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
-import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import type { SkillSourceType } from "@/types/claw";
 import { parseSkillSourceUrl } from "@/lib/skillSourceParser";
@@ -58,7 +52,6 @@ type ClawCreationMode = 'write' | 'github' | 'external';
 export default function ClawNew() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
-  const { isPremium } = usePremiumCheck();
   const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -469,34 +462,21 @@ export default function ClawNew() {
                 
                 {/* AI Metadata Suggestion */}
                 <div className="pt-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSuggestMetadata}
-                          disabled={isGeneratingMetadata || !isPremium}
-                          className="gap-2"
-                        >
-                          {isGeneratingMetadata ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : isPremium ? (
-                            <Sparkles className="h-4 w-4" />
-                          ) : (
-                            <Lock className="h-4 w-4" />
-                          )}
-                          {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
-                        </Button>
-                      </TooltipTrigger>
-                      {!isPremium && (
-                        <TooltipContent>
-                          <p>Premium feature – upgrade to use AI suggestions</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSuggestMetadata}
+                    disabled={isGeneratingMetadata}
+                    className="gap-2"
+                  >
+                    {isGeneratingMetadata ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                  </Button>
                   {metadataError && (
                     <p className="text-sm text-destructive mt-2">{metadataError}</p>
                   )}
@@ -608,34 +588,21 @@ export default function ClawNew() {
                 {/* AI Metadata Suggestion for GitHub mode */}
                 {skillMdCached && (
                   <div className="pt-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleSuggestMetadata}
-                            disabled={isGeneratingMetadata || !isPremium}
-                            className="gap-2"
-                          >
-                            {isGeneratingMetadata ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : isPremium ? (
-                              <Sparkles className="h-4 w-4" />
-                            ) : (
-                              <Lock className="h-4 w-4" />
-                            )}
-                            {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
-                          </Button>
-                        </TooltipTrigger>
-                        {!isPremium && (
-                          <TooltipContent>
-                            <p>Premium feature – upgrade to use AI suggestions</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSuggestMetadata}
+                      disabled={isGeneratingMetadata}
+                      className="gap-2"
+                    >
+                      {isGeneratingMetadata ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      {isGeneratingMetadata ? "Generating..." : "Suggest title, description, category & tags"}
+                    </Button>
                     {metadataError && (
                       <p className="text-sm text-destructive mt-2">{metadataError}</p>
                     )}
