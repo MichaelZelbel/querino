@@ -14,18 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Loader2, Sparkles, Lock } from "lucide-react";
+import { X, Loader2, Sparkles } from "lucide-react";
 import { categoryOptions } from "@/types/prompt";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
-import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export interface PromptFormData {
   title: string;
@@ -54,7 +48,6 @@ export function PromptForm({
   submitLabel,
   isSubmitting,
 }: PromptFormProps) {
-  const { isPremium } = usePremiumCheck();
   const { checkCredits } = useAICreditsGate();
   const { user } = useAuthContext();
   const [title, setTitle] = useState(initialData?.title || "");
@@ -240,40 +233,26 @@ export function PromptForm({
 
       {/* AI Metadata Suggestion Button */}
       <div className="space-y-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-block">
-                 <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSuggestMetadata}
-                  disabled={!isPremium || isGeneratingMetadata || !content.trim()}
-                  className="gap-1.5"
-                >
-                  {isGeneratingMetadata ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Generating…
-                    </>
-                  ) : (
-                    <>
-                      {!isPremium && <Lock className="h-3.5 w-3.5" />}
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Suggest title, description, category & tags
-                    </>
-                  )}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!isPremium && (
-              <TooltipContent>
-                <p>AI-assisted metadata is a Premium feature</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleSuggestMetadata}
+          disabled={isGeneratingMetadata || !content.trim()}
+          className="gap-1.5"
+        >
+          {isGeneratingMetadata ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Generating…
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-3.5 w-3.5" />
+              Suggest title, description, category & tags
+            </>
+          )}
+        </Button>
         
         {metadataError && (
           <p className="text-sm text-destructive">{metadataError}</p>

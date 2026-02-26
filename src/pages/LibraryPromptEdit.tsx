@@ -31,12 +31,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -60,7 +54,6 @@ import {
   Globe,
   Eye,
   Sparkles,
-  Lock,
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -69,7 +62,7 @@ import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
 
-import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import type { ParsedMarkdown } from "@/lib/markdown";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
@@ -95,7 +88,6 @@ export default function LibraryPromptEdit() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
-  const { isPremium } = usePremiumCheck();
   const isMobile = useIsMobile();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
@@ -816,40 +808,26 @@ export default function LibraryPromptEdit() {
 
                       {/* AI Metadata Suggestion */}
                       <div className="space-y-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-block">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={handleSuggestMetadata}
-                                  disabled={!isPremium || isGeneratingMetadata || !content.trim()}
-                                  className="gap-1.5"
-                                >
-                                  {isGeneratingMetadata ? (
-                                    <>
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                      Generating…
-                                    </>
-                                  ) : (
-                                    <>
-                                      {!isPremium && <Lock className="h-3.5 w-3.5" />}
-                                      <Sparkles className="h-3.5 w-3.5" />
-                                      Suggest title, description, category & tags
-                                    </>
-                                  )}
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            {!isPremium && (
-                              <TooltipContent>
-                                <p>AI-assisted metadata is a Premium feature</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSuggestMetadata}
+                          disabled={isGeneratingMetadata || !content.trim()}
+                          className="gap-1.5"
+                        >
+                          {isGeneratingMetadata ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Generating…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              Suggest title, description, category & tags
+                            </>
+                          )}
+                        </Button>
                         
                         {metadataError && (
                           <p className="text-sm text-destructive">{metadataError}</p>
