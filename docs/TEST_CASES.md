@@ -156,7 +156,7 @@ Execute this testcase:
 
 Use your browser to log in at https://querino.ai with the credentials of the test user Fred
 Navigate to the Create New Prompt page (via header menu or /prompts/new)
-Validate that "Suggest title, description, category & tags" button is disabled or shows a lock/premium indicator
+Validate that "Suggest title, description, category & tags" button is visible and enabled (available to all users with AI credits)
 Insert the following into "Prompt Content":
   "You are a coding assistant. Help the user write clean, efficient code in {{language}}. 
    Focus on best practices and explain your reasoning."
@@ -249,7 +249,7 @@ Insert the following into "Prompt Content":
   "Analyze the provided code and suggest performance optimizations. 
    Consider time complexity, space complexity, and readability.
    Provide specific code examples for each suggestion."
-Validate that the "Suggest title, description, category & tags" button is enabled (not grayed out, no lock icon)
+Validate that the "Suggest title, description, category & tags" button is enabled (available to all users with AI credits)
 Click "Suggest title, description, category & tags"
 Validate that AI-generated suggestions appear for title, description, category, and tags
 Accept or modify the suggestions as needed
@@ -959,7 +959,7 @@ Log the results of the validation in your test run document.
 
 ## 17. Premium Feature Gating
 
-### TC-GATE-001: AI Suggestions Blocked for Free User
+### TC-GATE-001: AI Suggestions Available to All Users with Credits
 
 ```
 Execute this testcase:
@@ -968,24 +968,10 @@ Use your browser to log in at https://querino.ai with the credentials of the tes
 Navigate to Create New Prompt
 Enter some content in the Prompt Content field
 Locate the "Suggest title, description, category & tags" button
-Validate that the button is disabled, shows a lock icon, or indicates premium requirement
-Attempt to click the button
-Validate that either nothing happens or a premium upsell is shown
-Log the results of the validation in your test run document.
-```
-
-### TC-GATE-002: AI Suggestions Available for Premium User
-
-```
-Execute this testcase:
-
-Use your browser to log in at https://querino.ai with the credentials of the test user Peter
-Navigate to Create New Prompt
-Enter some content in the Prompt Content field
-Locate the "Suggest title, description, category & tags" button
-Validate that the button is enabled and clickable (no lock icon)
+Validate that the button is enabled and clickable (no lock icon, no premium indicator)
 Click the button
-Validate that AI suggestions are generated
+Validate that AI suggestions are generated (if Fred has AI credits remaining)
+If Fred has no AI credits, validate that a toast error appears: "You've used all your AI Credits"
 Log the results of the validation in your test run document.
 ```
 
