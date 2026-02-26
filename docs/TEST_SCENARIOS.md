@@ -90,7 +90,7 @@ Execute this test scenario:
 
 1. Log in as Fred (fred@free.com / Pell@234)
 2. Navigate to /prompts/new
-3. Validate that "Suggest title, description, category & tags" button shows a lock/premium indicator
+3. Validate that "Suggest title, description, category & tags" button is visible and enabled (available to all users with AI credits)
 4. Enter prompt content: "You are a coding assistant. Help the user write clean, efficient code in {{language}}. Focus on best practices and explain your reasoning."
 5. Enter title: "TS02 - Coding Assistant"
 6. Enter description: "A prompt for coding assistance"
@@ -222,13 +222,13 @@ Execute this test scenario:
 
 1. Log in as Fred (fred@free.com / Pell@234)
 
---- AI Suggestions Gate ---
+--- AI Suggestions (Available to All Users) ---
 2. Navigate to /prompts/new
 3. Enter content: "Test prompt content for gating test"
 4. Locate "Suggest title, description, category & tags" button
-5. Validate that it is disabled or shows a lock icon
-6. Attempt to click it
-7. Validate that either nothing happens or an upsell/premium modal appears
+5. Validate that it is enabled and clickable (no lock icon, no premium indicator)
+6. Click it
+7. Validate that AI suggestions are generated (if credits available) or a "no credits" toast appears
 
 --- Prompt Wizard Gate ---
 8. Navigate to /prompts/wizard
@@ -283,7 +283,7 @@ Execute this test scenario:
 --- Create Prompt with AI Suggestions ---
 10. Navigate to /prompts/new
 11. Paste the wizard output into the content field
-12. Validate that "Suggest title, description, category & tags" button is enabled (no lock)
+12. Validate that "Suggest title, description, category & tags" button is enabled (available to all users with AI credits)
 13. Click it
 14. Validate that AI-generated suggestions appear for title, description, category, and tags
 15. Accept or modify the suggestions
