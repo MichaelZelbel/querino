@@ -487,6 +487,9 @@ export default function SkillEdit() {
                     </Select>
                   </div>
 
+                  {/* Language */}
+                  <LanguageSelect value={formData.language} onChange={(v) => setFormData({ ...formData, language: v })} />
+
                   {/* Tags */}
                   <div className="space-y-2">
                     <Label htmlFor="tags">Tags</Label>
