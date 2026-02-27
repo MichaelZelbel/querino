@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -39,6 +39,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 export default function SkillNew() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuthContext();
   const { checkCredits } = useAICreditsGate();
   const { currentWorkspace } = useWorkspace();
@@ -46,15 +47,15 @@ export default function SkillNew() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
 
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(searchParams.get("content") || "");
   const [previousContent, setPreviousContent] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [title, setTitle] = useState(searchParams.get("title") || "");
+  const [description, setDescription] = useState(searchParams.get("description") || "");
+  const [category, setCategory] = useState(searchParams.get("category") || "");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(searchParams.get("tags")?.split(",").filter(Boolean) || []);
   const [isPublic, setIsPublic] = useState(false);
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // AI metadata suggestion state

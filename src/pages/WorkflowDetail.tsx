@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound, Languages } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -25,6 +25,7 @@ import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSection";
 import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTeamModal";
+import { TranslateModal } from "@/components/shared/TranslateModal";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -46,6 +47,7 @@ export default function WorkflowDetail() {
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
   const { items: similarWorkflows, loading: loadingSimilar } = useSimilarWorkflows(workflow?.id);
   const { 
     suggestions, 
@@ -369,6 +371,18 @@ export default function WorkflowDetail() {
               <Button
                 size="lg"
                 variant="outline"
+                onClick={() => setShowTranslateModal(true)}
+                className="gap-2"
+              >
+                <Languages className="h-4 w-4" />
+                Translate
+              </Button>
+            )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
                 onClick={() => setShowCollectionModal(true)}
                 className="gap-2"
               >
@@ -437,6 +451,18 @@ export default function WorkflowDetail() {
               workflow={workflow}
             />
           )}
+
+          <TranslateModal
+            open={showTranslateModal}
+            onOpenChange={setShowTranslateModal}
+            artifactType="workflow"
+            sourceLanguage={(workflow as any).language || "en"}
+            title={workflow.title}
+            description={workflow.description || ""}
+            content={workflowContent}
+            tags={workflow.tags || []}
+            category={workflow.category || undefined}
+          />
 
           {/* Ratings & Reviews Section */}
           <WorkflowReviewSection

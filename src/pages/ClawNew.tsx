@@ -98,8 +98,10 @@ export default function ClawNew() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("title")) setTitle(params.get("title") || "");
     if (params.get("description")) setDescription(params.get("description") || "");
-    if (params.get("tags")) setTags(params.get("tags")?.split(",") || []);
+    if (params.get("tags")) setTags(params.get("tags")?.split(",").filter(Boolean) || []);
     if (params.get("content")) setSkillMdContent(params.get("content") || SKILL_MD_TEMPLATE);
+    if (params.get("category")) setCategory(params.get("category") || "");
+    if (params.get("language")) setLanguage(params.get("language") || DEFAULT_LANGUAGE);
   }, []);
 
   const normalizeTag = (tag: string) => {
