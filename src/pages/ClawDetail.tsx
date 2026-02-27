@@ -15,13 +15,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown,
-  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch
+  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch, Languages
 } from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
 import { CopyClawToTeamModal } from "@/components/claws/CopyClawToTeamModal";
 import { ClawVersionHistoryPanel } from "@/components/claws/ClawVersionHistoryPanel";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { DownloadMarkdownButton } from "@/components/markdown";
+import { TranslateModal } from "@/components/shared/TranslateModal";
 import { AIInsightsPanel } from "@/components/insights";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
@@ -49,6 +50,7 @@ export default function ClawDetail() {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
   
   const isAuthor = claw?.author_id && user?.id === claw.author_id;
   const isPinned = claw?.id ? isClawPinned(claw.id) : false;
@@ -371,6 +373,18 @@ export default function ClawDetail() {
                 <Button
                   size="lg"
                   variant="outline"
+                  onClick={() => setShowTranslateModal(true)}
+                  className="gap-2"
+                >
+                  <Languages className="h-4 w-4" />
+                  Translate
+                </Button>
+              )}
+
+              {user && (
+                <Button
+                  size="lg"
+                  variant="outline"
                   onClick={() => setShowCollectionModal(true)}
                   className="gap-2"
                 >
@@ -399,6 +413,18 @@ export default function ClawDetail() {
               onOpenChange={setShowCollectionModal}
               itemType="claw"
               itemId={claw.id}
+            />
+
+            <TranslateModal
+              open={showTranslateModal}
+              onOpenChange={setShowTranslateModal}
+              artifactType="claw"
+              sourceLanguage={claw.language || "en"}
+              title={claw.title}
+              description={claw.description || ""}
+              content={displayContent}
+              tags={claw.tags || []}
+              category={claw.category || undefined}
             />
 
             {canEdit && (

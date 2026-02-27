@@ -52,7 +52,7 @@ export default function PromptNew() {
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(searchParams.get("tags")?.split(",").filter(Boolean) || []);
   const [isPublic, setIsPublic] = useState(false);
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // AI metadata suggestion state

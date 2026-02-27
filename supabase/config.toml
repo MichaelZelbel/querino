@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.prompt-coach]
 verify_jwt = false
+
+[functions.translate-artifact]
+verify_jwt = false

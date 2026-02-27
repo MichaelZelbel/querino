@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound, Languages } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -24,6 +24,7 @@ import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
 import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
+import { TranslateModal } from "@/components/shared/TranslateModal";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -44,6 +45,7 @@ export default function SkillDetail() {
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
   const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(skill?.id);
   const { 
     suggestions, 
@@ -346,6 +348,18 @@ export default function SkillDetail() {
               <Button
                 size="lg"
                 variant="outline"
+                onClick={() => setShowTranslateModal(true)}
+                className="gap-2"
+              >
+                <Languages className="h-4 w-4" />
+                Translate
+              </Button>
+            )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
                 onClick={() => setShowCollectionModal(true)}
                 className="gap-2"
               >
@@ -407,6 +421,18 @@ export default function SkillDetail() {
               skill={skill}
             />
           )}
+
+          <TranslateModal
+            open={showTranslateModal}
+            onOpenChange={setShowTranslateModal}
+            artifactType="skill"
+            sourceLanguage={skill.language || "en"}
+            title={skill.title}
+            description={skill.description || ""}
+            content={skill.content}
+            tags={skill.tags || []}
+            category={skill.category || undefined}
+          />
 
           {/* Ratings & Reviews Section */}
           <SkillReviewSection

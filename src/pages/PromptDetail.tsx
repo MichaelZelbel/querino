@@ -23,12 +23,13 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { CopyToTeamModal } from "@/components/prompts/CopyToTeamModal";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound, Languages } from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { TranslateModal } from "@/components/shared/TranslateModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
@@ -57,6 +58,7 @@ export default function PromptDetail() {
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
   
   const { 
     suggestions, 
@@ -528,6 +530,18 @@ export default function PromptDetail() {
               <Button
                 size="lg"
                 variant="outline"
+                onClick={() => setShowTranslateModal(true)}
+                className="gap-2"
+              >
+                <Languages className="h-4 w-4" />
+                Translate
+              </Button>
+            )}
+
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
                 onClick={() => setShowCollectionModal(true)}
                 className="gap-2"
               >
@@ -600,6 +614,18 @@ export default function PromptDetail() {
             onOpenChange={setShowCollectionModal}
             itemType="prompt"
             itemId={prompt.id}
+          />
+
+          <TranslateModal
+            open={showTranslateModal}
+            onOpenChange={setShowTranslateModal}
+            artifactType="prompt"
+            sourceLanguage={prompt.language || "en"}
+            title={prompt.title}
+            description={prompt.description}
+            content={prompt.content}
+            tags={prompt.tags || []}
+            category={prompt.category}
           />
 
           {canCopyToTeam && (
