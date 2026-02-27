@@ -16,8 +16,9 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles, Trash2, AlertTriangle } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles, Trash2, AlertTriangle, Terminal } from "lucide-react";
 import { CreditsDisplay } from "@/components/settings/CreditsDisplay";
+import { McpSetupSection } from "@/components/settings/McpSetupSection";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
@@ -885,6 +886,9 @@ export default function Settings() {
                 )}
               </CardContent>
             </Card>
+
+            {/* MCP Server / API Section */}
+            <McpSetupSection />
 
             {/* Delete Account Section */}
             <Card className="border-destructive/30">

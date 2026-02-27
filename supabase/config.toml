@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.translate-artifact]
 verify_jwt = false
+
+[functions.mcp-server]
+verify_jwt = false
