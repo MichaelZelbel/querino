@@ -646,6 +646,9 @@ Describe what this claw does when invoked...`}
                 </Select>
               </div>
 
+              {/* Language */}
+              <LanguageSelect value={formData.language} onChange={(v) => setFormData({ ...formData, language: v })} />
+
               {/* Tags */}
               <div className="space-y-2">
                 <Label>Tags</Label>
