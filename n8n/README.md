@@ -24,6 +24,7 @@ All workflow files in this folder are required. Import all JSON files before act
 - **Suggest Prompt Metadata.json** — Suggests title, description, category, and tags for a prompt based on its content.
 - **Suggest Skill Metadata.json** — Suggests title, description, category, and tags for a skill based on its content.
 - **Suggest Workflow Metadata.json** — Suggests title, description, category, and tags for a workflow based on its content.
+- **Translate Artifact.json** — Translates artifact fields (title, description, content, tags) between languages using structured output.
 - **Update Token Usage.json** — Records LLM token consumption per user for credit tracking and enforcement.
 - **Workflow Coach.json** — Provides coaching feedback on workflow configurations.
 - **Workflow Insights.json** — Generates AI-driven quality analysis, recommendations, and tags for workflows.
