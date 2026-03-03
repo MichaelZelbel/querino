@@ -171,8 +171,8 @@ export default function PromptNew() {
         .single();
 
       if (error) {
-        console.error("Error creating prompt:", error);
-        toast.error("Failed to create prompt. Please try again.");
+        console.error("Error creating prompt:", error.message, error.details, error.hint, error.code);
+        toast.error(`Failed to create prompt: ${error.message}`);
         return;
       }
 
