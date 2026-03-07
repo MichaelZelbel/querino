@@ -32,12 +32,17 @@ export function SendToLLMButtons({
     getPreferredLLM
   );
 
-  const handleSendToLLM = (llm: LLMTarget) => {
+  const handleSendToLLM = async (llm: LLMTarget) => {
     const fullPrompt = buildPromptForLLM(title, content);
-    openLLM(llm, fullPrompt);
+    const result = await openLLM(llm, fullPrompt);
     setPreferredLLM(llm);
     setPreferred(llm);
-    toast.success(`Opening in ${LLM_OPTIONS.find((o) => o.id === llm)?.name}...`);
+    const llmName = LLM_OPTIONS.find((o) => o.id === llm)?.name;
+    if (result === "clipboard") {
+      toast.success(`Prompt copied to clipboard! Paste it into ${llmName}.`);
+    } else {
+      toast.success(`Opening in ${llmName}...`);
+    }
   };
 
   if (variant === "compact") {
