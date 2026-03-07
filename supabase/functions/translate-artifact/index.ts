@@ -31,7 +31,7 @@ serve(async (req) => {
     }
 
     // Provider abstraction: default to "n8n", fallback to "lovable"
-    const provider = Deno.env.get("TRANSLATION_PROVIDER") || "n8n";
+    const provider = Deno.env.get("TRANSLATION_PROVIDER") || "lovable";
 
     if (provider === "lovable") {
       // Fallback: Lovable AI Gateway
