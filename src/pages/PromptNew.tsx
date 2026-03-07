@@ -409,6 +409,9 @@ export default function PromptNew() {
                     )}
                   </div>
 
+                  {/* Language */}
+                  <LanguageSelect value={language} onChange={setLanguage} />
+
                   {/* Tags */}
                   <div className="space-y-2">
                     <Label htmlFor="tags">Tags</Label>
