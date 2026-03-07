@@ -2,18 +2,28 @@
 
 ## Problem
 
-The `LanguageSelect` component is imported in `LibraryPromptEdit.tsx` but never rendered in the form JSX. The language field goes between Category and Tags (matching `PromptForm.tsx` pattern), but is missing from the edit page's inline form.
+The `translate-artifact` edge function defaults to `provider = "n8n"`, which proxies to `N8N_BASE_URL/webhook/translate-artifact`. That n8n workflow is not active (or not imported), so it returns HTTP 404.
 
-## Plan
+## Options
 
-**File: `src/pages/LibraryPromptEdit.tsx`**
+### Option A: Activate the n8n workflow (no code change)
+- Import `n8n/Translate Artifact.json` into your n8n instance
+- Configure the Azure/OpenAI credentials and Header Auth
+- Toggle the workflow **active**
+- Translation will work immediately
 
-Add `<LanguageSelect value={language} onChange={setLanguage} />` between the Category block (ends ~line 889) and the Tags block (starts ~line 892):
+### Option B: Fall back to Lovable AI Gateway (code change)
+If you don't want to set up the n8n workflow right now, update the edge function to default to `"lovable"` instead of `"n8n"`:
 
-```tsx
-{/* Language */}
-<LanguageSelect value={language} onChange={setLanguage} />
-```
+**File: `supabase/functions/translate-artifact/index.ts`**
+- Change line: `const provider = Deno.env.get("TRANSLATION_PROVIDER") || "n8n";`
+- To: `const provider = Deno.env.get("TRANSLATION_PROVIDER") || "lovable";`
 
-Single insertion, no other changes needed — the import and state (`language`, `setLanguage`) already exist.
+This uses the Lovable AI Gateway (Gemini-3-flash) directly, which requires only the `LOVABLE_API_KEY` secret (already configured).
+
+One line change, then redeploy the edge function.
+
+## Recommendation
+
+Option B is the quickest fix. You can switch back to n8n later by setting the `TRANSLATION_PROVIDER` secret to `"n8n"` once the workflow is active.
 
