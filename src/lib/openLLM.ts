@@ -20,10 +20,29 @@ const LLM_URLS: Record<LLMTarget, (encoded: string) => string> = {
   perplexity: (encoded) => `https://www.perplexity.ai/?q=${encoded}`,
 };
 
-export function openLLM(model: LLMTarget, prompt: string): void {
+const LLM_BASE_URLS: Record<LLMTarget, string> = {
+  chatgpt: "https://chat.openai.com/",
+  claude: "https://claude.ai/new",
+  gemini: "https://gemini.google.com/app",
+  perplexity: "https://www.perplexity.ai/",
+};
+
+// Most browsers/servers limit URLs to ~8KB; use 6000 chars as safe threshold
+const MAX_URL_LENGTH = 6000;
+
+export async function openLLM(model: LLMTarget, prompt: string): Promise<"url" | "clipboard"> {
   const encoded = encodeURIComponent(prompt);
   const url = LLM_URLS[model](encoded);
-  window.open(url, "_blank");
+
+  if (url.length <= MAX_URL_LENGTH) {
+    window.open(url, "_blank");
+    return "url";
+  }
+
+  // URL too long – copy to clipboard and open blank session
+  await navigator.clipboard.writeText(prompt);
+  window.open(LLM_BASE_URLS[model], "_blank");
+  return "clipboard";
 }
 
 export function buildPromptForLLM(title: string, content: string): string {
