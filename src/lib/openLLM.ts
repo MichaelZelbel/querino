@@ -30,7 +30,18 @@ const LLM_BASE_URLS: Record<LLMTarget, string> = {
 // Most browsers/servers limit URLs to ~8KB; use 6000 chars as safe threshold
 const MAX_URL_LENGTH = 6000;
 
-export async function openLLM(model: LLMTarget, prompt: string): Promise<"url" | "clipboard"> {
+export function needsClipboardFallback(model: LLMTarget, prompt: string): boolean {
+  const encoded = encodeURIComponent(prompt);
+  const url = LLM_URLS[model](encoded);
+  return url.length > MAX_URL_LENGTH;
+}
+
+export async function openLLM(model: LLMTarget, prompt: string, forceBase = false): Promise<"url" | "clipboard"> {
+  if (forceBase || !prompt) {
+    window.open(LLM_BASE_URLS[model], "_blank");
+    return "clipboard";
+  }
+
   const encoded = encodeURIComponent(prompt);
   const url = LLM_URLS[model](encoded);
 
