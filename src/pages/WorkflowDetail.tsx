@@ -40,6 +40,7 @@ export default function WorkflowDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneWorkflow, cloning } = useCloneWorkflow();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const [workflow, setWorkflow] = useState<WorkflowWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
