@@ -30,6 +30,7 @@ export function SkillCard({
 }: SkillCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && skill.author_id === currentUserId;
   const detailUrl = `/skills/${skill.slug}`;
 
