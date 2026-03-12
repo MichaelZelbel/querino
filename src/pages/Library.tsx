@@ -496,7 +496,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMySkills.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} showEditButton />
+                        <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
                   )}
@@ -519,7 +519,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyWorkflows.map((workflow) => (
-                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton />
+                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
                   )}
@@ -542,7 +542,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyClaws.map((claw) => (
-                        <ClawCard key={claw.id} claw={claw} showEditButton />
+                        <ClawCard key={claw.id} claw={claw} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
                   )}
