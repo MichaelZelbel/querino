@@ -30,6 +30,7 @@ export function ClawCard({
 }: ClawCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneClaw, cloning } = useCloneClaw();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && claw.author_id === currentUserId;
   const detailUrl = `/claws/${claw.slug}`;
 
