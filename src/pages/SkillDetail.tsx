@@ -308,6 +308,16 @@ export default function SkillDetail() {
                     Edit Skill
                   </Button>
                 </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => duplicateArtifact("skill", skill, user!.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
                 {canCopyToTeam && (
                   <Button
                     size="lg"

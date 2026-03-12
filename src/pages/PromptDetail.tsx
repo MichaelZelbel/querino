@@ -458,6 +458,16 @@ export default function PromptDetail() {
                 <Button
                   size="lg"
                   variant="outline"
+                  onClick={() => duplicateArtifact("prompt", prompt, user!.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
                   onClick={() => setShowVersionHistory(true)}
                   className="gap-2"
                 >

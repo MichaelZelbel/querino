@@ -338,6 +338,17 @@ export default function ClawDetail() {
                     </Button>
                   </Link>
                   
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => duplicateArtifact("claw", claw, user!.id)}
+                    disabled={duplicating}
+                    className="gap-2"
+                  >
+                    <CopyPlus className="h-4 w-4" />
+                    Duplicate
+                  </Button>
+                  
                   {/* Version History Button */}
                   <Button
                     size="lg"

@@ -331,6 +331,16 @@ export default function WorkflowDetail() {
                     Edit Workflow
                   </Button>
                 </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => duplicateArtifact("workflow", workflow, user!.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
                 {canCopyToTeam && (
                   <Button
                     size="lg"
