@@ -30,6 +30,7 @@ export function WorkflowCard({
 }: WorkflowCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && workflow.author_id === currentUserId;
   const detailUrl = `/workflows/${workflow.slug}`;
 
