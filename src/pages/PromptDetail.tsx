@@ -6,7 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
-
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
