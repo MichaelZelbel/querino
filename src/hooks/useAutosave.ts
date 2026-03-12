@@ -45,7 +45,7 @@ export function useAutosave<T>({
 }: UseAutosaveOptions<T>): UseAutosaveReturn<T> {
   const [status, setStatus] = useState<AutosaveStatus>("saved");
   const [lastSaved, setLastSaved] = useState<T | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
   const pendingDataRef = useRef<T | null>(null);
 
