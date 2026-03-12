@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound, Languages } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound, Languages, CopyPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
