@@ -542,7 +542,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyClaws.map((claw) => (
-                        <ClawCard key={claw.id} claw={claw} showEditButton />
+                        <ClawCard key={claw.id} claw={claw} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
                   )}
