@@ -146,18 +146,6 @@ export function ClawCard({
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
-                {currentUserId && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => duplicateArtifact("claw", claw, currentUserId)}
-                    disabled={duplicating}
-                    className="gap-1.5 h-8 px-2"
-                    title="Duplicate"
-                  >
-                    <CopyPlus className="h-3.5 w-3.5" />
-                  </Button>
-                )}
               </>
             )}
             {currentUserId && !isAuthor && (
