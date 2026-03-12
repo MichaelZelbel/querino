@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Star, Pencil, Files, Pin, CopyPlus } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
