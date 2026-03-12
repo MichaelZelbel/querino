@@ -45,6 +45,7 @@ export default function PromptDetail() {
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
   const { clonePrompt, cloning } = useClonePrompt();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isPromptPinned, togglePin } = usePinnedPrompts();
   const [prompt, setPrompt] = useState<PromptWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
