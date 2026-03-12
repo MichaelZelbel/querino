@@ -39,6 +39,7 @@ export default function SkillDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneSkill, cloning } = useCloneSkill();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const [skill, setSkill] = useState<SkillWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
