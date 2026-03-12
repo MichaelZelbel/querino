@@ -4,8 +4,9 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Grab, Pin, Star } from "lucide-react";
+import { Copy, Check, Pencil, Files, Grab, Pin, Star, CopyPlus } from "lucide-react";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
