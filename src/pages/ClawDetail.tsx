@@ -38,6 +38,7 @@ export default function ClawDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneClaw, cloning } = useCloneClaw();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isClawPinned, togglePin } = usePinnedClaws();
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();
