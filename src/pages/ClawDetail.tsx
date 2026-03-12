@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown,
-  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch, Languages
+  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch, Languages, CopyPlus
 } from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
 import { CopyClawToTeamModal } from "@/components/claws/CopyClawToTeamModal";
