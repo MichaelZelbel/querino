@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { usePinnedClaws } from "@/hooks/usePinnedClaws";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
@@ -15,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Grab, ChevronDown,
-  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch, Languages
+  Pin, PinOff, History, FolderPlus, UsersRound, ExternalLink, GitBranch, Languages, CopyPlus
 } from "lucide-react";
 import { ClawReviewSection } from "@/components/claws/ClawReviewSection";
 import { CopyClawToTeamModal } from "@/components/claws/CopyClawToTeamModal";
@@ -37,6 +38,7 @@ export default function ClawDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneClaw, cloning } = useCloneClaw();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isClawPinned, togglePin } = usePinnedClaws();
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();
@@ -335,6 +337,17 @@ export default function ClawDetail() {
                       <Pencil className="h-4 w-4" />Edit Claw
                     </Button>
                   </Link>
+                  
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => duplicateArtifact("claw", claw, user!.id)}
+                    disabled={duplicating}
+                    className="gap-2"
+                  >
+                    <CopyPlus className="h-4 w-4" />
+                    Duplicate
+                  </Button>
                   
                   {/* Version History Button */}
                   <Button

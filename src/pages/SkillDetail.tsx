@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { useSimilarSkills } from "@/hooks/useSimilarArtefacts";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound, Languages } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Lock, Calendar, Tag, Files, BookOpen, FolderPlus, GitPullRequest, UsersRound, Languages, CopyPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarSkillsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -38,6 +39,7 @@ export default function SkillDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneSkill, cloning } = useCloneSkill();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const [skill, setSkill] = useState<SkillWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -306,6 +308,16 @@ export default function SkillDetail() {
                     Edit Skill
                   </Button>
                 </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => duplicateArtifact("skill", skill, user!.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
                 {canCopyToTeam && (
                   <Button
                     size="lg"

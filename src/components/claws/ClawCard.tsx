@@ -4,9 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Grab, Pin, Star, CopyPlus } from "lucide-react";
+import { Copy, Check, Pencil, Files, Grab, Pin, Star } from "lucide-react";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
-import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
@@ -30,7 +29,6 @@ export function ClawCard({
 }: ClawCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneClaw, cloning } = useCloneClaw();
-  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && claw.author_id === currentUserId;
   const detailUrl = `/claws/${claw.slug}`;
 
@@ -148,18 +146,6 @@ export function ClawCard({
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
-                {currentUserId && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => duplicateArtifact("claw", claw, currentUserId)}
-                    disabled={duplicating}
-                    className="gap-1.5 h-8 px-2"
-                    title="Duplicate"
-                  >
-                    <CopyPlus className="h-3.5 w-3.5" />
-                  </Button>
-                )}
               </>
             )}
             {currentUserId && !isAuthor && (

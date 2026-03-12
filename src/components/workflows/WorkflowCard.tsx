@@ -4,9 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, Star, CopyPlus } from "lucide-react";
+import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, Star } from "lucide-react";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
-import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
@@ -30,7 +29,6 @@ export function WorkflowCard({
 }: WorkflowCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
-  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && workflow.author_id === currentUserId;
   const detailUrl = `/workflows/${workflow.slug}`;
 
@@ -158,18 +156,6 @@ export function WorkflowCard({
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
-                {currentUserId && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => duplicateArtifact("workflow", workflow, currentUserId)}
-                    disabled={duplicating}
-                    className="gap-1.5 h-8 px-2"
-                    title="Duplicate"
-                  >
-                    <CopyPlus className="h-3.5 w-3.5" />
-                  </Button>
-                )}
               </>
             )}
             {currentUserId && !isAuthor && (

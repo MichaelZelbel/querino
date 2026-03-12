@@ -6,7 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
-
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
@@ -23,7 +23,7 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { CopyToTeamModal } from "@/components/prompts/CopyToTeamModal";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound, Languages } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound, Languages, CopyPlus } from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -45,6 +45,7 @@ export default function PromptDetail() {
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
   const { clonePrompt, cloning } = useClonePrompt();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isPromptPinned, togglePin } = usePinnedPrompts();
   const [prompt, setPrompt] = useState<PromptWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -454,6 +455,16 @@ export default function PromptDetail() {
                     Edit Prompt
                   </Button>
                 </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => duplicateArtifact("prompt", prompt, user!.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
                 <Button
                   size="lg"
                   variant="outline"

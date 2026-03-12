@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { useSimilarWorkflows } from "@/hooks/useSimilarArtefacts";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
@@ -15,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound, Languages } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound, Languages, CopyPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
@@ -39,6 +40,7 @@ export default function WorkflowDetail() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneWorkflow, cloning } = useCloneWorkflow();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const [workflow, setWorkflow] = useState<WorkflowWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -329,6 +331,16 @@ export default function WorkflowDetail() {
                     Edit Workflow
                   </Button>
                 </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => duplicateArtifact("workflow", workflow, user!.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
                 {canCopyToTeam && (
                   <Button
                     size="lg"
