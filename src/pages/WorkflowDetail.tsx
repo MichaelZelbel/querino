@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound, Languages } from "lucide-react";
+import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Files, Workflow as WorkflowIcon, ChevronDown, FolderPlus, GitPullRequest, FileText, UsersRound, Languages, CopyPlus } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
