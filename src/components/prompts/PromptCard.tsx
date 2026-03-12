@@ -4,10 +4,9 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Star, Pencil, Files, Pin, CopyPlus } from "lucide-react";
+import { Copy, Check, Star, Pencil, Files, Pin } from "lucide-react";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
-import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
@@ -35,7 +34,6 @@ export function PromptCard({
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
-  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
   const editUrl = `/library/${prompt.slug}/edit`;
   const detailUrl = `/prompts/${prompt.slug}`;
