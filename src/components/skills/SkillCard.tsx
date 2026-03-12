@@ -4,9 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, Pencil, Files, BookOpen, Pin, Star, CopyPlus } from "lucide-react";
+import { Copy, Check, Pencil, Files, BookOpen, Pin, Star } from "lucide-react";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
-import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
@@ -30,7 +29,6 @@ export function SkillCard({
 }: SkillCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
-  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const isAuthor = currentUserId && skill.author_id === currentUserId;
   const detailUrl = `/skills/${skill.slug}`;
 
