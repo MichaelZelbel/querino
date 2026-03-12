@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { usePinnedClaws } from "@/hooks/usePinnedClaws";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
