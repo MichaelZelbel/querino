@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { useSimilarWorkflows } from "@/hooks/useSimilarArtefacts";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
