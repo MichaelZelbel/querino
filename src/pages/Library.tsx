@@ -496,7 +496,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMySkills.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} showEditButton />
+                        <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
                   )}
