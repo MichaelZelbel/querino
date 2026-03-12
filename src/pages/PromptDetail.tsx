@@ -23,7 +23,7 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { CopyToTeamModal } from "@/components/prompts/CopyToTeamModal";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound, Languages } from "lucide-react";
+import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound, Languages, CopyPlus } from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
