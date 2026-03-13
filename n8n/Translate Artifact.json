@@ -155,7 +155,7 @@
             {
               "id": "cfg-user-id",
               "name": "user_id",
-              "value": "={{ $json.body?.user_id ?? $('Test Config').item.json.test_user_id }}",
+              "value": "={{ $json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : '') }}",
               "type": "string"
             },
             {

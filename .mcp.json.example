@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "cmd",
+      "args": ["/c npx n8n-mcp"],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://your-instance.app.n8n.cloud",
+        "N8N_API_KEY": "your_n8n_api_key_here"
+      }
+    }
+  }
+}
