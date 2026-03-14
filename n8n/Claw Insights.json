@@ -241,7 +241,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        6136,
+        6144,
         1472
       ],
       "id": "77172754-f0a0-4583-83b6-425da991d654",
@@ -261,7 +261,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
       "typeVersion": 1,
       "position": [
-        6008,
+        5936,
         1472
       ],
       "id": "2ab8c157-c8ac-4a80-82f3-f739d04c8cbc",
