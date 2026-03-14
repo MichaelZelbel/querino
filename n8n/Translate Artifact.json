@@ -1,6 +1,8 @@
 {
+  "createdAt": "2026-03-13T18:44:37.430Z",
+  "id": "5H26ipHJkZac3EwA",
   "name": "Translate Artifact",
-  "active": false,
+  "active": true,
   "isArchived": false,
   "nodes": [
     {
@@ -15,8 +17,11 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [4688, 1504],
-      "webhookId": "translate-artifact-webhook-001",
+      "position": [
+        4688,
+        1504
+      ],
+      "webhookId": "1bf56baa-6108-4762-a12c-c2c016f42af9",
       "credentials": {
         "httpHeaderAuth": {
           "id": "Y2M2gm8PMqf8Owkp",
@@ -35,19 +40,16 @@
       "name": "Chat Trigger",
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
-      "position": [4464, 1312],
-      "webhookId": "translate-artifact-chat-001"
+      "position": [
+        4464,
+        1312
+      ],
+      "webhookId": "644c63d9-60e8-44ed-999b-0e143e856cc2"
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "test-chatInput",
-              "name": "chatInput",
-              "value": "={{ $json.chatInput }}",
-              "type": "string"
-            },
             {
               "id": "test-title",
               "name": "test_title",
@@ -63,7 +65,7 @@
             {
               "id": "test-content",
               "name": "test_content",
-              "value": "You are a helpful assistant. Help the user with their task.\n\n## Instructions\n- Be concise\n- Use {{language}} for responses",
+              "value": "You are a helpful assistant. Help the user with their task.",
               "type": "string"
             },
             {
@@ -104,7 +106,10 @@
       "name": "Test Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [4688, 1312]
+      "position": [
+        4688,
+        1312
+      ]
     },
     {
       "parameters": {
@@ -178,7 +183,10 @@
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [4912, 1408],
+      "position": [
+        4912,
+        1408
+      ],
       "alwaysOutputData": true,
       "retryOnFail": true,
       "onError": "continueRegularOutput"
@@ -190,14 +198,17 @@
         "hasOutputParser": true,
         "needsFallback": true,
         "options": {
-          "systemMessage": "You are a professional translator specializing in technical and creative content. Your job is to translate artifact metadata and content from one language to another while preserving meaning, structure, and formatting.\n\nRules:\n- Preserve all markdown formatting, structure, and syntax exactly\n- Preserve template variables like {{variable}} exactly as-is — do NOT translate them\n- Translate tags contextually (they are short keywords/phrases)\n- Keep code blocks, URLs, and technical identifiers untranslated\n- Maintain the same tone and style as the original\n- If the content contains technical jargon, use the standard terminology in the target language\n\nRespond ONLY with valid JSON in this exact format:\n{\"title\":\"...\",\"description\":\"...\",\"content\":\"...\",\"tags\":[\"tag1\",\"tag2\"]}"
+          "systemMessage": "You are a professional translator specializing in technical and creative content. Translate artifact metadata and content from one language to another while preserving meaning, structure, and formatting.\n\nRules:\n- Preserve all markdown formatting exactly\n- Preserve template variables like {{variable}} as-is\n- Translate tags contextually\n- Keep code blocks, URLs, technical identifiers untranslated\n- Maintain the same tone and style\n\nRespond ONLY with valid JSON: {\"title\":\"...\",\"description\":\"...\",\"content\":\"...\",\"tags\":[\"tag1\",\"tag2\"]}"
         }
       },
       "id": "a1b2c3d4-3333-4aaa-bbbb-000000000003",
       "name": "Translation Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
-      "position": [5168, 1408],
+      "position": [
+        5168,
+        1408
+      ],
       "alwaysOutputData": true,
       "retryOnFail": true,
       "onError": "continueRegularOutput"
@@ -205,14 +216,17 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\",\n      \"description\": \"Translated title\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"description\": \"Translated description\"\n    },\n    \"content\": {\n      \"type\": \"string\",\n      \"description\": \"Translated content preserving all markdown formatting\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Translated tags\"\n    }\n  },\n  \"required\": [\"title\", \"description\", \"content\", \"tags\"]\n}",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"description\":{\"type\":\"string\"},\"content\":{\"type\":\"string\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"description\",\"content\",\"tags\"]}",
         "autoFix": true
       },
       "id": "a1b2c3d4-4444-4aaa-bbbb-000000000004",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
-      "position": [5392, 1632]
+      "position": [
+        5392,
+        1632
+      ]
     },
     {
       "parameters": {
@@ -223,7 +237,10 @@
       "name": "Azure gpt-5.2-chat",
       "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
       "typeVersion": 1,
-      "position": [5136, 1632],
+      "position": [
+        5136,
+        1632
+      ],
       "credentials": {
         "azureOpenAiApi": {
           "id": "sxHNB4I1TmPFfLdr",
@@ -245,7 +262,10 @@
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [5264, 1632],
+      "position": [
+        5264,
+        1632
+      ],
       "credentials": {
         "openAiApi": {
           "id": "8CuSxQ6wXk1W313i",
@@ -262,7 +282,10 @@
       "name": "Azure gpt-5.2-chat Parser",
       "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
       "typeVersion": 1,
-      "position": [5472, 1840],
+      "position": [
+        5472,
+        1840
+      ],
       "credentials": {
         "azureOpenAiApi": {
           "id": "sxHNB4I1TmPFfLdr",
@@ -280,7 +303,10 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [5760, 1312],
+      "position": [
+        5760,
+        1312
+      ],
       "alwaysOutputData": true
     },
     {
@@ -327,8 +353,7 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
+              "type": "string"
             },
             {
               "id": "model",
@@ -337,8 +362,7 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
+              "type": "string"
             }
           ],
           "attemptToConvertTypes": false,
@@ -351,7 +375,10 @@
       },
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [5760, 1504],
+      "position": [
+        5760,
+        1504
+      ],
       "id": "a1b2c3d4-9999-4aaa-bbbb-000000000009",
       "name": "Call Update Token Usage"
     }
@@ -418,6 +445,7 @@
       ]
     },
     "Azure gpt-5.2-chat": {
+      "main": [],
       "ai_languageModel": [
         [
           {
@@ -429,6 +457,7 @@
       ]
     },
     "OpenAI Chat Model": {
+      "main": [],
       "ai_languageModel": [
         [
           {
@@ -440,6 +469,7 @@
       ]
     },
     "Structured Output Parser": {
+      "main": [],
       "ai_outputParser": [
         [
           {
@@ -451,6 +481,7 @@
       ]
     },
     "Azure gpt-5.2-chat Parser": {
+      "main": [],
       "ai_languageModel": [
         [
           {
@@ -464,12 +495,521 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
   "staticData": null,
-  "meta": {
-    "templateCredsSetupCompleted": true
+  "meta": null,
+  "pinData": null,
+  "activeVersionId": "6b3a77cf-8ab7-4011-b112-3623ebd62859",
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-03-13T18:44:37.433Z",
+      "createdAt": "2026-03-13T18:44:37.433Z",
+      "role": "workflow:owner",
+      "workflowId": "5H26ipHJkZac3EwA",
+      "projectId": "KAIlKHCcR6KpTc3t"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-03-13T18:58:52.111Z",
+    "createdAt": "2026-03-13T18:58:52.111Z",
+    "versionId": "6b3a77cf-8ab7-4011-b112-3623ebd62859",
+    "workflowId": "5H26ipHJkZac3EwA",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "translate-artifact",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "a1b2c3d4-1111-4aaa-bbbb-000000000001",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          4688,
+          1504
+        ],
+        "webhookId": "1bf56baa-6108-4762-a12c-c2c016f42af9",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "Y2M2gm8PMqf8Owkp",
+            "name": "Auth Header"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "public": true,
+          "options": {
+            "showWelcomeScreen": false
+          }
+        },
+        "id": "a1b2c3d4-aaaa-4aaa-bbbb-00000000000a",
+        "name": "Chat Trigger",
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          4464,
+          1312
+        ],
+        "webhookId": "644c63d9-60e8-44ed-999b-0e143e856cc2"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "test-title",
+                "name": "test_title",
+                "value": "My Test Prompt",
+                "type": "string"
+              },
+              {
+                "id": "test-desc",
+                "name": "test_description",
+                "value": "A test prompt for translation",
+                "type": "string"
+              },
+              {
+                "id": "test-content",
+                "name": "test_content",
+                "value": "You are a helpful assistant. Help the user with their task.",
+                "type": "string"
+              },
+              {
+                "id": "test-tags",
+                "name": "test_tags",
+                "value": "[\"assistant\", \"helper\", \"general\"]",
+                "type": "string"
+              },
+              {
+                "id": "test-source",
+                "name": "test_sourceLanguage",
+                "value": "en",
+                "type": "string"
+              },
+              {
+                "id": "test-target",
+                "name": "test_targetLanguage",
+                "value": "de",
+                "type": "string"
+              },
+              {
+                "id": "test-type",
+                "name": "test_artifactType",
+                "value": "prompt",
+                "type": "string"
+              },
+              {
+                "id": "test-user",
+                "name": "test_user_id",
+                "value": "aef5c843-a2f5-423b-8c7e-676777ef231f",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "a1b2c3d4-bbbb-4aaa-bbbb-00000000000b",
+        "name": "Test Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          4688,
+          1312
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "cfg-title",
+                "name": "title",
+                "value": "={{ $json.body?.title || ($('Test Config').isExecuted ? $('Test Config').item.json.test_title : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-description",
+                "name": "description",
+                "value": "={{ $json.body?.description || ($('Test Config').isExecuted ? $('Test Config').item.json.test_description : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-content",
+                "name": "content",
+                "value": "={{ $json.body?.content || ($('Test Config').isExecuted ? $('Test Config').item.json.test_content : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-tags",
+                "name": "tags",
+                "value": "={{ JSON.stringify($json.body?.tags || ($('Test Config').isExecuted ? JSON.parse($('Test Config').item.json.test_tags) : [])) }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-source-lang",
+                "name": "sourceLanguage",
+                "value": "={{ $json.body?.sourceLanguage || ($('Test Config').isExecuted ? $('Test Config').item.json.test_sourceLanguage : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-target-lang",
+                "name": "targetLanguage",
+                "value": "={{ $json.body?.targetLanguage || ($('Test Config').isExecuted ? $('Test Config').item.json.test_targetLanguage : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-artifact-type",
+                "name": "artifactType",
+                "value": "={{ $json.body?.artifactType || ($('Test Config').isExecuted ? $('Test Config').item.json.test_artifactType : 'artifact') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-user-id",
+                "name": "user_id",
+                "value": "={{ $json.body?.user_id || ($('Test Config').isExecuted ? $('Test Config').item.json.test_user_id : '') }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg-provider",
+                "name": "provider",
+                "value": "openai",
+                "type": "string"
+              },
+              {
+                "id": "cfg-model",
+                "name": "model",
+                "value": "chatgpt5.2",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "a1b2c3d4-2222-4aaa-bbbb-000000000002",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          4912,
+          1408
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Translate the following {{ $('Config').item.json.artifactType }} from {{ $('Config').item.json.sourceLanguage }} to {{ $('Config').item.json.targetLanguage }}.\n\nTitle: {{ $('Config').item.json.title }}\n\nDescription: {{ $('Config').item.json.description }}\n\nContent:\n{{ $('Config').item.json.content }}\n\nTags: {{ $('Config').item.json.tags }}",
+          "hasOutputParser": true,
+          "needsFallback": true,
+          "options": {
+            "systemMessage": "You are a professional translator specializing in technical and creative content. Translate artifact metadata and content from one language to another while preserving meaning, structure, and formatting.\n\nRules:\n- Preserve all markdown formatting exactly\n- Preserve template variables like {{variable}} as-is\n- Translate tags contextually\n- Keep code blocks, URLs, technical identifiers untranslated\n- Maintain the same tone and style\n\nRespond ONLY with valid JSON: {\"title\":\"...\",\"description\":\"...\",\"content\":\"...\",\"tags\":[\"tag1\",\"tag2\"]}"
+          }
+        },
+        "id": "a1b2c3d4-3333-4aaa-bbbb-000000000003",
+        "name": "Translation Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          5168,
+          1408
+        ],
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "schemaType": "manual",
+          "inputSchema": "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"description\":{\"type\":\"string\"},\"content\":{\"type\":\"string\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"description\",\"content\",\"tags\"]}",
+          "autoFix": true
+        },
+        "id": "a1b2c3d4-4444-4aaa-bbbb-000000000004",
+        "name": "Structured Output Parser",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          5392,
+          1632
+        ]
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "id": "a1b2c3d4-5555-4aaa-bbbb-000000000005",
+        "name": "Azure gpt-5.2-chat",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          5136,
+          1632
+        ],
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "id": "a1b2c3d4-6666-4aaa-bbbb-000000000006",
+        "name": "OpenAI Chat Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          5264,
+          1632
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "8CuSxQ6wXk1W313i",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "model": "gpt-5.2-chat",
+          "options": {}
+        },
+        "id": "a1b2c3d4-7777-4aaa-bbbb-000000000007",
+        "name": "Azure gpt-5.2-chat Parser",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+        "typeVersion": 1,
+        "position": [
+          5472,
+          1840
+        ],
+        "credentials": {
+          "azureOpenAiApi": {
+            "id": "sxHNB4I1TmPFfLdr",
+            "name": "Azure gpt-5.2-chat"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "a1b2c3d4-8888-4aaa-bbbb-000000000008",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          5760,
+          1312
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "3H8d67oO7uOGswkPWASZL",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/3H8d67oO7uOGswkPWASZL",
+            "cachedResultName": "Update Token Usage"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "execution_id": "={{ $execution.id }}",
+              "user_id": "={{ $('Config').item.json.user_id }}",
+              "provider": "={{ $('Config').item.json.provider }}",
+              "model": "={{ $('Config').item.json.model }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "execution_id",
+                "displayName": "execution_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "provider",
+                "displayName": "provider",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "model",
+                "displayName": "model",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "mode": "each",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          5760,
+          1504
+        ],
+        "id": "a1b2c3d4-9999-4aaa-bbbb-000000000009",
+        "name": "Call Update Token Usage"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chat Trigger": {
+        "main": [
+          [
+            {
+              "node": "Test Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Test Config": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Translation Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Translation Agent": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Call Update Token Usage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat": {
+        "main": [],
+        "ai_languageModel": [
+          [
+            {
+              "node": "Translation Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "main": [],
+        "ai_languageModel": [
+          [
+            {
+              "node": "Translation Agent",
+              "type": "ai_languageModel",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser": {
+        "main": [],
+        "ai_outputParser": [
+          [
+            {
+              "node": "Translation Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Azure gpt-5.2-chat Parser": {
+        "main": [],
+        "ai_languageModel": [
+          [
+            {
+              "node": "Structured Output Parser",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Michael Zelbel",
+    "name": null,
+    "description": null,
+    "autosaved": false
   },
-  "pinData": {},
   "tags": []
 }
