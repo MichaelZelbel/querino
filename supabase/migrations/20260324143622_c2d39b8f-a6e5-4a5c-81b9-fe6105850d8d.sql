@@ -1,0 +1,42 @@
+
+CREATE OR REPLACE FUNCTION public.generate_slug(title text)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  result TEXT;
+BEGIN
+  result := LOWER(TRIM(title));
+  
+  -- Normalize known Latin accented characters to ASCII equivalents
+  result := translate(result,
+    'àáâãäåæçèéêëìíîïðñòóôõöùúûüýÿāăąćĉċčďđēĕėęěĝğġģĥħĩīĭįıĳĵķĸĺļľŀłńņňŉŋōŏőœŕŗřśŝşšţťŧũūŭůűųŵŷźżž',
+    'aaaaaaaceeeeiiiidnoooooouuuuyyaaaccccddeeeeegggghhiiiiiiijkklllllnnnnnoooorrrsssssttttuuuuuuwyzzzz'
+  );
+  
+  -- Replace whitespace with hyphens
+  result := REGEXP_REPLACE(result, '\s+', '-', 'g');
+  
+  -- Remove ONLY specific ASCII punctuation/symbols that are unsafe in URLs
+  -- Keep everything else (all Unicode letters, digits, combining marks, etc.)
+  result := REGEXP_REPLACE(result, '[!@#$%^&*()+=\[\]{};:''",.<>?/\\|`~]', '', 'g');
+  
+  -- Replace underscores with hyphens
+  result := REPLACE(result, '_', '-');
+  
+  -- Collapse multiple hyphens
+  result := REGEXP_REPLACE(result, '-+', '-', 'g');
+  
+  -- Trim leading/trailing hyphens
+  result := TRIM(BOTH '-' FROM result);
+  
+  -- Fallback if empty
+  IF result IS NULL OR result = '' THEN
+    result := 'untitled-' || SUBSTRING(gen_random_uuid()::text FROM 1 FOR 8);
+  END IF;
+  
+  RETURN result;
+END;
+$function$;
