@@ -19,6 +19,7 @@ export const LANGUAGES: Language[] = [
   { code: "ja", label: "Japanese" },
   { code: "ko", label: "Korean" },
   { code: "zh", label: "Chinese" },
+  { code: "hi", label: "Hindi" },
 ];
 
 export const DEFAULT_LANGUAGE = "en";
