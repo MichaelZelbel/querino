@@ -91,6 +91,7 @@ export default function LibraryPromptEdit() {
   const { user, loading: authLoading } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
+  const { isAdmin } = useUserRole();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
