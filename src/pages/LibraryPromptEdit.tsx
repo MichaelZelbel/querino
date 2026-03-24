@@ -160,7 +160,7 @@ export default function LibraryPromptEdit() {
           return;
         }
 
-        if (promptData.author_id !== user.id) {
+        if (promptData.author_id !== user.id && !isAdmin) {
           setNotAuthorized(true);
           return;
         }
