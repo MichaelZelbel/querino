@@ -68,7 +68,9 @@ import type { ParsedMarkdown } from "@/lib/markdown";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
+import { SlugEditor } from "@/components/prompts/SlugEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserRole } from "@/hooks/useUserRole";
 import { deterministicSessionId } from "@/lib/runCanvasAI";
 
 interface PromptVersion {
