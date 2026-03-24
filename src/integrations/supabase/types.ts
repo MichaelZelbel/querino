@@ -1075,6 +1075,35 @@ export type Database = {
           },
         ]
       }
+      prompt_slug_redirects: {
+        Row: {
+          created_at: string
+          id: string
+          old_slug: string
+          prompt_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          old_slug: string
+          prompt_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          old_slug?: string
+          prompt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_slug_redirects_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_versions: {
         Row: {
           change_notes: string | null
@@ -2020,6 +2049,10 @@ export type Database = {
       update_embedding: {
         Args: { p_embedding: string; p_item_id: string; p_item_type: string }
         Returns: undefined
+      }
+      update_prompt_slug: {
+        Args: { p_new_slug: string; p_prompt_id: string; p_user_id: string }
+        Returns: Json
       }
     }
     Enums: {
