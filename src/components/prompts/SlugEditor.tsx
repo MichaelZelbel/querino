@@ -112,8 +112,8 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
             </Button>
           </div>
 
-          <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <Alert variant="default" className="border-warning/50 bg-warning/10">
+            <AlertTriangle className="h-4 w-4 text-warning" />
             <AlertDescription className="text-sm text-muted-foreground">
               Changing this slug will update the public URL. Old links will redirect automatically.
             </AlertDescription>
