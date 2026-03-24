@@ -68,7 +68,9 @@ import type { ParsedMarkdown } from "@/lib/markdown";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
+import { SlugEditor } from "@/components/prompts/SlugEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserRole } from "@/hooks/useUserRole";
 import { deterministicSessionId } from "@/lib/runCanvasAI";
 
 interface PromptVersion {
@@ -89,6 +91,7 @@ export default function LibraryPromptEdit() {
   const { user, loading: authLoading } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
+  const { isAdmin } = useUserRole();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,7 +160,7 @@ export default function LibraryPromptEdit() {
           return;
         }
 
-        if (promptData.author_id !== user.id) {
+        if (promptData.author_id !== user.id && !isAdmin) {
           setNotAuthorized(true);
           return;
         }
@@ -932,6 +935,20 @@ export default function LibraryPromptEdit() {
                           {tags.length}/10 tags
                         </p>
                       </div>
+
+                      {/* Slug Editor */}
+                      {prompt && user && (prompt.author_id === user.id || isAdmin) && (
+                        <SlugEditor
+                          promptId={prompt.id}
+                          currentSlug={prompt.slug}
+                          userId={user.id}
+                          onSlugChanged={(newSlug) => {
+                            setPrompt(prev => prev ? { ...prev, slug: newSlug } : null);
+                            // Update URL without full reload
+                            window.history.replaceState(null, "", `/library/${newSlug}/edit`);
+                          }}
+                        />
+                      )}
 
                       {/* Visibility Toggle */}
                       <div className="flex items-center justify-between rounded-lg border border-border p-4">

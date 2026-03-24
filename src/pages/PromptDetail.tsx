@@ -110,6 +110,27 @@ export default function PromptDetail() {
         console.error("Error fetching prompt:", error);
         setNotFound(true);
       } else if (!data) {
+        // Prompt not found by current slug — check redirect history
+        const { data: redirect } = await supabase
+          .from("prompt_slug_redirects")
+          .select("prompt_id")
+          .eq("old_slug", slug)
+          .maybeSingle();
+
+        if (redirect?.prompt_id) {
+          // Fetch the current slug for this prompt
+          const { data: currentPrompt } = await supabase
+            .from("prompts")
+            .select("slug")
+            .eq("id", redirect.prompt_id)
+            .maybeSingle();
+
+          if (currentPrompt?.slug) {
+            navigate(`/prompts/${currentPrompt.slug}`, { replace: true });
+            return;
+          }
+        }
+
         setNotFound(true);
       } else {
         const promptData: PromptWithAuthor = {
