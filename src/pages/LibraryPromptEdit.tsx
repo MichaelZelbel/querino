@@ -936,6 +936,20 @@ export default function LibraryPromptEdit() {
                         </p>
                       </div>
 
+                      {/* Slug Editor */}
+                      {prompt && user && (prompt.author_id === user.id || isAdmin) && (
+                        <SlugEditor
+                          promptId={prompt.id}
+                          currentSlug={prompt.slug}
+                          userId={user.id}
+                          onSlugChanged={(newSlug) => {
+                            setPrompt(prev => prev ? { ...prev, slug: newSlug } : null);
+                            // Update URL without full reload
+                            window.history.replaceState(null, "", `/library/${newSlug}/edit`);
+                          }}
+                        />
+                      )}
+
                       {/* Visibility Toggle */}
                       <div className="flex items-center justify-between rounded-lg border border-border p-4">
                         <div>
