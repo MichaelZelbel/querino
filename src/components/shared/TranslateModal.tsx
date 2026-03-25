@@ -22,6 +22,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Loader2, Languages } from "lucide-react";
 import { toast } from "sonner";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 type ArtifactType = "prompt" | "skill" | "workflow" | "claw";
 
