@@ -41,7 +41,13 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
     }
 
     setError(null);
-    const result = await updateSlug(promptId, trimmed, userId);
+    // Transliterate before sending to backend for consistent Latin slugs
+    const transliterated = await generateSlug(trimmed);
+    if (!transliterated) {
+      setError("Invalid slug: becomes empty after normalization");
+      return;
+    }
+    const result = await updateSlug(promptId, transliterated, userId);
 
     if (result.error) {
       setError(result.error);

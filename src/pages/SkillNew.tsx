@@ -147,6 +147,8 @@ export default function SkillNew() {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
+      const slug = await generateSlug(title.trim());
+
       const { data: newSkill, error } = await supabase
         .from("skills")
         .insert({
@@ -158,6 +160,7 @@ export default function SkillNew() {
           author_id: user.id,
           published: isPublic,
           language,
+          slug,
         })
         .select("id, slug")
         .single();

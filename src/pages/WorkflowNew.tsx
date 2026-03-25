@@ -148,6 +148,8 @@ export default function WorkflowNew() {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
+      const slug = await generateSlug(title.trim());
+
       const { data: newWorkflow, error } = await (supabase.from("workflows") as any)
         .insert({
           title: title.trim(),
@@ -159,6 +161,7 @@ export default function WorkflowNew() {
           published: isPublic,
           language,
           json: {},
+          slug,
         })
         .select("id, slug")
         .single();

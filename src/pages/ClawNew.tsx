@@ -334,6 +334,7 @@ export default function ClawNew() {
           skill_md_content: storedSkillMdContent,
           skill_md_cached: storedSkillMdCached,
           language,
+          slug,
         })
         .select("slug")
         .single();

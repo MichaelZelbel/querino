@@ -153,6 +153,8 @@ export default function PromptNew() {
 
     setIsSubmitting(true);
     try {
+      const slug = await generateSlug(title.trim());
+
       const { data: newPrompt, error } = await supabase
         .from("prompts")
         .insert({
@@ -167,6 +169,7 @@ export default function PromptNew() {
           rating_count: 0,
           copies_count: 0,
           language,
+          slug,
         })
         .select("id, slug")
         .single();
