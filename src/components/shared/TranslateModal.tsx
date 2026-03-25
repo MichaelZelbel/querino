@@ -22,6 +22,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Loader2, Languages } from "lucide-react";
 import { toast } from "sonner";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 type ArtifactType = "prompt" | "skill" | "workflow" | "claw";
 
@@ -90,6 +91,9 @@ export function TranslateModal({
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      // Pre-generate transliterated slug for the translated title
+      const translatedSlug = data.title ? await generateSlug(data.title) : "";
+
       // Build URL params for the "Create New" page
       const params = new URLSearchParams();
       if (data.title) params.set("title", data.title);
@@ -98,6 +102,7 @@ export function TranslateModal({
       if (data.tags && Array.isArray(data.tags)) params.set("tags", data.tags.join(","));
       if (category) params.set("category", category);
       params.set("language", targetLanguage);
+      if (translatedSlug) params.set("slug", translatedSlug);
 
       onOpenChange(false);
       toast.success("Translation complete! Creating new artifact…");

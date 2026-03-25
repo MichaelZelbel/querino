@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Pencil, Check, X, Loader2, Link as LinkIcon, AlertTriangle } from "lucide-react";
 import { useUpdatePromptSlug } from "@/hooks/useUpdatePromptSlug";
 import { toast } from "sonner";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 interface SlugEditorProps {
   promptId: string;
@@ -40,7 +41,13 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
     }
 
     setError(null);
-    const result = await updateSlug(promptId, trimmed, userId);
+    // Transliterate before sending to backend for consistent Latin slugs
+    const transliterated = await generateSlug(trimmed);
+    if (!transliterated) {
+      setError("Invalid slug: becomes empty after normalization");
+      return;
+    }
+    const result = await updateSlug(promptId, transliterated, userId);
 
     if (result.error) {
       setError(result.error);

@@ -27,6 +27,7 @@ import type { SkillSourceType } from "@/types/claw";
 import { parseSkillSourceUrl } from "@/lib/skillSourceParser";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 const SKILL_MD_TEMPLATE = `# Claw Name
 
@@ -290,6 +291,7 @@ export default function ClawNew() {
     setIsSubmitting(true);
 
     try {
+      const slug = await generateSlug(title.trim());
       // Determine the source type for storage
       let skillSourceType: SkillSourceType;
       let skillSourceRef: string | null = null;
@@ -332,6 +334,7 @@ export default function ClawNew() {
           skill_md_content: storedSkillMdContent,
           skill_md_cached: storedSkillMdCached,
           language,
+          slug,
         })
         .select("slug")
         .single();

@@ -36,6 +36,7 @@ import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 export default function SkillNew() {
   const navigate = useNavigate();
@@ -146,6 +147,8 @@ export default function SkillNew() {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
+      const slug = await generateSlug(title.trim());
+
       const { data: newSkill, error } = await supabase
         .from("skills")
         .insert({
@@ -157,6 +160,7 @@ export default function SkillNew() {
           author_id: user.id,
           published: isPublic,
           language,
+          slug,
         })
         .select("id, slug")
         .single();
