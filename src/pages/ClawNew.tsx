@@ -291,6 +291,7 @@ export default function ClawNew() {
     setIsSubmitting(true);
 
     try {
+      const slug = await generateSlug(title.trim());
       // Determine the source type for storage
       let skillSourceType: SkillSourceType;
       let skillSourceRef: string | null = null;
