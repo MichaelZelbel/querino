@@ -1,64 +1,34 @@
 
 
-## Transliterate Non-Latin Slugs to Latin
+## Fix: generate-slug Edge Function Not Deploying
 
-### Problem
-Non-Latin titles (Arabic, Chinese, Hindi) produce Unicode slugs that get URL-encoded into unreadable strings like `%D9%85%D9%88%D8%AC%D9%91%D9%87-...`.
+### Root Cause
+The `generate-slug` edge function uses `npm:transliteration@2.3.5` as a bare npm specifier, but without a `deno.json` declaring it as a dependency, the Deno edge runtime can't resolve it. The function fails to deploy, so transliteration never runs. The frontend `useGenerateSlug` hook catches the error and falls back to a basic client-side slug (which preserves Chinese/Arabic characters as-is), resulting in URL-encoded slugs like `%E8%87%AA%E6%88%91...`.
 
-### Strategy
-Move slug generation for non-Latin titles to a Supabase Edge Function that uses a JavaScript transliteration library (`npm:transliteration`), then pass the pre-generated slug to the database on insert. The DB trigger already skips slug generation when a slug is provided.
+### Fix
 
-### Implementation
+**Add `supabase/functions/generate-slug/deno.json`** with the npm dependency declared:
 
-**Step 1: Create `generate-slug` edge function**
-- New file: `supabase/functions/generate-slug/index.ts`
-- Uses `transliterate` from `npm:transliteration` to convert any script to Latin
-- Applies the same normalization rules as the DB function (lowercase, hyphenate, collapse, trim)
-- Falls back to `untitled-{shortId}` if result is empty
-- No auth required -- lightweight utility
+```json
+{
+  "imports": {
+    "transliteration": "npm:transliteration@2.3.5"
+  }
+}
+```
 
-**Step 2: Create a frontend hook `useGenerateSlug`**
-- New file: `src/hooks/useGenerateSlug.ts`
-- Calls the edge function with a title, returns a clean Latin slug
-- Used before prompt/skill/workflow/claw creation
+**Update `supabase/functions/generate-slug/index.ts`** line 2 to import from the mapped name:
 
-**Step 3: Update creation pages to pre-generate slugs**
-- `PromptNew.tsx`: Before inserting, call `useGenerateSlug(title)` and pass the resulting slug in the insert payload
-- Same for `SkillNew.tsx`, `WorkflowNew.tsx`, `ClawNew.tsx`
-- The DB trigger (`set_prompt_slug`) already has: "if slug is provided, don't overwrite" -- so this just works
+```typescript
+import { transliterate } from "transliteration";
+```
 
-**Step 4: Update TranslateModal to pre-generate slug**
-- After translation completes, call the slug edge function with the translated title
-- Pass the slug as a query param to the `/prompts/new` page so it gets used on insert
+This matches the pattern used by `mcp-server/deno.json` for its npm dependencies.
 
-**Step 5: Update `SlugEditor` manual editing**
-- When a user manually edits a slug, also run it through the edge function for normalization (transliteration + cleanup) before calling `update_prompt_slug` RPC
+### Files
+- **Create**: `supabase/functions/generate-slug/deno.json`
+- **Modify**: `supabase/functions/generate-slug/index.ts` (line 2 import)
 
-**Step 6: Update `update_prompt_slug` DB function**
-- The existing `generate_slug` SQL function stays as a fallback for any insert without a pre-generated slug
-- No changes needed to the DB function -- it already produces `untitled-{shortId}` for non-Latin text that it can't handle
-
-### Example Results
-| Input Title | Current Slug | New Slug |
-|---|---|---|
-| موجّه النقد الذاتي | موجّه-النقد-الذاتي (URL-encoded mess) | `muwajjih-an-naqd-adh-dhati` |
-| 你好世界 | 你好世界 (URL-encoded) | `ni-hao-shi-jie` |
-| आत्म-समीक्षा | आत्म-समीक्षा (URL-encoded) | `aatm-samiiksha` |
-| autocrítica | autocritica | `autocritica` (unchanged) |
-
-### Technical Details
-- `npm:transliteration` is available natively in Deno via npm specifier
-- The edge function is stateless and fast (no DB calls, no AI)
-- Existing prompts keep their current slugs -- no migration of existing data
-- The DB `generate_slug` function remains as the safety net fallback
-
-### Files to Create/Modify
-- **Create**: `supabase/functions/generate-slug/index.ts`
-- **Create**: `src/hooks/useGenerateSlug.ts`
-- **Modify**: `src/pages/PromptNew.tsx` -- call slug generation before insert
-- **Modify**: `src/pages/SkillNew.tsx` -- same
-- **Modify**: `src/pages/WorkflowNew.tsx` -- same
-- **Modify**: `src/pages/ClawNew.tsx` -- same
-- **Modify**: `src/components/shared/TranslateModal.tsx` -- pass slug param
-- **Modify**: `src/components/prompts/SlugEditor.tsx` -- transliterate on manual edit
+### Note
+The `mcp-server` TS errors in the build log are pre-existing and unrelated to this fix.
 
