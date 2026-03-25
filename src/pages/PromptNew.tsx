@@ -35,6 +35,7 @@ import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 export default function PromptNew() {
   const navigate = useNavigate();
