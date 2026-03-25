@@ -36,6 +36,7 @@ import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 export default function SkillNew() {
   const navigate = useNavigate();
