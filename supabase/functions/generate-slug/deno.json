@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "transliteration": "npm:transliteration@2.3.5"
+  }
+}

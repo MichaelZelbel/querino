@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { transliterate } from "npm:transliteration@2.3.5";
+import { transliterate } from "transliteration";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
