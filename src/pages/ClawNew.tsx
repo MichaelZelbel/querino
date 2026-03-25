@@ -27,6 +27,7 @@ import type { SkillSourceType } from "@/types/claw";
 import { parseSkillSourceUrl } from "@/lib/skillSourceParser";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 const SKILL_MD_TEMPLATE = `# Claw Name
 
