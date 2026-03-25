@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Pencil, Check, X, Loader2, Link as LinkIcon, AlertTriangle } from "lucide-react";
 import { useUpdatePromptSlug } from "@/hooks/useUpdatePromptSlug";
 import { toast } from "sonner";
+import { generateSlug } from "@/hooks/useGenerateSlug";
 
 interface SlugEditorProps {
   promptId: string;
