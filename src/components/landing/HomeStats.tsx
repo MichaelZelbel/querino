@@ -118,7 +118,7 @@ export function HomeStats() {
         <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
           <Code className="h-5 w-5 text-success" />
           <a
-            href="https://github.com/querino-ai/querino"
+            href="https://github.com/MichaelZelbel/querino"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-primary transition-colors"
