@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Copy, Users, Star } from "lucide-react";
+import { Copy, Layers, Code } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface HomeStatsData {
   publicPrompts: number | null;
-  activeCreators: number | null;
-  averageRating: number | null;
+  totalArtifacts: number | null;
 }
 
 function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: number }) {
@@ -14,12 +13,11 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
 
   useEffect(() => {
     if (value <= 10) {
-      // Animate from 0 to value for small numbers
       const steps = 20;
       const increment = value / steps;
       const stepDuration = duration / steps;
       let current = 0;
-      
+
       const timer = setInterval(() => {
         current += increment;
         if (current >= value) {
@@ -42,42 +40,40 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
 export function HomeStats() {
   const [stats, setStats] = useState<HomeStatsData>({
     publicPrompts: null,
-    activeCreators: null,
-    averageRating: null,
+    totalArtifacts: null,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch all stats in parallel
-        const [promptsResult, creatorsResult, ratingsResult] = await Promise.all([
-          // Count public prompts
+        const [promptsResult, skillsResult, workflowsResult, clawsResult] = await Promise.all([
           supabase
             .from("prompts")
             .select("id", { count: "exact", head: true })
             .eq("is_public", true),
-          
-          // Get active creators (last 7 days)
-          supabase.rpc("active_creators_last_7_days"),
-          
-          // Get average rating from prompt_reviews
           supabase
-            .from("prompt_reviews")
-            .select("rating"),
+            .from("skills")
+            .select("id", { count: "exact", head: true })
+            .eq("published", true),
+          supabase
+            .from("workflows")
+            .select("id", { count: "exact", head: true })
+            .eq("published", true),
+          supabase
+            .from("claws")
+            .select("id", { count: "exact", head: true })
+            .eq("published", true),
         ]);
 
-        // Calculate average rating
-        let avgRating: number | null = null;
-        if (ratingsResult.data && ratingsResult.data.length > 0) {
-          const sum = ratingsResult.data.reduce((acc, r) => acc + r.rating, 0);
-          avgRating = sum / ratingsResult.data.length;
-        }
+        const promptsCount = promptsResult.count ?? 0;
+        const skillsCount = skillsResult.count ?? 0;
+        const workflowsCount = workflowsResult.count ?? 0;
+        const clawsCount = clawsResult.count ?? 0;
 
         setStats({
-          publicPrompts: promptsResult.count ?? 0,
-          activeCreators: creatorsResult.data ?? 0,
-          averageRating: avgRating,
+          publicPrompts: promptsCount,
+          totalArtifacts: promptsCount + skillsCount + workflowsCount + clawsCount,
         });
       } catch (error) {
         console.error("Error fetching homepage stats:", error);
@@ -88,22 +84,6 @@ export function HomeStats() {
 
     fetchStats();
   }, []);
-
-  const formatRating = (rating: number | null) => {
-    if (rating === null) return "–";
-    return rating.toFixed(1);
-  };
-
-  const renderCreatorsValue = () => {
-    if (stats.activeCreators === 0) {
-      return (
-        <span className="text-lg md:text-xl">
-          Just Launched 🎉
-        </span>
-      );
-    }
-    return <AnimatedNumber value={stats.activeCreators ?? 0} />;
-  };
 
   return (
     <div className="mt-12 grid grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
@@ -120,30 +100,33 @@ export function HomeStats() {
         <p className="mt-1 text-xs text-muted-foreground">Public Prompts</p>
       </div>
 
-      {/* Active Creators */}
+      {/* Total Artifacts */}
       <div className="text-center lg:text-left">
         <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-          <Users className="h-5 w-5 text-warning" />
+          <Layers className="h-5 w-5 text-warning" />
           {loading ? (
             <Skeleton className="h-7 w-16" />
           ) : (
-            renderCreatorsValue()
+            <AnimatedNumber value={stats.totalArtifacts ?? 0} />
           )}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Active Creators This Week</p>
+        <p className="mt-1 text-xs text-muted-foreground">Total Artifacts</p>
       </div>
 
-      {/* Average Rating */}
+      {/* Open Source */}
       <div className="text-center lg:text-left">
         <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-          <Star className="h-5 w-5 text-success" />
-          {loading ? (
-            <Skeleton className="h-7 w-10" />
-          ) : (
-            <span>{formatRating(stats.averageRating)}</span>
-          )}
+          <Code className="h-5 w-5 text-success" />
+          <a
+            href="https://github.com/mzelbel/querino"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            AGPL-3.0
+          </a>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Average Rating</p>
+        <p className="mt-1 text-xs text-muted-foreground">Open Source</p>
       </div>
     </div>
   );
