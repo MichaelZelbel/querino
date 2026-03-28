@@ -586,6 +586,7 @@ export default function PromptDetail() {
               />
             )}
 
+            {user && (
               <Button
                 size="lg"
                 variant="outline"
