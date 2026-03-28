@@ -1,4 +1,4 @@
-import { CloudCheck } from "lucide-react";
+import { CloudUpload } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
