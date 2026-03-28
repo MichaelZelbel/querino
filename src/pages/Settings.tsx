@@ -20,6 +20,7 @@ import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock,
 import { CreditsDisplay } from "@/components/settings/CreditsDisplay";
 import { McpSetupSection } from "@/components/settings/McpSetupSection";
 import { MenerioIntegrationSection } from "@/components/settings/MenerioIntegrationSection";
+import { MenerioBulkSync } from "@/components/menerio/MenerioBulkSync";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
