@@ -21,6 +21,7 @@ interface PromptCardProps {
   userRating?: number;
   showSendToLLM?: boolean;
   isPinned?: boolean;
+  showMenerioStatus?: boolean;
 }
 
 export function PromptCard({ 
