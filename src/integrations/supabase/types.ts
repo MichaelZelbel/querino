@@ -902,6 +902,45 @@ export type Database = {
         }
         Relationships: []
       }
+      menerio_integration: {
+        Row: {
+          auto_sync: boolean
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          menerio_api_key: string
+          menerio_base_url: string
+          sync_artifact_types: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_sync?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          menerio_api_key: string
+          menerio_base_url: string
+          sync_artifact_types?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_sync?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          menerio_api_key?: string
+          menerio_base_url?: string
+          sync_artifact_types?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
