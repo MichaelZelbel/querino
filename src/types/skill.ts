@@ -14,6 +14,9 @@ export interface Skill {
   rating_avg?: number;
   rating_count?: number;
   language?: string;
+  menerio_synced?: boolean;
+  menerio_note_id?: string | null;
+  menerio_synced_at?: string | null;
 }
 
 // Author info for display

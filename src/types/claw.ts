@@ -28,6 +28,9 @@ export interface Claw {
   skill_md_content: string | null; // Editable SKILL.md (inline or imported)
   skill_md_cached: string | null; // Read-only cache for remote skills
   language?: string;
+  menerio_synced?: boolean;
+  menerio_note_id?: string | null;
+  menerio_synced_at?: string | null;
 }
 
 // Author info for display
