@@ -28,6 +28,7 @@ export function ClawCard({
   currentUserId,
   showEditButton = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: ClawCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneClaw, cloning } = useCloneClaw();
