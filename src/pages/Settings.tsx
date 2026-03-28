@@ -891,6 +891,7 @@ export default function Settings() {
 
             {/* Menerio 2nd Brain Integration */}
             <MenerioIntegrationSection />
+            <MenerioBulkSync />
 
             {/* MCP Server / API Section */}
             <McpSetupSection />
