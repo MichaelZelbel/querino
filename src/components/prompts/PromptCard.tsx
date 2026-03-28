@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Star, Pencil, Files, Pin } from "lucide-react";
+import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
