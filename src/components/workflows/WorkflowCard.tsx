@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Pencil, Files, Workflow as WorkflowIcon, Pin, Star } from "lucide-react";
+import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
