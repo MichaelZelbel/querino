@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Pencil, Files, BookOpen, Pin, Star } from "lucide-react";
+import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
