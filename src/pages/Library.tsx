@@ -20,6 +20,7 @@ import { useWorkflows } from "@/hooks/useWorkflows";
 import { useClaws } from "@/hooks/useClaws";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import {
   Dialog,
