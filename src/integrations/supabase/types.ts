@@ -950,6 +950,39 @@ export type Database = {
         }
         Relationships: []
       }
+      menerio_sync_queue: {
+        Row: {
+          artifact_id: string
+          artifact_type: string
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          artifact_id: string
+          artifact_type: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string
+          artifact_type?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
