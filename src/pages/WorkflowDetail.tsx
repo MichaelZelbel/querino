@@ -64,6 +64,9 @@ export default function WorkflowDetail() {
   } = useSuggestions('workflow', workflow?.id || '');
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
 
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
   // Premium and team checks for "Copy to team" feature
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();

@@ -58,6 +58,9 @@ export default function ClawDetail() {
   
   const isAuthor = claw?.author_id && user?.id === claw.author_id;
   const isPinned = claw?.id ? isClawPinned(claw.id) : false;
+
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
   
   // Check if user can edit this Claw (author OR team member with edit rights)
   const isTeamClaw = !!claw?.team_id;

@@ -62,6 +62,9 @@ export default function SkillDetail() {
   } = useSuggestions('skill', skill?.id || '');
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
   
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
   // Premium and team checks for "Copy to team" feature
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();

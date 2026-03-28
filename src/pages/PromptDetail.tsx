@@ -78,6 +78,9 @@ export default function PromptDetail() {
   const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
   
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
   // Premium and team checks for "Copy to team" feature
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();
