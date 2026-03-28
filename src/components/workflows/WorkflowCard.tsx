@@ -28,6 +28,7 @@ export function WorkflowCard({
   currentUserId,
   showEditButton = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: WorkflowCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
