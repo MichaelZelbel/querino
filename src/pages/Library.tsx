@@ -446,6 +446,7 @@ export default function Library() {
                           editPath="library"
                           showSendToLLM
                           isPinned
+                          showMenerioStatus={hasMenerio}
                         />
                       ))}
                     </div>
