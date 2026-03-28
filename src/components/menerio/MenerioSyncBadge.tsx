@@ -20,7 +20,7 @@ export function MenerioSyncBadge({ menerioSynced, menerioSyncedAt }: MenerioSync
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="inline-flex">
-            <CloudCheck className="h-3.5 w-3.5 text-success" />
+            <CloudUpload className="h-3.5 w-3.5 text-success" />
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
