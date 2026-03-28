@@ -18,6 +18,7 @@ interface WorkflowCardProps {
   currentUserId?: string;
   showEditButton?: boolean;
   isPinned?: boolean;
+  showMenerioStatus?: boolean;
 }
 
 export function WorkflowCard({
