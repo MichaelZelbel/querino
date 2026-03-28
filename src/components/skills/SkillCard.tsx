@@ -78,6 +78,12 @@ export function SkillCard({
                   </Badge>
                 )}
                 <LanguageBadge language={skill.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={skill.menerio_synced}
+                    menerioSyncedAt={skill.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {skill.description || "No description"}

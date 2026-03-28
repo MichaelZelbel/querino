@@ -87,6 +87,12 @@ export function PromptCard({
                   </Badge>
                 )}
                 <LanguageBadge language={prompt.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={prompt.menerio_synced}
+                    menerioSyncedAt={prompt.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {prompt.summary || prompt.description}

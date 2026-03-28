@@ -80,6 +80,12 @@ export function ClawCard({
                   </Badge>
                 )}
                 <LanguageBadge language={claw.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={claw.menerio_synced}
+                    menerioSyncedAt={claw.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {claw.description || "A callable capability for Clawbot."}

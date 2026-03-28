@@ -90,6 +90,12 @@ export function WorkflowCard({
                   </Badge>
                 )}
                 <LanguageBadge language={workflow.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={workflow.menerio_synced}
+                    menerioSyncedAt={workflow.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {workflow.description || "No description"}
