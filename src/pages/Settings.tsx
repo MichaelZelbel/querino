@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { User, Bell, Shield, CreditCard, Palette, LogOut, Github, Loader2, Lock, Crown, Building2, Info, Key, CheckCircle2, XCircle, Users, Sparkles, Trash2, AlertTriangle, Terminal } from "lucide-react";
 import { CreditsDisplay } from "@/components/settings/CreditsDisplay";
 import { McpSetupSection } from "@/components/settings/McpSetupSection";
+import { MenerioIntegrationSection } from "@/components/settings/MenerioIntegrationSection";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { toast } from "sonner";
