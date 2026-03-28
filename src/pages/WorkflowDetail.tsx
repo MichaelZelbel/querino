@@ -27,6 +27,8 @@ import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSection";
 import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
@@ -61,6 +63,9 @@ export default function WorkflowDetail() {
     updateSuggestionAfterChanges
   } = useSuggestions('workflow', workflow?.id || '');
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
+
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
   // Premium and team checks for "Copy to team" feature
   const { isPremium } = usePremiumCheck();
@@ -389,6 +394,17 @@ export default function WorkflowDetail() {
                 <Languages className="h-4 w-4" />
                 Translate
               </Button>
+            )}
+
+            {isAuthor && hasMenerio && workflow && (
+              <MenerioSyncButton
+                artifactType="workflow"
+                artifactId={workflow.id}
+                menerioSynced={(workflow as any).menerio_synced || false}
+                menerioSyncedAt={(workflow as any).menerio_synced_at || null}
+                menerioNoteId={(workflow as any).menerio_note_id || null}
+                onSyncComplete={() => window.location.reload()}
+              />
             )}
 
             {user && (

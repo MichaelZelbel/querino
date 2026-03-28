@@ -26,6 +26,8 @@ import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
 import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -60,6 +62,9 @@ export default function SkillDetail() {
   } = useSuggestions('skill', skill?.id || '');
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
   
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
   // Premium and team checks for "Copy to team" feature
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();
@@ -366,6 +371,17 @@ export default function SkillDetail() {
                 <Languages className="h-4 w-4" />
                 Translate
               </Button>
+            )}
+
+            {isAuthor && hasMenerio && skill && (
+              <MenerioSyncButton
+                artifactType="skill"
+                artifactId={skill.id}
+                menerioSynced={(skill as any).menerio_synced || false}
+                menerioSyncedAt={(skill as any).menerio_synced_at || null}
+                menerioNoteId={(skill as any).menerio_note_id || null}
+                onSyncComplete={() => window.location.reload()}
+              />
             )}
 
             {user && (

@@ -25,6 +25,8 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { AIInsightsPanel } from "@/components/insights";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
 import { format } from "date-fns";
@@ -56,6 +58,9 @@ export default function ClawDetail() {
   
   const isAuthor = claw?.author_id && user?.id === claw.author_id;
   const isPinned = claw?.id ? isClawPinned(claw.id) : false;
+
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
   
   // Check if user can edit this Claw (author OR team member with edit rights)
   const isTeamClaw = !!claw?.team_id;
@@ -392,6 +397,17 @@ export default function ClawDetail() {
                   <Languages className="h-4 w-4" />
                   Translate
                 </Button>
+              )}
+
+              {isAuthor && hasMenerio && claw && (
+                <MenerioSyncButton
+                  artifactType="claw"
+                  artifactId={claw.id}
+                  menerioSynced={(claw as any).menerio_synced || false}
+                  menerioSyncedAt={(claw as any).menerio_synced_at || null}
+                  menerioNoteId={(claw as any).menerio_note_id || null}
+                  onSyncComplete={() => window.location.reload()}
+                />
               )}
 
               {user && (

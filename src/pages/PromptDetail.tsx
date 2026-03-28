@@ -31,6 +31,8 @@ import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
@@ -76,6 +78,9 @@ export default function PromptDetail() {
   const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
   
+  // Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
   // Premium and team checks for "Copy to team" feature
   const { isPremium } = usePremiumCheck();
   const { teams, currentWorkspace } = useWorkspace();
@@ -568,6 +573,17 @@ export default function PromptDetail() {
                 <Languages className="h-4 w-4" />
                 Translate
               </Button>
+            )}
+
+            {isAuthor && hasMenerio && prompt && (
+              <MenerioSyncButton
+                artifactType="prompt"
+                artifactId={prompt.id}
+                menerioSynced={(prompt as any).menerio_synced || false}
+                menerioSyncedAt={(prompt as any).menerio_synced_at || null}
+                menerioNoteId={(prompt as any).menerio_note_id || null}
+                onSyncComplete={fetchPrompt}
+              />
             )}
 
             {user && (
