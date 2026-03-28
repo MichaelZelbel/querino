@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Pencil, Files, BookOpen, Pin, Star } from "lucide-react";
+import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
@@ -17,6 +18,7 @@ interface SkillCardProps {
   currentUserId?: string;
   showEditButton?: boolean;
   isPinned?: boolean;
+  showMenerioStatus?: boolean;
 }
 
 export function SkillCard({
@@ -26,6 +28,7 @@ export function SkillCard({
   currentUserId,
   showEditButton = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: SkillCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
@@ -75,6 +78,12 @@ export function SkillCard({
                   </Badge>
                 )}
                 <LanguageBadge language={skill.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={skill.menerio_synced}
+                    menerioSyncedAt={skill.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {skill.description || "No description"}

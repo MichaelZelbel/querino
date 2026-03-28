@@ -19,6 +19,9 @@ export interface Prompt {
   summary?: string | null;
   example_output?: string | null;
   language?: string;
+  menerio_synced?: boolean;
+  menerio_note_id?: string | null;
+  menerio_synced_at?: string | null;
 }
 
 // Author info for display

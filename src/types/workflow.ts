@@ -18,6 +18,9 @@ export interface Workflow {
   // Legacy field - may still exist in DB but not used in new workflows
   json?: Record<string, unknown>;
   language?: string;
+  menerio_synced?: boolean;
+  menerio_note_id?: string | null;
+  menerio_synced_at?: string | null;
 }
 
 // Author info for display

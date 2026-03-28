@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Pencil, Files, Grab, Pin, Star } from "lucide-react";
+import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { useCloneClaw } from "@/hooks/useCloneClaw";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
@@ -17,6 +18,7 @@ interface ClawCardProps {
   currentUserId?: string;
   showEditButton?: boolean;
   isPinned?: boolean;
+  showMenerioStatus?: boolean;
 }
 
 export function ClawCard({
@@ -26,6 +28,7 @@ export function ClawCard({
   currentUserId,
   showEditButton = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: ClawCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneClaw, cloning } = useCloneClaw();
@@ -77,6 +80,12 @@ export function ClawCard({
                   </Badge>
                 )}
                 <LanguageBadge language={claw.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={claw.menerio_synced}
+                    menerioSyncedAt={claw.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {claw.description || "A callable capability for Clawbot."}

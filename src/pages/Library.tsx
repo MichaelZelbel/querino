@@ -20,6 +20,7 @@ import { useWorkflows } from "@/hooks/useWorkflows";
 import { useClaws } from "@/hooks/useClaws";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -84,6 +85,9 @@ export default function Library() {
 
   // Fetch user's collections
   const { data: myCollections, isLoading: collectionsLoading } = useCollections(user?.id);
+
+  // Check Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
   // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
   const filteredMyPrompts = useMemo(() => {
@@ -442,6 +446,7 @@ export default function Library() {
                           editPath="library"
                           showSendToLLM
                           isPinned
+                          showMenerioStatus={hasMenerio}
                         />
                       ))}
                     </div>
@@ -473,6 +478,7 @@ export default function Library() {
                           editPath="library"
                           showSendToLLM
                           isPinned={isPromptPinned(prompt.id)}
+                          showMenerioStatus={hasMenerio}
                         />
                       ))}
                     </div>
@@ -496,7 +502,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMySkills.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} />
+                        <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
                   )}
@@ -519,7 +525,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyWorkflows.map((workflow) => (
-                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} />
+                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
                   )}
@@ -542,7 +548,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyClaws.map((claw) => (
-                        <ClawCard key={claw.id} claw={claw} showEditButton currentUserId={user?.id} />
+                        <ClawCard key={claw.id} claw={claw} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
                   )}

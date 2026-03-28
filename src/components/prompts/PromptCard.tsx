@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Copy, Check, Star, Pencil, Files, Pin } from "lucide-react";
+import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ interface PromptCardProps {
   userRating?: number;
   showSendToLLM?: boolean;
   isPinned?: boolean;
+  showMenerioStatus?: boolean;
 }
 
 export function PromptCard({ 
@@ -31,6 +33,7 @@ export function PromptCard({
   userRating,
   showSendToLLM = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
@@ -84,6 +87,12 @@ export function PromptCard({
                   </Badge>
                 )}
                 <LanguageBadge language={prompt.language} />
+                {showMenerioStatus && isAuthor && (
+                  <MenerioSyncBadge
+                    menerioSynced={prompt.menerio_synced}
+                    menerioSyncedAt={prompt.menerio_synced_at}
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {prompt.summary || prompt.description}
