@@ -525,7 +525,7 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyWorkflows.map((workflow) => (
-                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} />
+                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
                   )}
