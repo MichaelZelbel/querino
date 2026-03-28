@@ -610,6 +610,9 @@ export type Database = {
           embedding: string | null
           id: string
           language: string
+          menerio_note_id: string | null
+          menerio_synced: boolean
+          menerio_synced_at: string | null
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
@@ -635,6 +638,9 @@ export type Database = {
           embedding?: string | null
           id?: string
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -660,6 +666,9 @@ export type Database = {
           embedding?: string | null
           id?: string
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1200,6 +1209,9 @@ export type Database = {
           id: string
           is_public: boolean | null
           language: string
+          menerio_note_id: string | null
+          menerio_synced: boolean
+          menerio_synced_at: string | null
           published_at: string | null
           rating_avg: number | null
           rating_count: number | null
@@ -1222,6 +1234,9 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1244,6 +1259,9 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published_at?: string | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1340,6 +1358,9 @@ export type Database = {
           embedding: string | null
           id: string
           language: string
+          menerio_note_id: string | null
+          menerio_synced: boolean
+          menerio_synced_at: string | null
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
@@ -1358,6 +1379,9 @@ export type Database = {
           embedding?: string | null
           id?: string
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1376,6 +1400,9 @@ export type Database = {
           embedding?: string | null
           id?: string
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1746,6 +1773,9 @@ export type Database = {
           id: string
           json: Json
           language: string
+          menerio_note_id: string | null
+          menerio_synced: boolean
+          menerio_synced_at: string | null
           published: boolean | null
           rating_avg: number | null
           rating_count: number | null
@@ -1767,6 +1797,9 @@ export type Database = {
           id?: string
           json?: Json
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
@@ -1788,6 +1821,9 @@ export type Database = {
           id?: string
           json?: Json
           language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
           published?: boolean | null
           rating_avg?: number | null
           rating_count?: number | null
