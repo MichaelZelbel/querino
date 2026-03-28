@@ -27,6 +27,8 @@ import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSection";
 import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";

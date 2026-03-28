@@ -25,6 +25,8 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { AIInsightsPanel } from "@/components/insights";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Claw, ClawAuthor } from "@/types/claw";
 import { format } from "date-fns";

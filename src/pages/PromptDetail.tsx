@@ -31,6 +31,8 @@ import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";

@@ -26,6 +26,8 @@ import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
 import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
