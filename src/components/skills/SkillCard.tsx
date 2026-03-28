@@ -28,6 +28,7 @@ export function SkillCard({
   currentUserId,
   showEditButton = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: SkillCardProps) {
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
