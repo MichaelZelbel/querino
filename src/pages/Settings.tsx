@@ -888,6 +888,9 @@ export default function Settings() {
               </CardContent>
             </Card>
 
+            {/* Menerio 2nd Brain Integration */}
+            <MenerioIntegrationSection />
+
             {/* MCP Server / API Section */}
             <McpSetupSection />
 
