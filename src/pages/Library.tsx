@@ -478,6 +478,7 @@ export default function Library() {
                           editPath="library"
                           showSendToLLM
                           isPinned={isPromptPinned(prompt.id)}
+                          showMenerioStatus={hasMenerio}
                         />
                       ))}
                     </div>
