@@ -86,6 +86,9 @@ export default function Library() {
   // Fetch user's collections
   const { data: myCollections, isLoading: collectionsLoading } = useCollections(user?.id);
 
+  // Check Menerio integration
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
   // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
   const filteredMyPrompts = useMemo(() => {
     if (!debouncedSearch.trim()) return myPrompts;
