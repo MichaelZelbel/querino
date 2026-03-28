@@ -33,6 +33,7 @@ export function PromptCard({
   userRating,
   showSendToLLM = false,
   isPinned = false,
+  showMenerioStatus = false,
 }: PromptCardProps) {
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
