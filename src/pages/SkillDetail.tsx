@@ -373,6 +373,17 @@ export default function SkillDetail() {
               </Button>
             )}
 
+            {isAuthor && hasMenerio && skill && (
+              <MenerioSyncButton
+                artifactType="skill"
+                artifactId={skill.id}
+                menerioSynced={(skill as any).menerio_synced || false}
+                menerioSyncedAt={(skill as any).menerio_synced_at || null}
+                menerioNoteId={(skill as any).menerio_note_id || null}
+                onSyncComplete={() => window.location.reload()}
+              />
+            )}
+
             {user && (
               <Button
                 size="lg"

@@ -396,6 +396,17 @@ export default function WorkflowDetail() {
               </Button>
             )}
 
+            {isAuthor && hasMenerio && workflow && (
+              <MenerioSyncButton
+                artifactType="workflow"
+                artifactId={workflow.id}
+                menerioSynced={(workflow as any).menerio_synced || false}
+                menerioSyncedAt={(workflow as any).menerio_synced_at || null}
+                menerioNoteId={(workflow as any).menerio_note_id || null}
+                onSyncComplete={() => window.location.reload()}
+              />
+            )}
+
             {user && (
               <Button
                 size="lg"

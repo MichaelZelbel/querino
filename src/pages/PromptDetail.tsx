@@ -575,7 +575,17 @@ export default function PromptDetail() {
               </Button>
             )}
 
-            {user && (
+            {isAuthor && hasMenerio && prompt && (
+              <MenerioSyncButton
+                artifactType="prompt"
+                artifactId={prompt.id}
+                menerioSynced={(prompt as any).menerio_synced || false}
+                menerioSyncedAt={(prompt as any).menerio_synced_at || null}
+                menerioNoteId={(prompt as any).menerio_note_id || null}
+                onSyncComplete={fetchPrompt}
+              />
+            )}
+
               <Button
                 size="lg"
                 variant="outline"

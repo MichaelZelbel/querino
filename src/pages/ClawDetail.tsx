@@ -399,6 +399,17 @@ export default function ClawDetail() {
                 </Button>
               )}
 
+              {isAuthor && hasMenerio && claw && (
+                <MenerioSyncButton
+                  artifactType="claw"
+                  artifactId={claw.id}
+                  menerioSynced={(claw as any).menerio_synced || false}
+                  menerioSyncedAt={(claw as any).menerio_synced_at || null}
+                  menerioNoteId={(claw as any).menerio_note_id || null}
+                  onSyncComplete={() => window.location.reload()}
+                />
+              )}
+
               {user && (
                 <Button
                   size="lg"
