@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Brain, Eye, EyeOff, Loader2, CheckCircle2, XCircle, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Brain, Loader2, CheckCircle2, Info, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
 const MENERIO_BASE_URL = "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1";
@@ -23,19 +24,24 @@ const ARTIFACT_TYPES = [
 export function MenerioIntegrationSection() {
   const { user } = useAuthContext();
 
-  const [apiKey, setApiKey] = useState("");
+  // Connection state
+  const [connectionKey, setConnectionKey] = useState("");
+  const [connectedDisplayName, setConnectedDisplayName] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // Settings state (only relevant when connected)
   const [autoSync, setAutoSync] = useState(true);
   const [syncTypes, setSyncTypes] = useState<string[]>(["prompt", "skill", "claw", "workflow"]);
   const [isActive, setIsActive] = useState(true);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [existingId, setExistingId] = useState<string | null>(null);
 
-  const [showApiKey, setShowApiKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
 
+  // Load existing integration on mount
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -48,32 +54,61 @@ export function MenerioIntegrationSection() {
       if (!error && data) {
         const d = data as any;
         setExistingId(d.id);
-        setApiKey(d.menerio_api_key || "");
         setAutoSync(d.auto_sync ?? true);
         setSyncTypes(d.sync_artifact_types || ["prompt", "skill", "claw", "workflow"]);
         setIsActive(d.is_active ?? true);
         setLastSyncAt(d.last_sync_at || null);
+        setIsConnected(true);
+        // Re-verify to get display name
+        verifyExistingConnection(d.menerio_api_key);
       }
       setLoading(false);
     })();
   }, [user]);
 
-  const handleSave = async () => {
-    if (!user) return;
-    if (!apiKey.trim()) {
-      toast.error("API Key is required");
+  const verifyExistingConnection = async (apiKey: string) => {
+    try {
+      const res = await fetch(`${MENERIO_BASE_URL}/verify-connection`, {
+        method: "POST",
+        headers: { "x-api-key": apiKey },
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setConnectedDisplayName(json.user_display_name || null);
+      }
+    } catch {
+      // Silent — we already have the integration saved
+    }
+  };
+
+  const handleConnect = async () => {
+    if (!user || !connectionKey.trim()) {
+      toast.error("Please paste your Menerio connection key.");
       return;
     }
 
-    setSaving(true);
+    setConnecting(true);
     try {
+      const res = await fetch(`${MENERIO_BASE_URL}/verify-connection`, {
+        method: "POST",
+        headers: { "x-api-key": connectionKey.trim() },
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.ok) {
+        toast.error(json.error || "Connection failed. Please check your key.");
+        return;
+      }
+
+      // Store in database
       const payload = {
         user_id: user.id,
-        menerio_api_key: apiKey.trim(),
+        menerio_api_key: connectionKey.trim(),
         menerio_base_url: MENERIO_BASE_URL,
         auto_sync: autoSync,
         sync_artifact_types: syncTypes,
-        is_active: isActive,
+        is_active: true,
       };
 
       if (existingId) {
@@ -92,40 +127,64 @@ export function MenerioIntegrationSection() {
         setExistingId((data as any).id);
       }
 
-      toast.success("Menerio settings saved");
-      setTestStatus("idle");
+      setIsConnected(true);
+      setConnectedDisplayName(json.user_display_name || null);
+      setConnectionKey("");
+      toast.success(
+        json.already_connected
+          ? "Already connected to Menerio!"
+          : "Successfully connected to Menerio!"
+      );
     } catch (error) {
-      console.error("Error saving Menerio settings:", error);
-      toast.error("Failed to save Menerio settings");
+      console.error("Menerio connect error:", error);
+      toast.error("Failed to save connection. Please try again.");
     } finally {
-      setSaving(false);
+      setConnecting(false);
     }
   };
 
-  const handleTestConnection = async () => {
-    setTesting(true);
-    setTestStatus("idle");
-
+  const handleDisconnect = async () => {
+    if (!existingId) return;
+    setDisconnecting(true);
     try {
-      const response = await fetch(MENERIO_BASE_URL, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-        },
-      });
+      const { error } = await supabase
+        .from("menerio_integration" as any)
+        .delete()
+        .eq("id", existingId);
+      if (error) throw error;
 
-      if (response.ok || response.status === 401 || response.status === 403) {
-        setTestStatus("success");
-        toast.success("Menerio instance is reachable!");
-      } else {
-        setTestStatus("error");
-        toast.error(`Connection failed: HTTP ${response.status}`);
-      }
+      setIsConnected(false);
+      setConnectedDisplayName(null);
+      setExistingId(null);
+      setConnectionKey("");
+      toast.success("Menerio integration disconnected.");
     } catch (error) {
-      setTestStatus("error");
-      toast.error("Connection failed — URL not reachable");
+      console.error("Menerio disconnect error:", error);
+      toast.error("Failed to disconnect.");
     } finally {
-      setTesting(false);
+      setDisconnecting(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!existingId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("menerio_integration" as any)
+        .update({
+          auto_sync: autoSync,
+          sync_artifact_types: syncTypes,
+          is_active: isActive,
+        })
+        .eq("id", existingId);
+      if (error) throw error;
+      toast.success("Menerio settings saved.");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error("Failed to save settings.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -140,12 +199,20 @@ export function MenerioIntegrationSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-display flex items-center gap-2">
-          <Brain className="h-5 w-5" />
-          Menerio 2nd Brain Integration
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-display flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            Menerio 2nd Brain
+          </CardTitle>
+          {isConnected && (
+            <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400 gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Connected{connectedDisplayName ? ` as ${connectedDisplayName}` : ""}
+            </Badge>
+          )}
+        </div>
         <CardDescription>
-          Connect Querino with your Menerio 2nd Brain. Your artifacts will be mirrored as searchable notes in Menerio.
+          Mirror your Querino artifacts as searchable notes in your Menerio 2nd Brain.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -153,48 +220,42 @@ export function MenerioIntegrationSection() {
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : (
-          <>
-            {/* API Key */}
+        ) : !isConnected ? (
+          /* ── Not connected: show key input + Connect button ── */
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="menerioApiKey">Menerio API Key</Label>
-              <div className="relative">
-                <Input
-                  id="menerioApiKey"
-                  type={showApiKey ? "text" : "password"}
-                  placeholder="menerio_key_xxxxxxxxxxxx"
-                  value={apiKey}
-                  onChange={(e) => {
-                    setApiKey(e.target.value);
-                    setTestStatus("idle");
-                  }}
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-10 w-10"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
+              <Label htmlFor="menerioKey">Connection Key</Label>
+              <Input
+                id="menerioKey"
+                type="password"
+                placeholder="Paste your Menerio connection key…"
+                value={connectionKey}
+                onChange={(e) => setConnectionKey(e.target.value)}
+              />
               <p className="text-xs text-muted-foreground">
-                The API key you generated in Menerio for the Querino integration.
+                Generate a connection key in your Menerio app under Settings → Integrations → Querino.
               </p>
             </div>
-
+            <Button onClick={handleConnect} disabled={connecting || !connectionKey.trim()}>
+              {connecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting…
+                </>
+              ) : (
+                "Connect"
+              )}
+            </Button>
+          </div>
+        ) : (
+          /* ── Connected: show settings ── */
+          <>
             {/* Auto-Sync Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Auto-Sync enabled</p>
+                <p className="font-medium">Auto-Sync</p>
                 <p className="text-sm text-muted-foreground">
-                  Changes to artifacts are automatically synced to Menerio.
+                  Automatically sync changes to artifacts to Menerio.
                 </p>
               </div>
               <Switch checked={autoSync} onCheckedChange={setAutoSync} />
@@ -205,7 +266,7 @@ export function MenerioIntegrationSection() {
               <div>
                 <p className="font-medium">Integration active</p>
                 <p className="text-sm text-muted-foreground">
-                  Disable the entire Menerio connection without deleting data.
+                  Pause the Menerio connection without disconnecting.
                 </p>
               </div>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
@@ -216,10 +277,7 @@ export function MenerioIntegrationSection() {
               <Label>Artifact types to sync</Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {ARTIFACT_TYPES.map((type) => (
-                  <label
-                    key={type.value}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
+                  <label key={type.value} className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={syncTypes.includes(type.value)}
                       onCheckedChange={() => toggleSyncType(type.value)}
@@ -242,38 +300,32 @@ export function MenerioIntegrationSection() {
 
             {/* Action Buttons */}
             <div className="flex gap-3 flex-wrap">
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSaveSettings} disabled={saving}>
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving…
                   </>
                 ) : (
-                  "Save"
+                  "Save settings"
                 )}
               </Button>
               <Button
                 variant="outline"
-                onClick={handleTestConnection}
-                disabled={testing || !apiKey.trim()}
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="text-destructive hover:text-destructive"
               >
-                {testing ? (
+                {disconnecting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Testing…
-                  </>
-                ) : testStatus === "success" ? (
-                  <>
-                    <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                    Reachable
-                  </>
-                ) : testStatus === "error" ? (
-                  <>
-                    <XCircle className="mr-2 h-4 w-4 text-destructive" />
-                    Failed
+                    Disconnecting…
                   </>
                 ) : (
-                  "Test connection"
+                  <>
+                    <Unplug className="mr-2 h-4 w-4" />
+                    Disconnect
+                  </>
                 )}
               </Button>
             </div>
