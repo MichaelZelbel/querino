@@ -1,7 +1,6 @@
 import { CloudUpload } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
-import { de } from "date-fns/locale";
 
 interface MenerioSyncBadgeProps {
   menerioSynced?: boolean;
@@ -12,7 +11,7 @@ export function MenerioSyncBadge({ menerioSynced, menerioSyncedAt }: MenerioSync
   if (!menerioSynced) return null;
 
   const timeAgo = menerioSyncedAt
-    ? formatDistanceToNow(new Date(menerioSyncedAt), { addSuffix: true, locale: de })
+    ? formatDistanceToNow(new Date(menerioSyncedAt), { addSuffix: true })
     : null;
 
   return (
@@ -24,7 +23,7 @@ export function MenerioSyncBadge({ menerioSynced, menerioSyncedAt }: MenerioSync
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          Mit Menerio synchronisiert{timeAgo ? ` (zuletzt: ${timeAgo})` : ""}
+          Synced to Menerio{timeAgo ? ` (last: ${timeAgo})` : ""}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Brain, Eye, EyeOff, Loader2, CheckCircle2, XCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 
+const MENERIO_BASE_URL = "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1";
+
 const ARTIFACT_TYPES = [
   { value: "prompt", label: "Prompts" },
   { value: "skill", label: "Skills" },
@@ -22,7 +24,6 @@ export function MenerioIntegrationSection() {
   const { user } = useAuthContext();
 
   const [apiKey, setApiKey] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
   const [autoSync, setAutoSync] = useState(true);
   const [syncTypes, setSyncTypes] = useState<string[]>(["prompt", "skill", "claw", "workflow"]);
   const [isActive, setIsActive] = useState(true);
@@ -35,7 +36,6 @@ export function MenerioIntegrationSection() {
   const [testing, setTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
 
-  // Load existing settings
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -49,7 +49,6 @@ export function MenerioIntegrationSection() {
         const d = data as any;
         setExistingId(d.id);
         setApiKey(d.menerio_api_key || "");
-        setBaseUrl(d.menerio_base_url || "");
         setAutoSync(d.auto_sync ?? true);
         setSyncTypes(d.sync_artifact_types || ["prompt", "skill", "claw", "workflow"]);
         setIsActive(d.is_active ?? true);
@@ -62,11 +61,7 @@ export function MenerioIntegrationSection() {
   const handleSave = async () => {
     if (!user) return;
     if (!apiKey.trim()) {
-      toast.error("API Key ist erforderlich");
-      return;
-    }
-    if (!baseUrl.trim()) {
-      toast.error("Base URL ist erforderlich");
+      toast.error("API Key is required");
       return;
     }
 
@@ -75,7 +70,7 @@ export function MenerioIntegrationSection() {
       const payload = {
         user_id: user.id,
         menerio_api_key: apiKey.trim(),
-        menerio_base_url: baseUrl.trim().replace(/\/+$/, ""),
+        menerio_base_url: MENERIO_BASE_URL,
         auto_sync: autoSync,
         sync_artifact_types: syncTypes,
         is_active: isActive,
@@ -97,29 +92,22 @@ export function MenerioIntegrationSection() {
         setExistingId((data as any).id);
       }
 
-      toast.success("Menerio-Einstellungen gespeichert");
+      toast.success("Menerio settings saved");
       setTestStatus("idle");
     } catch (error) {
       console.error("Error saving Menerio settings:", error);
-      toast.error("Fehler beim Speichern der Menerio-Einstellungen");
+      toast.error("Failed to save Menerio settings");
     } finally {
       setSaving(false);
     }
   };
 
   const handleTestConnection = async () => {
-    if (!baseUrl.trim()) {
-      toast.error("Bitte zuerst eine Base URL eingeben");
-      return;
-    }
-
     setTesting(true);
     setTestStatus("idle");
 
     try {
-      // Simple GET to check if the Menerio instance is reachable
-      const testUrl = baseUrl.trim().replace(/\/+$/, "");
-      const response = await fetch(testUrl, {
+      const response = await fetch(MENERIO_BASE_URL, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -127,16 +115,15 @@ export function MenerioIntegrationSection() {
       });
 
       if (response.ok || response.status === 401 || response.status === 403) {
-        // 401/403 means the server is reachable but auth may differ — still counts as "reachable"
         setTestStatus("success");
-        toast.success("Menerio-Instanz erreichbar!");
+        toast.success("Menerio instance is reachable!");
       } else {
         setTestStatus("error");
-        toast.error(`Verbindung fehlgeschlagen: HTTP ${response.status}`);
+        toast.error(`Connection failed: HTTP ${response.status}`);
       }
     } catch (error) {
       setTestStatus("error");
-      toast.error("Verbindung fehlgeschlagen — URL nicht erreichbar");
+      toast.error("Connection failed — URL not reachable");
     } finally {
       setTesting(false);
     }
@@ -158,7 +145,7 @@ export function MenerioIntegrationSection() {
           Menerio 2nd Brain Integration
         </CardTitle>
         <CardDescription>
-          Verbinde Querino mit deinem Menerio 2nd Brain. Deine Artefakte werden als durchsuchbare Notizen in Menerio gespiegelt.
+          Connect Querino with your Menerio 2nd Brain. Your artifacts will be mirrored as searchable notes in Menerio.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -198,34 +185,16 @@ export function MenerioIntegrationSection() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Der API-Key, den du in Menerio für die Querino-Integration generiert hast.
-              </p>
-            </div>
-
-            {/* Base URL */}
-            <div className="space-y-2">
-              <Label htmlFor="menerioBaseUrl">Menerio Base URL</Label>
-              <Input
-                id="menerioBaseUrl"
-                type="url"
-                placeholder="https://xyz.supabase.co/functions/v1"
-                value={baseUrl}
-                onChange={(e) => {
-                  setBaseUrl(e.target.value);
-                  setTestStatus("idle");
-                }}
-              />
-              <p className="text-xs text-muted-foreground">
-                Die Supabase Functions URL deiner Menerio-Instanz.
+                The API key you generated in Menerio for the Querino integration.
               </p>
             </div>
 
             {/* Auto-Sync Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Auto-Sync aktiviert</p>
+                <p className="font-medium">Auto-Sync enabled</p>
                 <p className="text-sm text-muted-foreground">
-                  Änderungen an Artefakten werden automatisch zu Menerio gesynct.
+                  Changes to artifacts are automatically synced to Menerio.
                 </p>
               </div>
               <Switch checked={autoSync} onCheckedChange={setAutoSync} />
@@ -234,9 +203,9 @@ export function MenerioIntegrationSection() {
             {/* Integration Active Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Integration aktiv</p>
+                <p className="font-medium">Integration active</p>
                 <p className="text-sm text-muted-foreground">
-                  Deaktiviere die gesamte Menerio-Verbindung ohne Daten zu löschen.
+                  Disable the entire Menerio connection without deleting data.
                 </p>
               </div>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
@@ -244,7 +213,7 @@ export function MenerioIntegrationSection() {
 
             {/* Artifact Type Checkboxes */}
             <div className="space-y-3">
-              <Label>Artefakt-Typen für Sync</Label>
+              <Label>Artifact types to sync</Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {ARTIFACT_TYPES.map((type) => (
                   <label
@@ -266,7 +235,7 @@ export function MenerioIntegrationSection() {
               <Alert className="border-border">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  Letzter Sync: {new Date(lastSyncAt).toLocaleString("de-DE")}
+                  Last sync: {new Date(lastSyncAt).toLocaleString("en-US")}
                 </AlertDescription>
               </Alert>
             )}
@@ -277,34 +246,34 @@ export function MenerioIntegrationSection() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Speichern…
+                    Saving…
                   </>
                 ) : (
-                  "Speichern"
+                  "Save"
                 )}
               </Button>
               <Button
                 variant="outline"
                 onClick={handleTestConnection}
-                disabled={testing || !baseUrl.trim()}
+                disabled={testing || !apiKey.trim()}
               >
                 {testing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Teste…
+                    Testing…
                   </>
                 ) : testStatus === "success" ? (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                    Erreichbar
+                    Reachable
                   </>
                 ) : testStatus === "error" ? (
                   <>
                     <XCircle className="mr-2 h-4 w-4 text-destructive" />
-                    Fehlgeschlagen
+                    Failed
                   </>
                 ) : (
-                  "Verbindung testen"
+                  "Test connection"
                 )}
               </Button>
             </div>

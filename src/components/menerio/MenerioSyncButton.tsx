@@ -5,7 +5,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CloudUpload, RefreshCw, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { de } from "date-fns/locale";
 
 interface MenerioSyncButtonProps {
   artifactType: "prompt" | "skill" | "claw" | "workflow";
@@ -31,7 +30,7 @@ export function MenerioSyncButton({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Bitte einloggen");
+        toast.error("Please log in");
         return;
       }
 
@@ -40,7 +39,7 @@ export function MenerioSyncButton({
       });
 
       if (error) {
-        toast.error(data?.error || error.message || "Sync fehlgeschlagen");
+        toast.error(data?.error || error.message || "Sync failed");
         return;
       }
 
@@ -49,17 +48,17 @@ export function MenerioSyncButton({
         return;
       }
 
-      toast.success("Erfolgreich mit Menerio synchronisiert");
+      toast.success("Successfully synced to Menerio");
       onSyncComplete?.();
     } catch (err) {
-      toast.error("Sync fehlgeschlagen");
+      toast.error("Sync failed");
     } finally {
       setSyncing(false);
     }
   };
 
   const syncedAgo = menerioSyncedAt
-    ? formatDistanceToNow(new Date(menerioSyncedAt), { addSuffix: true, locale: de })
+    ? formatDistanceToNow(new Date(menerioSyncedAt), { addSuffix: true })
     : null;
 
   return (
@@ -89,8 +88,8 @@ export function MenerioSyncButton({
           </TooltipTrigger>
           {menerioSynced && syncedAgo && (
             <TooltipContent>
-              <p>Zuletzt synchronisiert: {syncedAgo}</p>
-              {menerioNoteId && <p className="text-xs text-muted-foreground">Notiz-ID: {menerioNoteId}</p>}
+              <p>Last synced: {syncedAgo}</p>
+              {menerioNoteId && <p className="text-xs text-muted-foreground">Note ID: {menerioNoteId}</p>}
             </TooltipContent>
           )}
         </Tooltip>
