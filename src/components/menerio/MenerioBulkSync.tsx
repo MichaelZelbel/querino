@@ -72,7 +72,6 @@ export function MenerioBulkSync() {
     setSyncing(true);
 
     try {
-      // Gather all artifacts needing sync
       const toSync: { type: string; id: string }[] = [];
 
       for (let i = 0; i < TABLES.length; i++) {
@@ -94,14 +93,13 @@ export function MenerioBulkSync() {
       }
 
       if (toSync.length === 0) {
-        toast.info("Alle Artefakte sind bereits synchronisiert.");
+        toast.info("All artifacts are already synced.");
         setSyncing(false);
         return;
       }
 
       setProgress({ current: 0, total: toSync.length });
 
-      // Insert into sync queue
       const queueEntries = toSync.map((item) => ({
         user_id: user.id,
         artifact_type: item.type,
@@ -115,9 +113,8 @@ export function MenerioBulkSync() {
 
       if (insertError) throw insertError;
 
-      // Poll queue until done
       let completed = 0;
-      const maxPolls = 120; // 10 minutes max
+      const maxPolls = 120;
       let polls = 0;
 
       while (completed < toSync.length && polls < maxPolls) {
@@ -137,22 +134,20 @@ export function MenerioBulkSync() {
           const done = queueData.filter(
             (q: any) => q.status === "completed" || q.status === "failed"
           ).length;
-          // Also count items that disappeared from queue (cleanup)
           completed = Math.max(done, toSync.length - (queueData.filter((q: any) => q.status === "pending" || q.status === "processing").length));
           setProgress({ current: completed, total: toSync.length });
         }
 
-        // If no pending/processing left, we're done
         if (queueData && queueData.every((q: any) => q.status === "completed" || q.status === "failed")) {
           break;
         }
       }
 
       await fetchStats();
-      toast.success(`Sync abgeschlossen. ${completed} Artefakte synchronisiert.`);
+      toast.success(`Sync complete. ${completed} artifacts synchronized.`);
     } catch (error) {
       console.error("Bulk sync error:", error);
-      toast.error("Fehler beim Bulk-Sync");
+      toast.error("Bulk sync failed");
     } finally {
       setSyncing(false);
       setProgress({ current: 0, total: 0 });
@@ -180,10 +175,10 @@ export function MenerioBulkSync() {
       );
 
       await fetchStats();
-      toast.success("Alle Menerio-Verknüpfungen wurden entfernt.");
+      toast.success("All Menerio links have been removed.");
     } catch (error) {
       console.error("Reset error:", error);
-      toast.error("Fehler beim Zurücksetzen");
+      toast.error("Failed to reset");
     } finally {
       setResetting(false);
     }
@@ -203,11 +198,10 @@ export function MenerioBulkSync() {
       <CardHeader>
         <CardTitle className="font-display flex items-center gap-2">
           <RefreshCw className="h-5 w-5" />
-          Alle Artefakte synchronisieren
+          Sync all artifacts
         </CardTitle>
         <CardDescription>
-          Synchronisiere alle deine Artefakte auf einmal mit Menerio. Bereits
-          synchronisierte Artefakte werden aktualisiert.
+          Sync all your artifacts at once with Menerio. Already synced artifacts will be updated.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -217,7 +211,6 @@ export function MenerioBulkSync() {
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {TYPES.map((type) => (
                 <div
@@ -232,12 +225,11 @@ export function MenerioBulkSync() {
                       / {stats![type].total}
                     </span>
                   </p>
-                  <p className="text-xs text-muted-foreground">gesynct</p>
+                  <p className="text-xs text-muted-foreground">synced</p>
                 </div>
               ))}
             </div>
 
-            {/* Progress Bar */}
             {syncing && progress.total > 0 && (
               <div className="space-y-2">
                 <Progress
@@ -245,26 +237,25 @@ export function MenerioBulkSync() {
                   className="h-2"
                 />
                 <p className="text-sm text-muted-foreground text-center">
-                  Synchronisiere {progress.current} von {progress.total}…
+                  Syncing {progress.current} of {progress.total}…
                 </p>
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex gap-3 flex-wrap items-center">
               <Button onClick={handleBulkSync} disabled={syncing || resetting}>
                 {syncing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Synchronisiere…
+                    Syncing…
                   </>
                 ) : totalArtifacts === totalSynced && totalArtifacts > 0 ? (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                    Alle synchronisiert
+                    All synced
                   </>
                 ) : (
-                  "Alle synchronisieren"
+                  "Sync all"
                 )}
               </Button>
 
@@ -281,24 +272,23 @@ export function MenerioBulkSync() {
                     ) : (
                       <Trash2 className="mr-2 h-4 w-4" />
                     )}
-                    Alle Syncs entfernen
+                    Remove all syncs
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      Alle Menerio-Verknüpfungen entfernen?
+                      Remove all Menerio links?
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Die Notizen in Menerio bleiben bestehen, werden aber nicht
-                      mehr automatisch aktualisiert. Du kannst jederzeit erneut
-                      synchronisieren.
+                      The notes in Menerio will remain, but they will no longer
+                      be automatically updated. You can re-sync at any time.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleResetAll}>
-                      Ja, alle entfernen
+                      Yes, remove all
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
