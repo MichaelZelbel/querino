@@ -46,8 +46,7 @@ function buildMcpServer(auth: Auth) {
 
   // ── PROMPTS ───────────────────────────────────────────────────────
 
-  mcpServer.tool({
-    name: "list_prompts",
+  mcpServer.tool("list_prompts", {
     description: "List your prompts (most recent first). Optional limit (default 20, max 100).",
     inputSchema: {
       type: "object",
@@ -70,8 +69,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "search_prompts",
+  mcpServer.tool("search_prompts", {
     description: "Search your prompts by keyword in title or description.",
     inputSchema: {
       type: "object",
@@ -91,8 +89,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "get_prompt",
+  mcpServer.tool("get_prompt", {
     description: "Get full details of a prompt by ID.",
     inputSchema: {
       type: "object",
@@ -111,8 +108,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "create_prompt",
+  mcpServer.tool("create_prompt", {
     description: "Create a new prompt.",
     inputSchema: {
       type: "object",
@@ -147,8 +143,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "update_prompt",
+  mcpServer.tool("update_prompt", {
     description: "Update an existing prompt by ID. Only supply fields you want to change.",
     inputSchema: {
       type: "object",
@@ -178,8 +173,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "delete_prompt",
+  mcpServer.tool("delete_prompt", {
     description: "Delete a prompt by ID.",
     inputSchema: {
       type: "object",
@@ -199,8 +193,7 @@ function buildMcpServer(auth: Auth) {
 
   // ── SKILLS ────────────────────────────────────────────────────────
 
-  mcpServer.tool({
-    name: "list_skills",
+  mcpServer.tool("list_skills", {
     description: "List your skills (most recent first).",
     inputSchema: {
       type: "object",
@@ -223,8 +216,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "search_skills",
+  mcpServer.tool("search_skills", {
     description: "Search your skills by keyword.",
     inputSchema: {
       type: "object",
@@ -244,8 +236,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "get_skill",
+  mcpServer.tool("get_skill", {
     description: "Get full details of a skill by ID.",
     inputSchema: {
       type: "object",
@@ -264,8 +255,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "create_skill",
+  mcpServer.tool("create_skill", {
     description: "Create a new skill.",
     inputSchema: {
       type: "object",
@@ -300,8 +290,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "update_skill",
+  mcpServer.tool("update_skill", {
     description: "Update an existing skill by ID.",
     inputSchema: {
       type: "object",
@@ -331,8 +320,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "delete_skill",
+  mcpServer.tool("delete_skill", {
     description: "Delete a skill by ID.",
     inputSchema: {
       type: "object",
@@ -352,8 +340,7 @@ function buildMcpServer(auth: Auth) {
 
   // ── WORKFLOWS ─────────────────────────────────────────────────────
 
-  mcpServer.tool({
-    name: "list_workflows",
+  mcpServer.tool("list_workflows", {
     description: "List your workflows (most recent first).",
     inputSchema: {
       type: "object",
@@ -376,8 +363,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "search_workflows",
+  mcpServer.tool("search_workflows", {
     description: "Search your workflows by keyword.",
     inputSchema: {
       type: "object",
@@ -397,8 +383,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "get_workflow",
+  mcpServer.tool("get_workflow", {
     description: "Get full details of a workflow by ID.",
     inputSchema: {
       type: "object",
@@ -417,8 +402,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "create_workflow",
+  mcpServer.tool("create_workflow", {
     description: "Create a new workflow.",
     inputSchema: {
       type: "object",
@@ -455,8 +439,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "update_workflow",
+  mcpServer.tool("update_workflow", {
     description: "Update an existing workflow by ID.",
     inputSchema: {
       type: "object",
@@ -487,8 +470,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "delete_workflow",
+  mcpServer.tool("delete_workflow", {
     description: "Delete a workflow by ID.",
     inputSchema: {
       type: "object",
@@ -508,8 +490,7 @@ function buildMcpServer(auth: Auth) {
 
   // ── CLAWS ─────────────────────────────────────────────────────────
 
-  mcpServer.tool({
-    name: "list_claws",
+  mcpServer.tool("list_claws", {
     description: "List your claws (most recent first).",
     inputSchema: {
       type: "object",
@@ -532,8 +513,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "search_claws",
+  mcpServer.tool("search_claws", {
     description: "Search your claws by keyword.",
     inputSchema: {
       type: "object",
@@ -553,8 +533,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "get_claw",
+  mcpServer.tool("get_claw", {
     description: "Get full details of a claw by ID.",
     inputSchema: {
       type: "object",
@@ -573,8 +552,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "create_claw",
+  mcpServer.tool("create_claw", {
     description: "Create a new claw.",
     inputSchema: {
       type: "object",
@@ -613,8 +591,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "update_claw",
+  mcpServer.tool("update_claw", {
     description: "Update an existing claw by ID.",
     inputSchema: {
       type: "object",
@@ -646,8 +623,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "delete_claw",
+  mcpServer.tool("delete_claw", {
     description: "Delete a claw by ID.",
     inputSchema: {
       type: "object",
@@ -667,8 +643,7 @@ function buildMcpServer(auth: Auth) {
 
   // ── COLLECTIONS ───────────────────────────────────────────────────
 
-  mcpServer.tool({
-    name: "list_collections",
+  mcpServer.tool("list_collections", {
     description: "List your collections.",
     inputSchema: {
       type: "object",
@@ -686,8 +661,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "get_collection",
+  mcpServer.tool("get_collection", {
     description: "Get a collection and its items by ID.",
     inputSchema: {
       type: "object",
@@ -713,8 +687,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "create_collection",
+  mcpServer.tool("create_collection", {
     description: "Create a new collection.",
     inputSchema: {
       type: "object",
@@ -741,8 +714,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "delete_collection",
+  mcpServer.tool("delete_collection", {
     description: "Delete a collection by ID.",
     inputSchema: {
       type: "object",
@@ -762,8 +734,7 @@ function buildMcpServer(auth: Auth) {
 
   // ── PROFILE ───────────────────────────────────────────────────────
 
-  mcpServer.tool({
-    name: "get_my_profile",
+  mcpServer.tool("get_my_profile", {
     description: "Get your profile information.",
     inputSchema: { type: "object", properties: {} },
     handler: async () => {
@@ -777,8 +748,7 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
-  mcpServer.tool({
-    name: "update_my_profile",
+  mcpServer.tool("update_my_profile", {
     description: "Update your profile. Only supply fields you want to change.",
     inputSchema: {
       type: "object",
