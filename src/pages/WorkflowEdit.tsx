@@ -37,6 +37,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Loader2, X, ArrowLeft, Trash2, Save, GitBranch, FileText, Sparkles, Bot } from "lucide-react";
+import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { toast } from "sonner";
