@@ -803,7 +803,7 @@ app.all("/mcp-server/mcp", async (c) => {
     const auth = await authenticate(c.req.raw);
     const mcpServer = buildMcpServer(auth);
     const transport = new StreamableHttpTransport();
-    const response = await transport.handleRequest(c.req.raw, mcpServer);
+    const response = await (transport as any).handleRequest(c.req.raw, mcpServer);
 
     // Add CORS headers to the response
     const newHeaders = new Headers(response.headers);
