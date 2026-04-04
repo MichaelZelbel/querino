@@ -223,6 +223,20 @@ export default function WorkflowEdit() {
     if (!user || !workflowId) return;
     if (!formData.title.trim()) { toast.error("Title is required"); return; }
     if (!formData.content.trim()) { toast.error("Workflow content is required"); return; }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "workflow",
+        workflowId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const { error } = await (supabase.from("workflows") as any)
