@@ -60,6 +60,7 @@ export default function SkillNew() {
   const [isPublic, setIsPublic] = useState(false);
   const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
