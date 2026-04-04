@@ -65,6 +65,9 @@ export default function PromptNew() {
   // Undo state for AI edits
   const [previousContent, setPreviousContent] = useState<string | null>(null);
 
+  // Moderation state
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
+
   // Mobile coach sheet
   const [showCoachSheet, setShowCoachSheet] = useState(false);
 
