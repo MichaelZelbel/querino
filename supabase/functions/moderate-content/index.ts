@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
           approved: false,
           reason: "Your account has been suspended due to repeated guideline violations.",
           category: "suspended",
-          support_hint: "Contact support@querino.app for assistance.",
+          support_hint: "Contact support@querino.ai for assistance.",
         }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
