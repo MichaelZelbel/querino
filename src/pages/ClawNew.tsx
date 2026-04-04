@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, X, Grab, Sparkles, FileText, Download, Link, CheckCircle2, ExternalLink, Info } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
