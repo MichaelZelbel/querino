@@ -49,6 +49,7 @@ import TeamActivity from "./pages/TeamActivity";
 import UserActivity from "./pages/UserActivity";
 import Admin from "./pages/Admin";
 import Docs from "./pages/Docs";
+import CommunityGuidelines from "./pages/CommunityGuidelines";
 import NotFound from "./pages/NotFound";
 
 // Blog Admin
