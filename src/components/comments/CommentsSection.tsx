@@ -32,6 +32,16 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
     if (!newComment.trim()) return;
     setSubmitting(true);
     try {
+      const modResult = await moderateContent(
+        { content: newComment },
+        "comment",
+        "comment",
+        itemId
+      );
+      if (!modResult.approved) {
+        toast.error(modResult.reason || "Your comment could not be posted. It appears to violate our Community Guidelines.");
+        return;
+      }
       await createComment(newComment);
       setNewComment('');
       toast.success('Comment posted');
