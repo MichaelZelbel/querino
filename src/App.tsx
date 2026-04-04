@@ -121,6 +121,7 @@ const App = () => (
             <Route path="/u/:username/activity" element={<UserActivity />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/docs" element={<Docs />} />
+            <Route path="/community-guidelines" element={<CommunityGuidelines />} />
             
             {/* Blog Admin Routes */}
             <Route path="/blog/admin" element={<BlogAdminDashboard />} />
