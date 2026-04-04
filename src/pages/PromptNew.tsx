@@ -156,6 +156,19 @@ export default function PromptNew() {
   const handleCreate = async () => {
     if (!validate() || !user) return;
 
+    // Moderation check if publishing publicly
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description: shortDescription, content },
+        "publish",
+        "prompt"
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const slug = await generateSlug(title.trim());
