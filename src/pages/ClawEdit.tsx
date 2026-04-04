@@ -248,6 +248,19 @@ export default function ClawEdit() {
       return;
     }
 
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "claw",
+        clawId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
