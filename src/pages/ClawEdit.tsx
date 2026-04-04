@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, X, ArrowLeft, Trash2, Save, Grab, GitBranch, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 import type { Claw } from "@/types/claw";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
