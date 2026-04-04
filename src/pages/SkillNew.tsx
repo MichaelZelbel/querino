@@ -148,6 +148,19 @@ export default function SkillNew() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
+
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description, content },
+        "publish",
+        "skill"
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const slug = await generateSlug(title.trim());
