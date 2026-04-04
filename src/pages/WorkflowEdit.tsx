@@ -95,6 +95,7 @@ export default function WorkflowEdit() {
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   const workflowId = workflow?.id;
 
