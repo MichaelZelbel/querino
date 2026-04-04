@@ -54,6 +54,16 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
 
   const handleReply = async (parentId: string, content: string) => {
     try {
+      const modResult = await moderateContent(
+        { content },
+        "comment",
+        "comment",
+        itemId
+      );
+      if (!modResult.approved) {
+        toast.error(modResult.reason || "Your reply could not be posted. It appears to violate our Community Guidelines.");
+        return;
+      }
       await createComment(content, parentId);
       toast.success('Reply posted');
     } catch (err: any) {
