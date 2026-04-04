@@ -414,6 +414,13 @@ export default function WorkflowNew() {
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }
