@@ -1120,6 +1120,13 @@ export default function LibraryPromptEdit() {
           </Tabs>
         </SheetContent>
       </Sheet>
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }
