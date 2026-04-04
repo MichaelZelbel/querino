@@ -37,12 +37,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Loader2, X, ArrowLeft, Trash2, Save, GitBranch, Sparkles, Bot } from "lucide-react";
-
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
-import { toast } from "sonner";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import { categoryOptions } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
