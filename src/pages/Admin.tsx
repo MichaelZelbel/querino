@@ -344,6 +344,11 @@ export default function Admin() {
           <AICreditSettings />
         </div>
 
+        {/* Content Moderation */}
+        <div className="mb-8">
+          <ModerationPanel />
+        </div>
+
         {/* Users Management */}
         <Card>
           <CardHeader>
