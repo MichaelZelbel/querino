@@ -128,6 +128,7 @@ export default function LibraryPromptEdit() {
 
   // AI coach panel state (mobile sheet)
   const [showCoachSheet, setShowCoachSheet] = useState(false);
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
