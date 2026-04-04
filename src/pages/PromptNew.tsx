@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/sheet";
 import { Loader2, ArrowLeft, Wand2, X, Save, Bot, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
