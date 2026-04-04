@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
           approved: false,
           reason: "Your account has been suspended due to repeated guideline violations.",
           category: "suspended",
-          support_hint: "Contact support@querino.app for assistance.",
+          support_hint: "Contact support@querino.ai for assistance.",
         }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -209,7 +209,7 @@ Deno.serve(async (req: Request) => {
         approved: false,
         reason: "This content appears to violate our Community Guidelines.",
         category: categoryLabels[matchedCategory] || "Content policy violation",
-        support_hint: "If you believe this is a mistake, please contact support@querino.app",
+        support_hint: "If you believe this is a mistake, please contact support@querino.ai",
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
