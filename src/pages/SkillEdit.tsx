@@ -96,6 +96,7 @@ export default function SkillEdit() {
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   const skillId = skill?.id;
 
