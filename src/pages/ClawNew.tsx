@@ -291,6 +291,18 @@ export default function ClawNew() {
     if (!user) return;
     if (!validate()) return;
 
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description, content: skillMdContent },
+        "publish",
+        "claw"
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
