@@ -89,6 +89,7 @@ export default function ClawNew() {
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
