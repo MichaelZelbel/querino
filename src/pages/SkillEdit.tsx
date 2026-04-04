@@ -37,9 +37,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Loader2, X, ArrowLeft, Trash2, Save, GitBranch, Sparkles, Bot } from "lucide-react";
-
-import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import { categoryOptions } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
@@ -93,6 +94,7 @@ export default function SkillEdit() {
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   const skillId = skill?.id;
 
@@ -214,6 +216,20 @@ export default function SkillEdit() {
     if (!user || !skillId) return;
     if (!formData.title.trim()) { toast.error("Title is required"); return; }
     if (!formData.content.trim()) { toast.error("Content is required"); return; }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "skill",
+        skillId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const { error } = await (supabase.from("skills") as any)
@@ -564,6 +580,13 @@ export default function SkillEdit() {
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

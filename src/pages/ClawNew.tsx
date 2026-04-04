@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, X, Grab, Sparkles, FileText, Download, Link, CheckCircle2, ExternalLink, Info } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
@@ -87,6 +89,7 @@ export default function ClawNew() {
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -287,6 +290,18 @@ export default function ClawNew() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
+
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description, content: skillMdContent },
+        "publish",
+        "claw"
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
 
     setIsSubmitting(true);
 
@@ -766,6 +781,13 @@ export default function ClawNew() {
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

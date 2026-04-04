@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, X, ArrowLeft, Trash2, Save, Grab, GitBranch, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 import type { Claw } from "@/types/claw";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
@@ -88,6 +90,7 @@ export default function ClawEdit() {
   const [changeNotes, setChangeNotes] = useState("");
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   const clawId = claw?.id;
   
@@ -243,6 +246,19 @@ export default function ClawEdit() {
     if (formData.skillSourceType === 'inline' && !formData.content.trim()) {
       toast.error("SKILL.md content is required");
       return;
+    }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "claw",
+        clawId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -712,6 +728,13 @@ Describe what this claw does when invoked...`}
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

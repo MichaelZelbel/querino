@@ -9,6 +9,7 @@ import { CommentItem } from './CommentItem';
 import { ItemType } from '@/types/comment';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { moderateContent } from '@/lib/moderateContent';
 
 interface CommentsSectionProps {
   itemType: ItemType;
@@ -31,6 +32,16 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
     if (!newComment.trim()) return;
     setSubmitting(true);
     try {
+      const modResult = await moderateContent(
+        { content: newComment },
+        "comment",
+        "comment",
+        itemId
+      );
+      if (!modResult.approved) {
+        toast.error(modResult.reason || "Your comment could not be posted. It appears to violate our Community Guidelines.");
+        return;
+      }
       await createComment(newComment);
       setNewComment('');
       toast.success('Comment posted');
@@ -43,6 +54,16 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
 
   const handleReply = async (parentId: string, content: string) => {
     try {
+      const modResult = await moderateContent(
+        { content },
+        "comment",
+        "comment",
+        itemId
+      );
+      if (!modResult.approved) {
+        toast.error(modResult.reason || "Your reply could not be posted. It appears to violate our Community Guidelines.");
+        return;
+      }
       await createComment(content, parentId);
       toast.success('Reply posted');
     } catch (err: any) {

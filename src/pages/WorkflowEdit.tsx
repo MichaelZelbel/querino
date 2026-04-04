@@ -37,9 +37,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Loader2, X, ArrowLeft, Trash2, Save, GitBranch, FileText, Sparkles, Bot } from "lucide-react";
+import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
-import { toast } from "sonner";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import { categoryOptions } from "@/types/prompt";
 import type { Workflow } from "@/types/workflow";
@@ -93,6 +95,7 @@ export default function WorkflowEdit() {
   });
   const [tagInput, setTagInput] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   const workflowId = workflow?.id;
 
@@ -220,6 +223,20 @@ export default function WorkflowEdit() {
     if (!user || !workflowId) return;
     if (!formData.title.trim()) { toast.error("Title is required"); return; }
     if (!formData.content.trim()) { toast.error("Workflow content is required"); return; }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "workflow",
+        workflowId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const { error } = await (supabase.from("workflows") as any)
@@ -576,6 +593,13 @@ export default function WorkflowEdit() {
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { Search, Shield, Save, Users, Trash2, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { AICreditSettings } from "@/components/admin/AICreditSettings";
+import { ModerationPanel } from "@/components/admin/ModerationPanel";
 import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
 import { UserTokenModal } from "@/components/admin/UserTokenModal";
 import type { AppRole } from "@/types/userRole";
@@ -341,6 +342,11 @@ export default function Admin() {
         {/* AI Credit Settings */}
         <div className="mb-8">
           <AICreditSettings />
+        </div>
+
+        {/* Content Moderation */}
+        <div className="mb-8">
+          <ModerationPanel />
         </div>
 
         {/* Users Management */}

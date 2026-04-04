@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/sheet";
 import { Loader2, ArrowLeft, Wand2, X, Save, Bot, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
@@ -62,6 +64,9 @@ export default function PromptNew() {
 
   // Undo state for AI edits
   const [previousContent, setPreviousContent] = useState<string | null>(null);
+
+  // Moderation state
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   // Mobile coach sheet
   const [showCoachSheet, setShowCoachSheet] = useState(false);
@@ -150,6 +155,19 @@ export default function PromptNew() {
 
   const handleCreate = async () => {
     if (!validate() || !user) return;
+
+    // Moderation check if publishing publicly
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description: shortDescription, content },
+        "publish",
+        "prompt"
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -506,6 +524,13 @@ export default function PromptNew() {
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

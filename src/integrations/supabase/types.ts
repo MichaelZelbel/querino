@@ -983,6 +983,72 @@ export type Database = {
         }
         Relationships: []
       }
+      moderation_events: {
+        Row: {
+          action: string
+          category: string | null
+          created_at: string
+          flagged_content: string | null
+          id: string
+          item_id: string | null
+          item_type: string
+          matched_words: string[] | null
+          result: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          category?: string | null
+          created_at?: string
+          flagged_content?: string | null
+          id?: string
+          item_id?: string | null
+          item_type: string
+          matched_words?: string[] | null
+          result?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          category?: string | null
+          created_at?: string
+          flagged_content?: string | null
+          id?: string
+          item_id?: string | null
+          item_type?: string
+          matched_words?: string[] | null
+          result?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      moderation_stopwords: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          severity: string
+          word: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          severity?: string
+          word: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          severity?: string
+          word?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1741,6 +1807,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_suspensions: {
+        Row: {
+          created_at: string
+          id: string
+          strike_count: number
+          suspended: boolean
+          suspended_at: string | null
+          suspended_until: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          strike_count?: number
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_until?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          strike_count?: number
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_until?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       workflow_reviews: {
         Row: {

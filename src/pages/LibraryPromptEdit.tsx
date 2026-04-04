@@ -57,6 +57,8 @@ import {
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import type { Prompt } from "@/types/prompt";
 import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
@@ -126,6 +128,7 @@ export default function LibraryPromptEdit() {
 
   // AI coach panel state (mobile sheet)
   const [showCoachSheet, setShowCoachSheet] = useState(false);
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
@@ -300,6 +303,19 @@ export default function LibraryPromptEdit() {
 
   const handleSaveChanges = async () => {
     if (!validate() || !promptId || !user) return;
+
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description: shortDescription, content },
+        "edit_public",
+        "prompt",
+        promptId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -1104,6 +1120,13 @@ export default function LibraryPromptEdit() {
           </Tabs>
         </SheetContent>
       </Sheet>
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

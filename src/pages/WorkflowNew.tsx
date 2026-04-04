@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/sheet";
 import { ArrowLeft, Loader2, X, Save, Sparkles, Bot, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
@@ -58,6 +60,7 @@ export default function WorkflowNew() {
   const [isPublic, setIsPublic] = useState(false);
   const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
@@ -146,6 +149,19 @@ export default function WorkflowNew() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
+
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description, content },
+        "publish",
+        "workflow"
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const slug = await generateSlug(title.trim());
@@ -398,6 +414,13 @@ export default function WorkflowNew() {
       </main>
 
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

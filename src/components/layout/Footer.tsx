@@ -65,6 +65,9 @@ export function Footer() {
               <Link to="/impressum" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Impressum
               </Link>
+              <Link to="/community-guidelines" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Community Guidelines
+              </Link>
             </nav>
           </div>
         </div>

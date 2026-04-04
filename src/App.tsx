@@ -49,6 +49,7 @@ import TeamActivity from "./pages/TeamActivity";
 import UserActivity from "./pages/UserActivity";
 import Admin from "./pages/Admin";
 import Docs from "./pages/Docs";
+import CommunityGuidelines from "./pages/CommunityGuidelines";
 import NotFound from "./pages/NotFound";
 
 // Blog Admin
@@ -120,6 +121,7 @@ const App = () => (
             <Route path="/u/:username/activity" element={<UserActivity />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/docs" element={<Docs />} />
+            <Route path="/community-guidelines" element={<CommunityGuidelines />} />
             
             {/* Blog Admin Routes */}
             <Route path="/blog/admin" element={<BlogAdminDashboard />} />
