@@ -304,6 +304,19 @@ export default function LibraryPromptEdit() {
   const handleSaveChanges = async () => {
     if (!validate() || !promptId || !user) return;
 
+    if (isPublic) {
+      const result = await moderateContent(
+        { title, description: shortDescription, content },
+        "edit_public",
+        "prompt",
+        promptId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const { error } = await supabase
