@@ -42,7 +42,6 @@ import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
-import { toast } from "sonner";
 import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
 import { categoryOptions } from "@/types/prompt";
 import type { Workflow } from "@/types/workflow";
