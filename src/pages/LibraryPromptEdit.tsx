@@ -57,6 +57,8 @@ import {
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import type { Prompt } from "@/types/prompt";
 import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
