@@ -9,6 +9,7 @@ import { CommentItem } from './CommentItem';
 import { ItemType } from '@/types/comment';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { moderateContent } from '@/lib/moderateContent';
 
 interface CommentsSectionProps {
   itemType: ItemType;
