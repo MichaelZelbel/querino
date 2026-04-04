@@ -218,6 +218,20 @@ export default function SkillEdit() {
     if (!user || !skillId) return;
     if (!formData.title.trim()) { toast.error("Title is required"); return; }
     if (!formData.content.trim()) { toast.error("Content is required"); return; }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "skill",
+        skillId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const { error } = await (supabase.from("skills") as any)
