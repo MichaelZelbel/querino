@@ -164,6 +164,7 @@ Deno.serve(async (req: Request) => {
       matched_words: isBlocked ? matchedWords : null,
       category: matchedCategory || null,
       result: isBlocked ? "blocked" : "cleared",
+      tier: "stopword",
     });
 
     // 7. If blocked, increment strike count
@@ -214,6 +215,22 @@ Deno.serve(async (req: Request) => {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // 8. Queue for async AI review (Tier 2) if content passed Tier 1
+    if (item_id) {
+      try {
+        await serviceClient.from("moderation_review_queue").insert({
+          item_type,
+          item_id,
+          user_id: user.id,
+          content_snapshot: allText.substring(0, 5000),
+          status: "pending",
+        });
+      } catch (queueErr) {
+        console.warn("Failed to queue for AI review:", queueErr);
+        // Non-blocking: don't fail the publish action
+      }
     }
 
     return new Response(JSON.stringify({ approved: true }), {
