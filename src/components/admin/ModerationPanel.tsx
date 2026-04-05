@@ -315,6 +315,7 @@ function ModerationLogTab() {
   const [events, setEvents] = useState<ModerationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterResult, setFilterResult] = useState<string>("all");
+  const profileNames = useProfileNames(events.map((e) => e.user_id));
 
   useEffect(() => {
     fetchEvents();
@@ -373,8 +374,8 @@ function ModerationLogTab() {
                 <TableCell className="text-xs whitespace-nowrap">
                   {format(new Date(ev.created_at), "MMM d, HH:mm")}
                 </TableCell>
-                <TableCell className="text-xs font-mono truncate max-w-[100px]">
-                  {ev.user_id.slice(0, 8)}…
+                <TableCell>
+                  <UserCell userId={ev.user_id} displayName={profileNames[ev.user_id]} />
                 </TableCell>
                 <TableCell className="text-xs">{ev.action}</TableCell>
                 <TableCell className="text-xs">{ev.item_type}</TableCell>
@@ -410,6 +411,7 @@ function AIReviewQueueTab() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [processing, setProcessing] = useState(false);
+  const profileNames = useProfileNames(items.map((i) => i.user_id));
 
   useEffect(() => {
     fetchItems();
@@ -510,8 +512,8 @@ function AIReviewQueueTab() {
                   {format(new Date(item.created_at), "MMM d, HH:mm")}
                 </TableCell>
                 <TableCell className="text-xs">{item.item_type}</TableCell>
-                <TableCell className="text-xs font-mono truncate max-w-[100px]">
-                  {item.user_id.slice(0, 8)}…
+                <TableCell>
+                  <UserCell userId={item.user_id} displayName={profileNames[item.user_id]} />
                 </TableCell>
                 <TableCell>
                   <QueueStatusBadge status={item.status} />
@@ -568,6 +570,7 @@ function QueueStatusBadge({ status }: { status: string }) {
 function SuspensionsTab() {
   const [suspensions, setSuspensions] = useState<UserSuspension[]>([]);
   const [loading, setLoading] = useState(true);
+  const profileNames = useProfileNames(suspensions.map((s) => s.user_id));
 
   useEffect(() => {
     fetchSuspensions();
@@ -625,7 +628,9 @@ function SuspensionsTab() {
           <TableBody>
             {suspensions.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="font-mono text-xs">{s.user_id.slice(0, 12)}…</TableCell>
+                <TableCell>
+                  <UserCell userId={s.user_id} displayName={profileNames[s.user_id]} />
+                </TableCell>
                 <TableCell>
                   <Badge variant={s.strike_count >= 5 ? "destructive" : "secondary"}>
                     {s.strike_count}
