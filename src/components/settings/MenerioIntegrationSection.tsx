@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import menerioLogo from "@/assets/menerio-logo.png";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Loader2, CheckCircle2, Info, Unplug } from "lucide-react";
 import { toast } from "sonner";
@@ -201,8 +202,8 @@ export function MenerioIntegrationSection() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="font-display flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            Menerio 2nd Brain
+            <img src={menerioLogo} alt="Menerio" className="h-5 w-5" />
+            Menerio
           </CardTitle>
           {isConnected && (
             <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400 gap-1.5">
@@ -212,7 +213,7 @@ export function MenerioIntegrationSection() {
           )}
         </div>
         <CardDescription>
-          Mirror your Querino artifacts as searchable notes in your Menerio 2nd Brain.
+          Mirror your Querino artifacts as searchable notes in Menerio.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
