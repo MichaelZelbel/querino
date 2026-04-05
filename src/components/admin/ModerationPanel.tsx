@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ShieldAlert, Plus, Trash2, RotateCcw, Ban, CheckCircle } from "lucide-react";
+import { ShieldAlert, Plus, Trash2, RotateCcw, Ban, CheckCircle, Bot, Eye, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 interface Stopword {
@@ -42,6 +42,7 @@ interface ModerationEvent {
   matched_words: string[] | null;
   category: string | null;
   result: string;
+  tier: string;
   created_at: string;
 }
 
@@ -55,6 +56,21 @@ interface UserSuspension {
   suspension_reason: string | null;
 }
 
+interface QueueItem {
+  id: string;
+  item_type: string;
+  item_id: string;
+  user_id: string;
+  content_snapshot: string;
+  status: string;
+  ai_category: string | null;
+  ai_confidence: number | null;
+  ai_reason: string | null;
+  retry_count: number;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
 export function ModerationPanel() {
   return (
     <Card>
@@ -63,7 +79,7 @@ export function ModerationPanel() {
           <ShieldAlert className="h-5 w-5 text-primary" />
           <div>
             <CardTitle>Content Moderation</CardTitle>
-            <CardDescription>Manage stopwords, review moderation logs, and handle user suspensions</CardDescription>
+            <CardDescription>Manage stopwords, review moderation logs, AI review queue, and handle user suspensions</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -72,10 +88,12 @@ export function ModerationPanel() {
           <TabsList className="mb-4">
             <TabsTrigger value="stopwords">Stopwords</TabsTrigger>
             <TabsTrigger value="log">Moderation Log</TabsTrigger>
+            <TabsTrigger value="ai-queue">AI Review Queue</TabsTrigger>
             <TabsTrigger value="suspensions">Suspensions</TabsTrigger>
           </TabsList>
           <TabsContent value="stopwords"><StopwordsTab /></TabsContent>
           <TabsContent value="log"><ModerationLogTab /></TabsContent>
+          <TabsContent value="ai-queue"><AIReviewQueueTab /></TabsContent>
           <TabsContent value="suspensions"><SuspensionsTab /></TabsContent>
         </Tabs>
       </CardContent>
@@ -228,6 +246,21 @@ function StopwordsTab() {
   );
 }
 
+function TierBadge({ tier }: { tier: string }) {
+  if (tier === "ai") {
+    return (
+      <Badge variant="outline" className="gap-1 text-xs">
+        <Bot className="h-3 w-3" /> AI
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="text-xs">
+      Stopword
+    </Badge>
+  );
+}
+
 function ModerationLogTab() {
   const [events, setEvents] = useState<ModerationEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,6 +312,7 @@ function ModerationLogTab() {
               <TableHead>User</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Tier</TableHead>
               <TableHead>Result</TableHead>
               <TableHead>Matched</TableHead>
             </TableRow>
@@ -295,6 +329,9 @@ function ModerationLogTab() {
                 <TableCell className="text-xs">{ev.action}</TableCell>
                 <TableCell className="text-xs">{ev.item_type}</TableCell>
                 <TableCell>
+                  <TierBadge tier={ev.tier} />
+                </TableCell>
+                <TableCell>
                   <Badge variant={ev.result === "blocked" ? "destructive" : "secondary"}>
                     {ev.result}
                   </Badge>
@@ -306,7 +343,7 @@ function ModerationLogTab() {
             ))}
             {events.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No moderation events yet
                 </TableCell>
               </TableRow>
@@ -316,6 +353,166 @@ function ModerationLogTab() {
       </div>
     </div>
   );
+}
+
+function AIReviewQueueTab() {
+  const [items, setItems] = useState<QueueItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    fetchItems();
+  }, [filterStatus]);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    let query = (supabase.from("moderation_review_queue") as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (filterStatus !== "all") {
+      query = query.eq("status", filterStatus);
+    }
+
+    const { data } = await query;
+    setItems(data || []);
+    setLoading(false);
+  };
+
+  const triggerProcessing = async () => {
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-moderate-content");
+      if (error) throw error;
+      toast.success(`Processed: ${data?.processed || 0} items, ${data?.violations || 0} violations`);
+      fetchItems();
+    } catch (err) {
+      toast.error("Failed to trigger AI review");
+      console.error(err);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const requeueItem = async (id: string) => {
+    await (supabase.from("moderation_review_queue") as any)
+      .update({ status: "pending", retry_count: 0, ai_category: null, ai_confidence: null, ai_reason: null, reviewed_at: null })
+      .eq("id", id);
+    toast.success("Re-queued for review");
+    fetchItems();
+  };
+
+  if (loading) return <Skeleton className="h-32 w-full" />;
+
+  const pendingCount = items.filter((i) => i.status === "pending").length;
+  const flaggedCount = items.filter((i) => i.status === "flagged").length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 items-center flex-wrap">
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="flagged">Flagged</SelectItem>
+            <SelectItem value="reviewed">Reviewed</SelectItem>
+            <SelectItem value="violation">Violation</SelectItem>
+            <SelectItem value="error">Error</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground">
+          {pendingCount} pending · {flaggedCount} flagged · {items.length} total
+        </span>
+        <Button
+          onClick={triggerProcessing}
+          disabled={processing || pendingCount === 0}
+          size="sm"
+          className="gap-1 ml-auto"
+        >
+          <Bot className="h-4 w-4" />
+          {processing ? "Processing…" : "Process Queue Now"}
+        </Button>
+      </div>
+
+      <div className="max-h-[500px] overflow-auto border rounded">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Confidence</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="text-xs whitespace-nowrap">
+                  {format(new Date(item.created_at), "MMM d, HH:mm")}
+                </TableCell>
+                <TableCell className="text-xs">{item.item_type}</TableCell>
+                <TableCell className="text-xs font-mono truncate max-w-[100px]">
+                  {item.user_id.slice(0, 8)}…
+                </TableCell>
+                <TableCell>
+                  <QueueStatusBadge status={item.status} />
+                </TableCell>
+                <TableCell className="text-xs">
+                  {item.ai_category || "—"}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {item.ai_confidence != null ? `${Math.round(item.ai_confidence * 100)}%` : "—"}
+                </TableCell>
+                <TableCell className="text-xs max-w-[200px] truncate" title={item.ai_reason || undefined}>
+                  {item.ai_reason || "—"}
+                </TableCell>
+                <TableCell>
+                  {(item.status === "reviewed" || item.status === "violation" || item.status === "error" || item.status === "flagged") && (
+                    <Button variant="ghost" size="sm" onClick={() => requeueItem(item.id)} className="text-xs gap-1">
+                      <RefreshCw className="h-3 w-3" /> Re-review
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+            {items.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  No items in the AI review queue
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function QueueStatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case "pending":
+      return <Badge variant="outline">Pending</Badge>;
+    case "flagged":
+      return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-300">Flagged</Badge>;
+    case "reviewed":
+      return <Badge variant="secondary" className="gap-1"><CheckCircle className="h-3 w-3" /> Safe</Badge>;
+    case "violation":
+      return <Badge variant="destructive" className="gap-1"><Ban className="h-3 w-3" /> Violation</Badge>;
+    case "error":
+      return <Badge variant="outline" className="text-destructive border-destructive">Error</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
 }
 
 function SuspensionsTab() {
