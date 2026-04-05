@@ -15,7 +15,6 @@ const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const BATCH_SIZE = 5;
 const MAX_RETRIES = 3;
 const CONFIDENCE_AUTO_UNPUBLISH = 0.85;
-const CONFIDENCE_FLAG_FOR_REVIEW = 0.5;
 const STRIKE_THRESHOLD = 5;
 
 interface QueueItem {
@@ -334,18 +333,6 @@ Deno.serve(async (req: Request) => {
             .eq("id", item.id);
 
           violations++;
-        } else if (!classification.safe && classification.confidence >= CONFIDENCE_FLAG_FOR_REVIEW) {
-          // MEDIUM confidence → flag for admin review but don't unpublish
-          await serviceClient
-            .from("moderation_review_queue")
-            .update({
-              status: "flagged",
-              ai_category: classification.category,
-              ai_confidence: classification.confidence,
-              ai_reason: classification.reason,
-              reviewed_at: new Date().toISOString(),
-            })
-            .eq("id", item.id);
         } else {
           // Safe or low confidence → mark as reviewed
           await serviceClient
