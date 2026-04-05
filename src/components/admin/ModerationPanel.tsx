@@ -503,7 +503,7 @@ function QueueStatusBadge({ status }: { status: string }) {
     case "pending":
       return <Badge variant="outline">Pending</Badge>;
     case "flagged":
-      return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-300">Flagged</Badge>;
+      return <Badge variant="outline" className="border-accent text-accent-foreground">Flagged</Badge>;
     case "reviewed":
       return <Badge variant="secondary" className="gap-1"><CheckCircle className="h-3 w-3" /> Safe</Badge>;
     case "violation":
