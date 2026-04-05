@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import menerioLogo from "@/assets/menerio-logo.png";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Loader2, CheckCircle2, Info, Unplug } from "lucide-react";
+import { Loader2, CheckCircle2, Info, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
 const MENERIO_BASE_URL = "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1";
