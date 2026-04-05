@@ -994,6 +994,7 @@ export type Database = {
           item_type: string
           matched_words: string[] | null
           result: string
+          tier: string
           user_id: string
         }
         Insert: {
@@ -1006,6 +1007,7 @@ export type Database = {
           item_type: string
           matched_words?: string[] | null
           result?: string
+          tier?: string
           user_id: string
         }
         Update: {
@@ -1018,6 +1020,52 @@ export type Database = {
           item_type?: string
           matched_words?: string[] | null
           result?: string
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      moderation_review_queue: {
+        Row: {
+          ai_category: string | null
+          ai_confidence: number | null
+          ai_reason: string | null
+          content_snapshot: string
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          retry_count: number
+          reviewed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ai_category?: string | null
+          ai_confidence?: number | null
+          ai_reason?: string | null
+          content_snapshot: string
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          retry_count?: number
+          reviewed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          ai_category?: string | null
+          ai_confidence?: number | null
+          ai_reason?: string | null
+          content_snapshot?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          retry_count?: number
+          reviewed_at?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: []
