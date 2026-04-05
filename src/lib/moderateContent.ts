@@ -34,15 +34,18 @@ export async function moderateContent(
     });
 
     if (error) {
-      console.error("Moderation check failed:", error);
-      // Fail open — allow content if moderation service is down
+      console.warn("[Moderation] Edge function error — failing open:", error);
+      return { approved: true };
+    }
+
+    if (!data || typeof data.approved === "undefined") {
+      console.warn("[Moderation] Unexpected response shape — failing open:", data);
       return { approved: true };
     }
 
     return data as ModerationResult;
   } catch (err) {
-    console.error("Moderation check error:", err);
-    // Fail open
+    console.warn("[Moderation] Network/parse error — failing open:", err);
     return { approved: true };
   }
 }
