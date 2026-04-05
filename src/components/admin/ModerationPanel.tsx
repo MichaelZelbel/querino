@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,56 @@ import {
 import { toast } from "sonner";
 import { ShieldAlert, Plus, Trash2, RotateCcw, Ban, CheckCircle, Bot, Eye, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Shared hook to resolve user IDs → display names
+function useProfileNames(userIds: string[]) {
+  const [names, setNames] = useState<Record<string, string>>({});
+
+  const uniqueIds = useMemo(() => [...new Set(userIds.filter(Boolean))], [JSON.stringify(userIds)]);
+
+  useEffect(() => {
+    if (uniqueIds.length === 0) return;
+    const fetchNames = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", uniqueIds);
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const p of data) {
+          map[p.id] = p.display_name || "";
+        }
+        setNames(map);
+      }
+    };
+    fetchNames();
+  }, [uniqueIds]);
+
+  return names;
+}
+
+function UserCell({ userId, displayName }: { userId: string; displayName?: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="text-xs max-w-[160px]">
+            {displayName ? (
+              <span className="truncate block">{displayName}</span>
+            ) : (
+              <span className="font-mono truncate block">{userId.slice(0, 8)}…</span>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="font-mono text-xs">{userId}</p>
+          {displayName && <p className="text-xs">{displayName}</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 interface Stopword {
   id: string;
@@ -265,6 +315,7 @@ function ModerationLogTab() {
   const [events, setEvents] = useState<ModerationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterResult, setFilterResult] = useState<string>("all");
+  const profileNames = useProfileNames(events.map((e) => e.user_id));
 
   useEffect(() => {
     fetchEvents();
@@ -323,8 +374,8 @@ function ModerationLogTab() {
                 <TableCell className="text-xs whitespace-nowrap">
                   {format(new Date(ev.created_at), "MMM d, HH:mm")}
                 </TableCell>
-                <TableCell className="text-xs font-mono truncate max-w-[100px]">
-                  {ev.user_id.slice(0, 8)}…
+                <TableCell>
+                  <UserCell userId={ev.user_id} displayName={profileNames[ev.user_id]} />
                 </TableCell>
                 <TableCell className="text-xs">{ev.action}</TableCell>
                 <TableCell className="text-xs">{ev.item_type}</TableCell>
@@ -360,6 +411,7 @@ function AIReviewQueueTab() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [processing, setProcessing] = useState(false);
+  const profileNames = useProfileNames(items.map((i) => i.user_id));
 
   useEffect(() => {
     fetchItems();
@@ -460,8 +512,8 @@ function AIReviewQueueTab() {
                   {format(new Date(item.created_at), "MMM d, HH:mm")}
                 </TableCell>
                 <TableCell className="text-xs">{item.item_type}</TableCell>
-                <TableCell className="text-xs font-mono truncate max-w-[100px]">
-                  {item.user_id.slice(0, 8)}…
+                <TableCell>
+                  <UserCell userId={item.user_id} displayName={profileNames[item.user_id]} />
                 </TableCell>
                 <TableCell>
                   <QueueStatusBadge status={item.status} />
@@ -518,6 +570,7 @@ function QueueStatusBadge({ status }: { status: string }) {
 function SuspensionsTab() {
   const [suspensions, setSuspensions] = useState<UserSuspension[]>([]);
   const [loading, setLoading] = useState(true);
+  const profileNames = useProfileNames(suspensions.map((s) => s.user_id));
 
   useEffect(() => {
     fetchSuspensions();
@@ -575,7 +628,9 @@ function SuspensionsTab() {
           <TableBody>
             {suspensions.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="font-mono text-xs">{s.user_id.slice(0, 12)}…</TableCell>
+                <TableCell>
+                  <UserCell userId={s.user_id} displayName={profileNames[s.user_id]} />
+                </TableCell>
                 <TableCell>
                   <Badge variant={s.strike_count >= 5 ? "destructive" : "secondary"}>
                     {s.strike_count}
