@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,56 @@ import {
 import { toast } from "sonner";
 import { ShieldAlert, Plus, Trash2, RotateCcw, Ban, CheckCircle, Bot, Eye, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Shared hook to resolve user IDs → display names
+function useProfileNames(userIds: string[]) {
+  const [names, setNames] = useState<Record<string, string>>({});
+
+  const uniqueIds = useMemo(() => [...new Set(userIds.filter(Boolean))], [JSON.stringify(userIds)]);
+
+  useEffect(() => {
+    if (uniqueIds.length === 0) return;
+    const fetchNames = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", uniqueIds);
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const p of data) {
+          map[p.id] = p.display_name || "";
+        }
+        setNames(map);
+      }
+    };
+    fetchNames();
+  }, [uniqueIds]);
+
+  return names;
+}
+
+function UserCell({ userId, displayName }: { userId: string; displayName?: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="text-xs max-w-[160px]">
+            {displayName ? (
+              <span className="truncate block">{displayName}</span>
+            ) : (
+              <span className="font-mono truncate block">{userId.slice(0, 8)}…</span>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="font-mono text-xs">{userId}</p>
+          {displayName && <p className="text-xs">{displayName}</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 interface Stopword {
   id: string;
