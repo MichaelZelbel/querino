@@ -6,7 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "michael@zelbel.de";
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL");
+if (!ADMIN_EMAIL) {
+  throw new Error("ADMIN_EMAIL secret is not configured");
+}
 const FROM_EMAIL = "Querino <support@querino.ai>";
 
 type EventType = "signup" | "subscribe" | "unsubscribe" | "delete_account";
