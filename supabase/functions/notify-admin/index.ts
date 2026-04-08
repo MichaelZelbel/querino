@@ -6,8 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ADMIN_EMAIL = "michael@zelbel.de";
-const FROM_EMAIL = "Querino <noreply@querino.ai>";
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "michael@zelbel.de";
+const FROM_EMAIL = "Querino <support@querino.ai>";
 
 type EventType = "signup" | "subscribe" | "unsubscribe" | "delete_account";
 
