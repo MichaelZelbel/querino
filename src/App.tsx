@@ -50,6 +50,7 @@ import UserActivity from "./pages/UserActivity";
 import Admin from "./pages/Admin";
 import Docs from "./pages/Docs";
 import CommunityGuidelines from "./pages/CommunityGuidelines";
+import CreateFromMenerio from "./pages/CreateFromMenerio";
 import NotFound from "./pages/NotFound";
 
 // Blog Admin
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/cookies" element={<Cookies />} />
             <Route path="/impressum" element={<Impressum />} />
+            <Route path="/create-from-menerio" element={<CreateFromMenerio />} />
             <Route path="/prompts/new" element={<PromptNew />} />
             <Route path="/prompts/wizard" element={<PromptWizard />} />
             <Route path="/prompts/:slug" element={<PromptDetail />} />

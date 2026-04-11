@@ -58,6 +58,10 @@ export default function PromptNew() {
   const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Menerio callback params (from /create-from-menerio redirect)
+  const menerioNoteId = searchParams.get("menerio_note_id");
+  const menerioCallback = searchParams.get("menerio_callback");
+
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
@@ -213,7 +217,32 @@ export default function PromptNew() {
       const workspaceScope = currentWorkspace ?? "personal";
       promoteDraftSession(workspaceScope, user.id, newPrompt.id);
 
-      toast.success("Prompt created successfully!");
+      // If this prompt was created from Menerio, trigger the link callback
+      if (menerioNoteId && menerioCallback) {
+        try {
+          const cbResponse = await supabase.functions.invoke("menerio-link-callback", {
+            body: {
+              menerio_callback: menerioCallback,
+              menerio_note_id: menerioNoteId,
+              prompt_id: newPrompt.id,
+              prompt_slug: newPrompt.slug,
+              user_id: user.id,
+            },
+          });
+          if (cbResponse.error) {
+            console.error("Menerio link callback failed:", cbResponse.error);
+            toast.error("Prompt created, but Menerio linking failed.");
+          } else {
+            toast.success("Prompt created and linked to Menerio!");
+          }
+        } catch (cbErr) {
+          console.error("Menerio link callback error:", cbErr);
+          toast.error("Prompt created, but Menerio linking failed.");
+        }
+      } else {
+        toast.success("Prompt created successfully!");
+      }
+
       navigate(`/prompts/${newPrompt.slug}`);
     } catch (err) {
       console.error("Error creating prompt:", err);
