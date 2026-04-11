@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.generate-slug]
 verify_jwt = false
+
+[functions.menerio-link-callback]
+verify_jwt = false
