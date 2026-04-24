@@ -799,13 +799,19 @@ app.get("/mcp-server", (c) => {
   }, 200, corsHeaders);
 });
 
-// MCP endpoint
-app.all("/mcp-server/mcp", async (c) => {
+// MCP endpoint — handle all common path variants the proxy may forward:
+//   - "/"                     (Cloudflare Worker forwards mcp.querino.ai/ → /)
+//   - "/mcp"                  (some clients append /mcp)
+//   - "/mcp-server"           (raw Supabase functions/v1/mcp-server)
+//   - "/mcp-server/mcp"       (legacy explicit path)
+const mcpHandler = async (c: any) => {
   try {
     const auth = await authenticate(c.req.raw);
     const mcpServer = buildMcpServer(auth);
     const transport = new StreamableHttpTransport();
-    const response = await (transport as any).handleRequest(c.req.raw, mcpServer);
+    // mcp-lite v0.10+: bind() returns the actual fetch handler bound to the server.
+    const httpHandler = transport.bind(mcpServer);
+    const response = await httpHandler(c.req.raw);
 
     // Add CORS headers to the response
     const newHeaders = new Headers(response.headers);
@@ -821,6 +827,11 @@ app.all("/mcp-server/mcp", async (c) => {
     const msg = err instanceof Error ? err.message : "Authentication failed";
     return c.json({ error: msg }, 401, corsHeaders);
   }
-});
+};
+
+app.all("/", mcpHandler);
+app.all("/mcp", mcpHandler);
+app.all("/mcp-server", mcpHandler);
+app.all("/mcp-server/mcp", mcpHandler);
 
 Deno.serve(app.fetch);
