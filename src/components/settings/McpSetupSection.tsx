@@ -45,40 +45,64 @@ const TOOL_LIST = [
 
 function buildPromptText() {
   const toolsBullets = TOOL_LIST.map((t) => `• ${t}`).join("\n");
-  return `I want you to connect to my Querino app (an AI prompt management platform) via its MCP server so you can help me manage my data.
+  return `Please connect to my Querino account via its MCP server so you can help me manage my AI artifacts (prompts, skills, claws, workflows, collections).
 
-Here is the MCP server endpoint:
-${MCP_ENDPOINT}
+=== 1. CONNECTION DETAILS ===
 
-Please add this as an MCP server connection. When connecting, use the following HTTP header for authentication:
-Authorization: Bearer <ACCESS_TOKEN>
+• MCP endpoint: ${MCP_ENDPOINT}
+• Transport: MCP Streamable HTTP (the standard remote MCP transport over HTTP POST with JSON-RPC 2.0; SSE responses supported)
+• Auth: HTTP header "Authorization: Bearer <ACCESS_TOKEN>"
+• Method: connect directly to the endpoint above — do NOT append /mcp, /sse, /v1, or any other path. The root URL is the MCP endpoint.
 
-Replace <ACCESS_TOKEN> with the access token I will give you next.
+When sending requests, include both of these headers:
+  Authorization: Bearer <ACCESS_TOKEN>
+  Accept: application/json, text/event-stream
+  Content-Type: application/json
 
-In Querino, your data is organized into:
+Replace <ACCESS_TOKEN> with the access token I will give you next. The token is short-lived (~1 hour); if you get 401 Unauthorized, ask me for a fresh token.
 
-• Prompts → reusable LLM instructions or templates  
+=== 2. VERIFY THE CONNECTION ===
 
-• Skills → structured capabilities (can include OpenClaw skills)  
+After registering the server, please run this verification flow and report back what you got:
 
-• Claws → low-level executable logic units used by skills  
+1. Send an "initialize" request and confirm the server name and protocol version.
+2. Call "tools/list" and confirm you can see Querino tools (e.g. list_prompts, get_my_profile, ...).
+3. Call "tools/call" with name "get_my_profile" and no arguments to confirm authentication works end-to-end.
 
-• Workflows → multi-step AI processes combining prompts and/or skills  
+If any of these fail, tell me the exact error (status code + message) instead of silently retrying.
 
-• Collections → groups of related items  
+=== 3. QUERINO DATA MODEL (decide which tool family to use) ===
 
-Use the appropriate tool depending on what the user is trying to manage.
+• Prompts → reusable LLM instructions / templates. Use the prompt_* tools when the user talks about "a prompt", instructions for an LLM, or text they want to reuse.
+• Skills → structured, higher-level capabilities (can include OpenClaw-style skills). Use the skill_* tools when the user talks about a capability, framework, or "how the agent should do X".
+• Claws → low-level executable logic units used by skills. Use the claw_* tools when the user talks about a specific tool, action, or callable unit consumed by a skill.
+• Workflows → multi-step AI processes that combine prompts and/or skills. Use the workflow_* tools when the user talks about a process, pipeline, or sequence of steps.
+• Collections → user-curated groups of mixed items (prompts, skills, claws, workflows). Use the collection_* tools when the user talks about grouping, organizing, or bundling items.
 
-Once connected, you will have access to these tools:
+If you're unsure which family applies, ask one short clarifying question instead of guessing.
+
+=== 4. AVAILABLE TOOLS ===
+
 ${toolsBullets}
 
-IMPORTANT formatting rules when showing me results:
-• Never use markdown tables — they break in narrow chat windows.
-• Show each item as a short bullet point: key field + title/name only. Keep it to one line per item.
-• Only show full details if I explicitly ask for them.
-• When listing simple entities, use a comma-separated list or short bullets.
+=== 5. AGENT USAGE GUIDANCE ===
 
-Use these tools whenever I ask you to view, add, edit, search, or delete my data. Always confirm what you found or created with a short summary.`;
+• Prefer search_* tools when you don't already know the exact id/slug of an item. Don't fabricate ids.
+• Always call get_* before update_* or delete_* so you (and I) can see the current state and you can show a diff or summary.
+• Only mutate data (create / update / delete) when I clearly intend it. If my request is ambiguous, confirm first.
+• Destructive actions (delete_*) require explicit confirmation from me, unless I already said "delete" or "remove" in this turn. Never delete in bulk speculatively.
+• When creating or updating, echo back the resulting id/slug + title so I can verify.
+• On errors, surface the real server error message; don't hide it behind a generic "something went wrong".
+
+=== 6. OUTPUT FORMATTING RULES (strict) ===
+
+• Never use markdown tables — they break in narrow chat windows.
+• Show each item as a short bullet line: key field (id or slug) + title/name only. One line per item.
+• Only show full details (description, content, tags, etc.) if I explicitly ask for them.
+• For simple entity lists (e.g. tags, categories), use a short comma-separated list or short bullets.
+• After any create/update/delete, end with a one-line confirmation: what changed, and the id/slug it now has.
+
+Use these tools whenever I ask you to view, add, edit, search, or delete my data in Querino.`;
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
