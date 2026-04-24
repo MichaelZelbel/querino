@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Key, Terminal, Copy, Check, AlertTriangle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
-const MCP_ENDPOINT = "https://mcp.querino.ai/mcp-server/mcp";
+const MCP_ENDPOINT = "https://mcp.querino.ai";
 
 const TOOL_LIST = [
   "list_prompts – List your prompts",
