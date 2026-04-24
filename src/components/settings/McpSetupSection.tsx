@@ -55,6 +55,20 @@ Authorization: Bearer <ACCESS_TOKEN>
 
 Replace <ACCESS_TOKEN> with the access token I will give you next.
 
+In Querino, your data is organized into:
+
+• Prompts → reusable LLM instructions or templates  
+
+• Skills → structured capabilities (can include OpenClaw skills)  
+
+• Claws → low-level executable logic units used by skills  
+
+• Workflows → multi-step AI processes combining prompts and/or skills  
+
+• Collections → groups of related items  
+
+Use the appropriate tool depending on what the user is trying to manage.
+
 Once connected, you will have access to these tools:
 ${toolsBullets}
 
