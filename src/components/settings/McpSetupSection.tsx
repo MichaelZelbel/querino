@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useAuthContext } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Key, Terminal, Copy, Check, AlertTriangle, ExternalLink } from "lucide-react";
+import { Terminal, Copy, Check, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { McpTokensSection } from "./McpTokensSection";
 
 const MCP_ENDPOINT = "https://mcp.querino.ai";
 
@@ -51,15 +49,15 @@ function buildPromptText() {
 
 • MCP endpoint: ${MCP_ENDPOINT}
 • Transport: MCP Streamable HTTP (the standard remote MCP transport over HTTP POST with JSON-RPC 2.0; SSE responses supported)
-• Auth: HTTP header "Authorization: Bearer <ACCESS_TOKEN>"
+• Auth: HTTP header "Authorization: Bearer <QUERINO_MCP_TOKEN>"
 • Method: connect directly to the endpoint above — do NOT append /mcp, /sse, /v1, or any other path. The root URL is the MCP endpoint.
 
 When sending requests, include both of these headers:
-  Authorization: Bearer <ACCESS_TOKEN>
+  Authorization: Bearer <QUERINO_MCP_TOKEN>
   Accept: application/json, text/event-stream
   Content-Type: application/json
 
-Replace <ACCESS_TOKEN> with the access token I will give you next. The token is short-lived (~1 hour); if you get 401 Unauthorized, ask me for a fresh token.
+Replace <QUERINO_MCP_TOKEN> with the long-lived Querino MCP token I will give you next. The token starts with "qrn_mcp_". It does NOT expire after 1 hour — it is valid until I revoke it (or until its optional expiration date). If you get 401 with a message about an invalid or revoked token, ask me for a new one.
 
 === 2. VERIFY THE CONNECTION ===
 
@@ -124,66 +122,30 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
 }
 
 export function McpSetupSection() {
-  const { user, session } = useAuthContext();
-  const token = session?.access_token ?? "";
-
-  const truncatedToken = token
-    ? `${token.slice(0, 20)}…${token.slice(-10)}`
-    : "";
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-foreground mb-1">MCP Server / API Access</h2>
         <p className="text-muted-foreground text-sm">
-          Connect AI agents like OpenClaw, Manus, Claude Desktop, or Cursor to manage your Querino data via the Model Context Protocol.
+          Connect AI agents like OpenClaw, Manus, Claude Desktop, or Cursor to manage your Querino data
+          via the Model Context Protocol. Authentication uses long-lived personal tokens that you create below.
         </p>
       </div>
 
-      {/* Card 1: Access Token */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Step 1 — Copy Your Access Token</CardTitle>
-          </div>
-          <CardDescription>
-            Your AI agent needs this token to authenticate as you.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {user ? (
-            <>
-              <div className="flex items-center gap-3">
-                <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm font-mono text-muted-foreground truncate">
-                  {truncatedToken}
-                </code>
-                <CopyButton text={token} label="Access token" />
-              </div>
-              <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <strong>Token expires after ~1 hour.</strong> Copy a fresh token each time you configure a new MCP client.
-                  Never share this token publicly — it grants full access to your account.
-                </AlertDescription>
-              </Alert>
-            </>
-          ) : (
-            <p className="text-muted-foreground text-sm">Log in to see your access token.</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Step 1: Personal MCP Tokens */}
+      <McpTokensSection />
 
-      {/* Card 2: Agent Prompt */}
+      {/* Step 2: Agent Prompt */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Terminal className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Step 2 — Send This Prompt to Your Agent</CardTitle>
+            <CardTitle className="text-lg">Send this prompt to your agent</CardTitle>
           </div>
           <CardDescription>
             Paste this prompt into your AI agent or MCP-compatible client (for example: OpenClaw or Manus).
-            It will configure the connection to your Querino MCP server. After it confirms the connection, provide your access token when it asks for it.
+            It will configure the connection to your Querino MCP server. After it confirms the connection,
+            give it one of your personal MCP tokens from above.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -206,7 +168,7 @@ export function McpSetupSection() {
         </CardContent>
       </Card>
 
-      {/* Card 3: Compatible Clients */}
+      {/* Compatible Clients */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
@@ -215,7 +177,8 @@ export function McpSetupSection() {
           </div>
           <CardDescription>
             Any client that supports the Model Context Protocol (MCP) over HTTP can connect to Querino.
-            Examples include OpenClaw, Manus, and other MCP-enabled agents or tools that let you add a custom MCP server endpoint and send an Authorization header.
+            Examples include OpenClaw, Manus, and other MCP-enabled agents or tools that let you add a
+            custom MCP server endpoint and send an Authorization header.
           </CardDescription>
         </CardHeader>
         <CardContent>
