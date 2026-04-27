@@ -11,29 +11,60 @@ const corsHeaders = {
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+// Long-lived MCP token prefixes recognised by the server.
+// Anything else (e.g. Supabase session JWTs starting with "ey") is rejected.
+const MCP_TOKEN_PREFIXES = ["qrn_mcp_", "mnr_mcp_"];
 
 interface Auth {
   userId: string;
-  authHeader: string;
 }
 
-function authedClient(auth: Auth) {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: auth.authHeader } },
+// Service-role client. We deliberately bypass RLS here and enforce ownership
+// in every tool by filtering on author_id = auth.userId.
+function authedClient(_auth: Auth) {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const bytes = new Uint8Array(digest);
+  let hex = "";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return hex;
 }
 
 async function authenticate(req: Request): Promise<Auth> {
   const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!token) throw new Error("Missing authorization token");
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data?.user) throw new Error("Invalid token");
+  // Only long-lived MCP tokens are accepted. Reject Supabase session JWTs etc.
+  const isMcpToken = MCP_TOKEN_PREFIXES.some((p) => token.startsWith(p));
+  if (!isMcpToken) {
+    throw new Error(
+      "Invalid token. Expected a long-lived Querino MCP token (qrn_mcp_… or mnr_mcp_…). " +
+      "Generate one in Settings → MCP Server.",
+    );
+  }
 
-  return { userId: data.user.id, authHeader };
+  const tokenHash = await sha256Hex(token);
+
+  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data, error } = await sb.rpc("lookup_mcp_token", { p_token_hash: tokenHash });
+  if (error) throw new Error("Token lookup failed");
+
+  const userId = data as string | null;
+  if (!userId) throw new Error("Invalid, revoked, or expired token");
+
+  return { userId };
 }
 
 // ── Tool definitions ────────────────────────────────────────────────
