@@ -82,27 +82,28 @@ export default function PublicPromptDiscovery() {
 
   const filteredPrompts = useMemo(() => {
     if (!prompts) return [];
-    
+
     return prompts.filter((prompt) => {
       const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
-      const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
+      // Note: text matching is now handled by useSearchPrompts (FTS + semantic).
       // Tag filter with OR logic
-      const matchesTags = selectedTags.length === 0 || 
+      const matchesTags = selectedTags.length === 0 ||
         (prompt.tags && prompt.tags.some((tag) => selectedTags.includes(tag)));
-      
-      return matchesCategory && matchesSearch && matchesTags;
+
+      return matchesCategory && matchesTags;
     });
-  }, [prompts, selectedCategory, searchQuery, selectedTags]);
+  }, [prompts, selectedCategory, selectedTags]);
 
   const sortedPrompts = useMemo(() => {
+    // When searching, preserve hybrid ranking (FTS first, then semantic);
+    // only re-sort when the user explicitly picked a non-default sort.
+    if (hasSearch && sortBy === "trending") return filteredPrompts;
     return [...filteredPrompts].sort((a, b) => {
       if (sortBy === "rating") return Number(b.rating_avg) - Number(a.rating_avg);
       if (sortBy === "recent") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return b.copies_count - a.copies_count; // trending
     });
-  }, [filteredPrompts, sortBy]);
+  }, [filteredPrompts, sortBy, hasSearch]);
 
   return (
     <div className="min-h-screen bg-background">
