@@ -501,6 +501,18 @@ export default function PromptKitDetail() {
 
       <AIInsightsPanel itemType="prompt_kit" itemId={kit.id} />
 
+      <TranslateModal
+        open={translateOpen}
+        onOpenChange={setTranslateOpen}
+        artifactType="prompt_kit"
+        sourceLanguage={kit.language || "en"}
+        title={kit.title}
+        description={kit.description || ""}
+        content={kit.content}
+        tags={kit.tags || []}
+        category={kit.category || undefined}
+      />
+
       <AddToCollectionModal
         open={collectionOpen}
         onOpenChange={setCollectionOpen}
