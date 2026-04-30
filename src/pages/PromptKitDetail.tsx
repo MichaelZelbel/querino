@@ -48,9 +48,30 @@ export default function PromptKitDetail() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copyTeamOpen, setCopyTeamOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
+  const [pinning, setPinning] = useState(false);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
+
+  const { isPinned: isKitPinned, togglePin: toggleKitPin } = usePinnedPromptKits();
+  const isPinned = kit?.id ? isKitPinned(kit.id) : false;
+
+  const handleTogglePin = async () => {
+    if (!user) {
+      toast.error("Sign in to pin prompt kits");
+      return;
+    }
+    if (!kit) return;
+    setPinning(true);
+    const { error } = await toggleKitPin(kit.id);
+    setPinning(false);
+    if (error) {
+      toast.error("Failed to update pin");
+      return;
+    }
+    toast.success(isPinned ? "Unpinned" : "Pinned!");
+  };
 
   const {
     suggestions,
