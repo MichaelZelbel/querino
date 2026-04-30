@@ -35,6 +35,7 @@ import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { Languages } from "lucide-react";
+import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
