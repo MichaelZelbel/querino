@@ -126,7 +126,7 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
   // is missing the user simply has no allowance and we block.
   const { data, error } = await sb
     .from("v_ai_allowance_current")
-    .select("remaining_credits, remaining_milli_credits")
+    .select("remaining_tokens, remaining_credits")
     .eq("user_id", user_id)
     .maybeSingle();
 
@@ -134,7 +134,7 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
     console.error("[llm.assertCredits] view error:", error);
     return; // fail-open on infra errors; usage will still be ledgered
   }
-  const remaining = Number(data?.remaining_milli_credits ?? 0);
+  const remaining = Number(data?.remaining_tokens ?? 0);
   if (!data || remaining <= 0) {
     throw new CreditsExhaustedError(
       "You have used all your AI credits for this period. They will reset shortly, or contact support@querino.ai.",
