@@ -1,0 +1,2 @@
+ALTER TABLE public.suggestions DROP CONSTRAINT suggestions_item_type_check;
+ALTER TABLE public.suggestions ADD CONSTRAINT suggestions_item_type_check CHECK (item_type = ANY (ARRAY['prompt'::text, 'skill'::text, 'workflow'::text, 'claw'::text, 'prompt_kit'::text]));
