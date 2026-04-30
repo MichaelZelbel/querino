@@ -368,6 +368,34 @@ export default function PromptKitDetail() {
               Add to collection
             </Button>
           )}
+          <DownloadMarkdownButton
+            title={kit.title}
+            type="prompt_kit"
+            description={kit.description}
+            tags={kit.tags}
+            content={kit.content}
+            size="lg"
+          />
+          {user && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setTranslateOpen(true)}
+              className="gap-2"
+            >
+              <Languages className="h-4 w-4" />
+              Translate
+            </Button>
+          )}
+          {isAuthor && hasMenerio && (
+            <MenerioSyncButton
+              artifactType="prompt_kit"
+              artifactId={kit.id}
+              menerioSynced={!!kit.menerio_synced}
+              menerioSyncedAt={kit.menerio_synced_at || null}
+              menerioNoteId={kit.menerio_note_id || null}
+            />
+          )}
         </div>
 
           {items.length === 0 ? (
