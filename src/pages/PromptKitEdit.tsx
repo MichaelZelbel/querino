@@ -8,7 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LineNumberedEditor } from "@/components/editors/LineNumberedEditor";
+import { PromptKitRichEditor } from "@/components/editors/PromptKitRichEditor";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -377,25 +377,19 @@ export default function PromptKitEdit() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="content">Kit Content (Markdown) *</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
-                        </span>
-                        <Button type="button" size="sm" variant="outline" onClick={handleAddPrompt} className="gap-1.5 h-7">
-                          <Plus className="h-3.5 w-3.5" />
-                          Add Prompt
-                        </Button>
-                      </div>
+                      <Label htmlFor="content">Kit Content *</Label>
+                      <span className="text-xs text-muted-foreground">
+                        {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Separate items with <code className="font-mono">## Prompt: Your title</code>.
+                      Use the <span className="font-medium text-foreground">Insert prompt</span> button
+                      to add copyable prompt blocks. Free text between blocks becomes intro and
+                      between-prompt commentary.
                     </p>
-                    <LineNumberedEditor
-                      id="content"
+                    <PromptKitRichEditor
                       value={formData.content}
                       onChange={(v) => setFormData({ ...formData, content: v })}
-                      placeholder="## Prompt: Title&#10;&#10;Prompt body…"
                     />
                   </div>
 
