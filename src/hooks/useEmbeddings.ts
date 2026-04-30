@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type EmbeddingItemType = "prompt" | "skill" | "workflow" | "claw";
+export type EmbeddingItemType = "prompt" | "skill" | "workflow";
 
 interface UseEmbeddingsReturn {
   generateEmbedding: (

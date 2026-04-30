@@ -1,5 +1,4 @@
-// Helper: enrich an FTS / list result set with semantic-search hits.
-// Used by usePrompts/useSkills/useWorkflows/useClaws hooks so that
+// Used by usePrompts/useSkills/useWorkflows hooks so that
 // keyword-mismatched but semantically-related artifacts still surface.
 //
 // - Embedding generation goes through the `generate-embedding` edge function
@@ -14,13 +13,12 @@ const MIN_QUERY_LEN = 3;
 const DEFAULT_THRESHOLD = 0.25;
 const DEFAULT_COUNT = 30;
 
-type ItemType = "prompt" | "skill" | "workflow" | "claw";
+type ItemType = "prompt" | "skill" | "workflow";
 
-const RPC_BY_TYPE: Record<ItemType, "search_prompts_semantic" | "search_skills_semantic" | "search_workflows_semantic" | "search_claws_semantic"> = {
+const RPC_BY_TYPE: Record<ItemType, "search_prompts_semantic" | "search_skills_semantic" | "search_workflows_semantic"> = {
   prompt: "search_prompts_semantic",
   skill: "search_skills_semantic",
   workflow: "search_workflows_semantic",
-  claw: "search_claws_semantic",
 };
 
 // In-memory cache for query embeddings (per page lifetime).
