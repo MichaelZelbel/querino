@@ -32,13 +32,18 @@ export default function PromptKitDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { teams } = useWorkspace();
+  const { cloneKit, cloning } = useClonePromptKit();
   const [kit, setKit] = useState<KitWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [copyTeamOpen, setCopyTeamOpen] = useState(false);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
+  const hasTeams = teams && teams.length > 0;
 
   useEffect(() => {
     async function fetchKit() {
@@ -53,6 +58,21 @@ export default function PromptKitDetail() {
           .eq("slug", slug)
           .maybeSingle();
         if (error || !data) {
+          // Try slug redirect
+          const { data: redirect } = await (supabase.from("prompt_kit_slug_redirects") as any)
+            .select("prompt_kit_id")
+            .eq("old_slug", slug)
+            .maybeSingle();
+          if (redirect?.prompt_kit_id) {
+            const { data: kit2 } = await (supabase.from("prompt_kits") as any)
+              .select(`*, profiles:author_id (id, display_name, avatar_url), slug`)
+              .eq("id", redirect.prompt_kit_id)
+              .maybeSingle();
+            if (kit2?.slug) {
+              navigate(`/prompt-kits/${kit2.slug}`, { replace: true });
+              return;
+            }
+          }
           setNotFound(true);
         } else {
           setKit({ ...data, author: data.profiles || null });
@@ -64,7 +84,7 @@ export default function PromptKitDetail() {
       }
     }
     fetchKit();
-  }, [slug]);
+  }, [slug, navigate]);
 
   const handleCopyAll = async () => {
     if (!kit) return;
