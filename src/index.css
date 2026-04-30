@@ -115,7 +115,6 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    transition: background-color 240ms ease, color 240ms ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -139,77 +138,5 @@
 
   .card-gradient {
     background: var(--gradient-card);
-  }
-}
-
-/* ============= Querino Homepage — Quentin & Floating Cards ============= */
-@layer utilities {
-  .font-display {
-    font-family: 'Bricolage Grotesque', Inter, system-ui, sans-serif;
-  }
-  .hero-grad-text {
-    background: linear-gradient(135deg, hsl(239 67% 59%) 0%, hsl(259 67% 65%) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .dark .hero-grad-text {
-    background: linear-gradient(135deg, hsl(239 67% 65%) 0%, hsl(269 67% 70%) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .hero-halo {
-    background: radial-gradient(circle at 50% 50%, hsl(var(--accent) / 0.6) 0%, transparent 60%);
-  }
-}
-
-@keyframes mascotFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
-}
-@keyframes mascotSquish {
-  0%, 100% { transform: scaleY(1) scaleX(1); }
-  50%      { transform: scaleY(0.97) scaleX(1.03); }
-}
-@keyframes mascotWave {
-  0%, 100% { transform: rotate(0deg); }
-  20%      { transform: rotate(-25deg); }
-  40%      { transform: rotate(15deg); }
-  60%      { transform: rotate(-10deg); }
-  80%      { transform: rotate(10deg); }
-}
-@keyframes bubblePop {
-  from { opacity: 0; transform: scale(0.8) translateY(-8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes floatCard0 {
-  0%,100% { transform: translate(calc(-50% + -180px), calc(-50% + -110px)) rotate(-12deg); }
-  50%     { transform: translate(calc(-50% + -180px), calc(-50% + -120px)) rotate(-9deg); }
-}
-@keyframes floatCard1 {
-  0%,100% { transform: translate(calc(-50% + 180px), calc(-50% + -90px)) rotate(9deg); }
-  50%     { transform: translate(calc(-50% + 180px), calc(-50% + -100px)) rotate(12deg); }
-}
-@keyframes floatCard2 {
-  0%,100% { transform: translate(calc(-50% + -200px), calc(-50% + 90px)) rotate(7deg); }
-  50%     { transform: translate(calc(-50% + -200px), calc(-50% + 80px)) rotate(4deg); }
-}
-@keyframes floatCard3 {
-  0%,100% { transform: translate(calc(-50% + 190px), calc(-50% + 110px)) rotate(-10deg); }
-  50%     { transform: translate(calc(-50% + 190px), calc(-50% + 100px)) rotate(-7deg); }
-}
-@keyframes floatCard4 {
-  0%,100% { transform: translate(calc(-50% + 0px), calc(-50% + -200px)) rotate(0deg); }
-  50%     { transform: translate(calc(-50% + 0px), calc(-50% + -210px)) rotate(3deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .quentin-float,
-  .quentin-squish,
-  .quentin-wave,
-  .float-card-anim {
-    animation: none !important;
   }
 }
