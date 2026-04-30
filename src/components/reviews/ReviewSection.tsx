@@ -60,6 +60,10 @@ export function ReviewSection({
         return `/auth?redirect=/skills/${slug}`;
       case "workflow":
         return `/auth?redirect=/workflows/${slug}`;
+      case "prompt_kit":
+        return `/auth?redirect=/prompt-kits/${slug}`;
+      case "claw":
+        return `/auth?redirect=/claws/${slug}`;
       default:
         return `/auth`;
     }
