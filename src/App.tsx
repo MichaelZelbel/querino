@@ -34,6 +34,9 @@ import SkillEdit from "./pages/SkillEdit";
 import WorkflowNew from "./pages/WorkflowNew";
 import WorkflowDetail from "./pages/WorkflowDetail";
 import WorkflowEdit from "./pages/WorkflowEdit";
+import PromptKitNew from "./pages/PromptKitNew";
+import PromptKitDetail from "./pages/PromptKitDetail";
+import PromptKitEdit from "./pages/PromptKitEdit";
 import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
 import Collections from "./pages/Collections";
@@ -105,6 +108,9 @@ const App = () => (
             <Route path="/workflows/new" element={<WorkflowNew />} />
             <Route path="/workflows/:slug" element={<WorkflowDetail />} />
             <Route path="/workflows/:slug/edit" element={<WorkflowEdit />} />
+            <Route path="/prompt-kits/new" element={<PromptKitNew />} />
+            <Route path="/prompt-kits/:slug" element={<PromptKitDetail />} />
+            <Route path="/prompt-kits/:slug/edit" element={<PromptKitEdit />} />
             <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/collections" element={<Collections />} />

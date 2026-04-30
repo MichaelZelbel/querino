@@ -13,12 +13,13 @@ const MIN_QUERY_LEN = 3;
 const DEFAULT_THRESHOLD = 0.25;
 const DEFAULT_COUNT = 30;
 
-type ItemType = "prompt" | "skill" | "workflow";
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
-const RPC_BY_TYPE: Record<ItemType, "search_prompts_semantic" | "search_skills_semantic" | "search_workflows_semantic"> = {
+const RPC_BY_TYPE: Record<ItemType, "search_prompts_semantic" | "search_skills_semantic" | "search_workflows_semantic" | "search_prompt_kits_semantic"> = {
   prompt: "search_prompts_semantic",
   skill: "search_skills_semantic",
   workflow: "search_workflows_semantic",
+  prompt_kit: "search_prompt_kits_semantic",
 };
 
 // In-memory cache for query embeddings (per page lifetime).
