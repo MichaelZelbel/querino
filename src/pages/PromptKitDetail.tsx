@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
-  History, GitFork, Users, MessageSquarePlus,
+  History, GitFork, Users, MessageSquarePlus, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
@@ -41,9 +41,36 @@ export default function PromptKitDetail() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copyTeamOpen, setCopyTeamOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
+
+  const {
+    suggestions,
+    loading: loadingSuggestions,
+    openCount,
+    createSuggestion,
+    reviewSuggestion,
+    requestChanges,
+    updateSuggestionAfterChanges,
+  } = useSuggestions('prompt_kit', kit?.id || '');
+
+  const handleApplySuggestion = async (suggestion: any) => {
+    if (!kit) return;
+    const updates: any = { content: suggestion.content };
+    if (suggestion.title) updates.title = suggestion.title;
+    if (suggestion.description) updates.description = suggestion.description;
+    const { error } = await (supabase.from('prompt_kits') as any)
+      .update(updates)
+      .eq('id', kit.id);
+    if (error) throw error;
+    const { data } = await (supabase.from("prompt_kits") as any)
+      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+      .eq("slug", kit.slug)
+      .maybeSingle();
+    if (data) setKit({ ...data, author: data.profiles || null });
+  };
 
   useEffect(() => {
     async function fetchKit() {
@@ -268,13 +295,19 @@ export default function PromptKitDetail() {
                 {cloning ? "Cloning..." : "Clone to my library"}
               </Button>
             )}
-            {user && hasTeams && (
-              <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
-                <Users className="h-4 w-4" />
-                Copy to team
-              </Button>
-            )}
-          </div>
+          {user && hasTeams && (
+            <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
+              <Users className="h-4 w-4" />
+              Copy to team
+            </Button>
+          )}
+          {user && !isAuthor && (
+            <Button size="lg" variant="outline" onClick={() => setSuggestOpen(true)} className="gap-2">
+              <MessageSquarePlus className="h-4 w-4" />
+              Suggest edit
+            </Button>
+          )}
+        </div>
 
           {items.length === 0 ? (
             <div className="rounded-xl border border-border bg-muted/30 p-6">
@@ -316,9 +349,50 @@ export default function PromptKitDetail() {
               ))}
             </div>
           )}
+
+          {/* Tabbed Content Section */}
+          <Tabs defaultValue="suggestions" className="mt-12">
+            <TabsList>
+              <TabsTrigger value="suggestions" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Suggestions
+                {openCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {openCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="suggestions" className="mt-6">
+              <SuggestionsTab
+                suggestions={suggestions}
+                loading={loadingSuggestions}
+                itemType="prompt_kit"
+                itemId={kit.id}
+                originalTitle={kit.title}
+                originalDescription={kit.description || ''}
+                originalContent={kit.content}
+                isOwner={!!isAuthor}
+                onReviewSuggestion={reviewSuggestion}
+                onRequestChanges={requestChanges}
+                onUpdateSuggestion={updateSuggestionAfterChanges}
+                onApplySuggestion={handleApplySuggestion}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
+
+      <SuggestEditModal
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        itemType="prompt_kit"
+        currentTitle={kit.title}
+        currentDescription={kit.description || ''}
+        currentContent={kit.content}
+        onSubmit={createSuggestion}
+      />
 
       {isAuthor && (
         <PromptKitVersionHistoryPanel
