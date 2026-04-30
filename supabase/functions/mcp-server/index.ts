@@ -805,6 +805,153 @@ function buildMcpServer(auth: Auth) {
     },
   });
 
+  // ── PROMPT KITS ───────────────────────────────────────────────────
+
+  mcpServer.tool("list_prompt_kits", {
+    description: "List your prompt kits (most recent first). A prompt kit is a Markdown bundle of related prompts separated by '## Prompt:' headings.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: { type: "number" },
+        offset: { type: "number" },
+      },
+    },
+    handler: async ({ limit, offset }: { limit?: number; offset?: number }) => {
+      const l = Math.min(limit ?? 20, 100);
+      const o = offset ?? 0;
+      const { data, error } = await sb
+        .from("prompt_kits")
+        .select("id, slug, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at")
+        .eq("author_id", auth.userId)
+        .order("updated_at", { ascending: false })
+        .range(o, o + l - 1);
+      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcpServer.tool("search_prompt_kits", {
+    description: "Search your prompt kits by keyword in title, description, or content.",
+    inputSchema: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+    },
+    handler: async ({ query }: { query: string }) => {
+      const { data, error } = await sb
+        .from("prompt_kits")
+        .select("id, slug, title, category, tags, published, language, updated_at")
+        .eq("author_id", auth.userId)
+        .or(`title.ilike.%${query}%,description.ilike.%${query}%,content.ilike.%${query}%`)
+        .order("updated_at", { ascending: false })
+        .limit(30);
+      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcpServer.tool("get_prompt_kit", {
+    description: "Get full details of a prompt kit by ID (Markdown content with all '## Prompt:' items).",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    handler: async ({ id }: { id: string }) => {
+      const { data, error } = await sb
+        .from("prompt_kits")
+        .select("*")
+        .eq("id", id)
+        .eq("author_id", auth.userId)
+        .single();
+      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcpServer.tool("create_prompt_kit", {
+    description: "Create a new prompt kit. The 'content' field must be Markdown using '## Prompt: <title>' headings to separate items.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        content: { type: "string", description: "Markdown bundle, e.g. '## Prompt: Outreach\\n\\nBody…\\n\\n## Prompt: Follow-up\\n\\nBody…'" },
+        category: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+        published: { type: "boolean" },
+        language: { type: "string" },
+      },
+      required: ["title", "content"],
+    },
+    handler: async (input: Record<string, unknown>) => {
+      const { data, error } = await sb
+        .from("prompt_kits")
+        .insert({
+          title: input.title as string,
+          description: (input.description as string) ?? null,
+          content: input.content as string,
+          category: (input.category as string) ?? null,
+          tags: (input.tags as string[]) ?? [],
+          published: (input.published as boolean) ?? false,
+          language: (input.language as string) ?? "en",
+          author_id: auth.userId,
+        })
+        .select("id, title, slug")
+        .single();
+      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text", text: `Created prompt kit: ${JSON.stringify(data)}` }] };
+    },
+  });
+
+  mcpServer.tool("update_prompt_kit", {
+    description: "Update an existing prompt kit by ID. Only supply fields you want to change.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        title: { type: "string" },
+        description: { type: "string" },
+        content: { type: "string" },
+        category: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+        published: { type: "boolean" },
+        language: { type: "string" },
+      },
+      required: ["id"],
+    },
+    handler: async (input: Record<string, unknown>) => {
+      const { id, ...updates } = input;
+      const { data, error } = await sb
+        .from("prompt_kits")
+        .update(updates)
+        .eq("id", id as string)
+        .eq("author_id", auth.userId)
+        .select("id, title")
+        .single();
+      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }] };
+    },
+  });
+
+  mcpServer.tool("delete_prompt_kit", {
+    description: "Delete a prompt kit by ID.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    handler: async ({ id }: { id: string }) => {
+      const { error } = await sb
+        .from("prompt_kits")
+        .delete()
+        .eq("id", id)
+        .eq("author_id", auth.userId);
+      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text", text: `Deleted prompt kit ${id}` }] };
+    },
+  });
+
   return mcpServer;
 }
 
@@ -825,7 +972,7 @@ app.get("/mcp-server", (c) => {
   return c.json({
     name: "querino-mcp",
     version: "1.0.0",
-    description: "Querino MCP Server — manage prompts, skills, workflows, claws and collections.",
+    description: "Querino MCP Server — manage prompts, prompt kits, skills, workflows, claws and collections.",
     health: "ok",
   }, 200, corsHeaders);
 });

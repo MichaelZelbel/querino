@@ -27,6 +27,7 @@ import {
   Activity,
   CreditCard,
   Globe,
+  Package,
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -41,6 +42,7 @@ const artefactIcons: Record<ArtefactType, React.ComponentType<{ className?: stri
   prompt: Sparkles,
   skill: FileText,
   workflow: Workflow,
+  prompt_kit: Package,
 };
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
@@ -81,6 +83,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // Quick actions
   const quickActions = [
     { label: "New Prompt", icon: Plus, action: () => navigate("/prompts/new"), requiresAuth: true },
+    { label: "New Prompt Kit", icon: Plus, action: () => navigate("/prompt-kits/new"), requiresAuth: true },
     { label: "New Skill", icon: Plus, action: () => navigate("/skills/new"), requiresAuth: true },
     { label: "New Workflow", icon: Plus, action: () => navigate("/workflows/new"), requiresAuth: true },
     { label: "Open My Library", icon: Library, action: () => navigate("/library"), requiresAuth: true },
@@ -199,6 +202,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     ? `/prompts/${artefact.id}`
                     : artefact.type === "skill"
                     ? `/skills/${artefact.id}`
+                    : artefact.type === "prompt_kit"
+                    ? `/prompt-kits/${artefact.id}`
                     : `/workflows/${artefact.id}`;
 
                   return (

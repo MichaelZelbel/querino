@@ -30,6 +30,11 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { CommentsSection } from "@/components/comments";
 import { ActivitySidebar } from "@/components/activity";
 import { AIInsightsPanel } from "@/components/insights";
+import { DownloadMarkdownButton } from "@/components/markdown/DownloadMarkdownButton";
+import { TranslateModal } from "@/components/shared/TranslateModal";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
+import { Languages } from "lucide-react";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -51,6 +56,8 @@ export default function PromptKitDetail() {
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [pinning, setPinning] = useState(false);
+  const [translateOpen, setTranslateOpen] = useState(false);
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
@@ -361,6 +368,34 @@ export default function PromptKitDetail() {
               Add to collection
             </Button>
           )}
+          <DownloadMarkdownButton
+            title={kit.title}
+            type="prompt_kit"
+            description={kit.description}
+            tags={kit.tags}
+            content={kit.content}
+            size="lg"
+          />
+          {user && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setTranslateOpen(true)}
+              className="gap-2"
+            >
+              <Languages className="h-4 w-4" />
+              Translate
+            </Button>
+          )}
+          {isAuthor && hasMenerio && (
+            <MenerioSyncButton
+              artifactType="prompt_kit"
+              artifactId={kit.id}
+              menerioSynced={!!kit.menerio_synced}
+              menerioSyncedAt={kit.menerio_synced_at || null}
+              menerioNoteId={kit.menerio_note_id || null}
+            />
+          )}
         </div>
 
           {items.length === 0 ? (
@@ -465,6 +500,18 @@ export default function PromptKitDetail() {
       <Footer />
 
       <AIInsightsPanel itemType="prompt_kit" itemId={kit.id} />
+
+      <TranslateModal
+        open={translateOpen}
+        onOpenChange={setTranslateOpen}
+        artifactType="prompt_kit"
+        sourceLanguage={kit.language || "en"}
+        title={kit.title}
+        description={kit.description || ""}
+        content={kit.content}
+        tags={kit.tags || []}
+        category={kit.category || undefined}
+      />
 
       <AddToCollectionModal
         open={collectionOpen}
