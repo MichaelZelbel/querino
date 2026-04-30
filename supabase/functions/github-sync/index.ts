@@ -876,7 +876,7 @@ Deno.serve(async (req) => {
 
     // Get current tree to find files to delete in our managed folders
     const existingTree = await getTree(owner, repo, currentCommitSha!, githubToken);
-    const managedPaths = [`${basePath}prompts/`, `${basePath}skills/`, `${basePath}workflows/`];
+    const managedPaths = [`${basePath}prompts/`, `${basePath}skills/`, `${basePath}workflows/`, `${basePath}prompt-kits/`];
     
     // Find existing files in our managed folders that should be deleted
     const existingManagedFiles = existingTree.filter((item) => 
@@ -937,6 +937,7 @@ Updated:
 - ${prompts.length} prompt(s)
 - ${skills.length} skill(s)
 - ${workflows.length} workflow(s)
+- ${promptKits.length} prompt kit(s)
 
 Synced by: ${user.email}`;
 
@@ -970,7 +971,7 @@ Synced by: ${user.email}`;
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully synced ${prompts.length} prompts, ${skills.length} skills, ${workflows.length} workflows`,
+        message: `Successfully synced ${prompts.length} prompts, ${skills.length} skills, ${workflows.length} workflows, ${promptKits.length} prompt kits`,
         commitSha: newCommitSha,
         filesUpdated: files.length,
       }),
