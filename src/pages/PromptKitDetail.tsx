@@ -334,6 +334,32 @@ export default function PromptKitDetail() {
               Suggest edit
             </Button>
           )}
+          {user && (
+            <Button
+              size="lg"
+              variant={isPinned ? "secondary" : "outline"}
+              onClick={handleTogglePin}
+              disabled={pinning}
+              className="gap-2"
+            >
+              {isPinned ? (
+                <><PinOff className="h-4 w-4" />Unpin</>
+              ) : (
+                <><Pin className="h-4 w-4" />Pin</>
+              )}
+            </Button>
+          )}
+          {user && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setCollectionOpen(true)}
+              className="gap-2"
+            >
+              <FolderPlus className="h-4 w-4" />
+              Add to collection
+            </Button>
+          )}
         </div>
 
           {items.length === 0 ? (
