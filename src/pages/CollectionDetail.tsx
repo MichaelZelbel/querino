@@ -298,6 +298,15 @@ export default function CollectionDetail() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="prompt_kit" className="gap-2">
+              <Package className="h-3.5 w-3.5" />
+              Prompt Kits
+              {itemCounts.prompt_kit > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5">
+                  {itemCounts.prompt_kit}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
