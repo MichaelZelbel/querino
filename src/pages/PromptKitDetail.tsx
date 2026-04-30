@@ -41,9 +41,36 @@ export default function PromptKitDetail() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copyTeamOpen, setCopyTeamOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
+
+  const {
+    suggestions,
+    loading: loadingSuggestions,
+    openCount,
+    createSuggestion,
+    reviewSuggestion,
+    requestChanges,
+    updateSuggestionAfterChanges,
+  } = useSuggestions('prompt_kit', kit?.id || '');
+
+  const handleApplySuggestion = async (suggestion: any) => {
+    if (!kit) return;
+    const updates: any = { content: suggestion.content };
+    if (suggestion.title) updates.title = suggestion.title;
+    if (suggestion.description) updates.description = suggestion.description;
+    const { error } = await (supabase.from('prompt_kits') as any)
+      .update(updates)
+      .eq('id', kit.id);
+    if (error) throw error;
+    const { data } = await (supabase.from("prompt_kits") as any)
+      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+      .eq("slug", kit.slug)
+      .maybeSingle();
+    if (data) setKit({ ...data, author: data.profiles || null });
+  };
 
   useEffect(() => {
     async function fetchKit() {
