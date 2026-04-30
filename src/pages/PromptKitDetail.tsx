@@ -403,11 +403,24 @@ export default function PromptKitDetail() {
             </div>
           )}
 
+          {/* Ratings & Reviews */}
+          <PromptKitReviewSection
+            kitId={kit.id}
+            kitSlug={kit.slug || undefined}
+            userId={user?.id}
+            ratingAvg={kit.rating_avg || 0}
+            ratingCount={kit.rating_count || 0}
+          />
+
           {/* Tabbed Content Section */}
-          <Tabs defaultValue="suggestions" className="mt-12">
+          <Tabs defaultValue="comments" className="mt-8">
             <TabsList>
-              <TabsTrigger value="suggestions" className="gap-2">
+              <TabsTrigger value="comments" className="gap-2">
                 <MessageSquare className="h-4 w-4" />
+                Comments
+              </TabsTrigger>
+              <TabsTrigger value="suggestions" className="gap-2">
+                <MessageSquarePlus className="h-4 w-4" />
                 Suggestions
                 {openCount > 0 && (
                   <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
@@ -415,7 +428,16 @@ export default function PromptKitDetail() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="activity" className="gap-2">
+                <ActivityIcon className="h-4 w-4" />
+                Activity
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="comments" className="mt-6">
+              <CommentsSection itemType="prompt_kit" itemId={kit.id} teamId={(kit as any).team_id} />
+            </TabsContent>
+
             <TabsContent value="suggestions" className="mt-6">
               <SuggestionsTab
                 suggestions={suggestions}
@@ -432,10 +454,21 @@ export default function PromptKitDetail() {
                 onApplySuggestion={handleApplySuggestion}
               />
             </TabsContent>
+
+            <TabsContent value="activity" className="mt-6">
+              <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
       <Footer />
+
+      <AddToCollectionModal
+        open={collectionOpen}
+        onOpenChange={setCollectionOpen}
+        itemType="prompt_kit"
+        itemId={kit.id}
+      />
 
       <SuggestEditModal
         open={suggestOpen}
