@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
-  History, GitFork, Users, MessageSquarePlus,
+  History, GitFork, Users, MessageSquarePlus, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
