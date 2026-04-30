@@ -30,7 +30,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
-const DEFAULT_TEMPLATE = `## Prompt: My first prompt
+const DEFAULT_TEMPLATE = `# My Prompt Kit
+
+A short intro explaining what this kit is for and how to use it.
+
+## How to use this kit
+
+Walk readers through when to run each prompt and what to expect.
+
+## Prompt: My first prompt
 
 Write your prompt here…
 `;
