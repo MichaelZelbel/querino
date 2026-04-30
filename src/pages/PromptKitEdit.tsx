@@ -236,6 +236,10 @@ export default function PromptKitEdit() {
               Back to Library
             </Link>
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setVersionHistoryOpen(true)} className="gap-2">
+                <History className="h-4 w-4" />
+                History
+              </Button>
               <Button onClick={handleSave} disabled={isSubmitting} className="gap-2">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
