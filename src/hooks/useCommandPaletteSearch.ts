@@ -119,7 +119,32 @@ export function useCommandPaletteSearch(query: string) {
           });
         });
 
-        setArtefacts(results.slice(0, 10));
+        // Search prompt kits (route uses slug, so we expose slug as id)
+        let kitQuery = (supabase.from("prompt_kits") as any)
+          .select("id, slug, title, description, published, team_id")
+          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},content.ilike.${searchTerm}`)
+          .limit(10);
+
+        if (currentWorkspace === "personal") {
+          kitQuery = kitQuery.eq("author_id", user.id).is("team_id", null);
+        } else {
+          kitQuery = kitQuery.or(`author_id.eq.${user.id},team_id.in.(${teamIds.join(",")})`);
+        }
+
+        const { data: kits } = await kitQuery;
+        (kits as any[] | null)?.forEach((k) => {
+          results.push({
+            id: k.slug || k.id,
+            title: k.title,
+            type: "prompt_kit",
+            description: k.description,
+            isPublic: k.published,
+            teamId: k.team_id,
+            teamName: teams.find(t => t.id === k.team_id)?.name,
+          });
+        });
+
+        setArtefacts(results.slice(0, 12));
       } catch (error) {
         console.error("Command palette search error:", error);
       } finally {
