@@ -531,6 +531,7 @@ This repository is synced from [Querino](https://querino.lovable.app).
 ## Structure
 
 - \`prompts/\` - AI prompts
+- \`prompt-kits/\` - Prompt kits (bundles of prompts)
 - \`skills/\` - AI skills  
 - \`workflows/\` - AI workflows
 
