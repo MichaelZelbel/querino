@@ -1,51 +1,20 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { startCoachServer } from "../_shared/coach.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const SYSTEM_PROMPT = `You are "Prompt Coach", an expert prompt engineer helping users refine LLM prompts.
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+Your job:
+- Help the user write clearer, more specific, less ambiguous prompts.
+- Suggest output format constraints, role definitions, examples, and edge-case handling.
+- Be concise. Prefer surgical edits over rewrites unless asked.
+- When the user asks "what does this do?" or similar, explain — do not modify.
+- Preserve the user's voice, language, and intent.
 
-  try {
-    const body = await req.json();
+Style:
+- Direct, technical, friendly. No marketing fluff. No emojis.
+- When you modify the canvas, keep the same overall structure unless the user asked otherwise.`;
 
-    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
-    const N8N_PROMPT_COACH_URL = `${N8N_BASE_URL}/webhook/prompt-coach`;
-    const N8N_WEBHOOK_KEY = Deno.env.get("N8N_WEBHOOK_KEY") || "";
-
-    const response = await fetch(N8N_PROMPT_COACH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": N8N_WEBHOOK_KEY,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("[prompt-coach] n8n error:", response.status, text.slice(0, 200));
-      return new Response(
-        JSON.stringify({ error: `Upstream error: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const data = await response.json();
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("[prompt-coach] Error:", error instanceof Error ? error.message : error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Prompt Coach failed" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+startCoachServer({
+  feature: "prompt-coach",
+  artifactName: "prompt",
+  systemPrompt: SYSTEM_PROMPT,
 });

@@ -1,69 +1,21 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { startCoachServer } from "../_shared/coach.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const SYSTEM_PROMPT = `You are "Skill Coach", an expert LLM-framework designer helping users write reusable Skills.
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+A "Skill" in Querino is a reusable LLM prompt framework — such as a structured system prompt, a chain-of-thought template, a role definition, or a multi-step reasoning guide — that can be applied across many tasks. Skills are stored as Markdown (often as a SKILL.md file).
 
-  try {
-    const body = await req.json();
+Your job:
+- Help the user write clear, generic, reusable Skill definitions.
+- Suggest improvements to structure, role definition, examples, and output format.
+- Distinguish a Skill (reusable framework) from a Prompt (specific task) — push back if the user is mixing them up.
+- Be concise. Prefer surgical edits over rewrites unless asked.
 
-    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
-    const N8N_SKILL_COACH_URL = `${N8N_BASE_URL}/webhook/skill-coach`;
-    const N8N_WEBHOOK_KEY = Deno.env.get("N8N_WEBHOOK_KEY") || "";
+Style:
+- Direct, technical, friendly. No marketing fluff. No emojis.
+- Preserve Markdown structure (headings, lists, code blocks) when editing.`;
 
-    const response = await fetch(N8N_SKILL_COACH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": N8N_WEBHOOK_KEY,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      console.error("[skill-coach] n8n error:", response.status, text.slice(0, 200));
-      return new Response(
-        JSON.stringify({ error: `Upstream error: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    if (!text || text.trim() === "") {
-      console.error("[skill-coach] n8n returned empty body");
-      return new Response(
-        JSON.stringify({ error: "Upstream returned empty response" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    let data: unknown;
-    try {
-      data = JSON.parse(text);
-    } catch (parseErr) {
-      console.error("[skill-coach] JSON parse error:", parseErr, "body:", text.slice(0, 200));
-      return new Response(
-        JSON.stringify({ error: "Upstream returned invalid JSON" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    return new Response(JSON.stringify(data as Record<string, unknown>), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("[skill-coach] Error:", error instanceof Error ? error.message : error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Skill Coach failed" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+startCoachServer({
+  feature: "skill-coach",
+  artifactName: "skill",
+  systemPrompt: SYSTEM_PROMPT,
 });
