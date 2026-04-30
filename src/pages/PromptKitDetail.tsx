@@ -2,17 +2,27 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
+  History, GitFork, Users, MessageSquarePlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
 import { format } from "date-fns";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
+import { useClonePromptKit } from "@/hooks/useClonePromptKit";
+import { CopyPromptKitToTeamModal } from "@/components/promptKits/CopyPromptKitToTeamModal";
+import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
+import { useSuggestions } from "@/hooks/useSuggestions";
+import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
