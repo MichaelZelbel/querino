@@ -29,6 +29,7 @@ import { usePinnedPromptKits } from "@/hooks/usePinnedPromptKits";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { CommentsSection } from "@/components/comments";
 import { ActivitySidebar } from "@/components/activity";
+import { AIInsightsPanel } from "@/components/insights";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -462,6 +463,8 @@ export default function PromptKitDetail() {
         </div>
       </main>
       <Footer />
+
+      <AIInsightsPanel itemType="prompt_kit" itemId={kit.id} />
 
       <AddToCollectionModal
         open={collectionOpen}

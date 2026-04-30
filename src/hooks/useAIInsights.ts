@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLogActivity } from './useLogActivity';
 import type { AIInsights, AIQuality } from '@/types/aiInsights';
 
-type ItemType = 'prompt' | 'skill' | 'workflow';
+type ItemType = 'prompt' | 'skill' | 'workflow' | 'prompt_kit';
 
 interface ArtefactData {
   title: string;
@@ -67,6 +67,13 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       } else if (itemType === 'workflow') {
         const { data, error } = await supabase
           .from('workflows')
+          .select('title, description, content, tags')
+          .eq('id', itemId)
+          .single();
+        if (error || !data) return null;
+        return { title: data.title, description: data.description, content: data.content || '', tags: data.tags };
+      } else if (itemType === 'prompt_kit') {
+        const { data, error } = await (supabase.from('prompt_kits') as any)
           .select('title, description, content, tags')
           .eq('id', itemId)
           .single();
@@ -146,7 +153,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
 
       await logActivity({
         action: isRefresh ? 'ai_insights_refreshed' : 'ai_insights_generated',
-        itemType: itemType as 'prompt' | 'skill' | 'workflow',
+        itemType: itemType as any,
         itemId,
       });
     } catch (err) {

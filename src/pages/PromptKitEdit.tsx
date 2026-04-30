@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -19,7 +20,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, X, ArrowLeft, Trash2, Save, Plus, ListTree, History } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+} from "@/components/ui/sheet";
+import { Loader2, X, ArrowLeft, Trash2, Save, Plus, ListTree, History, Sparkles, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import type { PromptKit } from "@/types/promptKit";
@@ -28,6 +32,10 @@ import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
 import { PromptKitSlugEditor } from "@/components/promptKits/PromptKitSlugEditor";
 import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
+import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { deterministicSessionId } from "@/lib/runCanvasAI";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 interface KitFormData {
   title: string;
@@ -43,12 +51,23 @@ export default function PromptKitEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const { currentWorkspace } = useWorkspace();
+  const isMobile = useIsMobile();
+  const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [kit, setKit] = useState<PromptKit | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [currentSlug, setCurrentSlug] = useState<string>("");
+  const [showCoachSheet, setShowCoachSheet] = useState(false);
+
+  // AI undo state
+  const [previousContent, setPreviousContent] = useState<string | null>(null);
+
+  // AI metadata suggestion state
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<KitFormData>({
     title: "",
@@ -63,6 +82,11 @@ export default function PromptKitEdit() {
 
   const kitId = kit?.id;
   const items = parsePromptKitItems(formData.content);
+
+  const workspaceScope = currentWorkspace ?? "personal";
+  const coachSessionId = kitId && user
+    ? deterministicSessionId(workspaceScope, user.id, kitId)
+    : "draft";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -135,6 +159,52 @@ export default function PromptKitEdit() {
     }));
   };
 
+  const handleApplyAIContent = (content: string) => {
+    setPreviousContent(formData.content);
+    setFormData((f) => ({ ...f, content }));
+  };
+
+  const handleUndoAI = () => {
+    if (previousContent !== null) {
+      setFormData((f) => ({ ...f, content: previousContent }));
+      setPreviousContent(null);
+      toast.success("Reverted last AI change");
+    }
+  };
+
+  const handleSuggestMetadata = async () => {
+    if (!checkCredits()) return;
+    if (!formData.content.trim()) {
+      setMetadataError("Please add some kit content first.");
+      return;
+    }
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("suggest-promptkit-metadata", {
+        body: { kit_content: formData.content.trim(), user_id: user?.id },
+      });
+      if (error) throw new Error("Failed to generate suggestions");
+      const data = (result as any)?.output || result;
+      if (data?.title) setFormData((prev) => ({ ...prev, title: data.title }));
+      if (data?.description) setFormData((prev) => ({ ...prev, description: data.description }));
+      if (data?.category) {
+        const matched = categoryOptions.find(
+          (c) => c.id.toLowerCase() === String(data.category).toLowerCase(),
+        );
+        if (matched) setFormData((prev) => ({ ...prev, category: matched.id }));
+      }
+      if (data?.tags && Array.isArray(data.tags)) {
+        const newTags = data.tags.map((t: string) => normalizeTag(t)).filter(Boolean).slice(0, 10);
+        setFormData((prev) => ({ ...prev, tags: newTags }));
+      }
+    } catch {
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!user || !kitId || !kit) return;
     if (!formData.title.trim()) { toast.error("Title is required"); return; }
@@ -181,7 +251,6 @@ export default function PromptKitEdit() {
         .eq("id", kitId);
       if (error) { toast.error("Failed to save prompt kit"); return; }
 
-      // Refresh local kit state to reflect saved values for next diff
       setKit({
         ...kit,
         title: formData.title.trim(),
@@ -225,6 +294,20 @@ export default function PromptKitEdit() {
   }
   if (!user || !kit) return null;
 
+  const coachPanel = (
+    <ArtifactCoachPanel
+      artifactType="prompt_kit"
+      artifactId={kitId!}
+      canvasContent={formData.content}
+      onApplyContent={handleApplyAIContent}
+      onUndo={handleUndoAI}
+      canUndo={previousContent !== null}
+      userId={user.id}
+      workspaceId={currentWorkspace === "personal" ? null : currentWorkspace}
+      sessionId={coachSessionId}
+    />
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
@@ -235,7 +318,23 @@ export default function PromptKitEdit() {
               <ArrowLeft className="h-4 w-4" />
               Back to Library
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {isMobile && (
+                <Sheet open={showCoachSheet} onOpenChange={setShowCoachSheet}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Bot className="h-4 w-4" />
+                      AI Coach
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[80vh] p-0">
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Prompt Kit Coach</SheetTitle>
+                    </SheetHeader>
+                    <div className="h-full">{coachPanel}</div>
+                  </SheetContent>
+                </Sheet>
+              )}
               <Button variant="outline" onClick={() => setVersionHistoryOpen(true)} className="gap-2">
                 <History className="h-4 w-4" />
                 History
@@ -298,6 +397,25 @@ export default function PromptKitEdit() {
                       onChange={(v) => setFormData({ ...formData, content: v })}
                       placeholder="## Prompt: Title&#10;&#10;Prompt body…"
                     />
+                  </div>
+
+                  {/* AI Metadata Suggestion */}
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSuggestMetadata}
+                      disabled={isGeneratingMetadata || !formData.content.trim()}
+                      className="gap-1.5"
+                    >
+                      {isGeneratingMetadata ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating…</>
+                      ) : (
+                        <><Sparkles className="h-3.5 w-3.5" />Suggest title, description, category & tags</>
+                      )}
+                    </Button>
+                    {metadataError && <p className="text-sm text-destructive">{metadataError}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -372,28 +490,34 @@ export default function PromptKitEdit() {
               </div>
             </div>
 
-            <div className="hidden lg:block w-[280px] shrink-0 sticky top-24 self-start">
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                  <ListTree className="h-4 w-4 text-primary" />
-                  Outline
+            {/* Right column: Outline + AI Coach (desktop only) */}
+            {!isMobile && (
+              <div className="w-[380px] shrink-0 flex flex-col gap-4 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+                <div className="rounded-xl border border-border bg-card p-4 shrink-0">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                    <ListTree className="h-4 w-4 text-primary" />
+                    Outline
+                  </div>
+                  {items.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No prompts detected yet.
+                    </p>
+                  ) : (
+                    <ol className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {items.map((item) => (
+                        <li key={item.index} className="text-sm">
+                          <span className="text-muted-foreground mr-1.5">{item.index}.</span>
+                          <span className="text-foreground">{item.title || "Untitled"}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                 </div>
-                {items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    No prompts detected yet.
-                  </p>
-                ) : (
-                  <ol className="space-y-1.5">
-                    {items.map((item) => (
-                      <li key={item.index} className="text-sm">
-                        <span className="text-muted-foreground mr-1.5">{item.index}.</span>
-                        <span className="text-foreground">{item.title || "Untitled"}</span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                <div className="flex-1 min-h-0">
+                  {coachPanel}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
