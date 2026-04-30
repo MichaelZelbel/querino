@@ -14,7 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, X, Save, Plus, ListTree } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+} from "@/components/ui/sheet";
+import { ArrowLeft, Loader2, X, Save, Plus, ListTree, Sparkles, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
@@ -22,6 +25,10 @@ import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateSlug } from "@/hooks/useGenerateSlug";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
+import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getOrCreateDraftSessionId } from "@/lib/runCanvasAI";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 const DEFAULT_TEMPLATE = `## Prompt: My first prompt
 
@@ -33,8 +40,11 @@ export default function PromptKitNew() {
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
+  const isMobile = useIsMobile();
+  const { checkCredits } = useAICreditsGate();
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCoachSheet, setShowCoachSheet] = useState(false);
 
   const [content, setContent] = useState(searchParams.get("content") || DEFAULT_TEMPLATE);
   const [title, setTitle] = useState(searchParams.get("title") || "");
@@ -45,6 +55,17 @@ export default function PromptKitNew() {
   const [isPublic, setIsPublic] = useState(false);
   const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // AI undo
+  const [previousContent, setPreviousContent] = useState<string | null>(null);
+  // Metadata suggestion
+  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
+
+  const workspaceScope = currentWorkspace ?? "personal";
+  const coachSessionId = user
+    ? getOrCreateDraftSessionId(workspaceScope, user.id, "prompt_kit")
+    : "draft";
 
   useEffect(() => {
     if (!authLoading && !user) {
