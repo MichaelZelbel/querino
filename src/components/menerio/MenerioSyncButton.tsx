@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 interface MenerioSyncButtonProps {
-  artifactType: "prompt" | "skill" | "workflow";
+  artifactType: "prompt" | "skill" | "workflow" | "prompt_kit";
   artifactId: string;
   menerioSynced: boolean;
   menerioSyncedAt: string | null;
