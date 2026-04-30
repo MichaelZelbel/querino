@@ -2265,6 +2265,20 @@ export type Database = {
         Returns: boolean
       }
       lookup_mcp_token: { Args: { p_token_hash: string }; Returns: string }
+      record_llm_usage: {
+        Args: {
+          p_completion_tokens: number
+          p_feature: string
+          p_idempotency_key: string
+          p_metadata?: Json
+          p_model: string
+          p_prompt_tokens: number
+          p_provider: string
+          p_total_tokens?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       search_claws_semantic: {
         Args: {
           match_count?: number
