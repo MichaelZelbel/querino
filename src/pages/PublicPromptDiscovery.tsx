@@ -21,7 +21,17 @@ export default function PublicPromptDiscovery() {
   const [sortBy, setSortBy] = useState<"trending" | "recent" | "rating">("trending");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const { data: prompts, isLoading, error } = usePrompts();
+  const { data: allPrompts, isLoading: allLoading, error } = usePrompts();
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const hasSearch = debouncedSearch.trim().length > 0;
+  // When the user types: hybrid FTS + semantic search via the public RPC.
+  // When idle: full list from usePrompts (preserves trending/sort behaviour).
+  const { data: searchedPrompts, isLoading: searchLoading } = useSearchPrompts({
+    searchQuery: hasSearch ? debouncedSearch : "",
+    isPublic: true,
+  });
+  const prompts = hasSearch ? searchedPrompts : allPrompts;
+  const isLoading = hasSearch ? searchLoading : allLoading;
 
   // Extract all unique tags from prompts for the tag filter
   const allTags = useMemo(() => {
