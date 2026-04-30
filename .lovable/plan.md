@@ -1,149 +1,110 @@
+## Goal
 
-# Claws raus, Prompt Kits rein
+Make Prompt Kits feel like a real "kit document" (à la promptkit.natebjones.com). Authors can write **intro text, section dividers, and explanatory paragraphs between prompts** using a rich Tiptap editor, while each `## Prompt: …` block stays a structured, individually copyable unit. Readers see a polished article-style layout with a "Copy this prompt" button on every prompt.
 
-## Datenstand & Entscheidung
+## What changes for the user
 
-DB-Check: 5 Claws total (3 von dir „Mister Q", 2 verwaist). **Hartes Löschen ist sicher** — keine fremden Nutzerdaten betroffen.
+**Editor (PromptKitNew / PromptKitEdit):**
+- Replace the line-numbered Markdown textarea with a **Tiptap rich-text editor** (bold, italic, headings H2/H3, lists, links, blockquote, code, code block, hr).
+- Special block: **"Prompt block"** — a custom Tiptap node rendered as a card with a title field on top and a code-style body below. Inserted via toolbar button "Insert prompt" or slash command `/prompt`.
+- Anything outside prompt blocks = free intro / between-prompt commentary.
+- Outline panel keeps showing detected prompts (now from prompt-block nodes instead of regex).
+- Editor serializes to Markdown on save — preserving the existing `## Prompt: <title>` convention so all downstream features (parser, GitHub sync, MCP, translate, search) keep working unchanged.
 
----
+**Detail view (PromptKitDetail):**
+- Render the kit as an article: intro prose, then for each prompt a **card** with `#N`, title, "Copy this prompt" button, and the prompt body in a monospace, expand/collapse block (long prompts collapsed by default with "Show full prompt").
+- "Copy entire kit" stays at top.
+- Between-prompt prose is rendered as styled markdown between the cards.
 
-## Teil A: Claws komplett entfernen
+## Technical design
 
-### A1. Datenbank-Migration (DROP)
-- Tabellen droppen: `claws`, `claw_versions`, `claw_reviews`, `claw_pins`
-- Funktionen droppen: `set_claw_slug()`, `get_similar_claws()`, `search_claws_semantic()`
-- Aus polymorphen Funktionen den `claw`-Branch entfernen: `is_item_public`, `is_item_owner`, `is_team_member_for_item`, `update_embedding`, `generate_unique_slug`
-- Trigger `queue_menerio_sync` auf claws automatisch weg (Tabelle weg)
-- `menerio_integration.sync_artifact_types` Default von `{prompt,skill,claw,workflow}` → `{prompt,skill,workflow}`; bestehende Werte updaten
+### 1. Markdown ↔ Tiptap conversion
 
-### A2. Frontend: Routen, Pages, Hooks, Components löschen
-- **Pages**: `ClawNew.tsx`, `ClawDetail.tsx`, `ClawEdit.tsx`
-- **Hooks**: `useClaws.ts`, `useCloneClaw.ts`, `useClawVersions.ts`, `useClawReviews.ts`, `useCopyClawToTeam.ts`, `usePinnedClaws.ts`
-- **Components**: ganzer Ordner `src/components/claws/`
-- **Types**: `src/types/claw.ts`
-- **App.tsx**: 3 Claw-Routen + Imports raus
-- **Header.tsx**: „New Claw"-Menüpunkte (Desktop + Mobile) raus
-- **Library.tsx**: ganzer Claws-Block, Hook-Aufruf, Filter-Logik raus
-- **Discover.tsx**: Claws-Tab raus (nur noch Prompts/Skills/Workflows)
-- **CommandPalette**: Claw-Suche entfernen (falls vorhanden)
-- **Docs.tsx, CommunityGuidelines.tsx**: Claw-Erwähnungen entfernen/ersetzen
-- **Cross-cutting cleanup** in: `useDuplicateArtifact.ts`, `useAIInsights.ts`, `useMarkdownImport.ts`, `useEmbeddings.ts`, `useSemanticMerge.ts`, `useCollections.ts` (item_type 'claw'), `MenerioSyncButton.tsx`, `MenerioBulkSync.tsx`, `AIInsightsPanel.tsx`, `skillSourceParser.ts`
-- **Types**: `activity.ts`, `aiInsights.ts`, `collection.ts` — `'claw'` aus Union-Types raus
+Single source of truth in the DB stays **Markdown** (column `prompt_kits.content`), so:
+- existing `parsePromptKitItems`
+- GitHub sync (`generatePromptKitMarkdown`)
+- MCP tools, translate, AI coach, metadata suggestion, embeddings, semantic search
 
-### A3. Edge Functions
-- **Löschen**: `suggest-claw-metadata`
-- **Anpassen**: `mcp-server`, `api`, `ai-insights`, `ai-moderate-content`, `fetch-skill-md`, `render-for-menerio`, `process-menerio-sync-queue`, `backfill-embeddings`, `generate-embedding` — alle `claw`-Branches/Tools entfernen
-- `supabase/config.toml`: `suggest-claw-metadata` Eintrag entfernen
+all keep working with zero migration.
 
-### A4. Sonstiges
-- `n8n/Claw Insights.json` und `n8n/Suggest Claw Metadata.json` aus Repo löschen
-- `docs/SCHEMA.md`, `CLAUDE.md`, `README.md`: Claw-Erwähnungen entfernen
-- Memory `mem://features/claws-artifact-type` und `mem://features/clawbot-metadata-webhook` löschen; `mem://index.md` Core-Zeile „Artifact Types" auf „Prompts, Skills, Workflows, Prompt Kits" ändern
+Conversion rules:
+- `## Prompt: <title>\n\n<body>` ⇄ custom Tiptap node `promptBlock { title, body }` (body kept as plain text / fenced as needed).
+- All other Markdown ⇄ standard Tiptap nodes via `tiptap-markdown` extension.
 
----
+### 2. Dependencies to add
 
-## Teil B: Prompt Kits einführen
+- `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`
+- `@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-typography`
+- `tiptap-markdown` (Markdown serializer/parser)
 
-### B1. Datenmodell
-Neue Tabelle `prompt_kits` (eigenständiges Single-Markdown-Dokument, **keine** Item-Tabelle):
+No backend changes required.
+
+### 3. New / changed files
+
+**New**
+- `src/components/editors/PromptKitRichEditor.tsx` — Tiptap wrapper. Props: `value: string` (markdown), `onChange(markdown)`, `onOutlineChange(items)`. Exposes toolbar with "Insert prompt" button.
+- `src/components/editors/extensions/PromptBlockNode.tsx` — custom Tiptap Node (`name: 'promptBlock'`, `group: 'block'`, atom-ish with two editable fields: title input + body textarea). Includes a NodeView component rendering the prompt-card UI and a "remove" button.
+- `src/components/editors/promptKitMarkdown.ts` — helpers `markdownToTiptap(md)` and `tiptapToMarkdown(doc)` that handle the `## Prompt:` convention by serializing/deserializing `promptBlock` nodes.
+- `src/components/promptKits/PromptKitArticleView.tsx` — renderer for the detail page. Splits `parsePromptKitItems` output + the **pre-first-heading intro** + **between-headings prose** (extend parser to also emit "prose" segments) and renders a clean article with per-prompt copy cards.
+
+**Changed**
+- `src/lib/promptKitParser.ts` — add `parsePromptKitDocument(md)` returning an ordered array of `{type:'prose', markdown}` and `{type:'prompt', index, title, body}` segments. Keep existing `parsePromptKitItems` for backward compatibility.
+- `src/pages/PromptKitNew.tsx` — swap `LineNumberedEditor` for `PromptKitRichEditor`. Drop "Add Prompt" plain-text button (replaced by toolbar). Outline derives from editor outline events. Default template seeds an intro paragraph + one empty prompt block.
+- `src/pages/PromptKitEdit.tsx` — same swap.
+- `src/pages/PromptKitDetail.tsx` — replace the current "items.map → card" block with `<PromptKitArticleView content={kit.content} onCopyItem={...} copiedIdx={...} />`. Keep all existing action buttons (copy all, edit, history, clone, copy to team, suggest, pin, collection, download, translate, menerio).
+
+**Untouched (intentionally)**
+- DB schema, RLS, edge functions, GitHub sync format, MCP tools, AI coach, translate, embeddings, suggestions, reviews, version history. Markdown round-trips so they all still work.
+
+### 4. Tiptap "Prompt block" node — sketch
 
 ```text
-prompt_kits
-  id              uuid PK
-  slug            text unique
-  title           text NOT NULL
-  description     text
-  content         text         -- Markdown mit Konvention "## Prompt: <Titel>"
-  category        text
-  tags            text[]
-  language        text default 'en'
-  author_id       uuid -> profiles.id
-  team_id         uuid (nullable)
-  published       boolean default false
-  rating_avg      numeric
-  rating_count    int
-  embedding       vector(1536)
-  menerio_synced  boolean
-  menerio_note_id text
-  menerio_synced_at timestamptz
-  created_at, updated_at
+promptBlock
+├─ attrs: { title: string }
+└─ content: text*        # body kept as plain text inside a code-mark span
 ```
 
-Plus Hilfstabellen analog Skills:
-- `prompt_kit_versions` (Versionierung)
-- `prompt_kit_reviews` (Ratings/Comments)
-- `prompt_kit_pins`
+Serialized to Markdown as:
+```
+## Prompt: {title}
 
-**RLS**: Spiegel der Skills-Policies (eigene + team + published).
-
-**Trigger/Funktionen**: `set_prompt_kit_slug`, `update_prompt_kit_rating`, `get_similar_prompt_kits`, `search_prompt_kits_semantic`, `update_embedding`-Branch erweitern, `is_item_public`/`is_item_owner`/`is_team_member_for_item`/`generate_unique_slug` um `'prompt_kit'`-Branch erweitern, Menerio-Sync-Trigger anhängen.
-
-### B2. Editor-UX (Single-Markdown)
-**Konvention**: Items werden über Markdown-Heading getrennt — `## Prompt: <Titel>` markiert den Beginn eines neuen Prompts. Alles dazwischen ist der Prompt-Body.
-
-**Editor-Page** (`PromptKitEdit.tsx`):
-- Layout wie SkillEdit: links Metadaten (Titel, Description, Tags, Category, Language, Published-Toggle), rechts großer `LineNumberedEditor`
-- **Toolbar über dem Editor**:
-  - „Add Prompt"-Button → fügt am Cursor `\n\n## Prompt: Untitled\n\n` ein
-  - Live-Counter rechts oben: „N Prompts erkannt" (regex-Parser zählt `^## Prompt:` Headings)
-- **Outline-Panel** (rechts vom Editor, einklappbar): Liste der erkannten Prompt-Titel mit Click-to-Scroll
-- Manuelles Speichern (kein Autosave, gemäß Memory)
-- Standard-Action-Bar: Save, Publish-Toggle, Delete
-
-**Detail-Page** (`PromptKitDetail.tsx`):
-- Header (Titel, Author, Tags, Rating)
-- Gerenderter Markdown-Body
-- **Pro erkanntem Prompt**: kleiner „Copy this prompt"-Button neben dem `## Prompt: ...`-Heading, der **nur den Body dieses Items** in die Zwischenablage kopiert
-- „Copy entire kit"-Button oben (kopiert ganzes Markdown)
-- Standard: Reviews, Comments, Similar, Versions, AI Insights, Menerio-Sync
-
-**New-Page** (`PromptKitNew.tsx`): minimal, mit Default-Template:
-```markdown
-## Prompt: My first prompt
-
-Write your prompt here…
+{body}
 ```
 
-### B3. Frontend-Struktur
-- `src/types/promptKit.ts`
-- `src/hooks/usePromptKits.ts` (Hybrid-Search wie Skills)
-- `src/hooks/usePromptKitVersions.ts`, `usePromptKitReviews.ts`, `usePinnedPromptKits.ts`, `useClonePromptKit.ts`, `useCopyPromptKitToTeam.ts`
-- `src/components/promptKits/PromptKitCard.tsx`, `PromptKitReviewSection.tsx`, `PromptKitVersionHistoryPanel.tsx`, `CopyPromptKitToTeamModal.tsx`
-- `src/lib/promptKitParser.ts` — Utility: parst Markdown nach `## Prompt: <title>`-Headings, gibt `[{title, body, lineStart, lineEnd}]` zurück (für Outline und Copy-Buttons)
-- **Routen** in `App.tsx`: `/prompt-kits/new`, `/prompt-kits/:slug`, `/prompt-kits/:slug/edit`
-- **Header**: „New Prompt Kit" im Create-Menü (Icon: `Package` oder `BookOpen` aus lucide)
-- **Library.tsx**: neuer „My Prompt Kits"-Block analog zu Skills
-- **Discover.tsx**: neuer „Prompt Kits"-Tab
-- **Collections**: `item_type` 'prompt_kit' zulassen
-- **CommandPalette**: Prompt Kits in globaler Suche
-- **Cross-cutting**: `useDuplicateArtifact`, `useAIInsights`, `useMarkdownImport` (mit YAML-Frontmatter `type: prompt_kit`), `useEmbeddings`, `useSemanticMerge`
+Parsed back by scanning `## Prompt:` headings (reuse parser).
 
-### B4. Edge Functions & Backend
-- `backfill-embeddings`: prompt_kit-Branch
-- `generate-embedding`: prompt_kit-Branch
-- `ai-insights`: optional Branch (kann anfangs Skill-Logik wiederverwenden)
-- `mcp-server`, `api`: prompt_kit-Endpunkte
-- `process-menerio-sync-queue`, `render-for-menerio`: prompt_kit-Support
-- Moderation: prompt_kit in `ai-moderate-content`
+### 5. Detail view layout
 
-### B5. Doku & Memory
-- `docs/SCHEMA.md`: prompt_kits-Sektion ergänzen
-- `Docs.tsx` (in-app): neuer Abschnitt „Prompt Kits"
-- Neue Memory: `mem://features/prompt-kits-artifact-type` (Modell, Editor-Konvention `## Prompt:`, Single-Markdown)
-- `mem://index.md` Core-Liste aktualisieren
+```text
+[ Intro prose, rendered as markdown article ]
+[ Prose between prompts ... ]
+┌──────────────────────────────────────────┐
+│ #1  Knowledge Architecture Advisor [Copy]│
+│ ─────────────────────────────────────── │
+│ <prompt body, mono, collapsed > 600 chars│
+│ [ Show full prompt ]                     │
+└──────────────────────────────────────────┘
+[ More prose ... ]
+┌──────────────────────────────────────────┐
+│ #2  …                              [Copy]│
+└──────────────────────────────────────────┘
+```
 
----
+Uses `react-markdown` (already installed) + `@tailwindcss/typography` for the prose, matching the legal/docs styling memory.
 
-## Reihenfolge der Umsetzung
-1. Migration A1 (DROP claws + cleanup polymorpher Funktionen)
-2. Migration B1 (CREATE prompt_kits + Hilfstabellen + Funktionen, polymorphe Funktionen erweitern)
-3. Frontend A2 + A4 (Claws-Code raus, Build muss grün bleiben)
-4. Edge Functions A3 (Claw-Branches raus)
-5. Frontend B3 (Prompt-Kit-Pages, Hooks, Components, Routen, Library/Discover-Integration)
-6. Edge Functions B4 (prompt_kit-Branches)
-7. Memory + Doku-Updates
+### 6. Backwards compatibility
 
----
+Existing kits load fine: their content is parsed, `## Prompt:` headings become prompt blocks in the editor, all surrounding text becomes regular prose. No migration script needed.
 
-## Offene Detail-Frage (kein Blocker, kann nach Approval beantwortet werden)
-**Heading-Konvention**: Reicht `## Prompt: <Titel>` als Trenner, oder lieber strikter `### Prompt: <Titel>` damit `##` für Sektionsüberschriften innerhalb eines Prompts frei bleibt? Empfehlung: `## Prompt:` — gut sichtbar, gut copy-paste-bar, und Subsections können `###` nutzen.
+## Out of scope
+
+- Drag-to-reorder prompt blocks (can follow up; Tiptap supports it but adds complexity).
+- Image upload inside kits.
+- Per-prompt metadata (tags / model). Single-prompt artifacts already cover that case.
+
+## Acceptance
+
+- Create a kit, write an intro paragraph, insert two prompt blocks separated by a paragraph, save → DB stores valid Markdown with `## Prompt: …` headings.
+- Reopen in editor → identical structure restored.
+- Detail page shows intro, between-prompt text, and a copy button per prompt that copies only that prompt's body.
+- "Copy entire kit", GitHub sync, translate, AI coach, version history, suggestions all keep working.
