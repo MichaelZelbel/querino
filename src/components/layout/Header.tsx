@@ -145,6 +145,9 @@ export function Header() {
             </TooltipContent>
           </Tooltip>
 
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
