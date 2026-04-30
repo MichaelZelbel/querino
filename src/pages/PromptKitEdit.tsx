@@ -19,13 +19,15 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, X, ArrowLeft, Trash2, Save, Plus, ListTree } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, Save, Plus, ListTree, History } from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import type { PromptKit } from "@/types/promptKit";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
+import { PromptKitSlugEditor } from "@/components/promptKits/PromptKitSlugEditor";
+import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
 
 interface KitFormData {
   title: string;
@@ -45,6 +47,8 @@ export default function PromptKitEdit() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [kit, setKit] = useState<PromptKit | null>(null);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [currentSlug, setCurrentSlug] = useState<string>("");
 
   const [formData, setFormData] = useState<KitFormData>({
     title: "",
@@ -86,6 +90,7 @@ export default function PromptKitEdit() {
           return;
         }
         setKit(data);
+        setCurrentSlug(data.slug);
         setFormData({
           title: data.title,
           description: data.description || "",
@@ -131,12 +136,38 @@ export default function PromptKitEdit() {
   };
 
   const handleSave = async () => {
-    if (!user || !kitId) return;
+    if (!user || !kitId || !kit) return;
     if (!formData.title.trim()) { toast.error("Title is required"); return; }
     if (!formData.content.trim()) { toast.error("Content is required"); return; }
 
     setIsSubmitting(true);
     try {
+      // Snapshot previous state into prompt_kit_versions before overwriting
+      const contentChanged =
+        kit.title !== formData.title.trim() ||
+        (kit.description || "") !== formData.description.trim() ||
+        (kit.content || "") !== formData.content.trim() ||
+        JSON.stringify(kit.tags || []) !== JSON.stringify(formData.tags);
+
+      if (contentChanged) {
+        const { data: latest } = await (supabase.from("prompt_kit_versions") as any)
+          .select("version_number")
+          .eq("prompt_kit_id", kitId)
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextVersion = (latest?.version_number ?? 0) + 1;
+        await (supabase.from("prompt_kit_versions") as any).insert({
+          prompt_kit_id: kitId,
+          version_number: nextVersion,
+          title: kit.title,
+          description: kit.description,
+          content: kit.content,
+          tags: kit.tags,
+          change_notes: null,
+        });
+      }
+
       const { error } = await (supabase.from("prompt_kits") as any)
         .update({
           title: formData.title.trim(),
@@ -149,6 +180,19 @@ export default function PromptKitEdit() {
         })
         .eq("id", kitId);
       if (error) { toast.error("Failed to save prompt kit"); return; }
+
+      // Refresh local kit state to reflect saved values for next diff
+      setKit({
+        ...kit,
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        content: formData.content.trim(),
+        category: formData.category || null,
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        published: formData.isPublic,
+        language: formData.language,
+      });
+
       toast.success("Changes saved!");
     } catch {
       toast.error("Something went wrong");
@@ -192,6 +236,10 @@ export default function PromptKitEdit() {
               Back to Library
             </Link>
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setVersionHistoryOpen(true)} className="gap-2">
+                <History className="h-4 w-4" />
+                History
+              </Button>
               <Button onClick={handleSave} disabled={isSubmitting} className="gap-2">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
@@ -295,6 +343,18 @@ export default function PromptKitEdit() {
 
                   <LanguageSelect value={formData.language} onChange={(v) => setFormData({ ...formData, language: v })} />
 
+                  {currentSlug && user && (
+                    <PromptKitSlugEditor
+                      promptKitId={kitId!}
+                      currentSlug={currentSlug}
+                      userId={user.id}
+                      onSlugChanged={(s) => {
+                        setCurrentSlug(s);
+                        navigate(`/prompt-kits/${s}/edit`, { replace: true });
+                      }}
+                    />
+                  )}
+
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>
                       <Label htmlFor="visibility" className="text-base">Make this kit public</Label>
@@ -338,6 +398,22 @@ export default function PromptKitEdit() {
         </div>
       </main>
       <Footer />
+
+      {kitId && (
+        <PromptKitVersionHistoryPanel
+          open={versionHistoryOpen}
+          onOpenChange={setVersionHistoryOpen}
+          promptKitId={kitId}
+          currentKit={{
+            id: kitId,
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+            tags: formData.tags,
+          }}
+          onRestoreComplete={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

@@ -2,17 +2,27 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
+  History, GitFork, Users, MessageSquarePlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
 import { format } from "date-fns";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
+import { useClonePromptKit } from "@/hooks/useClonePromptKit";
+import { CopyPromptKitToTeamModal } from "@/components/promptKits/CopyPromptKitToTeamModal";
+import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
+import { useSuggestions } from "@/hooks/useSuggestions";
+import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -22,13 +32,18 @@ export default function PromptKitDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { teams } = useWorkspace();
+  const { cloneKit, cloning } = useClonePromptKit();
   const [kit, setKit] = useState<KitWithAuthor | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [copyTeamOpen, setCopyTeamOpen] = useState(false);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
+  const hasTeams = teams && teams.length > 0;
 
   useEffect(() => {
     async function fetchKit() {
@@ -43,6 +58,21 @@ export default function PromptKitDetail() {
           .eq("slug", slug)
           .maybeSingle();
         if (error || !data) {
+          // Try slug redirect
+          const { data: redirect } = await (supabase.from("prompt_kit_slug_redirects") as any)
+            .select("prompt_kit_id")
+            .eq("old_slug", slug)
+            .maybeSingle();
+          if (redirect?.prompt_kit_id) {
+            const { data: kit2 } = await (supabase.from("prompt_kits") as any)
+              .select(`*, profiles:author_id (id, display_name, avatar_url), slug`)
+              .eq("id", redirect.prompt_kit_id)
+              .maybeSingle();
+            if (kit2?.slug) {
+              navigate(`/prompt-kits/${kit2.slug}`, { replace: true });
+              return;
+            }
+          }
           setNotFound(true);
         } else {
           setKit({ ...data, author: data.profiles || null });
@@ -54,7 +84,7 @@ export default function PromptKitDetail() {
       }
     }
     fetchKit();
-  }, [slug]);
+  }, [slug, navigate]);
 
   const handleCopyAll = async () => {
     if (!kit) return;
@@ -217,6 +247,33 @@ export default function PromptKitDetail() {
                 </Button>
               </Link>
             )}
+            {isAuthor && (
+              <Button size="lg" variant="outline" onClick={() => setHistoryOpen(true)} className="gap-2">
+                <History className="h-4 w-4" />
+                History
+              </Button>
+            )}
+            {user && !isAuthor && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => cloneKit(
+                  { id: kit.id, title: kit.title, description: kit.description, content: kit.content, category: kit.category, tags: kit.tags },
+                  user.id
+                )}
+                disabled={cloning}
+                className="gap-2"
+              >
+                <GitFork className="h-4 w-4" />
+                {cloning ? "Cloning..." : "Clone to my library"}
+              </Button>
+            )}
+            {user && hasTeams && (
+              <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
+                <Users className="h-4 w-4" />
+                Copy to team
+              </Button>
+            )}
           </div>
 
           {items.length === 0 ? (
@@ -262,6 +319,36 @@ export default function PromptKitDetail() {
         </div>
       </main>
       <Footer />
+
+      {isAuthor && (
+        <PromptKitVersionHistoryPanel
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          promptKitId={kit.id}
+          currentKit={{
+            id: kit.id,
+            title: kit.title,
+            description: kit.description,
+            content: kit.content,
+            tags: kit.tags,
+          }}
+        />
+      )}
+
+      {user && hasTeams && (
+        <CopyPromptKitToTeamModal
+          open={copyTeamOpen}
+          onOpenChange={setCopyTeamOpen}
+          promptKit={{
+            id: kit.id,
+            title: kit.title,
+            description: kit.description,
+            content: kit.content,
+            category: kit.category,
+            tags: kit.tags,
+          }}
+        />
+      )}
     </div>
   );
 }
