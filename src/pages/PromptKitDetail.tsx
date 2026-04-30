@@ -30,6 +30,11 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { CommentsSection } from "@/components/comments";
 import { ActivitySidebar } from "@/components/activity";
 import { AIInsightsPanel } from "@/components/insights";
+import { DownloadMarkdownButton } from "@/components/markdown/DownloadMarkdownButton";
+import { TranslateModal } from "@/components/shared/TranslateModal";
+import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
+import { Languages } from "lucide-react";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -51,6 +56,8 @@ export default function PromptKitDetail() {
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [pinning, setPinning] = useState(false);
+  const [translateOpen, setTranslateOpen] = useState(false);
+  const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
