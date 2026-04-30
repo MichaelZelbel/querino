@@ -349,9 +349,50 @@ export default function PromptKitDetail() {
               ))}
             </div>
           )}
+
+          {/* Tabbed Content Section */}
+          <Tabs defaultValue="suggestions" className="mt-12">
+            <TabsList>
+              <TabsTrigger value="suggestions" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Suggestions
+                {openCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {openCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="suggestions" className="mt-6">
+              <SuggestionsTab
+                suggestions={suggestions}
+                loading={loadingSuggestions}
+                itemType="prompt_kit"
+                itemId={kit.id}
+                originalTitle={kit.title}
+                originalDescription={kit.description || ''}
+                originalContent={kit.content}
+                isOwner={!!isAuthor}
+                onReviewSuggestion={reviewSuggestion}
+                onRequestChanges={requestChanges}
+                onUpdateSuggestion={updateSuggestionAfterChanges}
+                onApplySuggestion={handleApplySuggestion}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
+
+      <SuggestEditModal
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        itemType="prompt_kit"
+        currentTitle={kit.title}
+        currentDescription={kit.description || ''}
+        currentContent={kit.content}
+        onSubmit={createSuggestion}
+      />
 
       {isAuthor && (
         <PromptKitVersionHistoryPanel
