@@ -48,11 +48,10 @@ export function useSkills(options: UseSkillsOptions = {}) {
       }
 
       if (searchQuery.trim()) {
-        // Use PostgreSQL full-text search
         query = query.textSearch(
           "title,description,content",
           searchQuery.trim(),
-          { type: "websearch", config: "english" }
+          { type: "websearch", config: "simple" }
         );
       }
 
@@ -62,10 +61,22 @@ export function useSkills(options: UseSkillsOptions = {}) {
         throw error;
       }
 
-      return (data || []).map((item: any) => ({
+      const ftsResults = (data || []).map((item: any) => ({
         ...item,
         author: item.profiles || null,
       })) as (Skill & { author?: SkillAuthor | null })[];
+
+      // Hybrid: append semantic-only matches for public skill searches
+      if (published === true && searchQuery.trim().length >= 3) {
+        return await mergeWithSemantic(
+          "skill",
+          searchQuery.trim(),
+          ftsResults,
+          fetchSkillsByIds,
+        );
+      }
+
+      return ftsResults;
     },
   });
 }
