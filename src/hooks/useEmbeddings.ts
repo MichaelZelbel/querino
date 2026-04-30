@@ -2,15 +2,32 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type EmbeddingItemType = "prompt" | "skill" | "workflow";
+export type EmbeddingItemType = "prompt" | "skill" | "workflow" | "claw";
 
 interface UseEmbeddingsReturn {
-  generateEmbedding: (text: string, itemType?: EmbeddingItemType, itemId?: string) => Promise<number[] | null>;
-  updateEmbedding: (itemType: EmbeddingItemType, itemId: string, embedding: number[]) => Promise<boolean>;
-  refreshEmbedding: (itemType: EmbeddingItemType, itemId: string, text: string) => Promise<boolean>;
+  generateEmbedding: (
+    text: string,
+    itemType?: EmbeddingItemType,
+    itemId?: string
+  ) => Promise<number[] | null>;
+  updateEmbedding: (
+    itemType: EmbeddingItemType,
+    itemId: string,
+    embedding: number[]
+  ) => Promise<boolean>;
+  refreshEmbedding: (
+    itemType: EmbeddingItemType,
+    itemId: string,
+    text: string
+  ) => Promise<boolean>;
   isGenerating: boolean;
 }
 
+/**
+ * Calls the `generate-embedding` edge function (replaces the old n8n webhook).
+ * When itemType + itemId are provided, the edge function writes the embedding
+ * into the matching artefact table directly via the `update_embedding` RPC.
+ */
 export function useEmbeddings(): UseEmbeddingsReturn {
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -19,44 +36,25 @@ export function useEmbeddings(): UseEmbeddingsReturn {
     itemType?: EmbeddingItemType,
     itemId?: string
   ): Promise<number[] | null> => {
-    const url = import.meta.env.VITE_EMBEDDING_URL;
-    
-    if (!url) {
-      console.warn("VITE_EMBEDDING_URL is not configured, skipping embedding generation");
-      return null;
-    }
-
     try {
-      const payload: Record<string, string> = {
-        text: text.slice(0, 8000), // Limit text length
-      };
-      
-      // Include itemType and itemId if provided (for artefact embeddings)
-      if (itemType) payload.itemType = itemType;
-      if (itemId) payload.itemId = itemId;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const { data, error } = await supabase.functions.invoke("generate-embedding", {
+        body: {
+          text: text.slice(0, 8000),
+          itemType,
+          itemId,
         },
-        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Embedding API error:", response.status, errorText);
-        throw new Error(`Embedding API error: ${response.status}`);
+      if (error) {
+        console.error("generate-embedding error:", error);
+        throw new Error(error.message || "Embedding function error");
       }
 
-      const data = await response.json();
-      const embedding = data?.embedding;
-
+      const embedding = (data as { embedding?: number[] } | null)?.embedding;
       if (!embedding || !Array.isArray(embedding)) {
-        throw new Error("Invalid embedding response from backend");
+        throw new Error("Invalid embedding response");
       }
 
-      console.log(`Generated embedding with ${embedding.length} dimensions`);
       return embedding;
     } catch (error) {
       console.error("Failed to generate embedding:", error);
@@ -64,26 +62,24 @@ export function useEmbeddings(): UseEmbeddingsReturn {
     }
   };
 
+  /**
+   * Manual fallback: write a precomputed embedding via the RPC.
+   * Most callers should NOT need this — `generateEmbedding(text, itemType, itemId)`
+   * already persists for them.
+   */
   const updateEmbedding = async (
     itemType: EmbeddingItemType,
     itemId: string,
     embedding: number[]
   ): Promise<boolean> => {
     try {
-      // Convert array to PostgreSQL vector format
       const embeddingStr = `[${embedding.join(",")}]`;
-      
       const { error } = await supabase.rpc("update_embedding", {
         p_item_type: itemType,
         p_item_id: itemId,
         p_embedding: embeddingStr,
       });
-
-      if (error) {
-        console.error("Error updating embedding:", error);
-        throw new Error(error.message);
-      }
-
+      if (error) throw new Error(error.message);
       return true;
     } catch (error) {
       console.error("Failed to update embedding:", error);
@@ -98,16 +94,16 @@ export function useEmbeddings(): UseEmbeddingsReturn {
   ): Promise<boolean> => {
     setIsGenerating(true);
     try {
+      // Edge function persists for us when itemType + itemId are provided.
       const embedding = await generateEmbedding(text, itemType, itemId);
       if (!embedding) {
         throw new Error("Failed to generate embedding");
       }
-
-      await updateEmbedding(itemType, itemId, embedding);
       toast.success("Embedding refreshed successfully");
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to refresh embedding";
+      const message =
+        error instanceof Error ? error.message : "Failed to refresh embedding";
       toast.error(message);
       return false;
     } finally {
