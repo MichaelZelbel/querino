@@ -115,6 +115,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    transition: background-color 240ms ease, color 240ms ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
