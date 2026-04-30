@@ -73,6 +73,18 @@ const COACH_CONFIG: Record<
       { label: "Summarize", message: "Add a clear summary at the top describing what this workflow does." },
     ],
   },
+  prompt_kit: {
+    label: "Prompt Kit Coach",
+    helperText: "This AI sees the entire kit and helps you add, refine, and structure the prompts inside it.",
+    placeholder: "Ask the Prompt Kit Coach...",
+    quickActions: [
+      { label: "Suggest missing prompts", message: "Suggest prompts that are missing from this kit to make it more complete." },
+      { label: "Add a new prompt", message: "Add a new '## Prompt: <Title>' section that complements the existing prompts." },
+      { label: "Improve consistency", message: "Improve naming and style consistency across the prompts in this kit." },
+      { label: "Tighten prompts", message: "Make each prompt in the kit clearer and less ambiguous, preserving structure." },
+      { label: "Add output formats", message: "Add or unify clear output format specifications across the prompts in this kit." },
+    ],
+  },
 };
 
 export function ArtifactCoachPanel({
@@ -102,6 +114,7 @@ export function ArtifactCoachPanel({
         prompt: "What do you want this prompt to do?",
         skill: "What kind of skill or LLM framework do you want to create?",
         workflow: "What workflow do you want to design? Tell me about your automation goal.",
+        prompt_kit: "What use case should this prompt kit cover? I can help you draft and structure the prompts inside it.",
       };
       return [{ role: "assistant", content: newGreeting[artifactType] }];
     }
