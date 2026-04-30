@@ -295,13 +295,19 @@ export default function PromptKitDetail() {
                 {cloning ? "Cloning..." : "Clone to my library"}
               </Button>
             )}
-            {user && hasTeams && (
-              <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
-                <Users className="h-4 w-4" />
-                Copy to team
-              </Button>
-            )}
-          </div>
+          {user && hasTeams && (
+            <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
+              <Users className="h-4 w-4" />
+              Copy to team
+            </Button>
+          )}
+          {user && !isAuthor && (
+            <Button size="lg" variant="outline" onClick={() => setSuggestOpen(true)} className="gap-2">
+              <MessageSquarePlus className="h-4 w-4" />
+              Suggest edit
+            </Button>
+          )}
+        </div>
 
           {items.length === 0 ? (
             <div className="rounded-xl border border-border bg-muted/30 p-6">
