@@ -2274,10 +2274,10 @@ export type Database = {
           p_model: string
           p_prompt_tokens: number
           p_provider: string
-          p_total_tokens?: number
+          p_total_tokens: number
           p_user_id: string
         }
-        Returns: Json
+        Returns: undefined
       }
       search_claws_semantic: {
         Args: {
