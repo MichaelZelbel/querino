@@ -15,7 +15,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-type ItemType = "prompt" | "skill" | "workflow" | "claw";
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 const SYSTEM_PROMPTS: Record<ItemType, string> = {
   prompt: `You are an expert prompt engineer reviewing an AI prompt in the Querino library.
@@ -63,20 +63,20 @@ What the workflow automates and its trigger.
 
 Under 350 words. Specific and technical. No emojis.`,
 
-  claw: `You are an expert in Claws (Claude Skills — callable Markdown capabilities executed by AI agents).
-Produce a concise Markdown analysis for the claw's author.
+  prompt_kit: `You are an expert prompt engineer reviewing a Prompt Kit — a single Markdown document that bundles multiple related prompts (each prompt starts with a "## Prompt: <Title>" heading).
+Produce a concise Markdown analysis for the kit's author.
 
 Structure with these ## sections:
 ## Summary
-What capability this claw exposes and when an agent should call it.
+What this kit covers and the use case it bundles together.
 ## Strengths
-3–5 bullets — clear activation triggers, well-defined I/O, examples, etc.
+3–5 bullets — coverage breadth, prompt clarity, internal consistency, naming.
 ## Improvement Suggestions
-3–5 bullets with concrete fixes (ambiguous activation, missing examples, side-effects undocumented).
-## Agent Usage
-1–2 sentences on how an agent should discover and chain this claw.
+3–5 bullets with concrete fixes (missing prompts, redundant variants, inconsistent style, weak section headers).
+## Kit Composition
+1–2 sentences on how the included prompts complement each other and any obvious gaps.
 
-Under 350 words. Specific and technical. No emojis.`,
+Under 350 words. Specific, never generic. No emojis.`,
 };
 
 serve(async (req) => {
@@ -89,9 +89,9 @@ serve(async (req) => {
     const body = await req.json();
     const { item_type, title, description, content, tags } = body ?? {};
 
-    if (!item_type || !["prompt", "skill", "workflow", "claw"].includes(item_type)) {
+    if (!item_type || !["prompt", "skill", "workflow", "prompt_kit"].includes(item_type)) {
       return new Response(
-        JSON.stringify({ error: "Valid item_type is required (prompt, skill, workflow, claw)" }),
+        JSON.stringify({ error: "Valid item_type is required (prompt, skill, workflow, prompt_kit)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
