@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Bricolage Grotesque"', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       fontSize: {
         'display-xl': ['3.5rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
