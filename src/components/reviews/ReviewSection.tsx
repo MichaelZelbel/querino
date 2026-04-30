@@ -11,7 +11,7 @@ import type { ReviewWithUser } from "@/types/review";
 
 interface ReviewSectionProps {
   itemId: string;
-  itemType: "prompt" | "skill" | "workflow";
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
   itemSlug?: string;
   userId?: string;
   ratingAvg: number;
