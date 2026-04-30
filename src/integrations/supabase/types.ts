@@ -974,6 +974,24 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_kit_coach_messages: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       prompt_kit_pins: {
         Row: {
           created_at: string | null
@@ -1069,6 +1087,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prompt_kit_versions: {
+        Row: {
+          change_notes: string | null
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          prompt_kit_id: string
+          tags: string[] | null
+          title: string
+          version_number: number
+        }
+        Insert: {
+          change_notes?: string | null
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          prompt_kit_id: string
+          tags?: string[] | null
+          title: string
+          version_number?: number
+        }
+        Update: {
+          change_notes?: string | null
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          prompt_kit_id?: string
+          tags?: string[] | null
+          title?: string
+          version_number?: number
+        }
+        Relationships: []
       }
       prompt_kits: {
         Row: {
