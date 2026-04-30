@@ -286,9 +286,6 @@ export default function PromptKitNew() {
                     {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
                   </div>
 
-                    {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
-                  </div>
-
                   {/* AI Metadata Suggestion */}
                   <div className="space-y-2">
                     <Button
