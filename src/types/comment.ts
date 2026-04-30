@@ -1,4 +1,4 @@
-export type ItemType = 'prompt' | 'skill' | 'workflow' | 'collection' | 'suggestion';
+export type ItemType = 'prompt' | 'skill' | 'workflow' | 'collection' | 'suggestion' | 'prompt_kit' | 'claw';
 
 export interface Comment {
   id: string;
