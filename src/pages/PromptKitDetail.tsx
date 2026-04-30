@@ -247,6 +247,33 @@ export default function PromptKitDetail() {
                 </Button>
               </Link>
             )}
+            {isAuthor && (
+              <Button size="lg" variant="outline" onClick={() => setHistoryOpen(true)} className="gap-2">
+                <History className="h-4 w-4" />
+                History
+              </Button>
+            )}
+            {user && !isAuthor && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => cloneKit(
+                  { id: kit.id, title: kit.title, description: kit.description, content: kit.content, category: kit.category, tags: kit.tags },
+                  user.id
+                )}
+                disabled={cloning}
+                className="gap-2"
+              >
+                <GitFork className="h-4 w-4" />
+                {cloning ? "Cloning..." : "Clone to my library"}
+              </Button>
+            )}
+            {user && hasTeams && (
+              <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
+                <Users className="h-4 w-4" />
+                Copy to team
+              </Button>
+            )}
           </div>
 
           {items.length === 0 ? (
