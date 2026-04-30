@@ -1,6 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
+import { mergeWithSemantic } from "./useSemanticMerge";
+
+async function fetchWorkflowsByIds(ids: string[]): Promise<(Workflow & { author?: WorkflowAuthor | null })[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await (supabase.from("workflows") as any)
+    .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+    .in("id", ids);
+  if (error || !data) return [];
+  return (data as any[]).map((item) => ({ ...item, author: item.profiles || null }));
+}
 
 interface UseWorkflowsOptions {
   searchQuery?: string;
@@ -38,11 +48,10 @@ export function useWorkflows(options: UseWorkflowsOptions = {}) {
       }
 
       if (searchQuery.trim()) {
-        // Use PostgreSQL full-text search
         query = query.textSearch(
           "title,description,content",
           searchQuery.trim(),
-          { type: "websearch", config: "english" }
+          { type: "websearch", config: "simple" }
         );
       }
 
@@ -52,10 +61,21 @@ export function useWorkflows(options: UseWorkflowsOptions = {}) {
         throw error;
       }
 
-      return (data || []).map((item: any) => ({
+      const ftsResults = (data || []).map((item: any) => ({
         ...item,
         author: item.profiles || null,
       })) as (Workflow & { author?: WorkflowAuthor | null })[];
+
+      if (published === true && searchQuery.trim().length >= 3) {
+        return await mergeWithSemantic(
+          "workflow",
+          searchQuery.trim(),
+          ftsResults,
+          fetchWorkflowsByIds,
+        );
+      }
+
+      return ftsResults;
     },
   });
 }
