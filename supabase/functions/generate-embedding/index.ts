@@ -17,8 +17,8 @@ const EMBEDDING_MODEL = "text-embedding-3-small"; // 1536 dim — DO NOT change 
 const EMBEDDING_DIMENSIONS = 1536;
 const MAX_INPUT_CHARS = 8000;
 
-type ItemType = "prompt" | "skill" | "workflow" | "claw";
-const VALID_TYPES: ItemType[] = ["prompt", "skill", "workflow", "claw"];
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
+const VALID_TYPES: ItemType[] = ["prompt", "skill", "workflow", "prompt_kit"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

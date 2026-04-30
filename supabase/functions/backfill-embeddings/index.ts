@@ -1,5 +1,5 @@
 // Edge Function: backfill-embeddings (admin-only)
-// Iterates over prompts/skills/workflows/claws where embedding IS NULL,
+// Iterates over prompts/skills/workflows/prompt_kits where embedding IS NULL,
 // generates embeddings via OpenAI text-embedding-3-small (1536 dim) and
 // writes them via the update_embedding RPC. Returns per-type counts.
 
@@ -17,7 +17,7 @@ const EMBEDDING_MODEL = "text-embedding-3-small";
 const EMBEDDING_DIMENSIONS = 1536;
 const MAX_INPUT_CHARS = 8000;
 
-type ItemType = "prompt" | "skill" | "workflow" | "claw";
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 interface TableConfig {
   table: string;
@@ -29,7 +29,7 @@ const TABLES: TableConfig[] = [
   { table: "prompts", itemType: "prompt", textFields: ["title", "description", "content"] },
   { table: "skills", itemType: "skill", textFields: ["title", "description", "content"] },
   { table: "workflows", itemType: "workflow", textFields: ["title", "description", "content"] },
-  { table: "claws", itemType: "claw", textFields: ["title", "description", "content"] },
+  { table: "prompt_kits", itemType: "prompt_kit", textFields: ["title", "description", "content"] },
 ];
 
 Deno.serve(async (req) => {
