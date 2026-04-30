@@ -23,16 +23,17 @@ interface ArtifactStats {
   synced: number;
 }
 
-type StatsMap = Record<"prompt" | "skill" | "workflow", ArtifactStats>;
+type StatsMap = Record<"prompt" | "skill" | "workflow" | "prompt_kit", ArtifactStats>;
 
 const ARTIFACT_LABELS: Record<string, string> = {
   prompt: "Prompts",
+  prompt_kit: "Prompt Kits",
   skill: "Skills",
   workflow: "Workflows",
 };
 
-const TABLES = ["prompts", "skills", "workflows"] as const;
-const TYPES = ["prompt", "skill", "workflow"] as const;
+const TABLES = ["prompts", "prompt_kits", "skills", "workflows"] as const;
+const TYPES = ["prompt", "prompt_kit", "skill", "workflow"] as const;
 
 export function MenerioBulkSync() {
   const { user } = useAuthContext();
@@ -47,11 +48,10 @@ export function MenerioBulkSync() {
     const results: Partial<StatsMap> = {};
 
     const queries = TABLES.map((table, i) =>
-      supabase
-        .from(table)
+      (supabase.from(table) as any)
         .select("id, menerio_synced", { count: "exact" })
         .eq("author_id", user.id)
-        .then(({ data, count }) => {
+        .then(({ data, count }: any) => {
           const synced = data?.filter((r: any) => r.menerio_synced).length ?? 0;
           results[TYPES[i]] = { total: count ?? 0, synced };
         })
@@ -74,8 +74,7 @@ export function MenerioBulkSync() {
       const toSync: { type: string; id: string }[] = [];
 
       for (let i = 0; i < TABLES.length; i++) {
-        const { data } = await supabase
-          .from(TABLES[i])
+        const { data } = await (supabase.from(TABLES[i]) as any)
           .select("id, menerio_synced, updated_at, menerio_synced_at")
           .eq("author_id", user.id);
 
@@ -166,8 +165,7 @@ export function MenerioBulkSync() {
 
       await Promise.all(
         TABLES.map((table) =>
-          supabase
-            .from(table)
+          (supabase.from(table) as any)
             .update(resetPayload)
             .eq("author_id", user.id)
         )
