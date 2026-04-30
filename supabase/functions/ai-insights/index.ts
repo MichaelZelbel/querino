@@ -1,132 +1,183 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  callLovableAI,
+  assertCredits,
+  getCallerUserId,
+  CreditsExhaustedError,
+  RateLimitedError,
+  GatewayError,
+  DEFAULT_MODEL,
+} from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+type ItemType = "prompt" | "skill" | "workflow" | "claw";
+
+const SYSTEM_PROMPTS: Record<ItemType, string> = {
+  prompt: `You are an expert prompt engineer reviewing an AI prompt in the Querino library.
+Produce a concise, actionable Markdown analysis for the prompt's author. Be specific, never generic.
+
+Structure your response with these Markdown sections (use ## headings):
+## Summary
+2–3 sentences explaining what this prompt does and who it's for.
+## Strengths
+3–5 bullet points highlighting what works well (clarity, structure, role definition, output format, etc.).
+## Improvement Suggestions
+3–5 bullet points with concrete, actionable fixes (missing context, ambiguity, output constraints, edge cases).
+## Best Used With
+1–2 sentences on which LLM(s) and use cases fit best.
+
+Keep the whole response under 350 words. No fluff, no marketing tone, no emojis.`,
+
+  skill: `You are an expert in AI Skills (reusable Markdown-based capability definitions following the SKILL.md convention).
+Produce a concise Markdown analysis for the skill's author.
+
+Structure with these ## sections:
+## Summary
+What the skill does and when to invoke it.
+## Strengths
+3–5 bullets — clear instructions, good examples, well-scoped capability, etc.
+## Improvement Suggestions
+3–5 bullets with concrete fixes (missing examples, unclear triggers, scope creep, missing edge-case handling).
+## Integration Notes
+1–2 sentences on how this skill composes with prompts/workflows.
+
+Under 350 words. Specific, never generic. No emojis.`,
+
+  workflow: `You are an expert in n8n / automation workflow design reviewing a workflow definition.
+Produce a concise Markdown analysis for the workflow's author.
+
+Structure with these ## sections:
+## Summary
+What the workflow automates and its trigger.
+## Strengths
+3–5 bullets — node choices, error handling, modularity, etc.
+## Improvement Suggestions
+3–5 bullets with concrete fixes (missing error branches, hardcoded values, security concerns, performance).
+## Operational Notes
+1–2 sentences on credentials, rate limits, or scheduling considerations.
+
+Under 350 words. Specific and technical. No emojis.`,
+
+  claw: `You are an expert in Claws (Claude Skills — callable Markdown capabilities executed by AI agents).
+Produce a concise Markdown analysis for the claw's author.
+
+Structure with these ## sections:
+## Summary
+What capability this claw exposes and when an agent should call it.
+## Strengths
+3–5 bullets — clear activation triggers, well-defined I/O, examples, etc.
+## Improvement Suggestions
+3–5 bullets with concrete fixes (ambiguous activation, missing examples, side-effects undocumented).
+## Agent Usage
+1–2 sentences on how an agent should discover and chain this claw.
+
+Under 350 words. Specific and technical. No emojis.`,
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { item_type, title, description, content, tags, metadata, user_id } = await req.json();
-
-    if (!content || typeof content !== "string") {
-      console.error("[AI-INSIGHTS] Missing content");
-      return new Response(
-        JSON.stringify({ error: "content is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const user_id = await getCallerUserId(req);
+    const body = await req.json();
+    const { item_type, title, description, content, tags } = body ?? {};
 
     if (!item_type || !["prompt", "skill", "workflow", "claw"].includes(item_type)) {
-      console.error("[AI-INSIGHTS] Invalid item_type:", item_type);
       return new Response(
         JSON.stringify({ error: "Valid item_type is required (prompt, skill, workflow, claw)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+    const contentStr = (content ?? "").toString().trim();
+    if (!contentStr) {
+      return new Response(JSON.stringify({ error: "content is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Build webhook URL from base URL + item type path
-    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL") || "";
-    const webhookPaths: Record<string, string> = {
-      prompt: "prompt-insights",
-      skill: "skill-insights",
-      workflow: "workflow-insights",
-      claw: "claw-insights",
-    };
-    const webhookUrl = `${N8N_BASE_URL}/webhook/${webhookPaths[item_type]}`;
+    await assertCredits(user_id);
 
-    console.log("[AI-INSIGHTS] Calling webhook", {
-      item_type,
-      title,
-      contentLength: content.length,
+    const truncated = contentStr.slice(0, 12000);
+    const tagsLine = Array.isArray(tags) && tags.length > 0 ? `Tags: ${tags.join(", ")}\n` : "";
+    const userMessage = `Title: ${title || "(untitled)"}
+Description: ${description || "(none)"}
+${tagsLine}
+---
+Content:
+${truncated}`;
+
+    const result = await callLovableAI({
       user_id,
-      webhookUrl,
+      feature: `ai-insights-${item_type}`,
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPTS[item_type as ItemType] },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.5,
+      metadata: { artifact: item_type, content_length: contentStr.length },
     });
 
-    // Build request body - use prompt_content for prompts (matching n8n webhook expectations)
-    const requestBody = item_type === "prompt" 
-      ? {
-          prompt_content: content,
-          prompt_title: title || "",
-          prompt_description: description || "",
-          prompt_tags: tags || [],
-          user_id,
-        }
-      : {
-          itemType: item_type,
-          title: title || "",
-          description: description || "",
-          content,
-          tags: tags || [],
-          metadata: metadata || {},
-          user_id,
-        };
-
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": Deno.env.get("N8N_WEBHOOK_KEY") || "",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[AI-INSIGHTS] Webhook error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: `Webhook returned ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const summary = (result.content ?? "").trim();
+    if (!summary) {
+      return new Response(JSON.stringify({ error: "Model returned empty response" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const rawResult = await response.text();
-    console.log("[AI-INSIGHTS] Raw response length:", rawResult.length);
-
-    // Try to parse as JSON, fall back to raw text as summary
-    let result;
-    try {
-      const jsonResult = JSON.parse(rawResult);
-      
-      // Handle n8n webhook format: [{ "output": "..." }] or { "output": "..." }
-      if (Array.isArray(jsonResult) && jsonResult[0]?.output) {
-        result = jsonResult[0].output;
-      } else if (jsonResult.output) {
-        result = jsonResult.output;
-      } else {
-        result = jsonResult;
-      }
-      
-      console.log("[AI-INSIGHTS] Parsed JSON result");
-    } catch {
-      // Not valid JSON, treat as raw markdown
-      result = { summary: rawResult };
-      console.log("[AI-INSIGHTS] Using raw text as summary");
+    return new Response(
+      JSON.stringify({
+        summary,
+        tags: [],
+        recommendations: [],
+        quality: null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (error) {
+    if (error instanceof CreditsExhaustedError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    // Normalize result structure
-    const normalizedResult = {
-      summary: typeof result === "string" ? result : result.summary || null,
-      tags: Array.isArray(result.tags) ? result.tags : [],
-      recommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
-      quality: result.quality || null,
-    };
-
-    console.log("[AI-INSIGHTS] Success - returning normalized result");
-
-    return new Response(JSON.stringify(normalizedResult), {
+    if (error instanceof RateLimitedError) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (error instanceof GatewayError) {
+      console.error("[ai-insights] Gateway error:", error.status, error.message);
+      return new Response(JSON.stringify({ error: "Upstream AI gateway error" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (
+      message === "Missing Authorization bearer token" ||
+      message === "Invalid auth token" ||
+      message === "Empty bearer token"
+    ) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.error("[ai-insights] Error:", message);
+    return new Response(JSON.stringify({ error: "Failed to generate insights" }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    console.error("[AI-INSIGHTS] Error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate insights" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   }
 });
