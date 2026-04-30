@@ -19,6 +19,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export function Header() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
