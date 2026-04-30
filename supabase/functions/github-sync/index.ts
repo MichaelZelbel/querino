@@ -49,6 +49,20 @@ interface Workflow {
   created_at: string;
   updated_at: string;
 }
+interface PromptKit {
+  id: string;
+  title: string;
+  slug: string | null;
+  description: string | null;
+  content: string;
+  category: string | null;
+  tags: string[] | null;
+  published: boolean | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface GitHubFile {
   path: string;
@@ -186,6 +200,42 @@ ${workflow.description || ""}
 \`\`\`json
 ${JSON.stringify(workflow.json, null, 2)}
 \`\`\`
+`;
+}
+
+function generatePromptKitMarkdown(kit: PromptKit): string {
+  const frontmatter = {
+    id: kit.id,
+    title: kit.title,
+    description: kit.description || "",
+    category: kit.category || "general",
+    tags: kit.tags || [],
+    published: kit.published ?? false,
+    rating_avg: kit.rating_avg ?? 0,
+    rating_count: kit.rating_count ?? 0,
+    created_at: kit.created_at,
+    updated_at: kit.updated_at,
+  };
+
+  return `---
+${Object.entries(frontmatter)
+  .map(([key, value]) => {
+    if (Array.isArray(value)) {
+      return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
+    }
+    if (typeof value === "string" && (value.includes(":") || value.includes('"'))) {
+      return `${key}: "${value.replace(/"/g, '\\"')}"`;
+    }
+    return `${key}: ${value}`;
+  })
+  .join("\n")}
+---
+
+# ${kit.title}
+
+${kit.description || ""}
+
+${kit.content}
 `;
 }
 
