@@ -95,6 +95,55 @@ export default function PromptKitNew() {
     setContent((c) => `${c.replace(/\s+$/, "")}\n\n## Prompt: Untitled\n\n`);
   };
 
+  const handleApplyAIContent = (newContent: string) => {
+    setPreviousContent(content);
+    setContent(newContent);
+  };
+
+  const handleUndoAI = () => {
+    if (previousContent !== null) {
+      setContent(previousContent);
+      setPreviousContent(null);
+      toast.success("Reverted last AI change");
+    }
+  };
+
+  const handleSuggestMetadata = async () => {
+    if (!checkCredits()) return;
+    if (!content.trim()) {
+      setMetadataError("Please add some kit content first.");
+      return;
+    }
+    setIsGeneratingMetadata(true);
+    setMetadataError(null);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("suggest-promptkit-metadata", {
+        body: { kit_content: content.trim(), user_id: user?.id },
+      });
+      if (error) throw new Error("Failed to generate suggestions");
+      const data = (result as any)?.output || result;
+      if (data?.title) setTitle(data.title);
+      if (data?.description) setDescription(data.description);
+      if (data?.category) {
+        const matched = categoryOptions.find(
+          (c) => c.id.toLowerCase() === String(data.category).toLowerCase(),
+        );
+        if (matched) setCategory(matched.id);
+      }
+      if (data?.tags && Array.isArray(data.tags)) {
+        const newTags = data.tags
+          .map((t: string) => normalizeTag(t))
+          .filter(Boolean)
+          .slice(0, 10);
+        setTags(newTags);
+      }
+    } catch {
+      setMetadataError("Could not generate suggestions. Please try again.");
+    } finally {
+      setIsGeneratingMetadata(false);
+    }
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!content.trim()) e.content = "Content is required";
@@ -131,6 +180,10 @@ export default function PromptKitNew() {
         return;
       }
       toast.success("Prompt Kit created!");
+      // Promote draft coach session to deterministic id keyed on the new kit
+      try {
+        if (user) promoteDraftSession(workspaceScope, user.id, newKit.id, "prompt_kit");
+      } catch {/* ignore */}
       navigate(`/prompt-kits/${newKit.slug}`);
     } catch (err) {
       console.error(err);
