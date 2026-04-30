@@ -974,6 +974,168 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_kit_pins: {
+        Row: {
+          created_at: string | null
+          id: string
+          prompt_kit_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          prompt_kit_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          prompt_kit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_kit_pins_prompt_kit_id_fkey"
+            columns: ["prompt_kit_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_kits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_kit_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          prompt_kit_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          prompt_kit_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          prompt_kit_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_kit_reviews_prompt_kit_id_fkey"
+            columns: ["prompt_kit_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_kits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_kit_slug_redirects: {
+        Row: {
+          created_at: string
+          id: string
+          old_slug: string
+          prompt_kit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          old_slug: string
+          prompt_kit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          old_slug?: string
+          prompt_kit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_kit_slug_redirects_prompt_kit_id_fkey"
+            columns: ["prompt_kit_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_kits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_kits: {
+        Row: {
+          author_id: string | null
+          category: string | null
+          content: string
+          created_at: string | null
+          description: string | null
+          embedding: string | null
+          id: string
+          language: string
+          menerio_note_id: string | null
+          menerio_synced: boolean
+          menerio_synced_at: string | null
+          published: boolean | null
+          rating_avg: number | null
+          rating_count: number | null
+          slug: string | null
+          tags: string[] | null
+          team_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          description?: string | null
+          embedding?: string | null
+          id?: string
+          language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
+          published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
+          slug?: string | null
+          tags?: string[] | null
+          team_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          description?: string | null
+          embedding?: string | null
+          id?: string
+          language?: string
+          menerio_note_id?: string | null
+          menerio_synced?: boolean
+          menerio_synced_at?: string | null
+          published?: boolean | null
+          rating_avg?: number | null
+          rating_count?: number | null
+          slug?: string | null
+          tags?: string[] | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       prompt_pins: {
         Row: {
           created_at: string | null
@@ -1938,6 +2100,18 @@ export type Database = {
         Args: { p_exclude_id?: string; p_table: string; p_title: string }
         Returns: string
       }
+      get_similar_prompt_kits: {
+        Args: { match_limit?: number; target_id: string }
+        Returns: {
+          author_id: string
+          description: string
+          id: string
+          similarity: number
+          tags: string[]
+          team_id: string
+          title: string
+        }[]
+      }
       get_similar_prompts: {
         Args: { match_limit?: number; target_id: string }
         Returns: {
@@ -2029,6 +2203,24 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      search_prompt_kits_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          author_id: string
+          content: string
+          created_at: string
+          description: string
+          id: string
+          published: boolean
+          similarity: number
+          tags: string[]
+          title: string
+        }[]
       }
       search_prompts_semantic: {
         Args: {
