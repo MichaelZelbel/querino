@@ -1,74 +1,149 @@
-## Problem
 
-Embeddings sind vollständig generiert und die SQL-Funktionen `search_*_semantic` funktionieren. Aber die App nutzt sie nirgends — alle Such-Eingabefelder (Discover, Library, Landing, Command Palette) gehen über `useSearchPrompts` / `useCommandPaletteSearch`, die **nur** PostgreSQL Full-Text-Search auf `config: "english"` verwenden. Deshalb findet "Hochformat Vorschaubild Kurzvideo" den YouTube→TikTok Thumbnail-Prompt nicht — die Wörter stehen schlicht nicht drin, und FTS kann Bedeutung nicht.
+# Claws raus, Prompt Kits rein
 
-## Ziel
+## Datenstand & Entscheidung
 
-Semantische Suche so verdrahten, dass jede sinnvolle Sucheingabe (≥ 3 Zeichen) zusätzlich Embedding-basierte Treffer liefert — ohne dass der Nutzer etwas umstellen muss und ohne FTS-Treffer zu verlieren.
+DB-Check: 5 Claws total (3 von dir „Mister Q", 2 verwaist). **Hartes Löschen ist sicher** — keine fremden Nutzerdaten betroffen.
 
-## Lösung: Hybrid-Suche (FTS ∪ Semantik), automatisch
+---
 
-### 1. Neuer Hook `useHybridSearchPrompts`
-- Führt parallel aus:
-  - bestehenden `useSearchPrompts` (FTS, sofort, billig)
-  - `useSemanticSearchPrompts` (Embedding via `generate-embedding` Edge Function, dann RPC)
-- Merged Ergebnisse:
-  - Dedupe per `id`
-  - Reihenfolge: erst FTS-Treffer (Exakt-Matches gewinnen), dann semantische Ergänzungen sortiert nach `similarity`
-  - Behalte `similarity`-Score auf semantischen Treffern, damit wir später optional ein "ähnlich"-Badge zeigen können
-- `matchThreshold`: 0.25 (niedrig, weil text-embedding-3-small konservativ scort und wir bei wenig Content im Tail sonst nichts mehr finden)
-- `matchCount`: 30
+## Teil A: Claws komplett entfernen
 
-### 2. Discover / PromptLibrary / PublicPromptDiscovery / Library umstellen
-- Überall, wo `useSearchPrompts({ searchQuery, isPublic: true })` verwendet wird, durch `useHybridSearchPrompts` ersetzen.
-- Bei `searchQuery` leer → identisches Verhalten wie vorher (kein Embedding-Call, keine Kosten).
-- Bei `isPublic: false` (eigene Library) → nur FTS, weil Semantic-RPCs `is_public = true` filtern (siehe RPC-Body). Das ist OK — bewusste Entscheidung. *(Falls gewünscht: separate RPC `search_prompts_semantic_owner` ergänzen, Scope kann der User später entscheiden.)*
+### A1. Datenbank-Migration (DROP)
+- Tabellen droppen: `claws`, `claw_versions`, `claw_reviews`, `claw_pins`
+- Funktionen droppen: `set_claw_slug()`, `get_similar_claws()`, `search_claws_semantic()`
+- Aus polymorphen Funktionen den `claw`-Branch entfernen: `is_item_public`, `is_item_owner`, `is_team_member_for_item`, `update_embedding`, `generate_unique_slug`
+- Trigger `queue_menerio_sync` auf claws automatisch weg (Tabelle weg)
+- `menerio_integration.sync_artifact_types` Default von `{prompt,skill,claw,workflow}` → `{prompt,skill,workflow}`; bestehende Werte updaten
 
-### 3. Analog für Skills und Workflows
-- `useHybridSearchSkills`, `useHybridSearchWorkflows` nach gleichem Muster.
-- Claws haben aktuell 0 Embeddings → Backfill nochmal über das Admin-Panel laufen lassen (wahrscheinlich Timeout / Batch nicht alle 4 Typen erreicht). Kein Code-Change nötig, nur Re-Run.
+### A2. Frontend: Routen, Pages, Hooks, Components löschen
+- **Pages**: `ClawNew.tsx`, `ClawDetail.tsx`, `ClawEdit.tsx`
+- **Hooks**: `useClaws.ts`, `useCloneClaw.ts`, `useClawVersions.ts`, `useClawReviews.ts`, `useCopyClawToTeam.ts`, `usePinnedClaws.ts`
+- **Components**: ganzer Ordner `src/components/claws/`
+- **Types**: `src/types/claw.ts`
+- **App.tsx**: 3 Claw-Routen + Imports raus
+- **Header.tsx**: „New Claw"-Menüpunkte (Desktop + Mobile) raus
+- **Library.tsx**: ganzer Claws-Block, Hook-Aufruf, Filter-Logik raus
+- **Discover.tsx**: Claws-Tab raus (nur noch Prompts/Skills/Workflows)
+- **CommandPalette**: Claw-Suche entfernen (falls vorhanden)
+- **Docs.tsx, CommunityGuidelines.tsx**: Claw-Erwähnungen entfernen/ersetzen
+- **Cross-cutting cleanup** in: `useDuplicateArtifact.ts`, `useAIInsights.ts`, `useMarkdownImport.ts`, `useEmbeddings.ts`, `useSemanticMerge.ts`, `useCollections.ts` (item_type 'claw'), `MenerioSyncButton.tsx`, `MenerioBulkSync.tsx`, `AIInsightsPanel.tsx`, `skillSourceParser.ts`
+- **Types**: `activity.ts`, `aiInsights.ts`, `collection.ts` — `'claw'` aus Union-Types raus
 
-### 4. Command Palette (⌘K)
-- `useCommandPaletteSearch` zusätzlich semantisch füttern, aber **nur bei `query.length >= 3`** und mit Debounce, damit nicht jeder Tastendruck einen OpenAI-Call auslöst (ist schon im Hook drin, aber der semantische Part muss ein eigenes Debounce + minLength haben).
-- Embedding-Call gated: nur wenn FTS < 5 Treffer liefert → spart Token.
+### A3. Edge Functions
+- **Löschen**: `suggest-claw-metadata`
+- **Anpassen**: `mcp-server`, `api`, `ai-insights`, `ai-moderate-content`, `fetch-skill-md`, `render-for-menerio`, `process-menerio-sync-queue`, `backfill-embeddings`, `generate-embedding` — alle `claw`-Branches/Tools entfernen
+- `supabase/config.toml`: `suggest-claw-metadata` Eintrag entfernen
 
-### 5. FTS-Sprache verbessern (Bonus, klein)
-- `useSearchPrompts` und Geschwister: `config: "english"` → `config: "simple"`.
-- Begründung: `english` macht Stemming + Stopwords nur für Englisch, Deutschsuchen werden zerschossen. `simple` macht keinen Stemmer, dafür funktioniert's für alle Sprachen halbwegs gleich. Die wirkliche Sprachintelligenz übernehmen jetzt die Embeddings.
+### A4. Sonstiges
+- `n8n/Claw Insights.json` und `n8n/Suggest Claw Metadata.json` aus Repo löschen
+- `docs/SCHEMA.md`, `CLAUDE.md`, `README.md`: Claw-Erwähnungen entfernen
+- Memory `mem://features/claws-artifact-type` und `mem://features/clawbot-metadata-webhook` löschen; `mem://index.md` Core-Zeile „Artifact Types" auf „Prompts, Skills, Workflows, Prompt Kits" ändern
 
-### 6. Test-Case nach Deploy
-- "Hochformat Vorschaubild Kurzvideo" → muss YouTube→TikTok Thumbnail Converter (`3f9a2d43-…`) als semantischen Treffer zeigen.
-- "short form video preview image" → derselbe Treffer.
-- "AI" (FTS-starker Begriff) → FTS-Treffer wie heute, plus ggf. semantische Ergänzungen am Ende.
+---
 
-## Technische Details
+## Teil B: Prompt Kits einführen
 
-**Datenfluss neuer Hybrid-Hook:**
+### B1. Datenmodell
+Neue Tabelle `prompt_kits` (eigenständiges Single-Markdown-Dokument, **keine** Item-Tabelle):
+
+```text
+prompt_kits
+  id              uuid PK
+  slug            text unique
+  title           text NOT NULL
+  description     text
+  content         text         -- Markdown mit Konvention "## Prompt: <Titel>"
+  category        text
+  tags            text[]
+  language        text default 'en'
+  author_id       uuid -> profiles.id
+  team_id         uuid (nullable)
+  published       boolean default false
+  rating_avg      numeric
+  rating_count    int
+  embedding       vector(1536)
+  menerio_synced  boolean
+  menerio_note_id text
+  menerio_synced_at timestamptz
+  created_at, updated_at
 ```
-searchQuery
-  ├─► useSearchPrompts (FTS)              ──► ftsResults
-  └─► generateEmbedding (Edge Function)
-        └─► search_prompts_semantic RPC   ──► semResults
-                                              │
-            mergeAndDedupe(fts, sem) ◄────────┘
-                    │
-                    ▼
-            PromptWithAuthor[]
+
+Plus Hilfstabellen analog Skills:
+- `prompt_kit_versions` (Versionierung)
+- `prompt_kit_reviews` (Ratings/Comments)
+- `prompt_kit_pins`
+
+**RLS**: Spiegel der Skills-Policies (eigene + team + published).
+
+**Trigger/Funktionen**: `set_prompt_kit_slug`, `update_prompt_kit_rating`, `get_similar_prompt_kits`, `search_prompt_kits_semantic`, `update_embedding`-Branch erweitern, `is_item_public`/`is_item_owner`/`is_team_member_for_item`/`generate_unique_slug` um `'prompt_kit'`-Branch erweitern, Menerio-Sync-Trigger anhängen.
+
+### B2. Editor-UX (Single-Markdown)
+**Konvention**: Items werden über Markdown-Heading getrennt — `## Prompt: <Titel>` markiert den Beginn eines neuen Prompts. Alles dazwischen ist der Prompt-Body.
+
+**Editor-Page** (`PromptKitEdit.tsx`):
+- Layout wie SkillEdit: links Metadaten (Titel, Description, Tags, Category, Language, Published-Toggle), rechts großer `LineNumberedEditor`
+- **Toolbar über dem Editor**:
+  - „Add Prompt"-Button → fügt am Cursor `\n\n## Prompt: Untitled\n\n` ein
+  - Live-Counter rechts oben: „N Prompts erkannt" (regex-Parser zählt `^## Prompt:` Headings)
+- **Outline-Panel** (rechts vom Editor, einklappbar): Liste der erkannten Prompt-Titel mit Click-to-Scroll
+- Manuelles Speichern (kein Autosave, gemäß Memory)
+- Standard-Action-Bar: Save, Publish-Toggle, Delete
+
+**Detail-Page** (`PromptKitDetail.tsx`):
+- Header (Titel, Author, Tags, Rating)
+- Gerenderter Markdown-Body
+- **Pro erkanntem Prompt**: kleiner „Copy this prompt"-Button neben dem `## Prompt: ...`-Heading, der **nur den Body dieses Items** in die Zwischenablage kopiert
+- „Copy entire kit"-Button oben (kopiert ganzes Markdown)
+- Standard: Reviews, Comments, Similar, Versions, AI Insights, Menerio-Sync
+
+**New-Page** (`PromptKitNew.tsx`): minimal, mit Default-Template:
+```markdown
+## Prompt: My first prompt
+
+Write your prompt here…
 ```
 
-**Geschätzte Kosten:** text-embedding-3-small ≈ $0.02 / 1M Token. Eine Suchquery hat ~10 Token → ~$0.0000002 pro Suche. Vernachlässigbar, kein Caching-Zwang. Trotzdem: TanStack Query mit `staleTime: 5min` für identische Queries.
+### B3. Frontend-Struktur
+- `src/types/promptKit.ts`
+- `src/hooks/usePromptKits.ts` (Hybrid-Search wie Skills)
+- `src/hooks/usePromptKitVersions.ts`, `usePromptKitReviews.ts`, `usePinnedPromptKits.ts`, `useClonePromptKit.ts`, `useCopyPromptKitToTeam.ts`
+- `src/components/promptKits/PromptKitCard.tsx`, `PromptKitReviewSection.tsx`, `PromptKitVersionHistoryPanel.tsx`, `CopyPromptKitToTeamModal.tsx`
+- `src/lib/promptKitParser.ts` — Utility: parst Markdown nach `## Prompt: <title>`-Headings, gibt `[{title, body, lineStart, lineEnd}]` zurück (für Outline und Copy-Buttons)
+- **Routen** in `App.tsx`: `/prompt-kits/new`, `/prompt-kits/:slug`, `/prompt-kits/:slug/edit`
+- **Header**: „New Prompt Kit" im Create-Menü (Icon: `Package` oder `BookOpen` aus lucide)
+- **Library.tsx**: neuer „My Prompt Kits"-Block analog zu Skills
+- **Discover.tsx**: neuer „Prompt Kits"-Tab
+- **Collections**: `item_type` 'prompt_kit' zulassen
+- **CommandPalette**: Prompt Kits in globaler Suche
+- **Cross-cutting**: `useDuplicateArtifact`, `useAIInsights`, `useMarkdownImport` (mit YAML-Frontmatter `type: prompt_kit`), `useEmbeddings`, `useSemanticMerge`
 
-**Keine DB-Migration nötig.** RPCs existieren, Embedding-Spalten gefüllt.
+### B4. Edge Functions & Backend
+- `backfill-embeddings`: prompt_kit-Branch
+- `generate-embedding`: prompt_kit-Branch
+- `ai-insights`: optional Branch (kann anfangs Skill-Logik wiederverwenden)
+- `mcp-server`, `api`: prompt_kit-Endpunkte
+- `process-menerio-sync-queue`, `render-for-menerio`: prompt_kit-Support
+- Moderation: prompt_kit in `ai-moderate-content`
 
-## Files
+### B5. Doku & Memory
+- `docs/SCHEMA.md`: prompt_kits-Sektion ergänzen
+- `Docs.tsx` (in-app): neuer Abschnitt „Prompt Kits"
+- Neue Memory: `mem://features/prompt-kits-artifact-type` (Modell, Editor-Konvention `## Prompt:`, Single-Markdown)
+- `mem://index.md` Core-Liste aktualisieren
 
-- `src/hooks/useHybridSearchPrompts.ts` (neu)
-- `src/hooks/useHybridSearchSkills.ts` (neu)
-- `src/hooks/useHybridSearchWorkflows.ts` (neu)
-- `src/hooks/useSearchPrompts.ts` (FTS-Config tweak)
-- `src/hooks/useCommandPaletteSearch.ts` (semantischer Fallback)
-- Konsumenten umstellen: `src/pages/Discover.tsx`, `src/pages/PromptLibrary.tsx`, `src/pages/PublicPromptDiscovery.tsx`, `src/pages/Library.tsx`, `src/components/landing/PromptsSection.tsx` (jeweils nur Hook-Import + Aufruf tauschen)
+---
 
-## Offene Frage
+## Reihenfolge der Umsetzung
+1. Migration A1 (DROP claws + cleanup polymorpher Funktionen)
+2. Migration B1 (CREATE prompt_kits + Hilfstabellen + Funktionen, polymorphe Funktionen erweitern)
+3. Frontend A2 + A4 (Claws-Code raus, Build muss grün bleiben)
+4. Edge Functions A3 (Claw-Branches raus)
+5. Frontend B3 (Prompt-Kit-Pages, Hooks, Components, Routen, Library/Discover-Integration)
+6. Edge Functions B4 (prompt_kit-Branches)
+7. Memory + Doku-Updates
 
-Soll ich für Claws den Backfill nochmal anstoßen (Admin-Panel zeigt vermutlich noch missing > 0 an)? Oder reicht dir, dass du es selbst klickst, sobald der Code-Change live ist?
+---
+
+## Offene Detail-Frage (kein Blocker, kann nach Approval beantwortet werden)
+**Heading-Konvention**: Reicht `## Prompt: <Titel>` als Trenner, oder lieber strikter `### Prompt: <Titel>` damit `##` für Sektionsüberschriften innerhalb eines Prompts frei bleibt? Empfehlung: `## Prompt:` — gut sichtbar, gut copy-paste-bar, und Subsections können `###` nutzen.
