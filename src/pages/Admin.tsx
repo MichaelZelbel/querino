@@ -350,6 +350,11 @@ export default function Admin() {
           <ModerationPanel />
         </div>
 
+        {/* Embeddings Backfill */}
+        <div className="mb-8">
+          <EmbeddingsBackfillPanel />
+        </div>
+
         {/* Users Management */}
         <Card>
           <CardHeader>
