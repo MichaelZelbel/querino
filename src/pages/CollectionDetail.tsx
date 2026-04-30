@@ -29,6 +29,7 @@ import {
 import { usePrompts } from "@/hooks/usePrompts";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
+import { usePromptKits } from "@/hooks/usePromptKits";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
