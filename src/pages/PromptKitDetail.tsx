@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
   History, GitFork, Users, MessageSquarePlus, MessageSquare,
+  Pin, PinOff, FolderPlus, Activity as ActivityIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
@@ -23,6 +24,11 @@ import { CopyPromptKitToTeamModal } from "@/components/promptKits/CopyPromptKitT
 import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
+import { PromptKitReviewSection } from "@/components/promptKits/PromptKitReviewSection";
+import { usePinnedPromptKits } from "@/hooks/usePinnedPromptKits";
+import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { CommentsSection } from "@/components/comments";
+import { ActivitySidebar } from "@/components/activity";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
