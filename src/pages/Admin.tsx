@@ -30,6 +30,7 @@ import { AICreditSettings } from "@/components/admin/AICreditSettings";
 import { ModerationPanel } from "@/components/admin/ModerationPanel";
 import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
 import { UserTokenModal } from "@/components/admin/UserTokenModal";
+import { EmbeddingsBackfillPanel } from "@/components/admin/EmbeddingsBackfillPanel";
 import type { AppRole } from "@/types/userRole";
 
 interface AllowancePeriod {
@@ -347,6 +348,11 @@ export default function Admin() {
         {/* Content Moderation */}
         <div className="mb-8">
           <ModerationPanel />
+        </div>
+
+        {/* Embeddings Backfill */}
+        <div className="mb-8">
+          <EmbeddingsBackfillPanel />
         </div>
 
         {/* Users Management */}
