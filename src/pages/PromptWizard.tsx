@@ -25,8 +25,7 @@ import {
   type WizardFormData,
   type PromptFramework,
 } from "@/lib/promptGenerator";
-
-const N8N_WEBHOOK_URL = `${import.meta.env.VITE_N8N_BASE_URL || "https://agentpool.app.n8n.cloud"}/webhook/prompt-wizard`;
+import { supabase } from "@/integrations/supabase/client";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -97,39 +96,23 @@ export default function PromptWizard() {
 
     setIsGenerating(true);
     try {
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ structured_input: structuredInput, user_id: user?.id }),
+      const { data, error } = await supabase.functions.invoke("prompt-wizard", {
+        body: { structured_input: structuredInput },
       });
 
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
-      }
+      if (error) throw error;
 
-      // Webhook may return plain text or JSON - handle both
-      const responseText = await response.text();
-      let promptText = "";
-
-      try {
-        // Try parsing as JSON first (expected format: [{ "output": "..." }])
-        const data = JSON.parse(responseText);
-        const firstItem = Array.isArray(data) ? data[0] : data;
-        promptText = firstItem?.output || firstItem?.prompt || "";
-      } catch {
-        // If not valid JSON, treat response as plain text prompt
-        promptText = responseText.trim();
-      }
-      
+      const promptText = (data?.prompt || "").trim();
       if (!promptText) {
         throw new Error("No prompt in response");
       }
 
       setGeneratedPrompt(promptText);
       toast.success("Prompt generated!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Wizard error:", error);
-      toast.error("Failed to generate prompt");
+      const msg = error?.context?.body?.error || error?.message || "Failed to generate prompt";
+      toast.error(msg);
     } finally {
       setIsGenerating(false);
     }
