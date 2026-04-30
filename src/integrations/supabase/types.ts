@@ -2338,6 +2338,10 @@ export type Database = {
         Args: { p_embedding: string; p_item_id: string; p_item_type: string }
         Returns: undefined
       }
+      update_prompt_kit_slug: {
+        Args: { p_new_slug: string; p_prompt_kit_id: string; p_user_id: string }
+        Returns: Json
+      }
       update_prompt_slug: {
         Args: { p_new_slug: string; p_prompt_id: string; p_user_id: string }
         Returns: Json
