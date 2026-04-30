@@ -170,6 +170,8 @@ export default function CollectionDetail() {
         return <BookOpen className="h-4 w-4" />;
       case "workflow":
         return <Workflow className="h-4 w-4" />;
+      case "prompt_kit":
+        return <Package className="h-4 w-4" />;
       default:
         return null;
     }
@@ -183,6 +185,8 @@ export default function CollectionDetail() {
         return `/skills/${item.data?.slug || item.item_id}`;
       case "workflow":
         return `/workflows/${item.data?.slug || item.item_id}`;
+      case "prompt_kit":
+        return `/prompt-kits/${item.data?.slug || item.item_id}`;
       default:
         return "#";
     }
