@@ -107,7 +107,7 @@ export function ImportMarkdownButton({
       prompt: "/prompts/new",
       skill: "/skills/new",
       workflow: "/workflows/new",
-      claw: "/claws/new",
+      prompt_kit: "/prompt-kits/new",
     };
 
     navigate(`${routes[type]}?${params.toString()}`);
@@ -130,7 +130,7 @@ export function ImportMarkdownButton({
       prompt: "New Prompt from .md",
       skill: "New Skill from .md",
       workflow: "New Workflow from .md",
-      claw: "New Claw from .md",
+      prompt_kit: "New Prompt Kit from .md",
     };
     return typeLabels[type];
   };

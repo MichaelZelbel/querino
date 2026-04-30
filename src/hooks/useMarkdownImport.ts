@@ -50,7 +50,7 @@ export function useMarkdownImport(type: ArtefactType) {
             prompt: "/prompts/new",
             skill: "/skills/new",
             workflow: "/workflows/new",
-            claw: "/claws/new",
+            prompt_kit: "/prompt-kits/new",
           };
 
           navigate(`${routes[type]}?${params.toString()}`);
