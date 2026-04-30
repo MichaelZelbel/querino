@@ -60,7 +60,7 @@ export default function Docs() {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead
         title="Documentation — Querino"
-        description="Learn how to create, organize, and share AI prompts, skills, workflows, and claws with Querino."
+        description="Learn how to create, organize, and share AI prompts, skills, and workflows with Querino."
       />
       <Header />
       
@@ -89,7 +89,7 @@ export default function Docs() {
                 { icon: Lightbulb, label: "Prompts", href: "#prompts" },
                 { icon: Sparkles, label: "Skills", href: "#skills" },
                 { icon: Workflow, label: "Workflows", href: "#workflows" },
-                { icon: Grab, label: "Claws", href: "#claws" },
+                
                 { icon: FolderOpen, label: "Collections", href: "#collections" },
                 { icon: Users, label: "Teams", href: "#teams" },
                 { icon: Wand2, label: "AI Tools", href: "#ai-tools" },
@@ -120,7 +120,7 @@ export default function Docs() {
             
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino is your home for AI artifacts — prompts, skills, workflows, and claws. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
+                Querino is your home for AI artifacts — prompts, skills, and workflows. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
               </p>
               
               <Card className="mb-6">
@@ -146,7 +146,7 @@ export default function Docs() {
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
                     <div>
                       <p className="font-medium">Create your first artifact</p>
-                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, skill, workflow, or claw. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
+                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, skill, or workflow. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -321,47 +321,13 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Claws ───────────────────────────────────────────── */}
-          <section className="scroll-mt-24">
-            <SectionHeader icon={Grab} title="Claws" id="claws" iconClassName="h-6 w-6 text-amber-500" />
-            
-            <div className="prose prose-neutral dark:prose-invert max-w-none">
-              <p className="text-muted-foreground text-lg mb-6">
-                Claws are callable capabilities — self-contained actions that an AI agent (like Clawbot) can invoke. Think of them as the "hands" of your AI assistant: each Claw handles one specific task.
-              </p>
-
-              <h3 className="text-lg font-semibold mt-8 mb-4">Creating a Claw</h3>
-              <p className="text-muted-foreground mb-4">
-                The process is the same as for any artifact: write your content in Markdown, add title, description, category, and tags. Claws can also reference a source file from a GitHub repository.
-              </p>
-
-              <h3 className="text-lg font-semibold mt-8 mb-4">Claws vs. Workflows</h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Grab className="h-4 w-4 text-amber-500" />
-                    <p className="font-medium">Claws</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Single-purpose callable tools. Designed to be invoked by an AI agent or automation.</p>
-                </div>
-                <div className="p-4 rounded-lg border border-border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Workflow className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">Workflows</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Multi-step orchestrations. Human-readable procedures that combine multiple steps.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
           {/* ── Collections ─────────────────────────────────────── */}
           <section className="scroll-mt-24">
             <SectionHeader icon={FolderOpen} title="Collections" id="collections" />
             
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Collections let you group related artifacts together — like playlists, but for prompts, skills, workflows, and claws.
+                Collections let you group related artifacts together — like playlists, but for prompts, skills, and workflows.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">How to use collections</h3>
@@ -487,7 +453,7 @@ export default function Docs() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Get interactive feedback on the quality of your prompts, skills, workflows, or claws. The Coach analyzes structure, clarity, and completeness, then offers specific tips for improvement.
+                      Get interactive feedback on the quality of your prompts, skills, or workflows. The Coach analyzes structure, clarity, and completeness, then offers specific tips for improvement.
                     </p>
                   </CardContent>
                 </Card>

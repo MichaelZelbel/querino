@@ -90,7 +90,7 @@ export default function CommunityGuidelines() {
 
               <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground">
                 <p>
-                  Querino is a platform for discovering and sharing AI artifacts — prompts, skills, workflows, and claws.
+                  Querino is a platform for discovering and sharing AI artifacts — prompts, skills, and workflows.
                   These guidelines help keep our community safe, respectful, and useful for everyone.
                 </p>
 
