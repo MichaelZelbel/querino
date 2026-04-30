@@ -1,6 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Skill, SkillAuthor } from "@/types/skill";
+import { mergeWithSemantic } from "./useSemanticMerge";
+
+async function fetchSkillsByIds(ids: string[]): Promise<(Skill & { author?: SkillAuthor | null })[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await (supabase.from("skills") as any)
+    .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+    .in("id", ids);
+  if (error || !data) return [];
+  return (data as any[]).map((item) => ({ ...item, author: item.profiles || null }));
+}
 
 interface UseSkillsOptions {
   searchQuery?: string;
