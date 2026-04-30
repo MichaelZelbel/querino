@@ -202,6 +202,21 @@ export default function PromptKitNew() {
   }
   if (!user) return null;
 
+  const coachPanel = (
+    <ArtifactCoachPanel
+      artifactType="prompt_kit"
+      artifactId="draft"
+      canvasContent={content}
+      onApplyContent={handleApplyAIContent}
+      onUndo={handleUndoAI}
+      canUndo={previousContent !== null}
+      isNew
+      userId={user.id}
+      workspaceId={currentWorkspace === "personal" ? null : currentWorkspace}
+      sessionId={coachSessionId}
+    />
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
@@ -212,10 +227,28 @@ export default function PromptKitNew() {
               <ArrowLeft className="h-4 w-4" />
               Back to Library
             </Link>
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Create Prompt Kit
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isMobile && (
+                <Sheet open={showCoachSheet} onOpenChange={setShowCoachSheet}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Bot className="h-4 w-4" />
+                      AI Coach
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[80vh] p-0">
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Prompt Kit Coach</SheetTitle>
+                    </SheetHeader>
+                    <div className="h-full">{coachPanel}</div>
+                  </SheetContent>
+                </Sheet>
+              )}
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Create Prompt Kit
+              </Button>
+            </div>
           </div>
 
           <div className="flex gap-6">
@@ -251,6 +284,28 @@ export default function PromptKitNew() {
                       error={!!errors.content}
                     />
                     {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
+                  </div>
+
+                    {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
+                  </div>
+
+                  {/* AI Metadata Suggestion */}
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSuggestMetadata}
+                      disabled={isGeneratingMetadata || !content.trim()}
+                      className="gap-1.5"
+                    >
+                      {isGeneratingMetadata ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating…</>
+                      ) : (
+                        <><Sparkles className="h-3.5 w-3.5" />Suggest title, description, category & tags</>
+                      )}
+                    </Button>
+                    {metadataError && <p className="text-sm text-destructive">{metadataError}</p>}
                   </div>
 
                   <div className="space-y-2">
