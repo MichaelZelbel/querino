@@ -126,15 +126,15 @@ async function unpublishArtifact(
       .from("skills")
       .update({ published: false })
       .eq("id", itemId);
-  } else if (itemType === "claw") {
+  } else if (itemType === "prompt_kit") {
     const { data } = await serviceClient
-      .from("claws")
+      .from("prompt_kits")
       .select("title")
       .eq("id", itemId)
       .maybeSingle();
     title = data?.title || null;
     await serviceClient
-      .from("claws")
+      .from("prompt_kits")
       .update({ published: false })
       .eq("id", itemId);
   } else if (itemType === "workflow") {

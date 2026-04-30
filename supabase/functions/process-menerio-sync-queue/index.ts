@@ -107,7 +107,10 @@ async function handleSync(
   integration: any,
   item: any
 ) {
-  const tableName = item.artifact_type === "prompt" ? "prompts" : `${item.artifact_type}s`;
+  const tableName =
+    item.artifact_type === "prompt" ? "prompts" :
+    item.artifact_type === "prompt_kit" ? "prompt_kits" :
+    `${item.artifact_type}s`;
 
   const { data: artifact, error } = await adminClient
     .from(tableName)
@@ -214,11 +217,6 @@ function buildNotePayload(artifactType: string, artifact: any, tableName: string
     updated_at: artifact.updated_at,
   };
 
-  if (artifactType === "claw") {
-    structuredFields.source = artifact.source;
-    structuredFields.skill_source_type = artifact.skill_source_type;
-    structuredFields.skill_source_ref = artifact.skill_source_ref;
-  }
   if (artifactType === "workflow" && artifact.json) {
     structuredFields.has_structured_data = true;
   }
@@ -265,14 +263,13 @@ function buildBody(type: string, a: Record<string, unknown>): string {
         `\n## Skill-Inhalt\n\n${a.content || "—"}`
       );
       break;
-    case "claw":
+    case "prompt_kit":
       lines.push(
-        `\n**Typ:** Claw`, `**Kategorie:** ${a.category || "—"}`,
-        `**Quelle:** ${a.source || "—"}`, `**Tags:** ${tagsStr}`,
-        `**Skill-Source:** ${a.skill_source_type || "—"} — ${a.skill_source_ref || "—"}`,
-        `**Veröffentlicht:** ${publicLabel}`, `**Bewertung:** ${ratingStr}`,
+        `\n**Typ:** Prompt Kit`, `**Kategorie:** ${a.category || "—"}`,
+        `**Tags:** ${tagsStr}`, `**Veröffentlicht:** ${publicLabel}`,
+        `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## SKILL.md Inhalt\n\n${(a.skill_md_content as string) || (a.content as string) || "—"}`
+        `\n## Prompt-Kit-Inhalt\n\n${a.content || "—"}`
       );
       break;
     case "workflow":

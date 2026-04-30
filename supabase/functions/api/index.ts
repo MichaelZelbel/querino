@@ -134,7 +134,7 @@ async function handleGetSitemap(supabase: any) {
   ];
 
   // Fetch dynamic content in parallel
-  const [blogPosts, prompts, skills, workflows, claws] = await Promise.all([
+  const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all([
     supabase
       .from("blog_posts")
       .select("slug, updated_at")
@@ -156,7 +156,7 @@ async function handleGetSitemap(supabase: any) {
       .eq("published", true)
       .order("updated_at", { ascending: false }),
     supabase
-      .from("claws")
+      .from("prompt_kits")
       .select("slug, updated_at")
       .eq("published", true)
       .order("updated_at", { ascending: false }),
@@ -231,13 +231,13 @@ async function handleGetSitemap(supabase: any) {
     }
   }
 
-  // Add public claws
-  for (const claw of claws.data || []) {
-    if (claw.slug) {
-      const lastmod = claw.updated_at ? formatDate(claw.updated_at) : formatDate(new Date().toISOString());
+  // Add public prompt kits
+  for (const kit of promptKits.data || []) {
+    if (kit.slug) {
+      const lastmod = kit.updated_at ? formatDate(kit.updated_at) : formatDate(new Date().toISOString());
       urls.push(`
   <url>
-    <loc>${siteUrl}/claws/${escapeXml(claw.slug)}</loc>
+    <loc>${siteUrl}/prompt-kits/${escapeXml(kit.slug)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

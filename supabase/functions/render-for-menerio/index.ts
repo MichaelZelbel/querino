@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VALID_TYPES = ["prompt", "skill", "claw", "workflow"] as const;
+const VALID_TYPES = ["prompt", "skill", "workflow", "prompt_kit"] as const;
 type ArtifactType = (typeof VALID_TYPES)[number];
 
 Deno.serve(async (req) => {
@@ -102,7 +102,10 @@ async function handleSync(
   }
 
   // 2. Load artifact
-  const tableName = artifactType === "prompt" ? "prompts" : `${artifactType}s`;
+  const tableName =
+    artifactType === "prompt" ? "prompts" :
+    artifactType === "prompt_kit" ? "prompt_kits" :
+    `${artifactType}s`;
   const { data: artifact, error: artErr } = await adminClient
     .from(tableName)
     .select("*")
@@ -141,11 +144,6 @@ async function handleSync(
   };
 
   // Type-specific structured fields
-  if (artifactType === "claw") {
-    structuredFields.source = artifact.source;
-    structuredFields.skill_source_type = artifact.skill_source_type;
-    structuredFields.skill_source_ref = artifact.skill_source_ref;
-  }
   if (artifactType === "workflow" && artifact.json) {
     structuredFields.has_structured_data = true;
   }
@@ -261,17 +259,15 @@ function buildBody(type: ArtifactType, a: Record<string, unknown>): string {
       );
       break;
 
-    case "claw":
+    case "prompt_kit":
       lines.push(
-        `\n**Typ:** Claw`,
+        `\n**Typ:** Prompt Kit`,
         `**Kategorie:** ${a.category || "—"}`,
-        `**Quelle:** ${a.source || "—"}`,
         `**Tags:** ${tagsStr}`,
-        `**Skill-Source:** ${a.skill_source_type || "—"} — ${a.skill_source_ref || "—"}`,
         `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## SKILL.md Inhalt\n\n${(a.skill_md_content as string) || (a.content as string) || "—"}`
+        `\n## Prompt-Kit-Inhalt\n\n${a.content || "—"}`
       );
       break;
 
