@@ -759,34 +759,39 @@ Deno.serve(async (req) => {
     let prompts: Prompt[] = [];
     let skills: Skill[] = [];
     let workflows: Workflow[] = [];
+    let promptKits: PromptKit[] = [];
 
     if (teamId) {
       // Team artefacts
-      const [promptsResult, skillsResult, workflowsResult] = await Promise.all([
+      const [promptsResult, skillsResult, workflowsResult, kitsResult] = await Promise.all([
         supabase.from("prompts").select("*").eq("team_id", teamId),
         supabase.from("skills").select("*").eq("team_id", teamId),
         supabase.from("workflows").select("*").eq("team_id", teamId),
+        (supabase.from("prompt_kits") as any).select("*").eq("team_id", teamId),
       ]);
 
       prompts = (promptsResult.data as Prompt[]) || [];
       skills = (skillsResult.data as Skill[]) || [];
       workflows = (workflowsResult.data as Workflow[]) || [];
+      promptKits = (kitsResult.data as PromptKit[]) || [];
     } else {
       // Personal artefacts
-      const [promptsResult, skillsResult, workflowsResult] = await Promise.all([
+      const [promptsResult, skillsResult, workflowsResult, kitsResult] = await Promise.all([
         supabase.from("prompts").select("*").eq("author_id", user.id).is("team_id", null),
         supabase.from("skills").select("*").eq("author_id", user.id).is("team_id", null),
         supabase.from("workflows").select("*").eq("author_id", user.id).is("team_id", null),
+        (supabase.from("prompt_kits") as any).select("*").eq("author_id", user.id).is("team_id", null),
       ]);
 
       prompts = (promptsResult.data as Prompt[]) || [];
       skills = (skillsResult.data as Skill[]) || [];
       workflows = (workflowsResult.data as Workflow[]) || [];
+      promptKits = (kitsResult.data as PromptKit[]) || [];
     }
 
-    console.log(`Found ${prompts.length} prompts, ${skills.length} skills, ${workflows.length} workflows`);
+    console.log(`Found ${prompts.length} prompts, ${skills.length} skills, ${workflows.length} workflows, ${promptKits.length} prompt kits`);
 
-    if (prompts.length === 0 && skills.length === 0 && workflows.length === 0) {
+    if (prompts.length === 0 && skills.length === 0 && workflows.length === 0 && promptKits.length === 0) {
       return new Response(
         JSON.stringify({ success: true, message: "No artefacts to sync" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -818,6 +823,7 @@ Deno.serve(async (req) => {
     const promptFilenames = new Set<string>();
     const skillFilenames = new Set<string>();
     const workflowFilenames = new Set<string>();
+    const kitFilenames = new Set<string>();
 
     // Generate prompt files with locally-unique filenames
     for (const prompt of prompts) {
@@ -843,6 +849,15 @@ Deno.serve(async (req) => {
       files.push({
         path: `${basePath}workflows/${filename}.md`,
         content: generateWorkflowMarkdown(workflow),
+      });
+    }
+
+    // Generate prompt kit files
+    for (const kit of promptKits) {
+      const filename = generateUniqueFilename(kit.title, kitFilenames);
+      files.push({
+        path: `${basePath}prompt-kits/${filename}.md`,
+        content: generatePromptKitMarkdown(kit),
       });
     }
 
