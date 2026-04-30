@@ -259,28 +259,20 @@ export default function PromptKitNew() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="content">
-                        Kit Content (Markdown) *
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
-                        </span>
-                        <Button type="button" size="sm" variant="outline" onClick={handleAddPrompt} className="gap-1.5 h-7">
-                          <Plus className="h-3.5 w-3.5" />
-                          Add Prompt
-                        </Button>
-                      </div>
+                      <Label htmlFor="content">Kit Content *</Label>
+                      <span className="text-xs text-muted-foreground">
+                        {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Separate items with a heading like <code className="font-mono">## Prompt: Your title</code>.
-                      Everything until the next such heading is one prompt's body.
+                      Write an intro and any commentary as normal text. Use the{" "}
+                      <span className="font-medium text-foreground">Insert prompt</span> button to add a
+                      copyable prompt block. Each block becomes a{" "}
+                      <code className="font-mono">## Prompt: …</code> heading on save.
                     </p>
-                    <LineNumberedEditor
-                      id="content"
+                    <PromptKitRichEditor
                       value={content}
                       onChange={setContent}
-                      placeholder="## Prompt: Title&#10;&#10;Prompt body here…"
                       error={!!errors.content}
                     />
                     {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
