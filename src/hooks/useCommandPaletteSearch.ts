@@ -4,7 +4,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDebounce } from "@/hooks/useDebounce";
 
-export type ArtefactType = "prompt" | "skill" | "workflow";
+export type ArtefactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 export interface SearchResult {
   id: string;

@@ -24,7 +24,7 @@ import { Loader2, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { generateSlug } from "@/hooks/useGenerateSlug";
 
-type ArtifactType = "prompt" | "skill" | "workflow" | "claw";
+type ArtifactType = "prompt" | "skill" | "workflow" | "claw" | "prompt_kit";
 
 interface TranslateModalProps {
   open: boolean;
@@ -43,6 +43,7 @@ const NEW_ROUTES: Record<ArtifactType, string> = {
   skill: "/skills/new",
   workflow: "/workflows/new",
   claw: "/claws/new",
+  prompt_kit: "/prompt-kits/new",
 };
 
 export function TranslateModal({
