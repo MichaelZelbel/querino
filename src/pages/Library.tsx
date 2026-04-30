@@ -12,10 +12,12 @@ import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Package } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
+import { usePromptKits } from "@/hooks/usePromptKits";
+import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
@@ -61,6 +63,10 @@ export default function Library() {
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
   const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({ 
+    authorId: isTeamWorkspace ? undefined : user?.id,
+    teamId: isTeamWorkspace ? currentWorkspace : undefined,
+  });
+  const { data: myKits, isLoading: kitsLoading } = usePromptKits({
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
@@ -143,6 +149,18 @@ export default function Library() {
         (workflow.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
   }, [myWorkflows, debouncedSearch]);
+
+  const filteredMyKits = useMemo(() => {
+    if (!debouncedSearch.trim() || !myKits) return myKits || [];
+    const search = debouncedSearch.toLowerCase();
+    return myKits.filter(
+      (kit) =>
+        kit.title.toLowerCase().includes(search) ||
+        (kit.description?.toLowerCase().includes(search) ?? false) ||
+        (kit.content?.toLowerCase().includes(search) ?? false) ||
+        (kit.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+    );
+  }, [myKits, debouncedSearch]);
 
 
   // Redirect to auth if not logged in
@@ -333,7 +351,7 @@ export default function Library() {
     return null; // Will redirect
   }
 
-  const isLoading = loading || skillsLoading || workflowsLoading || pinnedLoading || collectionsLoading;
+  const isLoading = loading || skillsLoading || workflowsLoading || kitsLoading || pinnedLoading || collectionsLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -515,6 +533,28 @@ export default function Library() {
                 </section>
               )}
 
+              {/* My Prompt Kits Section */}
+              {(myKits?.length || 0) > 0 && (
+                <section>
+                  <div className="mb-4 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"} ({filteredMyKits.length}{debouncedSearch ? ` of ${myKits?.length}` : ""})
+                    </h2>
+                  </div>
+                  {filteredMyKits.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No prompt kits match your search.
+                    </p>
+                  ) : (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredMyKits.map((kit) => (
+                        <PromptKitCard key={kit.id} kit={kit} showEditButton currentUserId={user?.id} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* Saved Prompts Section - only show in personal workspace */}
               {!isTeamWorkspace && (
