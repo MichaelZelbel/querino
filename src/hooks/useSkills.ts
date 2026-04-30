@@ -1,6 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Skill, SkillAuthor } from "@/types/skill";
+import { mergeWithSemantic } from "./useSemanticMerge";
+
+async function fetchSkillsByIds(ids: string[]): Promise<(Skill & { author?: SkillAuthor | null })[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await (supabase.from("skills") as any)
+    .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+    .in("id", ids);
+  if (error || !data) return [];
+  return (data as any[]).map((item) => ({ ...item, author: item.profiles || null }));
+}
 
 interface UseSkillsOptions {
   searchQuery?: string;
@@ -38,11 +48,10 @@ export function useSkills(options: UseSkillsOptions = {}) {
       }
 
       if (searchQuery.trim()) {
-        // Use PostgreSQL full-text search
         query = query.textSearch(
           "title,description,content",
           searchQuery.trim(),
-          { type: "websearch", config: "english" }
+          { type: "websearch", config: "simple" }
         );
       }
 
@@ -52,10 +61,22 @@ export function useSkills(options: UseSkillsOptions = {}) {
         throw error;
       }
 
-      return (data || []).map((item: any) => ({
+      const ftsResults = (data || []).map((item: any) => ({
         ...item,
         author: item.profiles || null,
       })) as (Skill & { author?: SkillAuthor | null })[];
+
+      // Hybrid: append semantic-only matches for public skill searches
+      if (published === true && searchQuery.trim().length >= 3) {
+        return await mergeWithSemantic(
+          "skill",
+          searchQuery.trim(),
+          ftsResults,
+          fetchSkillsByIds,
+        );
+      }
+
+      return ftsResults;
     },
   });
 }

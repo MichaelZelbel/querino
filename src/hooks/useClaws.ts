@@ -1,6 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Claw, ClawAuthor } from "@/types/claw";
+import { mergeWithSemantic } from "./useSemanticMerge";
+
+async function fetchClawsByIds(ids: string[]): Promise<(Claw & { author?: ClawAuthor | null })[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await (supabase.from("claws") as any)
+    .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+    .in("id", ids);
+  if (error || !data) return [];
+  return (data as any[]).map((item) => ({ ...item, author: item.profiles || null }));
+}
 
 interface UseClawsOptions {
   searchQuery?: string;
@@ -38,11 +48,10 @@ export function useClaws(options: UseClawsOptions = {}) {
       }
 
       if (searchQuery.trim()) {
-        // Use PostgreSQL full-text search
         query = query.textSearch(
           "title,description,content",
           searchQuery.trim(),
-          { type: "websearch", config: "english" }
+          { type: "websearch", config: "simple" }
         );
       }
 
@@ -52,10 +61,21 @@ export function useClaws(options: UseClawsOptions = {}) {
         throw error;
       }
 
-      return (data || []).map((item: any) => ({
+      const ftsResults = (data || []).map((item: any) => ({
         ...item,
         author: item.profiles || null,
       })) as (Claw & { author?: ClawAuthor | null })[];
+
+      if (published === true && searchQuery.trim().length >= 3) {
+        return await mergeWithSemantic(
+          "claw",
+          searchQuery.trim(),
+          ftsResults,
+          fetchClawsByIds,
+        );
+      }
+
+      return ftsResults;
     },
   });
 }

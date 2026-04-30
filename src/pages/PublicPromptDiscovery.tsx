@@ -5,6 +5,8 @@ import { Footer } from "@/components/layout/Footer";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { usePrompts } from "@/hooks/usePrompts";
+import { useSearchPrompts } from "@/hooks/useSearchPrompts";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +21,17 @@ export default function PublicPromptDiscovery() {
   const [sortBy, setSortBy] = useState<"trending" | "recent" | "rating">("trending");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const { data: prompts, isLoading, error } = usePrompts();
+  const { data: allPrompts, isLoading: allLoading, error } = usePrompts();
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const hasSearch = debouncedSearch.trim().length > 0;
+  // When the user types: hybrid FTS + semantic search via the public RPC.
+  // When idle: full list from usePrompts (preserves trending/sort behaviour).
+  const { data: searchedPrompts, isLoading: searchLoading } = useSearchPrompts({
+    searchQuery: hasSearch ? debouncedSearch : "",
+    isPublic: true,
+  });
+  const prompts = hasSearch ? searchedPrompts : allPrompts;
+  const isLoading = hasSearch ? searchLoading : allLoading;
 
   // Extract all unique tags from prompts for the tag filter
   const allTags = useMemo(() => {
@@ -70,27 +82,28 @@ export default function PublicPromptDiscovery() {
 
   const filteredPrompts = useMemo(() => {
     if (!prompts) return [];
-    
+
     return prompts.filter((prompt) => {
       const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
-      const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
+      // Note: text matching is now handled by useSearchPrompts (FTS + semantic).
       // Tag filter with OR logic
-      const matchesTags = selectedTags.length === 0 || 
+      const matchesTags = selectedTags.length === 0 ||
         (prompt.tags && prompt.tags.some((tag) => selectedTags.includes(tag)));
-      
-      return matchesCategory && matchesSearch && matchesTags;
+
+      return matchesCategory && matchesTags;
     });
-  }, [prompts, selectedCategory, searchQuery, selectedTags]);
+  }, [prompts, selectedCategory, selectedTags]);
 
   const sortedPrompts = useMemo(() => {
+    // When searching, preserve hybrid ranking (FTS first, then semantic);
+    // only re-sort when the user explicitly picked a non-default sort.
+    if (hasSearch && sortBy === "trending") return filteredPrompts;
     return [...filteredPrompts].sort((a, b) => {
       if (sortBy === "rating") return Number(b.rating_avg) - Number(a.rating_avg);
       if (sortBy === "recent") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return b.copies_count - a.copies_count; // trending
     });
-  }, [filteredPrompts, sortBy]);
+  }, [filteredPrompts, sortBy, hasSearch]);
 
   return (
     <div className="min-h-screen bg-background">
