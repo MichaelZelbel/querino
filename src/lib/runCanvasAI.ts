@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type ArtifactType = "prompt" | "skill" | "workflow";
+export type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 export type RunCanvasAIArgs = {
   artifactType: ArtifactType;
@@ -27,6 +27,7 @@ const EDGE_FUNCTION_BY_TYPE: Record<ArtifactType, string> = {
   prompt: "prompt-coach",
   skill: "skill-coach",
   workflow: "workflow-coach",
+  prompt_kit: "prompt-kit-coach",
 };
 
 // ---------------------------------------------------------------------------
@@ -135,6 +136,7 @@ export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIRes
     prompt_id: artifactId === "draft" ? "draft" : artifactId,
     skill_id: artifactId === "draft" ? "draft" : artifactId,
     workflow_id: artifactId === "draft" ? "draft" : artifactId,
+    prompt_kit_id: artifactId === "draft" ? "draft" : artifactId,
     mode,
     message,
     canvas_content: canvasContent,
