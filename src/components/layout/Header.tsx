@@ -19,6 +19,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export function Header() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -143,6 +144,9 @@ export function Header() {
               <p>Search and Navigate (Ctrl+K)</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
