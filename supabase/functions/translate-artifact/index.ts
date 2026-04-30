@@ -1,4 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  callLovableAI,
+  assertCredits,
+  getCallerUserId,
+  CreditsExhaustedError,
+  RateLimitedError,
+  GatewayError,
+  DEFAULT_MODEL,
+  type ToolDefinition,
+} from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,12 +16,34 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const TOOL: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "translate_artifact",
+    description: "Return the translated artifact fields.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Translated title" },
+        description: { type: "string", description: "Translated description" },
+        content: { type: "string", description: "Translated content (preserve markdown, code blocks, and {{variables}})" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Translated tags (lowercase, contextual)",
+        },
+      },
+      required: ["title", "description", "content", "tags"],
+      additionalProperties: false,
+    },
+  },
+};
+
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user_id = await getCallerUserId(req);
     const {
       artifactType,
       title,
@@ -20,192 +52,124 @@ serve(async (req) => {
       tags,
       sourceLanguage,
       targetLanguage,
-      user_id,
     } = await req.json();
 
-    if (!targetLanguage || !sourceLanguage) {
+    if (!sourceLanguage || !targetLanguage) {
       return new Response(
         JSON.stringify({ error: "sourceLanguage and targetLanguage are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (sourceLanguage === targetLanguage) {
+      return new Response(
+        JSON.stringify({ error: "sourceLanguage and targetLanguage must differ" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Provider abstraction: default to "n8n", fallback to "lovable"
-    const provider = Deno.env.get("TRANSLATION_PROVIDER") || "lovable";
+    await assertCredits(user_id);
 
-    if (provider === "lovable") {
-      // Fallback: Lovable AI Gateway
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) {
-        return new Response(
-          JSON.stringify({ error: "LOVABLE_API_KEY is not configured" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const systemPrompt = `You are a professional translator. Translate the following ${artifactType || "artifact"} from ${sourceLanguage} to ${targetLanguage}.
+    const systemPrompt = `You are a professional translator. Translate the following ${artifactType || "artifact"} from ${sourceLanguage} to ${targetLanguage}.
 
 Rules:
-- Preserve all markdown formatting, structure, and syntax
-- Preserve template variables like {{variable}} exactly as-is
-- Translate tags contextually (they are short keywords/phrases)
-- Keep code blocks, URLs, and technical identifiers untranslated
-- Return the translation using the translate_artifact tool`;
+- Preserve all Markdown formatting, headings, lists, and structure exactly.
+- Preserve template variables like {{variable}}, [PLACEHOLDER], and $variables exactly as-is — never translate them.
+- Preserve code blocks, inline code, URLs, file paths, and technical identifiers untranslated.
+- Translate tags contextually (they are short keywords/phrases) into lowercase ${targetLanguage} equivalents.
+- Keep the original tone and register (formal/informal).
+- Return the result via the translate_artifact tool.`;
 
-      const userPrompt = `Title: ${title || ""}
+    // Truncate content to keep token usage predictable.
+    const truncatedContent = (content ?? "").toString().slice(0, 16000);
+    const userPrompt = `Title: ${title || ""}
 Description: ${description || ""}
+Tags: ${(tags || []).join(", ")}
+---
 Content:
-${content || ""}
-Tags: ${(tags || []).join(", ")}`;
+${truncatedContent}`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "translate_artifact",
-                description: "Return the translated artifact fields",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string", description: "Translated title" },
-                    description: { type: "string", description: "Translated description" },
-                    content: { type: "string", description: "Translated content (preserve markdown)" },
-                    tags: {
-                      type: "array",
-                      items: { type: "string" },
-                      description: "Translated tags",
-                    },
-                  },
-                  required: ["title", "description", "content", "tags"],
-                  additionalProperties: false,
-                },
-              },
-            },
-          ],
-          tool_choice: { type: "function", function: { name: "translate_artifact" } },
-        }),
-      });
+    const result = await callLovableAI({
+      user_id,
+      feature: "translate-artifact",
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [TOOL],
+      tool_choice: { type: "function", function: { name: "translate_artifact" } },
+      temperature: 0.2,
+      metadata: {
+        artifact: artifactType || "unknown",
+        source: sourceLanguage,
+        target: targetLanguage,
+        content_length: (content ?? "").length,
+      },
+    });
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        if (response.status === 402) {
-          return new Response(
-            JSON.stringify({ error: "AI credits exhausted. Please add credits to your workspace." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        const errText = await response.text();
-        console.error("AI Gateway error:", response.status, errText);
-        return new Response(
-          JSON.stringify({ error: "Translation failed" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const data = await response.json();
-      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-      if (!toolCall?.function?.arguments) {
-        console.error("No tool call in response:", JSON.stringify(data));
-        return new Response(
-          JSON.stringify({ error: "Translation failed: unexpected AI response" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      let translated: Record<string, unknown>;
-      try {
-        translated = typeof toolCall.function.arguments === "string"
-          ? JSON.parse(toolCall.function.arguments)
-          : toolCall.function.arguments;
-      } catch {
-        console.error("Failed to parse tool call arguments:", toolCall.function.arguments);
-        return new Response(
-          JSON.stringify({ error: "Translation failed: could not parse response" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(JSON.stringify(translated), {
+    const call = result.tool_calls[0];
+    if (!call?.function?.arguments) {
+      return new Response(JSON.stringify({ error: "Translation returned no result" }), {
+        status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Default: n8n webhook proxy (same pattern as suggest-claw-metadata)
-    const N8N_BASE_URL = Deno.env.get("N8N_BASE_URL");
-    if (!N8N_BASE_URL) {
-      return new Response(
-        JSON.stringify({ error: "N8N_BASE_URL not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let parsed: { title?: string; description?: string; content?: string; tags?: string[] };
+    try {
+      parsed = JSON.parse(call.function.arguments);
+    } catch (e) {
+      console.error("[translate-artifact] JSON parse error:", e);
+      return new Response(JSON.stringify({ error: "Invalid translation response" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log("Calling n8n webhook for translate-artifact, sourceLanguage:", sourceLanguage, "targetLanguage:", targetLanguage);
-
-    const n8nResponse = await fetch(`${N8N_BASE_URL}/webhook/translate-artifact`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": Deno.env.get("N8N_WEBHOOK_KEY") || "",
-      },
-      body: JSON.stringify({
-        artifactType,
-        title,
-        description,
-        content,
-        tags,
-        sourceLanguage,
-        targetLanguage,
-        user_id,
+    return new Response(
+      JSON.stringify({
+        title: (parsed.title ?? "").toString(),
+        description: (parsed.description ?? "").toString(),
+        content: (parsed.content ?? "").toString(),
+        tags: Array.isArray(parsed.tags) ? parsed.tags.map((t) => String(t)) : [],
       }),
-    });
-
-    if (!n8nResponse.ok) {
-      const errText = await n8nResponse.text();
-      console.error("n8n error:", n8nResponse.status, errText);
-      return new Response(
-        JSON.stringify({ error: "Translation failed via n8n" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (error) {
+    if (error instanceof CreditsExhaustedError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    const rawResult = await n8nResponse.json();
-    console.log("Raw n8n response:", JSON.stringify(rawResult));
-
-    // Handle the n8n response format: [{ output: { title, description, content, tags } }]
-    let result;
-    if (Array.isArray(rawResult) && rawResult.length > 0 && rawResult[0].output) {
-      result = rawResult[0].output;
-    } else if (rawResult.output) {
-      result = rawResult.output;
-    } else {
-      result = rawResult;
+    if (error instanceof RateLimitedError) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    return new Response(JSON.stringify(result), {
+    if (error instanceof GatewayError) {
+      console.error("[translate-artifact] Gateway error:", error.status, error.message);
+      return new Response(JSON.stringify({ error: "Upstream AI gateway error" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (
+      message === "Missing Authorization bearer token" ||
+      message === "Invalid auth token" ||
+      message === "Empty bearer token"
+    ) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.error("[translate-artifact] Error:", message);
+    return new Response(JSON.stringify({ error: "Translation failed" }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("translate-artifact error:", err);
-    return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   }
 });
