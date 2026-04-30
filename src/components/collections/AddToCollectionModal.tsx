@@ -17,7 +17,7 @@ import { toast } from "sonner";
 interface AddToCollectionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  itemType: 'prompt' | 'skill' | 'workflow';
+  itemType: 'prompt' | 'skill' | 'workflow' | 'prompt_kit' | 'claw';
   itemId: string;
 }
 

@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
   History, GitFork, Users, MessageSquarePlus, MessageSquare,
+  Pin, PinOff, FolderPlus, Activity as ActivityIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
@@ -23,6 +24,11 @@ import { CopyPromptKitToTeamModal } from "@/components/promptKits/CopyPromptKitT
 import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
+import { PromptKitReviewSection } from "@/components/promptKits/PromptKitReviewSection";
+import { usePinnedPromptKits } from "@/hooks/usePinnedPromptKits";
+import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { CommentsSection } from "@/components/comments";
+import { ActivitySidebar } from "@/components/activity";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -42,9 +48,30 @@ export default function PromptKitDetail() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copyTeamOpen, setCopyTeamOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
+  const [pinning, setPinning] = useState(false);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
+
+  const { isPinned: isKitPinned, togglePin: toggleKitPin } = usePinnedPromptKits();
+  const isPinned = kit?.id ? isKitPinned(kit.id) : false;
+
+  const handleTogglePin = async () => {
+    if (!user) {
+      toast.error("Sign in to pin prompt kits");
+      return;
+    }
+    if (!kit) return;
+    setPinning(true);
+    const { error } = await toggleKitPin(kit.id);
+    setPinning(false);
+    if (error) {
+      toast.error("Failed to update pin");
+      return;
+    }
+    toast.success(isPinned ? "Unpinned" : "Pinned!");
+  };
 
   const {
     suggestions,
@@ -307,6 +334,32 @@ export default function PromptKitDetail() {
               Suggest edit
             </Button>
           )}
+          {user && (
+            <Button
+              size="lg"
+              variant={isPinned ? "secondary" : "outline"}
+              onClick={handleTogglePin}
+              disabled={pinning}
+              className="gap-2"
+            >
+              {isPinned ? (
+                <><PinOff className="h-4 w-4" />Unpin</>
+              ) : (
+                <><Pin className="h-4 w-4" />Pin</>
+              )}
+            </Button>
+          )}
+          {user && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setCollectionOpen(true)}
+              className="gap-2"
+            >
+              <FolderPlus className="h-4 w-4" />
+              Add to collection
+            </Button>
+          )}
         </div>
 
           {items.length === 0 ? (
@@ -350,11 +403,24 @@ export default function PromptKitDetail() {
             </div>
           )}
 
+          {/* Ratings & Reviews */}
+          <PromptKitReviewSection
+            kitId={kit.id}
+            kitSlug={kit.slug || undefined}
+            userId={user?.id}
+            ratingAvg={kit.rating_avg || 0}
+            ratingCount={kit.rating_count || 0}
+          />
+
           {/* Tabbed Content Section */}
-          <Tabs defaultValue="suggestions" className="mt-12">
+          <Tabs defaultValue="comments" className="mt-8">
             <TabsList>
-              <TabsTrigger value="suggestions" className="gap-2">
+              <TabsTrigger value="comments" className="gap-2">
                 <MessageSquare className="h-4 w-4" />
+                Comments
+              </TabsTrigger>
+              <TabsTrigger value="suggestions" className="gap-2">
+                <MessageSquarePlus className="h-4 w-4" />
                 Suggestions
                 {openCount > 0 && (
                   <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
@@ -362,7 +428,16 @@ export default function PromptKitDetail() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="activity" className="gap-2">
+                <ActivityIcon className="h-4 w-4" />
+                Activity
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="comments" className="mt-6">
+              <CommentsSection itemType="prompt_kit" itemId={kit.id} teamId={(kit as any).team_id} />
+            </TabsContent>
+
             <TabsContent value="suggestions" className="mt-6">
               <SuggestionsTab
                 suggestions={suggestions}
@@ -379,10 +454,21 @@ export default function PromptKitDetail() {
                 onApplySuggestion={handleApplySuggestion}
               />
             </TabsContent>
+
+            <TabsContent value="activity" className="mt-6">
+              <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
       <Footer />
+
+      <AddToCollectionModal
+        open={collectionOpen}
+        onOpenChange={setCollectionOpen}
+        itemType="prompt_kit"
+        itemId={kit.id}
+      />
 
       <SuggestEditModal
         open={suggestOpen}

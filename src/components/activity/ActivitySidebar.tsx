@@ -4,7 +4,7 @@ import { ActivityTimeline } from "./ActivityTimeline";
 
 interface ActivitySidebarProps {
   itemId: string;
-  itemType: "prompt" | "skill" | "workflow" | "collection";
+  itemType: "prompt" | "skill" | "workflow" | "collection" | "prompt_kit" | "claw";
 }
 
 export function ActivitySidebar({ itemId, itemType }: ActivitySidebarProps) {

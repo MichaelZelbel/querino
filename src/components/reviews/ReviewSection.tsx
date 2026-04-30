@@ -11,7 +11,7 @@ import type { ReviewWithUser } from "@/types/review";
 
 interface ReviewSectionProps {
   itemId: string;
-  itemType: "prompt" | "skill" | "workflow";
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
   itemSlug?: string;
   userId?: string;
   ratingAvg: number;
@@ -60,6 +60,10 @@ export function ReviewSection({
         return `/auth?redirect=/skills/${slug}`;
       case "workflow":
         return `/auth?redirect=/workflows/${slug}`;
+      case "prompt_kit":
+        return `/auth?redirect=/prompt-kits/${slug}`;
+      case "claw":
+        return `/auth?redirect=/claws/${slug}`;
       default:
         return `/auth`;
     }

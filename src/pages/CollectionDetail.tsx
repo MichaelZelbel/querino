@@ -15,6 +15,7 @@ import {
   FileText,
   BookOpen,
   Workflow,
+  Package,
   Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +29,7 @@ import {
 import { usePrompts } from "@/hooks/usePrompts";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
+import { usePromptKits } from "@/hooks/usePromptKits";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
@@ -44,6 +46,7 @@ export default function CollectionDetail() {
   const { data: prompts } = usePrompts();
   const { data: skills } = useSkills();
   const { data: workflows } = useWorkflows();
+  const { data: promptKits } = usePromptKits({});
   
   const createCollection = useCreateCollection();
   const addToCollection = useAddToCollection();
@@ -61,10 +64,12 @@ export default function CollectionDetail() {
         data = skills?.find((s) => s.id === item.item_id);
       } else if (item.item_type === "workflow") {
         data = workflows?.find((w) => w.id === item.item_id);
+      } else if (item.item_type === "prompt_kit") {
+        data = promptKits?.find((k: any) => k.id === item.item_id);
       }
       return { ...item, data };
     }) || [];
-  }, [items, prompts, skills, workflows]);
+  }, [items, prompts, skills, workflows, promptKits]);
 
   // Filter items by type
   const filteredItems = useMemo(() => {
@@ -74,7 +79,7 @@ export default function CollectionDetail() {
 
   // Count items by type
   const itemCounts = useMemo(() => {
-    const counts = { prompt: 0, skill: 0, workflow: 0 };
+    const counts = { prompt: 0, skill: 0, workflow: 0, prompt_kit: 0 };
     itemsWithData.forEach((item) => {
       if (item.item_type in counts) {
         counts[item.item_type as keyof typeof counts]++;
@@ -165,6 +170,8 @@ export default function CollectionDetail() {
         return <BookOpen className="h-4 w-4" />;
       case "workflow":
         return <Workflow className="h-4 w-4" />;
+      case "prompt_kit":
+        return <Package className="h-4 w-4" />;
       default:
         return null;
     }
@@ -178,6 +185,8 @@ export default function CollectionDetail() {
         return `/skills/${item.data?.slug || item.item_id}`;
       case "workflow":
         return `/workflows/${item.data?.slug || item.item_id}`;
+      case "prompt_kit":
+        return `/prompt-kits/${item.data?.slug || item.item_id}`;
       default:
         return "#";
     }
@@ -286,6 +295,15 @@ export default function CollectionDetail() {
               {itemCounts.workflow > 0 && (
                 <Badge variant="secondary" className="h-5 px-1.5">
                   {itemCounts.workflow}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="prompt_kit" className="gap-2">
+              <Package className="h-3.5 w-3.5" />
+              Prompt Kits
+              {itemCounts.prompt_kit > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5">
+                  {itemCounts.prompt_kit}
                 </Badge>
               )}
             </TabsTrigger>
