@@ -319,6 +319,36 @@ export default function PromptKitDetail() {
         </div>
       </main>
       <Footer />
+
+      {isAuthor && (
+        <PromptKitVersionHistoryPanel
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          promptKitId={kit.id}
+          currentKit={{
+            id: kit.id,
+            title: kit.title,
+            description: kit.description,
+            content: kit.content,
+            tags: kit.tags,
+          }}
+        />
+      )}
+
+      {user && hasTeams && (
+        <CopyPromptKitToTeamModal
+          open={copyTeamOpen}
+          onOpenChange={setCopyTeamOpen}
+          promptKit={{
+            id: kit.id,
+            title: kit.title,
+            description: kit.description,
+            content: kit.content,
+            category: kit.category,
+            tags: kit.tags,
+          }}
+        />
+      )}
     </div>
   );
 }
