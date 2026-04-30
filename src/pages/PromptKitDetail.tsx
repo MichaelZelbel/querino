@@ -35,6 +35,7 @@ import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { Languages } from "lucide-react";
+import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -398,46 +399,11 @@ export default function PromptKitDetail() {
           )}
         </div>
 
-          {items.length === 0 ? (
-            <div className="rounded-xl border border-border bg-muted/30 p-6">
-              <p className="text-muted-foreground">
-                This kit doesn't contain any prompts yet (no <code className="font-mono">## Prompt:</code> headings found).
-              </p>
-              <pre className="mt-4 whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
-                {kit.content}
-              </pre>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {items.map((item) => (
-                <div key={item.index} className="rounded-xl border border-border bg-card overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Badge variant="secondary" className="shrink-0">#{item.index}</Badge>
-                      <h3 className="font-semibold text-foreground truncate">
-                        {item.title || "Untitled"}
-                      </h3>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant={copiedIdx === item.index ? "success" : "outline"}
-                      onClick={() => handleCopyItem(item.body, item.index)}
-                      className="gap-1.5 shrink-0"
-                    >
-                      {copiedIdx === item.index ? (
-                        <><Check className="h-3.5 w-3.5" />Copied</>
-                      ) : (
-                        <><Copy className="h-3.5 w-3.5" />Copy this prompt</>
-                      )}
-                    </Button>
-                  </div>
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed p-4">
-                    {item.body || <span className="text-muted-foreground italic">(empty)</span>}
-                  </pre>
-                </div>
-              ))}
-            </div>
-          )}
+          <PromptKitArticleView
+            content={kit.content || ""}
+            onCopyItem={(body, idx) => handleCopyItem(body, idx)}
+            copiedIdx={copiedIdx}
+          />
 
           {/* Ratings & Reviews */}
           <PromptKitReviewSection

@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LineNumberedEditor } from "@/components/editors/LineNumberedEditor";
+import { PromptKitRichEditor } from "@/components/editors/PromptKitRichEditor";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -30,7 +30,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
-const DEFAULT_TEMPLATE = `## Prompt: My first prompt
+const DEFAULT_TEMPLATE = `# My Prompt Kit
+
+A short intro explaining what this kit is for and how to use it.
+
+## How to use this kit
+
+Walk readers through when to run each prompt and what to expect.
+
+## Prompt: My first prompt
 
 Write your prompt here…
 `;
@@ -259,28 +267,20 @@ export default function PromptKitNew() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="content">
-                        Kit Content (Markdown) *
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
-                        </span>
-                        <Button type="button" size="sm" variant="outline" onClick={handleAddPrompt} className="gap-1.5 h-7">
-                          <Plus className="h-3.5 w-3.5" />
-                          Add Prompt
-                        </Button>
-                      </div>
+                      <Label htmlFor="content">Kit Content *</Label>
+                      <span className="text-xs text-muted-foreground">
+                        {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Separate items with a heading like <code className="font-mono">## Prompt: Your title</code>.
-                      Everything until the next such heading is one prompt's body.
+                      Write an intro and any commentary as normal text. Use the{" "}
+                      <span className="font-medium text-foreground">Insert prompt</span> button to add a
+                      copyable prompt block. Each block becomes a{" "}
+                      <code className="font-mono">## Prompt: …</code> heading on save.
                     </p>
-                    <LineNumberedEditor
-                      id="content"
+                    <PromptKitRichEditor
                       value={content}
                       onChange={setContent}
-                      placeholder="## Prompt: Title&#10;&#10;Prompt body here…"
                       error={!!errors.content}
                     />
                     {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
