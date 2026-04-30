@@ -343,6 +343,18 @@ export default function PromptKitEdit() {
 
                   <LanguageSelect value={formData.language} onChange={(v) => setFormData({ ...formData, language: v })} />
 
+                  {currentSlug && user && (
+                    <PromptKitSlugEditor
+                      promptKitId={kitId!}
+                      currentSlug={currentSlug}
+                      userId={user.id}
+                      onSlugChanged={(s) => {
+                        setCurrentSlug(s);
+                        navigate(`/prompt-kits/${s}/edit`, { replace: true });
+                      }}
+                    />
+                  )}
+
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>
                       <Label htmlFor="visibility" className="text-base">Make this kit public</Label>
@@ -386,6 +398,22 @@ export default function PromptKitEdit() {
         </div>
       </main>
       <Footer />
+
+      {kitId && (
+        <PromptKitVersionHistoryPanel
+          open={versionHistoryOpen}
+          onOpenChange={setVersionHistoryOpen}
+          promptKitId={kitId}
+          currentKit={{
+            id: kitId,
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+            tags: formData.tags,
+          }}
+          onRestoreComplete={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }
