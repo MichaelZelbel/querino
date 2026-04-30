@@ -371,29 +371,32 @@ export default function PromptKitNew() {
               </div>
             </div>
 
-            {/* Outline panel */}
-            <div className="hidden lg:block w-[280px] shrink-0 sticky top-24 self-start">
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                  <ListTree className="h-4 w-4 text-primary" />
-                  Outline
+            {/* Right column: Outline + AI Coach (desktop only) */}
+            {!isMobile && (
+              <div className="w-[380px] shrink-0 flex flex-col gap-4 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+                <div className="rounded-xl border border-border bg-card p-4 shrink-0">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                    <ListTree className="h-4 w-4 text-primary" />
+                    Outline
+                  </div>
+                  {items.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No prompts detected yet. Use a <code className="font-mono">## Prompt:</code> heading.
+                    </p>
+                  ) : (
+                    <ol className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {items.map((item) => (
+                        <li key={item.index} className="text-sm">
+                          <span className="text-muted-foreground mr-1.5">{item.index}.</span>
+                          <span className="text-foreground">{item.title || "Untitled"}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                 </div>
-                {items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    No prompts detected yet. Use a <code className="font-mono">## Prompt:</code> heading.
-                  </p>
-                ) : (
-                  <ol className="space-y-1.5">
-                    {items.map((item) => (
-                      <li key={item.index} className="text-sm">
-                        <span className="text-muted-foreground mr-1.5">{item.index}.</span>
-                        <span className="text-foreground">{item.title || "Untitled"}</span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                <div className="flex-1 min-h-0">{coachPanel}</div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
