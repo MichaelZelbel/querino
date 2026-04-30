@@ -27,7 +27,7 @@ import { generateSlug } from "@/hooks/useGenerateSlug";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
 import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getOrCreateDraftSessionId } from "@/lib/runCanvasAI";
+import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 const DEFAULT_TEMPLATE = `## Prompt: My first prompt
