@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type ArtifactType = "prompt" | "skill" | "workflow" | "claw";
+type ArtifactType = "prompt" | "skill" | "workflow";
 
 /**
  * Generates a Windows Explorer-style duplicate title.
@@ -50,7 +50,7 @@ export function useDuplicateArtifact() {
     setDuplicating(true);
 
     try {
-      const table = type === "prompt" ? "prompts" : type === "skill" ? "skills" : type === "workflow" ? "workflows" : "claws";
+      const table = type === "prompt" ? "prompts" : type === "skill" ? "skills" : "workflows";
 
       // Fetch existing titles for this user to determine numbering
       const { data: existing } = await supabase
@@ -118,28 +118,6 @@ export function useDuplicateArtifact() {
           };
           break;
 
-        case "claw":
-          insertData = {
-            title: newTitle,
-            description: artifact.description || null,
-            content: artifact.content || null,
-            category: artifact.category || null,
-            tags: artifact.tags || [],
-            source: artifact.source || null,
-            author_id: userId,
-            published: false,
-            rating_avg: 0,
-            rating_count: 0,
-            language: artifact.language || "en",
-            team_id: artifact.team_id || null,
-            skill_source_type: artifact.skill_source_type || "inline",
-            skill_source_ref: artifact.skill_source_ref || null,
-            skill_source_path: artifact.skill_source_path || null,
-            skill_source_version: artifact.skill_source_version || null,
-            skill_md_content: artifact.skill_md_content || null,
-            skill_md_cached: artifact.skill_md_cached || null,
-          };
-          break;
       }
 
       const { data, error } = await (supabase
@@ -150,7 +128,7 @@ export function useDuplicateArtifact() {
 
       if (error) throw error;
 
-      const typeLabel = type === "claw" ? "Claw" : type.charAt(0).toUpperCase() + type.slice(1);
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
       toast.success(`${typeLabel} duplicated as "${newTitle}"`);
 
       // Navigate to edit page
@@ -163,9 +141,6 @@ export function useDuplicateArtifact() {
           break;
         case "workflow":
           editPath = `/workflows/${data.slug}/edit`;
-          break;
-        case "claw":
-          editPath = `/claws/${data.slug}/edit`;
           break;
       }
 
