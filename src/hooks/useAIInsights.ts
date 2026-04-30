@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLogActivity } from './useLogActivity';
 import type { AIInsights, AIQuality } from '@/types/aiInsights';
 
-type ItemType = 'prompt' | 'skill' | 'workflow' | 'claw';
+type ItemType = 'prompt' | 'skill' | 'workflow';
 
 interface ArtefactData {
   title: string;
@@ -67,14 +67,6 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       } else if (itemType === 'workflow') {
         const { data, error } = await supabase
           .from('workflows')
-          .select('title, description, content, tags')
-          .eq('id', itemId)
-          .single();
-        if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content || '', tags: data.tags };
-      } else if (itemType === 'claw') {
-        const { data, error } = await supabase
-          .from('claws')
           .select('title, description, content, tags')
           .eq('id', itemId)
           .single();
@@ -152,14 +144,11 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
         quality: (upserted.quality as unknown as AIQuality) || null,
       });
 
-      // Log activity (only for types that support it)
-      if (itemType !== 'claw') {
-        await logActivity({
-          action: isRefresh ? 'ai_insights_refreshed' : 'ai_insights_generated',
-          itemType: itemType as 'prompt' | 'skill' | 'workflow',
-          itemId,
-        });
-      }
+      await logActivity({
+        action: isRefresh ? 'ai_insights_refreshed' : 'ai_insights_generated',
+        itemType: itemType as 'prompt' | 'skill' | 'workflow',
+        itemId,
+      });
     } catch (err) {
       console.error('Error generating insights:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate insights');

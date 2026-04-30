@@ -23,17 +23,16 @@ interface ArtifactStats {
   synced: number;
 }
 
-type StatsMap = Record<"prompt" | "skill" | "claw" | "workflow", ArtifactStats>;
+type StatsMap = Record<"prompt" | "skill" | "workflow", ArtifactStats>;
 
 const ARTIFACT_LABELS: Record<string, string> = {
   prompt: "Prompts",
   skill: "Skills",
-  claw: "Claws",
   workflow: "Workflows",
 };
 
-const TABLES = ["prompts", "skills", "claws", "workflows"] as const;
-const TYPES = ["prompt", "skill", "claw", "workflow"] as const;
+const TABLES = ["prompts", "skills", "workflows"] as const;
+const TYPES = ["prompt", "skill", "workflow"] as const;
 
 export function MenerioBulkSync() {
   const { user } = useAuthContext();

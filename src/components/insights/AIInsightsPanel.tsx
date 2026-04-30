@@ -11,7 +11,7 @@ import { useAIInsights } from '@/hooks/useAIInsights';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAICreditsGate } from '@/hooks/useAICreditsGate';
 
-type ItemType = 'prompt' | 'skill' | 'workflow' | 'claw';
+type ItemType = 'prompt' | 'skill' | 'workflow';
 
 interface AIInsightsPanelProps {
   itemType: ItemType;
