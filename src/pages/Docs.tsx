@@ -98,6 +98,7 @@ export default function Docs() {
                 { icon: Wand2, label: "AI Tools", href: "#ai-tools" },
                 { icon: History, label: "Versioning", href: "#versioning" },
                 { icon: FileText, label: "Import & Export", href: "#import-export" },
+                { icon: GitBranch, label: "GitHub Sync", href: "#github-sync" },
                 { icon: Terminal, label: "MCP Server", href: "#mcp" },
                 { icon: Cloud, label: "Menerio", href: "#menerio" },
               ].map((item) => (
@@ -580,14 +581,97 @@ export default function Docs() {
 
               <h3 className="text-lg font-semibold mt-8 mb-4">GitHub Sync</h3>
               <p className="text-muted-foreground mb-4">
-                For automated backups, connect your GitHub account in <Link to="/settings" className="text-primary hover:underline">Settings</Link>. Once configured, Querino can sync your library to a GitHub repository. Your artifacts are stored as Markdown files, organized in folders by type.
+                Need automated backups instead of one-off downloads? Querino can push your entire library to a GitHub repository as Markdown files. See the dedicated <a href="#github-sync" className="text-primary hover:underline">GitHub Sync</a> section below for setup instructions.
               </p>
-
-              <Tip>
-                GitHub Sync works for both personal libraries and team workspaces. Each workspace has its own sync configuration.
-              </Tip>
             </div>
           </section>
+
+          {/* ── GitHub Sync ──────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={GitBranch} title="GitHub Sync" id="github-sync" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                GitHub Sync mirrors your Querino artifacts to a GitHub repository as Markdown files. Use it for off-site backups, version control in Git, parallel editing in your IDE, or to feed your prompts into other tooling.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">How it works</h3>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
+                <li><strong>One-way sync</strong> — Querino → GitHub. Edits made directly on GitHub are not pulled back.</li>
+                <li><strong>Markdown with YAML frontmatter</strong> — same format as Import &amp; Export, so files stay readable in any editor.</li>
+                <li><strong>Organized by type</strong> — prompts, prompt kits, skills and workflows are written to subfolders inside your chosen folder.</li>
+                <li><strong>Deduplicated</strong> — each artifact has a stable filename derived from its slug, so re-syncing updates the same file rather than creating duplicates.</li>
+                <li><strong>Workspace-aware</strong> — your personal workspace and each team workspace have independent configurations.</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Setup</h3>
+              <ol className="list-decimal pl-6 space-y-3 text-muted-foreground mb-4">
+                <li>
+                  <strong>Create a Personal Access Token (Classic)</strong> on GitHub at{" "}
+                  <a
+                    href="https://github.com/settings/tokens/new?scopes=repo&description=Querino%20Sync"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    github.com/settings/tokens
+                  </a>
+                  . The only scope you need is <code>repo</code>. Copy the token immediately — GitHub only shows it once.
+                </li>
+                <li>
+                  <strong>Create or pick a target repository.</strong> It can be public or private. Make sure the branch you want to push to already exists.
+                </li>
+                <li>
+                  Open <Link to="/settings" className="text-primary hover:underline">Settings → Integrations → GitHub Sync</Link> and paste your token.
+                </li>
+                <li>
+                  Fill in the <strong>repository</strong> in <code>owner/name</code> format (e.g. <code>jane-doe/my-prompts</code>), the <strong>branch</strong> (default <code>main</code>), and an optional <strong>folder path</strong> like <code>querino</code> if you want everything nested under a subfolder.
+                </li>
+                <li>
+                  Click <strong>Test Connection</strong>. If it turns green, click <strong>Enable GitHub Sync</strong> and then <strong>Save GitHub Settings</strong>.
+                </li>
+              </ol>
+
+              <Tip>
+                Use a token <strong>fine-grained</strong> only to the target repository if you prefer least-privilege access — make sure to grant <em>Contents: Read &amp; Write</em>.
+              </Tip>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Personal vs. Team sync</h3>
+              <p className="text-muted-foreground mb-4">
+                Each workspace has its own sync settings:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
+                <li><strong>Personal workspace</strong> — only you push, using your own token.</li>
+                <li><strong>Team workspace</strong> — the team's owner or an admin configures the shared repository. Members with editor access (or higher) can trigger syncs using a token they store on their own profile, scoped to that team.</li>
+              </ul>
+              <p className="text-muted-foreground mb-4">
+                Switch workspaces with the workspace picker in the header before opening Settings — the GitHub Sync card always reflects the active workspace.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Repository layout</h3>
+              <p className="text-muted-foreground mb-4">
+                Inside the folder you configured, Querino creates one subfolder per artifact type:
+              </p>
+              <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto"><code>{`<your-folder>/
+├── prompts/
+│   └── my-research-prompt.md
+├── prompt-kits/
+│   └── product-launch-kit.md
+├── skills/
+│   └── code-review.md
+└── workflows/
+    └── content-pipeline.md`}</code></pre>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Troubleshooting</h3>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
+                <li><strong>"Repository not found"</strong> — double-check the <code>owner/name</code> format and that your token has access to that repo.</li>
+                <li><strong>"Bad credentials"</strong> — the token expired or was revoked. Generate a new one and paste it again.</li>
+                <li><strong>Push fails on a protected branch</strong> — either point Querino at an unprotected branch or relax your branch protection rules for the token's user.</li>
+                <li><strong>Nothing happens after saving</strong> — make sure the <em>Enable GitHub Sync</em> switch is on. Without it, Querino stores your config but won't push.</li>
+              </ul>
+            </div>
+          </section>
+
 
           {/* ── Reviews, Comments & Suggestions ────────────────── */}
           <section className="scroll-mt-24">
