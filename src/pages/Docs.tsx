@@ -125,7 +125,7 @@ export default function Docs() {
             
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino is your home for AI artifacts — prompts, skills, and workflows. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
+                Querino is your home for AI artifacts — prompts, prompt kits, skills, workflows, and claws. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
               </p>
               
               <Card className="mb-6">
@@ -151,7 +151,7 @@ export default function Docs() {
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
                     <div>
                       <p className="font-medium">Create your first artifact</p>
-                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, skill, or workflow. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
+                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, prompt kit, skill, workflow, or claw. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
