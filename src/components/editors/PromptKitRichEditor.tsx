@@ -41,7 +41,9 @@ export function PromptKitRichEditor({
         heading: { levels: [1, 2, 3] },
         codeBlock: { HTMLAttributes: { class: "rounded-md" } },
         link: false,
-      }),
+        // StarterKit may bundle Underline in newer versions — disable to avoid duplicate.
+        underline: false,
+      } as any),
       Underline,
       Placeholder.configure({ placeholder }),
       Link.configure({
