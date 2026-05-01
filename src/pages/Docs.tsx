@@ -100,7 +100,6 @@ export default function Docs() {
                 { icon: FileText, label: "Import & Export", href: "#import-export" },
                 { icon: Terminal, label: "MCP Server", href: "#mcp" },
                 { icon: Cloud, label: "Menerio", href: "#menerio" },
-                { icon: Crown, label: "Premium", href: "#premium" },
               ].map((item) => (
                 <a
                   key={item.label}
