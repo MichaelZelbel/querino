@@ -678,7 +678,8 @@ export default function Docs() {
                 <li><strong>"Repository not found"</strong> — double-check the <code>owner/name</code> format and that your token has access to that repo.</li>
                 <li><strong>"Bad credentials"</strong> — the token expired or was revoked. Generate a new one and paste it again.</li>
                 <li><strong>Push fails on a protected branch</strong> — either point Querino at an unprotected branch or relax your branch protection rules for the token's user.</li>
-                <li><strong>Nothing happens after saving</strong> — make sure the <em>Enable GitHub Sync</em> switch is on. Without it, Querino stores your config but won't push.</li>
+                <li><strong>Nothing happens after saving</strong> — make sure the <em>Enable GitHub Sync</em> switch is on and a valid token + repository are saved. Without it, queue entries are marked <em>skipped</em> and never reach GitHub.</li>
+                <li><strong>My change isn't on GitHub yet</strong> — sync runs every ~30 seconds in the background, so allow up to a minute. If it still doesn't appear, check Settings → GitHub Sync for any error message on the most recent attempt.</li>
               </ul>
             </div>
           </section>
