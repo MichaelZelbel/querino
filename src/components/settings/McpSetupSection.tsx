@@ -15,6 +15,12 @@ const TOOL_LIST = [
   "create_prompt – Create a new prompt",
   "update_prompt – Update an existing prompt",
   "delete_prompt – Delete a prompt",
+  "list_prompt_kits – List your prompt kits",
+  "search_prompt_kits – Search prompt kits by keyword",
+  "get_prompt_kit – Get full prompt kit details",
+  "create_prompt_kit – Create a new prompt kit",
+  "update_prompt_kit – Update an existing prompt kit",
+  "delete_prompt_kit – Delete a prompt kit",
   "list_skills – List your skills",
   "search_skills – Search skills by keyword",
   "get_skill – Get full skill details",
@@ -27,12 +33,6 @@ const TOOL_LIST = [
   "create_workflow – Create a new workflow",
   "update_workflow – Update an existing workflow",
   "delete_workflow – Delete a workflow",
-  "list_claws – List your claws",
-  "search_claws – Search claws by keyword",
-  "get_claw – Get full claw details",
-  "create_claw – Create a new claw",
-  "update_claw – Update an existing claw",
-  "delete_claw – Delete a claw",
   "list_collections – List your collections",
   "get_collection – Get collection with items",
   "create_collection – Create a new collection",
@@ -43,7 +43,7 @@ const TOOL_LIST = [
 
 function buildPromptText() {
   const toolsBullets = TOOL_LIST.map((t) => `• ${t}`).join("\n");
-  return `Please connect to my Querino account via its MCP server so you can help me manage my AI artifacts (prompts, skills, claws, workflows, collections).
+  return `Please connect to my Querino account via its MCP server so you can help me manage my AI artifacts (prompts, prompt kits, skills, workflows, collections).
 
 === 1. CONNECTION DETAILS ===
 
@@ -57,27 +57,31 @@ When sending requests, include both of these headers:
   Accept: application/json, text/event-stream
   Content-Type: application/json
 
-Replace <QUERINO_MCP_TOKEN> with the long-lived Querino MCP token I will give you next. The token starts with "qrn_mcp_". It does NOT expire after 1 hour — it is valid until I revoke it (or until its optional expiration date). If you get 401 with a message about an invalid or revoked token, ask me for a new one.
+About <QUERINO_MCP_TOKEN>:
+• It is a long-lived personal access token I generate in Querino under Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token". The token is shown only once at creation, so I copy it then and paste it to you here.
+• It always starts with the prefix "qrn_mcp_". It is NOT my Supabase session JWT and NOT my account password.
+• It does NOT expire after 1 hour. It stays valid until I revoke it in the same settings page (or until the optional expiration date I set when creating it).
+• If you get HTTP 401 with a message about an invalid, expired, or revoked token, stop and ask me for a new one — do not retry with the old one.
 
 === 2. VERIFY THE CONNECTION ===
 
 After registering the server, please run this verification flow and report back what you got:
 
 1. Send an "initialize" request and confirm the server name and protocol version.
-2. Call "tools/list" and confirm you can see Querino tools (e.g. list_prompts, get_my_profile, ...).
+2. Call "tools/list" and confirm you can see Querino tools (e.g. list_prompts, list_prompt_kits, get_my_profile, ...).
 3. Call "tools/call" with name "get_my_profile" and no arguments to confirm authentication works end-to-end.
 
 If any of these fail, tell me the exact error (status code + message) instead of silently retrying.
 
 === 3. QUERINO DATA MODEL (decide which tool family to use) ===
 
-• Prompts → reusable LLM instructions / templates. Use the prompt_* tools when the user talks about "a prompt", instructions for an LLM, or text they want to reuse.
-• Skills → structured, higher-level capabilities (can include OpenClaw-style skills). Use the skill_* tools when the user talks about a capability, framework, or "how the agent should do X".
-• Claws → low-level executable logic units used by skills. Use the claw_* tools when the user talks about a specific tool, action, or callable unit consumed by a skill.
-• Workflows → multi-step AI processes that combine prompts and/or skills. Use the workflow_* tools when the user talks about a process, pipeline, or sequence of steps.
-• Collections → user-curated groups of mixed items (prompts, skills, claws, workflows). Use the collection_* tools when the user talks about grouping, organizing, or bundling items.
+• Prompts → single reusable LLM instructions / templates. Use the prompt_* tools when I talk about "a prompt", instructions for an LLM, or text I want to reuse.
+• Prompt Kits → curated bundles of multiple related prompts kept together as one Markdown document (sections like "## Prompt: <Title>"). Use the prompt_kit_* tools when I talk about a kit, a bundle/collection of prompts shipped together, or a multi-prompt template.
+• Skills → structured, higher-level capabilities / frameworks (Markdown-based). Use the skill_* tools when I talk about a capability, framework, or "how the agent should do X".
+• Workflows → multi-step AI processes that combine prompts and/or skills. Use the workflow_* tools when I talk about a process, pipeline, or sequence of steps.
+• Collections → user-curated groups of mixed items (prompts, prompt kits, skills, workflows). Use the collection_* tools when I talk about grouping, organizing, or bundling items across types.
 
-If you're unsure which family applies, ask one short clarifying question instead of guessing.
+If you're unsure which family applies, ask one short clarifying question instead of guessing. In particular: a single prompt → prompt_*; several prompts shipped together as one document → prompt_kit_*; a mixed grouping I curate → collection_*.
 
 === 4. AVAILABLE TOOLS ===
 
