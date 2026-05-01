@@ -1151,38 +1151,61 @@ Execute this test scenario:
 
 ---
 
-## TS-21: GitHub Sync Configuration
+## TS-21: GitHub Sync Configuration & Auto-Sync
 
 **Persona:** Peter (Premium Gift)
-**Goal:** Verify GitHub sync UI at personal and team level.
-**References:** TC-GITHUB-001/002
+**Goal:** Verify GitHub sync UI at personal and team level AND validate the automatic save/delete sync pipeline (~30s debounce via cron).
+**References:** TC-GITHUB-001 to TC-GITHUB-007
 
 ```
 Execute this test scenario:
 
 1. Log in as Peter (peter@pro.com / Pell@234)
 
---- Personal GitHub Sync ---
+--- Personal GitHub Sync UI ---
 2. Navigate to /settings
 3. Find GitHub Sync section
 4. Validate fields: Repository, Branch, Folder, GitHub Token
 5. Validate a Sync Enable toggle is present
-6. Do NOT enter real credentials
+6. Do NOT enter real credentials unless a dedicated test repo + PAT are available
 
 --- Library Sync Button ---
 7. Navigate to /library
-8. Look for "Sync to GitHub" button
+8. Look for "Sync to GitHub" button (manual full-resync)
 9. Validate the button is present (may be disabled if not configured)
 
+--- Auto-Sync on Save (only if test repo + PAT are configured) ---
+10. Edit an existing prompt: change title or content, save
+11. Wait ~30–60 seconds
+12. Open the connected GitHub repo
+13. Validate a new commit "Querino: sync prompt <title>" exists and the file content matches
+
+--- Stats-Only Updates Must NOT Sync ---
+14. From another account, copy or rate the same prompt to bump rating/copies counters
+15. Wait ~60 seconds
+16. Validate that NO additional commit was created for the prompt
+
+--- Auto-Sync on Delete ---
+17. Delete the prompt from My Library
+18. Wait ~30–60 seconds
+19. Validate a "Querino: delete prompt …" commit and that the .md file is removed
+
+--- Sync Disabled / Not Configured ---
+20. Disable GitHub Sync in /settings (or use an account without PAT)
+21. Edit and save another prompt; wait ~60 seconds
+22. Validate no error toast appears to the user
+23. (Optional admin) Validate the queue entry has status='skipped', last_error='github_sync_not_configured'
+
 --- Team GitHub Sync ---
-10. Create a team: "TS21 - Sync Team"
-11. Navigate to Team Settings
-12. Validate GitHub Sync fields are visible at team level
-13. Validate separate repo/branch/folder fields for the team
+24. Create a team: "TS21 - Sync Team"
+25. Navigate to Team Settings
+26. Validate GitHub Sync fields are visible at team level (separate repo/branch/folder)
+27. (If team test repo + PAT available) Switch workspace to the team, edit a team artifact, save
+28. Wait ~30–60 seconds and validate the commit appears in the TEAM repo (not personal)
 
 --- Cleanup ---
-14. Delete "TS21 - Sync Team"
-15. Log all results in your test run document.
+29. Delete "TS21 - Sync Team"
+30. Log all results in your test run document.
 ```
 
 ---
