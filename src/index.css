@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts loaded via <link> in index.html (Bricolage Grotesque, Inter, JetBrains Mono) */
 
 @layer base {
   :root {
@@ -42,10 +42,15 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* Querino brand: indigo primary + coral warm accent */
+    --accent-warm: 16 100% 74%;       /* #FF9B7A */
+    --accent-warm-foreground: 18 78% 27%;
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(239 67% 59%) 0%, hsl(259 67% 65%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 14% 97%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 14% 98%) 100%);
+    --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(210 11% 14% / 0.05);
@@ -97,6 +102,11 @@
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5);
     --shadow-glow: 0 0 20px hsl(239 67% 65% / 0.25);
 
+    /* Querino brand (dark variants) */
+    --accent-warm: 18 100% 79%;       /* #FFB597 */
+    --accent-warm-foreground: 12 78% 12%;
+    --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
+
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 210 14% 97%;
     --sidebar-primary: 239 67% 65%;
@@ -119,6 +129,7 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
+    letter-spacing: -0.025em;
   }
 
   code, pre {
@@ -183,4 +194,141 @@
   pointer-events: none;
   float: left;
   height: 0;
+}
+
+/* ============================================================
+   Querino hero — stage, mascot, typing prompt, floating cards
+   Tokens: --primary (indigo), --accent-warm (coral), --grad-primary
+   ============================================================ */
+
+.querino-grad-text {
+  background-image: var(--grad-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* The stage that holds Quentin */
+.hero-stage {
+  position: relative;
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.08) 0%,
+    hsl(var(--accent-warm) / 0.08) 100%
+  );
+  border: 1px solid hsl(var(--primary) / 0.12);
+}
+.dark .stage-bg {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.10) 0%,
+    hsl(var(--accent-warm) / 0.06) 100%
+  );
+  border-color: hsl(var(--primary) / 0.2);
+}
+
+.stage-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+          mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Speech bubble — top-right of stage, tail pointing down-left at Quentin */
+.speech-bubble {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(40px);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  z-index: 6;
+  white-space: nowrap;
+  animation: bubblePop 0.6s 1s ease-out backwards;
+}
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 18px;
+  width: 14px;
+  height: 14px;
+  background: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  transform: rotate(45deg);
+}
+
+/* ===== Keyframes for Quentin + floating cards + typing prompt ===== */
+@keyframes querioBob   { 50% { transform: translateY(-8px); } }
+@keyframes querioBlink { 96%, 100% { transform: scaleY(.1); } }
+@keyframes querioSparkle {
+  0%, 100% { transform: scale(.6); opacity: .3; }
+  50%      { transform: scale(1.2); opacity: 1; }
+}
+@keyframes bubblePop {
+  from { opacity: 0; transform: translateX(40px) scale(0.8) translateY(-8px); }
+  to   { opacity: 1; transform: translateX(40px) scale(1)   translateY(0); }
+}
+@keyframes blinkCaret {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+@keyframes floatCard0 {
+  0%,100% { transform: translate(calc(-50% + -180px), calc(-50% + -110px)) rotate(-12deg); }
+  50%     { transform: translate(calc(-50% + -180px), calc(-50% + -120px)) rotate(-9deg); }
+}
+@keyframes floatCard1 {
+  0%,100% { transform: translate(calc(-50% +  180px), calc(-50% +  -90px)) rotate(9deg); }
+  50%     { transform: translate(calc(-50% +  180px), calc(-50% + -100px)) rotate(12deg); }
+}
+@keyframes floatCard2 {
+  0%,100% { transform: translate(calc(-50% + -200px), calc(-50% +   90px)) rotate(7deg); }
+  50%     { transform: translate(calc(-50% + -200px), calc(-50% +   80px)) rotate(4deg); }
+}
+@keyframes floatCard3 {
+  0%,100% { transform: translate(calc(-50% +  190px), calc(-50% +  110px)) rotate(-10deg); }
+  50%     { transform: translate(calc(-50% +  190px), calc(-50% +  100px)) rotate(-7deg); }
+}
+@keyframes floatCard4 {
+  0%,100% { transform: translate(calc(-50% +    0px), calc(-50% + -200px)) rotate(0deg); }
+  50%     { transform: translate(calc(-50% +    0px), calc(-50% + -210px)) rotate(3deg); }
+}
+
+/* Reduced motion: kill ambient animation, but keep typing caret + slow type loop */
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage *,
+  .speech-bubble {
+    animation: none !important;
+  }
+  /* Caret can keep blinking — it indicates an active input */
+  .typing-caret {
+    animation: blinkCaret 1.4s step-end infinite !important;
+  }
 }
