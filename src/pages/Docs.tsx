@@ -370,7 +370,28 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Collections ─────────────────────────────────────── */}
+          {/* ── Claws ───────────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={Hammer} title="Claws" id="claws" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                A <strong>Claw</strong> is a callable capability — a self-contained skill bundle following the <code>SKILL.md</code> convention that an AI agent (e.g. Claude or another assistant) can invoke as a tool. Where a Skill describes <em>how</em> the AI should behave, a Claw packages a concrete capability the AI can execute.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">What's in a Claw</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>A <code>SKILL.md</code> file describing the capability, when to use it, and how to call it.</li>
+                <li>Optional supporting scripts, references, or examples.</li>
+                <li>Metadata: title, description, category, tags, language.</li>
+              </ul>
+
+              <p className="text-muted-foreground mt-4">
+                Claws support the same lifecycle as other artifacts — versioning, reviews, comments, suggestions, AI Insights and Coach, translation, Markdown export, GitHub Sync, and team sharing.
+              </p>
+            </div>
+          </section>
+
           <section className="scroll-mt-24">
             <SectionHeader icon={FolderOpen} title="Collections" id="collections" />
             
