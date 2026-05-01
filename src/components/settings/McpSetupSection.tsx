@@ -45,22 +45,33 @@ function buildPromptText() {
   const toolsBullets = TOOL_LIST.map((t) => `• ${t}`).join("\n");
   return `Please connect to my Querino account via its MCP server so you can help me manage my AI artifacts (prompts, prompt kits, skills, workflows, collections).
 
+=== 0. MY QUERINO MCP TOKEN ===
+
+My Querino MCP token is:
+
+    <<<PASTE YOUR qrn_mcp_... TOKEN HERE>>>
+
+^ Replace the line above (the part in <<< >>>) with your actual token before sending this prompt to the agent. The token starts with "qrn_mcp_" and you generate / copy it in Querino under Settings → MCP Server / API Access → "Personal MCP Tokens".
+
+Everywhere below where you see the placeholder MY_QUERINO_MCP_TOKEN, the agent must use exactly the token from this section — not ask me again, not invent one, not use my password or any other key.
+
 === 1. CONNECTION DETAILS ===
 
 • MCP endpoint: ${MCP_ENDPOINT}
 • Transport: MCP Streamable HTTP (the standard remote MCP transport over HTTP POST with JSON-RPC 2.0; SSE responses supported)
-• Auth: HTTP header "Authorization: Bearer <QUERINO_MCP_TOKEN>"
+• Auth: HTTP header "Authorization: Bearer MY_QUERINO_MCP_TOKEN" (use the token from section 0)
 • Method: connect directly to the endpoint above — do NOT append /mcp, /sse, /v1, or any other path. The root URL is the MCP endpoint.
 
-When sending requests, include both of these headers:
-  Authorization: Bearer <QUERINO_MCP_TOKEN>
+When sending requests, include all three of these headers:
+  Authorization: Bearer MY_QUERINO_MCP_TOKEN
   Accept: application/json, text/event-stream
   Content-Type: application/json
 
-About <QUERINO_MCP_TOKEN>:
-• It is a long-lived personal access token I generate in Querino under Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token". The token is shown only once at creation, so I copy it then and paste it to you here.
-• It always starts with the prefix "qrn_mcp_". It is NOT my Supabase session JWT and NOT my account password.
+About the token from section 0:
+• It is a long-lived personal access token, generated in Querino under Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token". The token is shown only once at creation.
+• It always starts with the prefix "qrn_mcp_". It is NOT a Supabase session JWT and NOT my account password.
 • It does NOT expire after 1 hour. It stays valid until I revoke it in the same settings page (or until the optional expiration date I set when creating it).
+• If section 0 still contains the literal placeholder "<<<PASTE YOUR qrn_mcp_... TOKEN HERE>>>", stop immediately and ask me to paste my token into section 0 — do not try to connect.
 • If you get HTTP 401 with a message about an invalid, expired, or revoked token, stop and ask me for a new one — do not retry with the old one.
 
 === 2. VERIFY THE CONNECTION ===
@@ -147,9 +158,13 @@ export function McpSetupSection() {
             <CardTitle className="text-lg">Send this prompt to your agent</CardTitle>
           </div>
           <CardDescription>
-            Paste this prompt into your AI agent or MCP-compatible client (for example: OpenClaw or Manus).
-            It will configure the connection to your Querino MCP server. After it confirms the connection,
-            give it one of your personal MCP tokens from above.
+            Workflow: (1) create a personal MCP token above and copy it. (2) Copy the prompt below.
+            (3) <strong>Before sending it to your agent</strong>, replace the
+            <code className="mx-1 px-1 rounded bg-muted text-xs">&lt;&lt;&lt;PASTE YOUR qrn_mcp_... TOKEN HERE&gt;&gt;&gt;</code>
+            line at the top of the prompt with your actual token. Then send the whole prompt to your AI
+            agent or MCP-compatible client (for example: OpenClaw, Manus, Claude Desktop, Cursor) — it
+            will use the token from the top of the prompt for every request, so you don't need to paste
+            it again separately.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
