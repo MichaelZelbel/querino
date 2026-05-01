@@ -1132,9 +1132,77 @@ Execute this testcase:
 
 Use your browser to log in at https://querino.ai with the credentials of the test user Peter
 Navigate to My Library (/library)
-Look for a "Sync to GitHub" button
+Look for a "Sync to GitHub" button (manual full-resync trigger)
 Validate that the button is present (may be disabled if sync is not configured)
 Log the results of the validation in your test run document.
+```
+
+### TC-GITHUB-003: Auto-Sync on Save (Content Change)
+
+```
+Execute this testcase:
+
+Precondition: Test user has GitHub Sync configured (repo + PAT) and enabled.
+Use your browser to log in at https://querino.ai
+Navigate to an existing prompt in My Library and open the editor
+Change the title or content and save
+Wait ~30–60 seconds (cron runs every 30s)
+Open the connected GitHub repo in a new tab
+Validate that a new commit "Querino: sync prompt <title>" appears
+Validate that the file under prompts/<slug>-<shortid>.md reflects the new content
+Log the results in your test run document.
+```
+
+### TC-GITHUB-004: Auto-Sync Skips Stats-Only Updates
+
+```
+Execute this testcase:
+
+Precondition: Test user has GitHub Sync configured and at least one synced public prompt.
+Log in as a different user and copy / rate the prompt to bump rating_count or copies_count
+Wait ~60 seconds
+Open the GitHub repo
+Validate that NO new commit was created for that prompt (stats updates must not trigger sync)
+Log the results in your test run document.
+```
+
+### TC-GITHUB-005: Auto-Sync on Delete
+
+```
+Execute this testcase:
+
+Precondition: Test user has GitHub Sync configured and a synced prompt that exists in the repo.
+Log in and delete the prompt from My Library
+Wait ~30–60 seconds
+Open the GitHub repo
+Validate that a commit "Querino: delete prompt <id>" was created and the corresponding .md file is removed
+Log the results in your test run document.
+```
+
+### TC-GITHUB-006: Auto-Sync Silently Skipped When Not Configured
+
+```
+Execute this testcase:
+
+Precondition: Test user has GitHub Sync DISABLED or no PAT configured.
+Log in, create or edit a prompt and save
+Wait ~60 seconds
+Validate that no error toast is shown to the user
+(Optional, admin) Inspect github_sync_queue: the entry for this artifact should have status = 'skipped' with last_error = 'github_sync_not_configured'
+Log the results in your test run document.
+```
+
+### TC-GITHUB-007: Auto-Sync for Team Artifacts
+
+```
+Execute this testcase:
+
+Precondition: A team has GitHub Sync configured (team repo + team PAT) and the test user is a member.
+Log in, switch workspace to the team, edit a team-owned skill and save
+Wait ~30–60 seconds
+Open the team GitHub repo
+Validate that a commit "Querino: sync skill <title>" appears in the TEAM repo (not personal)
+Log the results in your test run document.
 ```
 
 ---
