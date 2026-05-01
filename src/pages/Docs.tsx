@@ -28,7 +28,7 @@ import {
   RefreshCw,
   FileText,
   PenLine,
-  Crown,
+  
   Package,
   Terminal,
 } from "lucide-react";
@@ -100,7 +100,6 @@ export default function Docs() {
                 { icon: FileText, label: "Import & Export", href: "#import-export" },
                 { icon: Terminal, label: "MCP Server", href: "#mcp" },
                 { icon: Cloud, label: "Menerio", href: "#menerio" },
-                { icon: Crown, label: "Premium", href: "#premium" },
               ].map((item) => (
                 <a
                   key={item.label}
@@ -431,7 +430,7 @@ export default function Docs() {
               </p>
 
               <Tip>
-                Premium users can copy personal artifacts to a team workspace directly from the artifact detail page — handy for sharing your best work with colleagues.
+                You can copy personal artifacts to a team workspace directly from the artifact detail page — handy for sharing your best work with colleagues.
               </Tip>
             </div>
           </section>
@@ -532,7 +531,7 @@ export default function Docs() {
               </div>
 
               <Tip>
-                AI features consume credits. You can see your remaining credits in <Link to="/settings" className="text-primary hover:underline">Settings</Link>. Free accounts receive a monthly allowance; Premium accounts get a larger budget.
+                AI features consume credits. You can see your remaining credits in <Link to="/settings" className="text-primary hover:underline">Settings</Link>.
               </Tip>
             </div>
           </section>
@@ -704,29 +703,7 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Premium ─────────────────────────────────────────── */}
-          <section className="scroll-mt-24">
-            <SectionHeader icon={Crown} title="Premium" id="premium" />
-            
-            <div className="prose prose-neutral dark:prose-invert max-w-none">
-              <p className="text-muted-foreground text-lg mb-6">
-                Querino is free to use for most features. A Premium plan unlocks additional capabilities for power users and teams.
-              </p>
-
-              <h3 className="text-lg font-semibold mt-8 mb-4">What Premium includes</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><strong>Higher AI credit allowance</strong> — More credits per month for AI-powered features.</li>
-                <li><strong>Team features</strong> — Create and manage team workspaces.</li>
-                <li><strong>Copy to team</strong> — Move personal artifacts into a team workspace.</li>
-                <li><strong>Priority support</strong> — Get help faster when you need it.</li>
-              </ul>
-
-              <p className="text-muted-foreground mt-4">
-                Check the <Link to="/pricing" className="text-primary hover:underline">Pricing</Link> page for current plans and a detailed feature comparison.
-              </p>
-            </div>
-          </section>
-
+          {/* ── Premium section removed: no active paid plans ─── */}
           {/* ── Typical Workflows ───────────────────────────────── */}
           <section className="scroll-mt-24">
             <SectionHeader icon={ArrowRight} title="Typical Workflows" id="typical-workflows" />
