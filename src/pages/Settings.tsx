@@ -577,7 +577,12 @@ export default function Settings() {
                     <p className="font-medium">Dark Mode</p>
                     <p className="text-sm text-muted-foreground">Use dark theme for reduced eye strain.</p>
                   </div>
-                  <Switch />
+                  <Switch
+                    checked={themeMounted && resolvedTheme === "dark"}
+                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    aria-label="Toggle dark mode"
+                  />
+
                 </div>
               </CardContent>
             </Card>
