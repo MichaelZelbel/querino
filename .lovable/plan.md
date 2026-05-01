@@ -1,49 +1,41 @@
-## Problem
+## Add light/dark mode toggle to the header
 
-Im Prompt-Kit-Editor sehen H1/H2/H3 aus wie Normaltext. Zwei Ursachen:
+The project already has everything needed for theming — it just isn't wired up:
+- `next-themes` is in `package.json`
+- `tailwind.config.ts` has `darkMode: ["class"]`
+- `src/index.css` defines both `:root` (light) and `.dark` (dark) token sets
+- `src/components/ui/sonner.tsx` already calls `useTheme()` from `next-themes`
 
-1. **Duplicate Underline-Extension** – `StarterKit` enthält bereits `Underline`, wir registrieren ihn zusätzlich noch einmal. Tiptap meldet `Duplicate extension names found: ['underline']`. Das destabilisiert die Extension-Registrierung.
-2. **Kein sichtbares Heading-Styling** – Tailwind setzt Headings standardmäßig auf `1em` zurück (Preflight). Die `prose`-Klasse stylt zwar Headings, aber durch die Schachtelung `prose > .ProseMirror > h1` greifen einige `:where()`-Selektoren nicht zuverlässig. Ergebnis: Der Befehl funktioniert, das DOM wird zu `<h1>` – nur sieht es identisch zu `<p>` aus.
+Currently no `ThemeProvider` wraps the app, so the toggle can't take effect without that. Plan:
 
-## Änderungen
+### 1. Wrap the app with `ThemeProvider`
+In `src/main.tsx` (or `src/App.tsx`), wrap the tree with `next-themes` `ThemeProvider`:
+- `attribute="class"` so it toggles the `.dark` class on `<html>`
+- `defaultTheme="system"`
+- `enableSystem`
+- `disableTransitionOnChange`
 
-### 1. `src/components/editors/PromptKitRichEditor.tsx`
-- **Underline-Duplikat entfernen**: Entweder `import Underline from "@tiptap/extension-underline"` löschen und sich auf StarterKit verlassen, **oder** in `StarterKit.configure({ ... })` `underline: false` setzen und den separaten Extension-Import behalten. Empfehlung: separaten Import behalten + `underline: false` im StarterKit (zukunftssicherer, falls StarterKit-Version wechselt).
-- Außerdem in `StarterKit.configure` sicherstellen, dass `heading: { levels: [1,2,3] }` nicht durch eine andere Heading-Extension überschrieben wird (aktuell ok, nur prüfen).
+### 2. Create `src/components/ThemeToggle.tsx`
+Small icon button using existing shadcn `Button` (variant `ghost`, `size="icon"`):
+- Uses `useTheme()` from `next-themes`
+- Shows `Sun` icon in light mode, `Moon` in dark (Lucide icons, with the standard rotate/scale transition classes)
+- Click cycles `light` ↔ `dark`
+- Wrapped in the existing `Tooltip` ("Toggle theme")
+- Renders nothing until mounted (avoid SSR/hydration flicker)
 
-### 2. `src/index.css` – Editor-spezifische Heading-Styles
-Einen Scope-Block für den Tiptap-Editor hinzufügen, der die Tailwind-Reset-Größen explizit überschreibt – unabhängig von `prose`:
+### 3. Place it in the header
+In `src/components/layout/Header.tsx`:
+- Desktop: insert the `ThemeToggle` in the right-side action row, right next to the existing Command Palette button (before the auth/avatar block) — matches the icon-button style already there.
+- Mobile: add a row in the mobile menu's bottom section labeled "Theme" with the same toggle, so mobile users can switch too.
 
-```css
-.ProseMirror h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 0.8em 0 0.4em; }
-.ProseMirror h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin: 0.7em 0 0.35em; }
-.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; margin: 0.6em 0 0.3em; }
-.ProseMirror p  { margin: 0.4em 0; }
-.ProseMirror blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1em; color: hsl(var(--muted-foreground)); }
-.ProseMirror code { background: hsl(var(--muted)); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
-.ProseMirror pre  { background: hsl(var(--muted)); padding: 0.8em 1em; border-radius: 6px; overflow-x: auto; }
-.ProseMirror ul, .ProseMirror ol { padding-left: 1.5em; margin: 0.4em 0; }
-.ProseMirror hr { border: 0; border-top: 1px solid hsl(var(--border)); margin: 1em 0; }
-.ProseMirror :is(h1,h2,h3).is-empty::before,
-.ProseMirror p.is-empty:first-child::before {
-  content: attr(data-placeholder);
-  color: hsl(var(--muted-foreground));
-  pointer-events: none;
-  float: left;
-  height: 0;
-}
-```
+### 4. Verify
+- Toggle flips `<html class="dark">` on/off
+- Existing CSS tokens already cover both themes, so all pages adapt automatically
+- `sonner` toaster picks up the theme through its existing `useTheme()` hook
 
-Das macht Headings sofort sichtbar **und** funktioniert auch in der Detail-Ansicht (Article-View nutzt ebenfalls `.ProseMirror`-ähnliche Klassen – falls nicht, separat scopen).
+### Files touched
+- `src/main.tsx` — add `ThemeProvider` wrapper
+- `src/components/ThemeToggle.tsx` — new component
+- `src/components/layout/Header.tsx` — mount the toggle (desktop + mobile)
 
-### 3. Validierung
-Nach der Änderung in `/prompt-kits/new` testen:
-- `# ` + Space → wird zu großer H1 ✓
-- Dropdown „Heading 2" → sichtbar mittlere Größe ✓
-- Konsole frei von `Duplicate extension names` Warnung ✓
-
-## Warum so
-
-- CSS-Scope auf `.ProseMirror` ist robuster als `prose`, weil ProseMirror diese Klasse garantiert auf den Editor-Root setzt.
-- Wir nutzen die Theme-Variablen (`hsl(var(--border))` etc.) → dunkles und helles Theme funktionieren automatisch.
-- Keine Markdown-/DB-Schema-Änderungen nötig.
+No DB, edge function, or memory changes required.

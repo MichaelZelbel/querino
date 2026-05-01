@@ -16,6 +16,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
 import { CommandPalette } from "@/components/CommandPalette";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -143,6 +144,9 @@ export function Header() {
               <p>Search and Navigate (Ctrl+K)</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
@@ -392,6 +396,8 @@ export function Header() {
             )}
             
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              <ThemeToggle withLabel />
+
               {user ? (
                 <>
                   <div className="flex items-center gap-3 px-3 py-2">
