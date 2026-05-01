@@ -98,6 +98,7 @@ export default function Docs() {
                 { icon: Wand2, label: "AI Tools", href: "#ai-tools" },
                 { icon: History, label: "Versioning", href: "#versioning" },
                 { icon: FileText, label: "Import & Export", href: "#import-export" },
+                { icon: GitBranch, label: "GitHub Sync", href: "#github-sync" },
                 { icon: Terminal, label: "MCP Server", href: "#mcp" },
                 { icon: Cloud, label: "Menerio", href: "#menerio" },
               ].map((item) => (
