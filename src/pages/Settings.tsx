@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeam, useUpdateTeam } from "@/hooks/useTeams";
@@ -28,6 +29,9 @@ import heroSettings from "@/assets/hero-settings.png";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => setThemeMounted(true), []);
   const { user, profile, loading: authLoading } = useAuthContext();
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
   const { data: teamData } = useTeam(isTeamWorkspace ? currentWorkspace : undefined);
@@ -573,7 +577,12 @@ export default function Settings() {
                     <p className="font-medium">Dark Mode</p>
                     <p className="text-sm text-muted-foreground">Use dark theme for reduced eye strain.</p>
                   </div>
-                  <Switch />
+                  <Switch
+                    checked={themeMounted && resolvedTheme === "dark"}
+                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    aria-label="Toggle dark mode"
+                  />
+
                 </div>
               </CardContent>
             </Card>
