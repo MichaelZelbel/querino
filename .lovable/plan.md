@@ -1,76 +1,49 @@
-## Why `# ` doesn't currently turn into a heading
+## Problem
 
-Two things in our current `PromptKitRichEditor`:
+Im Prompt-Kit-Editor sehen H1/H2/H3 aus wie Normaltext. Zwei Ursachen:
 
-1. We render content with `editor.commands.setContent(htmlString)` where `htmlString` mixes raw Markdown text and `<div data-prompt-block>` placeholders. Because `tiptap-markdown` is configured with `html: true`, the raw `#` characters often get parsed as plain text instead of rendered through ProseMirror's heading **input rule**. The input rule (`# ` → H1) only fires while typing — but it works when StarterKit's heading is enabled with all default levels. We currently rely on the default heading config, which is fine; the real bug is that the `Markdown` extension's `transformPastedText: true` and the way we feed mixed HTML+Markdown content through `setContent` interferes with input rules in some sessions, plus the toolbar has no H1 affordance so users can't tell.
-2. The toolbar exposes only H2/H3, never H1, and there's no block-type dropdown. So even if `#` worked, the UI wouldn't reflect Menerio's UX.
+1. **Duplicate Underline-Extension** – `StarterKit` enthält bereits `Underline`, wir registrieren ihn zusätzlich noch einmal. Tiptap meldet `Duplicate extension names found: ['underline']`. Das destabilisiert die Extension-Registrierung.
+2. **Kein sichtbares Heading-Styling** – Tailwind setzt Headings standardmäßig auf `1em` zurück (Preflight). Die `prose`-Klasse stylt zwar Headings, aber durch die Schachtelung `prose > .ProseMirror > h1` greifen einige `:where()`-Selektoren nicht zuverlässig. Ergebnis: Der Befehl funktioniert, das DOM wird zu `<h1>` – nur sieht es identisch zu `<p>` aus.
 
-The fix is to mirror Menerio's setup, which is battle-tested.
+## Änderungen
 
-## What changes
+### 1. `src/components/editors/PromptKitRichEditor.tsx`
+- **Underline-Duplikat entfernen**: Entweder `import Underline from "@tiptap/extension-underline"` löschen und sich auf StarterKit verlassen, **oder** in `StarterKit.configure({ ... })` `underline: false` setzen und den separaten Extension-Import behalten. Empfehlung: separaten Import behalten + `underline: false` im StarterKit (zukunftssicherer, falls StarterKit-Version wechselt).
+- Außerdem in `StarterKit.configure` sicherstellen, dass `heading: { levels: [1,2,3] }` nicht durch eine andere Heading-Extension überschrieben wird (aktuell ok, nur prüfen).
 
-### 1. New shared editor toolbar (`src/components/editors/PromptKitEditorToolbar.tsx`)
+### 2. `src/index.css` – Editor-spezifische Heading-Styles
+Einen Scope-Block für den Tiptap-Editor hinzufügen, der die Tailwind-Reset-Größen explizit überschreibt – unabhängig von `prose`:
 
-Port `Menerio/src/components/notes/EditorToolbar.tsx` adapted for our needs (no tables/embeds/wiki-links — those are Menerio-specific). Includes:
-
-- **Block-type dropdown**: Normal text, Heading 1, Heading 2, Heading 3 (label reflects current block).
-- Inline: bold, italic, underline, strikethrough, inline code, highlight, superscript, subscript.
-- Text color dropdown (using our existing palette tokens).
-- Lists: bullet, ordered, task list.
-- Block: blockquote, horizontal rule, code block.
-- Alignment: left / center / right / justify.
-- Link popover (URL input + Apply, plus unlink when active).
-- "Insert prompt" primary button (keeps our `promptBlock` integration).
-- Clear formatting.
-- Undo / Redo on the right.
-
-### 2. Updated `PromptKitRichEditor.tsx`
-
-- Add extensions: `@tiptap/extension-underline`, `@tiptap/extension-text-align`, `@tiptap/extension-highlight`, `@tiptap/extension-task-list`, `@tiptap/extension-task-item`, `@tiptap/extension-text-style`, `@tiptap/extension-color`, `@tiptap/extension-superscript`, `@tiptap/extension-subscript`.
-- Configure `StarterKit` like Menerio: `heading: { levels: [1, 2, 3] }`, disable built-in `link` and `underline` (use the dedicated extensions).
-- Replace inline `Toolbar` with the new `PromptKitEditorToolbar`.
-- Keep `PromptBlock` node + `buildKitMarkdown` serializer unchanged.
-- Keep `tiptap-markdown` so input rules (`# `, `## `, `### `, `- `, `1. `, `> `, ``` ``` ```) all work as expected.
-
-### 3. Markdown round-trip stays the same
-
-DB still stores the same `## Prompt: <title>` Markdown. The `promptBlock` node still serializes through `buildKitMarkdown`. No DB / parser / GitHub sync / MCP / translate changes.
-
-### 4. Dependencies to add
-
-```
-@tiptap/extension-underline
-@tiptap/extension-text-align
-@tiptap/extension-highlight
-@tiptap/extension-task-list
-@tiptap/extension-task-item
-@tiptap/extension-text-style
-@tiptap/extension-color
-@tiptap/extension-superscript
-@tiptap/extension-subscript
+```css
+.ProseMirror h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 0.8em 0 0.4em; }
+.ProseMirror h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin: 0.7em 0 0.35em; }
+.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; margin: 0.6em 0 0.3em; }
+.ProseMirror p  { margin: 0.4em 0; }
+.ProseMirror blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1em; color: hsl(var(--muted-foreground)); }
+.ProseMirror code { background: hsl(var(--muted)); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
+.ProseMirror pre  { background: hsl(var(--muted)); padding: 0.8em 1em; border-radius: 6px; overflow-x: auto; }
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.5em; margin: 0.4em 0; }
+.ProseMirror hr { border: 0; border-top: 1px solid hsl(var(--border)); margin: 1em 0; }
+.ProseMirror :is(h1,h2,h3).is-empty::before,
+.ProseMirror p.is-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
 ```
 
-(`@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-typography`, `tiptap-markdown` already installed.)
+Das macht Headings sofort sichtbar **und** funktioniert auch in der Detail-Ansicht (Article-View nutzt ebenfalls `.ProseMirror`-ähnliche Klassen – falls nicht, separat scopen).
 
-### 5. Files
+### 3. Validierung
+Nach der Änderung in `/prompt-kits/new` testen:
+- `# ` + Space → wird zu großer H1 ✓
+- Dropdown „Heading 2" → sichtbar mittlere Größe ✓
+- Konsole frei von `Duplicate extension names` Warnung ✓
 
-**New**
-- `src/components/editors/PromptKitEditorToolbar.tsx` — the ported toolbar.
+## Warum so
 
-**Changed**
-- `src/components/editors/PromptKitRichEditor.tsx` — extension list + use new toolbar.
-
-**Untouched**
-- `PromptBlockNode.tsx`, `promptKitMarkdown.ts`, `promptKitParser.ts`, `PromptKitArticleView.tsx`, all pages, all backend.
-
-## Why we don't just copy Menerio 1:1
-
-Menerio's editor includes wiki-links, video/audio/PDF embeds, tables, and a Markdown converter (`markdownToHtml` + `tiptapJsonToMarkdown`) tailored to notes. We don't need any of that for prompt kits — and we have our own `promptBlock` node and `## Prompt:` Markdown convention. So we port the **toolbar UX and extension stack** (the part you like), but keep our own serializer.
-
-## Acceptance
-
-- Typing `# ` at the start of a line creates an H1; `## ` → H2; `### ` → H3.
-- Block-type dropdown shows the current block name and lets the user switch.
-- Underline, strike, highlight, sup/sub, alignment, color, link popover, task list all work.
-- "Insert prompt" still inserts a `promptBlock` card; "Copy this prompt" on the detail page still works.
-- Existing kits load and save without content loss.
+- CSS-Scope auf `.ProseMirror` ist robuster als `prose`, weil ProseMirror diese Klasse garantiert auf den Editor-Root setzt.
+- Wir nutzen die Theme-Variablen (`hsl(var(--border))` etc.) → dunkles und helles Theme funktionieren automatisch.
+- Keine Markdown-/DB-Schema-Änderungen nötig.
