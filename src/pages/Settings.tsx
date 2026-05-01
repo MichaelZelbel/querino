@@ -29,6 +29,9 @@ import heroSettings from "@/assets/hero-settings.png";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => setThemeMounted(true), []);
   const { user, profile, loading: authLoading } = useAuthContext();
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
   const { data: teamData } = useTeam(isTeamWorkspace ? currentWorkspace : undefined);
