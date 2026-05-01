@@ -531,7 +531,7 @@ export default function Docs() {
               </div>
 
               <Tip>
-                AI features consume credits. You can see your remaining credits in <Link to="/settings" className="text-primary hover:underline">Settings</Link>. Free accounts receive a monthly allowance; Premium accounts get a larger budget.
+                AI features consume credits. You can see your remaining credits in <Link to="/settings" className="text-primary hover:underline">Settings</Link>.
               </Tip>
             </div>
           </section>
