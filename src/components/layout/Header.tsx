@@ -396,6 +396,8 @@ export function Header() {
             )}
             
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              <ThemeToggle withLabel />
+
               {user ? (
                 <>
                   <div className="flex items-center gap-3 px-3 py-2">
