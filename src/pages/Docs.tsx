@@ -29,6 +29,9 @@ import {
   FileText,
   PenLine,
   Crown,
+  Package,
+  Terminal,
+  Hammer,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -60,7 +63,7 @@ export default function Docs() {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead
         title="Documentation — Querino"
-        description="Learn how to create, organize, and share AI prompts, skills, and workflows with Querino."
+        description="Learn how to create, organize, and share AI prompts, prompt kits, skills, workflows, and claws with Querino."
       />
       <Header />
       
@@ -74,7 +77,7 @@ export default function Docs() {
                 Learn to use Querino
               </h1>
               <p className="text-lg text-muted-foreground">
-                A friendly guide to everything Querino can do for you — from creating your first prompt to building a team library and connecting external tools.
+                A friendly guide to everything Querino can do for you — from creating your first prompt or prompt kit to building a team library and connecting external AI assistants over MCP.
               </p>
             </div>
           </div>
@@ -87,14 +90,16 @@ export default function Docs() {
               {[
                 { icon: BookOpen, label: "Getting Started", href: "#getting-started" },
                 { icon: Lightbulb, label: "Prompts", href: "#prompts" },
+                { icon: Package, label: "Prompt Kits", href: "#prompt-kits" },
                 { icon: Sparkles, label: "Skills", href: "#skills" },
                 { icon: Workflow, label: "Workflows", href: "#workflows" },
-                
+                { icon: Hammer, label: "Claws", href: "#claws" },
                 { icon: FolderOpen, label: "Collections", href: "#collections" },
                 { icon: Users, label: "Teams", href: "#teams" },
                 { icon: Wand2, label: "AI Tools", href: "#ai-tools" },
                 { icon: History, label: "Versioning", href: "#versioning" },
                 { icon: FileText, label: "Import & Export", href: "#import-export" },
+                { icon: Terminal, label: "MCP Server", href: "#mcp" },
                 { icon: Cloud, label: "Menerio", href: "#menerio" },
                 { icon: Crown, label: "Premium", href: "#premium" },
               ].map((item) => (
