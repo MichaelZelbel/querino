@@ -248,7 +248,51 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Skills ──────────────────────────────────────────── */}
+          {/* ── Prompt Kits ─────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={Package} title="Prompt Kits" id="prompt-kits" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                A <strong>Prompt Kit</strong> is a curated bundle of related prompts — a single Markdown article with multiple prompts grouped under one topic. Use kits when several prompts belong together: an onboarding kit, a content production playbook, a research toolkit, etc.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">How a kit is structured</h3>
+              <p className="text-muted-foreground mb-4">
+                Kits use a rich Markdown editor with a familiar toolbar (headings, lists, links, code, quotes, …). Between your prose, you insert dedicated <strong>prompt blocks</strong>. On the storage side this is a single Markdown document where each prompt is introduced by a <code>## Prompt: &lt;title&gt;</code> heading, so kits import and export cleanly as plain Markdown.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Creating a kit</h3>
+              <ol className="space-y-3 text-muted-foreground">
+                <li>Click <strong>"+ Create" → "Prompt Kit"</strong> in the header.</li>
+                <li>Write an intro that explains what the kit is for and how to use it.</li>
+                <li>Click <strong>"Insert prompt"</strong> in the toolbar to add a prompt block, give it a title, and write the prompt body.</li>
+                <li>Repeat for as many prompts as you need, with explanatory text in between.</li>
+                <li>Fill in title, description, category, language, and tags — or use <strong>"Suggest with AI"</strong>.</li>
+              </ol>
+
+              <Tip>
+                Markdown shortcuts work in the editor: type <code>#</code> + space for H1, <code>##</code> for H2, <code>-</code> for a list, <code>&gt;</code> for a quote, and so on.
+              </Tip>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Reading a kit</h3>
+              <p className="text-muted-foreground mb-4">
+                On the detail page a kit renders as an article: your prose flows naturally and each prompt block appears as a card with a one-click <strong>Copy</strong> button — readers can grab any individual prompt without losing the surrounding context.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">When to use a kit instead of a prompt</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>You have <strong>multiple prompts</strong> that only make sense together.</li>
+                <li>You want to share <strong>guidance and context</strong> alongside the prompts themselves.</li>
+                <li>You're publishing a <strong>playbook, workshop, or template pack</strong> rather than a single instruction.</li>
+              </ul>
+
+              <p className="text-muted-foreground mt-4">
+                Kits support all the same actions as prompts: versioning, ratings and reviews, comments, suggestions, cloning, AI Coach and Insights, translation, Markdown import/export, GitHub Sync, Menerio sync, and team sharing.
+              </p>
+            </div>
+          </section>
+
           <section className="scroll-mt-24">
             <SectionHeader icon={Sparkles} title="Skills" id="skills" />
             
