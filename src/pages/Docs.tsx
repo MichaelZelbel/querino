@@ -28,7 +28,7 @@ import {
   RefreshCw,
   FileText,
   PenLine,
-  Crown,
+  
   Package,
   Terminal,
 } from "lucide-react";
