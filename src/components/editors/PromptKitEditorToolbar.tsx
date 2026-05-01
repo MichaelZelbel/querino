@@ -1,5 +1,13 @@
 import { Editor } from "@tiptap/react";
 import { useState } from "react";
+// Side-effect imports so module augmentation registers commands on ChainedCommands
+import "@tiptap/extension-highlight";
+import "@tiptap/extension-superscript";
+import "@tiptap/extension-subscript";
+import "@tiptap/extension-text-align";
+import "@tiptap/extension-color";
+import "@tiptap/extension-task-list";
+import "@tiptap/extension-underline";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
