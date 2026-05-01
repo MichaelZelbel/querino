@@ -622,7 +622,7 @@ export default function Docs() {
 
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino exposes its full library over the <strong>Model Context Protocol (MCP)</strong>. Connect an external AI assistant — Claude Desktop, Claude Code, Cursor, or any MCP-aware client — and it can read, search, create, update and delete your prompts, prompt kits, skills, workflows, claws and collections directly.
+                Querino exposes its full library over the <strong>Model Context Protocol (MCP)</strong>. Connect an external AI assistant — Claude Desktop, Claude Code, Cursor, or any MCP-aware client — and it can read, search, create, update and delete your prompts, prompt kits, skills, workflows and collections directly.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Connection details</h3>
@@ -646,7 +646,7 @@ export default function Docs() {
                 Once connected, your assistant gets a full toolset to manage your library:
               </p>
               <ul className="space-y-2 text-muted-foreground">
-                <li><strong>Prompts, Prompt Kits, Skills, Workflows, Claws</strong> — list, search, get, create, update, delete.</li>
+                <li><strong>Prompts, Prompt Kits, Skills, Workflows</strong> — list, search, get, create, update, delete.</li>
                 <li><strong>Collections</strong> — list, get with items, create, delete.</li>
                 <li><strong>Profile</strong> — read and update your own profile.</li>
               </ul>
@@ -699,7 +699,7 @@ export default function Docs() {
               </p>
 
               <Tip>
-                You can choose which artifact types to sync (Prompts, Skills, Claws, Workflows) in the Menerio settings. This is useful if you only want certain types to appear in your Menerio knowledge base.
+                You can choose which artifact types to sync (Prompts, Prompt Kits, Skills, Workflows) in the Menerio settings. This is useful if you only want certain types to appear in your Menerio knowledge base.
               </Tip>
             </div>
           </section>
