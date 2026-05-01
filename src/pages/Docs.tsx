@@ -29,6 +29,9 @@ import {
   FileText,
   PenLine,
   Crown,
+  Package,
+  Terminal,
+  Hammer,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -60,7 +63,7 @@ export default function Docs() {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead
         title="Documentation — Querino"
-        description="Learn how to create, organize, and share AI prompts, skills, and workflows with Querino."
+        description="Learn how to create, organize, and share AI prompts, prompt kits, skills, workflows, and claws with Querino."
       />
       <Header />
       
@@ -74,7 +77,7 @@ export default function Docs() {
                 Learn to use Querino
               </h1>
               <p className="text-lg text-muted-foreground">
-                A friendly guide to everything Querino can do for you — from creating your first prompt to building a team library and connecting external tools.
+                A friendly guide to everything Querino can do for you — from creating your first prompt or prompt kit to building a team library and connecting external AI assistants over MCP.
               </p>
             </div>
           </div>
@@ -87,14 +90,16 @@ export default function Docs() {
               {[
                 { icon: BookOpen, label: "Getting Started", href: "#getting-started" },
                 { icon: Lightbulb, label: "Prompts", href: "#prompts" },
+                { icon: Package, label: "Prompt Kits", href: "#prompt-kits" },
                 { icon: Sparkles, label: "Skills", href: "#skills" },
                 { icon: Workflow, label: "Workflows", href: "#workflows" },
-                
+                { icon: Hammer, label: "Claws", href: "#claws" },
                 { icon: FolderOpen, label: "Collections", href: "#collections" },
                 { icon: Users, label: "Teams", href: "#teams" },
                 { icon: Wand2, label: "AI Tools", href: "#ai-tools" },
                 { icon: History, label: "Versioning", href: "#versioning" },
                 { icon: FileText, label: "Import & Export", href: "#import-export" },
+                { icon: Terminal, label: "MCP Server", href: "#mcp" },
                 { icon: Cloud, label: "Menerio", href: "#menerio" },
                 { icon: Crown, label: "Premium", href: "#premium" },
               ].map((item) => (
@@ -120,7 +125,7 @@ export default function Docs() {
             
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino is your home for AI artifacts — prompts, skills, and workflows. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
+                Querino is your home for AI artifacts — prompts, prompt kits, skills, workflows, and claws. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
               </p>
               
               <Card className="mb-6">
@@ -146,7 +151,7 @@ export default function Docs() {
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
                     <div>
                       <p className="font-medium">Create your first artifact</p>
-                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, skill, or workflow. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
+                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, prompt kit, skill, workflow, or claw. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -243,7 +248,51 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Skills ──────────────────────────────────────────── */}
+          {/* ── Prompt Kits ─────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={Package} title="Prompt Kits" id="prompt-kits" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                A <strong>Prompt Kit</strong> is a curated bundle of related prompts — a single Markdown article with multiple prompts grouped under one topic. Use kits when several prompts belong together: an onboarding kit, a content production playbook, a research toolkit, etc.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">How a kit is structured</h3>
+              <p className="text-muted-foreground mb-4">
+                Kits use a rich Markdown editor with a familiar toolbar (headings, lists, links, code, quotes, …). Between your prose, you insert dedicated <strong>prompt blocks</strong>. On the storage side this is a single Markdown document where each prompt is introduced by a <code>## Prompt: &lt;title&gt;</code> heading, so kits import and export cleanly as plain Markdown.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Creating a kit</h3>
+              <ol className="space-y-3 text-muted-foreground">
+                <li>Click <strong>"+ Create" → "Prompt Kit"</strong> in the header.</li>
+                <li>Write an intro that explains what the kit is for and how to use it.</li>
+                <li>Click <strong>"Insert prompt"</strong> in the toolbar to add a prompt block, give it a title, and write the prompt body.</li>
+                <li>Repeat for as many prompts as you need, with explanatory text in between.</li>
+                <li>Fill in title, description, category, language, and tags — or use <strong>"Suggest with AI"</strong>.</li>
+              </ol>
+
+              <Tip>
+                Markdown shortcuts work in the editor: type <code>#</code> + space for H1, <code>##</code> for H2, <code>-</code> for a list, <code>&gt;</code> for a quote, and so on.
+              </Tip>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Reading a kit</h3>
+              <p className="text-muted-foreground mb-4">
+                On the detail page a kit renders as an article: your prose flows naturally and each prompt block appears as a card with a one-click <strong>Copy</strong> button — readers can grab any individual prompt without losing the surrounding context.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">When to use a kit instead of a prompt</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>You have <strong>multiple prompts</strong> that only make sense together.</li>
+                <li>You want to share <strong>guidance and context</strong> alongside the prompts themselves.</li>
+                <li>You're publishing a <strong>playbook, workshop, or template pack</strong> rather than a single instruction.</li>
+              </ul>
+
+              <p className="text-muted-foreground mt-4">
+                Kits support all the same actions as prompts: versioning, ratings and reviews, comments, suggestions, cloning, AI Coach and Insights, translation, Markdown import/export, GitHub Sync, Menerio sync, and team sharing.
+              </p>
+            </div>
+          </section>
+
           <section className="scroll-mt-24">
             <SectionHeader icon={Sparkles} title="Skills" id="skills" />
             
@@ -321,7 +370,28 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Collections ─────────────────────────────────────── */}
+          {/* ── Claws ───────────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={Hammer} title="Claws" id="claws" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                A <strong>Claw</strong> is a callable capability — a self-contained skill bundle following the <code>SKILL.md</code> convention that an AI agent (e.g. Claude or another assistant) can invoke as a tool. Where a Skill describes <em>how</em> the AI should behave, a Claw packages a concrete capability the AI can execute.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">What's in a Claw</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>A <code>SKILL.md</code> file describing the capability, when to use it, and how to call it.</li>
+                <li>Optional supporting scripts, references, or examples.</li>
+                <li>Metadata: title, description, category, tags, language.</li>
+              </ul>
+
+              <p className="text-muted-foreground mt-4">
+                Claws support the same lifecycle as other artifacts — versioning, reviews, comments, suggestions, AI Insights and Coach, translation, Markdown export, GitHub Sync, and team sharing.
+              </p>
+            </div>
+          </section>
+
           <section className="scroll-mt-24">
             <SectionHeader icon={FolderOpen} title="Collections" id="collections" />
             
@@ -572,7 +642,48 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Menerio Integration ─────────────────────────────── */}
+          {/* ── MCP Server ──────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={Terminal} title="MCP Server" id="mcp" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                Querino exposes its full library over the <strong>Model Context Protocol (MCP)</strong>. Connect an external AI assistant — Claude Desktop, Claude Code, Cursor, or any MCP-aware client — and it can read, search, create, update and delete your prompts, prompt kits, skills, workflows, claws and collections directly.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Connection details</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><strong>Endpoint:</strong> <code>https://mcp.querino.ai</code></li>
+                <li><strong>Transport:</strong> MCP Streamable HTTP (JSON-RPC 2.0 over POST; SSE responses supported)</li>
+                <li><strong>Auth:</strong> <code>Authorization: Bearer &lt;your-token&gt;</code></li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Personal API tokens</h3>
+              <p className="text-muted-foreground mb-4">
+                Authenticate with a long-lived <strong>Querino MCP token</strong> (prefix <code>qrn_mcp_</code>). Generate one in <Link to="/settings" className="text-primary hover:underline">Settings → MCP Tokens</Link>. Tokens don't expire after an hour like a session — they remain valid until you revoke them (or until an optional expiry date you set).
+              </p>
+
+              <Tip>
+                Treat MCP tokens like passwords. You can have several tokens at once (one per device or assistant) and revoke any of them individually.
+              </Tip>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">What an assistant can do</h3>
+              <p className="text-muted-foreground mb-4">
+                Once connected, your assistant gets a full toolset to manage your library:
+              </p>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><strong>Prompts, Prompt Kits, Skills, Workflows, Claws</strong> — list, search, get, create, update, delete.</li>
+                <li><strong>Collections</strong> — list, get with items, create, delete.</li>
+                <li><strong>Profile</strong> — read and update your own profile.</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Setup</h3>
+              <p className="text-muted-foreground">
+                Open <Link to="/settings" className="text-primary hover:underline">Settings → MCP Setup</Link> for ready-to-paste configuration snippets and a generated onboarding prompt you can hand to your assistant — it includes the endpoint, headers, your token placeholder, and a description of every tool.
+              </p>
+            </div>
+          </section>
+
           <section className="scroll-mt-24">
             <SectionHeader icon={Cloud} title="Menerio Integration" id="menerio" />
             
@@ -721,7 +832,7 @@ export default function Docs() {
                 <li><strong>AI Credits</strong> — See your current balance and usage history.</li>
                 <li><strong>GitHub Sync</strong> — Configure automatic backup to a GitHub repository.</li>
                 <li><strong>Menerio</strong> — Connect or disconnect your Menerio account.</li>
-                <li><strong>MCP Setup</strong> — Instructions for connecting Querino via the Model Context Protocol (for AI coding assistants).</li>
+                <li><strong>MCP Setup & Tokens</strong> — Generate long-lived <code>qrn_mcp_</code> tokens and copy ready-made configuration for connecting Querino to AI assistants via the <Link to="/docs#mcp" className="text-primary hover:underline">Model Context Protocol</Link>.</li>
                 <li><strong>Team membership</strong> — Join a team by entering the Team ID.</li>
                 <li><strong>Account</strong> — Manage your subscription and account deletion.</li>
               </ul>
