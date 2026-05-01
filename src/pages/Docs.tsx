@@ -642,7 +642,48 @@ export default function Docs() {
             </div>
           </section>
 
-          {/* ── Menerio Integration ─────────────────────────────── */}
+          {/* ── MCP Server ──────────────────────────────────────── */}
+          <section className="scroll-mt-24">
+            <SectionHeader icon={Terminal} title="MCP Server" id="mcp" />
+
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <p className="text-muted-foreground text-lg mb-6">
+                Querino exposes its full library over the <strong>Model Context Protocol (MCP)</strong>. Connect an external AI assistant — Claude Desktop, Claude Code, Cursor, or any MCP-aware client — and it can read, search, create, update and delete your prompts, prompt kits, skills, workflows, claws and collections directly.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Connection details</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><strong>Endpoint:</strong> <code>https://mcp.querino.ai</code></li>
+                <li><strong>Transport:</strong> MCP Streamable HTTP (JSON-RPC 2.0 over POST; SSE responses supported)</li>
+                <li><strong>Auth:</strong> <code>Authorization: Bearer &lt;your-token&gt;</code></li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Personal API tokens</h3>
+              <p className="text-muted-foreground mb-4">
+                Authenticate with a long-lived <strong>Querino MCP token</strong> (prefix <code>qrn_mcp_</code>). Generate one in <Link to="/settings" className="text-primary hover:underline">Settings → MCP Tokens</Link>. Tokens don't expire after an hour like a session — they remain valid until you revoke them (or until an optional expiry date you set).
+              </p>
+
+              <Tip>
+                Treat MCP tokens like passwords. You can have several tokens at once (one per device or assistant) and revoke any of them individually.
+              </Tip>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">What an assistant can do</h3>
+              <p className="text-muted-foreground mb-4">
+                Once connected, your assistant gets a full toolset to manage your library:
+              </p>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><strong>Prompts, Prompt Kits, Skills, Workflows, Claws</strong> — list, search, get, create, update, delete.</li>
+                <li><strong>Collections</strong> — list, get with items, create, delete.</li>
+                <li><strong>Profile</strong> — read and update your own profile.</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">Setup</h3>
+              <p className="text-muted-foreground">
+                Open <Link to="/settings" className="text-primary hover:underline">Settings → MCP Setup</Link> for ready-to-paste configuration snippets and a generated onboarding prompt you can hand to your assistant — it includes the endpoint, headers, your token placeholder, and a description of every tool.
+              </p>
+            </div>
+          </section>
+
           <section className="scroll-mt-24">
             <SectionHeader icon={Cloud} title="Menerio Integration" id="menerio" />
             
