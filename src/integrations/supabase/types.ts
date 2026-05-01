@@ -620,6 +620,96 @@ export type Database = {
           },
         ]
       }
+      github_sync_queue: {
+        Row: {
+          artifact_id: string
+          artifact_type: string
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          operation: string
+          owner_user_id: string | null
+          payload: Json
+          status: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          artifact_id: string
+          artifact_type: string
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          operation: string
+          owner_user_id?: string | null
+          payload?: Json
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          artifact_id?: string
+          artifact_type?: string
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          operation?: string
+          owner_user_id?: string | null
+          payload?: Json
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      github_sync_state: {
+        Row: {
+          artifact_id: string
+          artifact_type: string
+          branch: string
+          created_at: string
+          id: string
+          last_synced_at: string
+          path: string
+          repo: string
+          sha: string | null
+          target_id: string
+          target_scope: string
+          updated_at: string
+        }
+        Insert: {
+          artifact_id: string
+          artifact_type: string
+          branch: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          path: string
+          repo: string
+          sha?: string | null
+          target_id: string
+          target_scope: string
+          updated_at?: string
+        }
+        Update: {
+          artifact_id?: string
+          artifact_type?: string
+          branch?: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          path?: string
+          repo?: string
+          sha?: string | null
+          target_id?: string
+          target_scope?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       llm_usage_events: {
         Row: {
           completion_tokens: number
@@ -2149,6 +2239,17 @@ export type Database = {
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
       check_signup_allowed: { Args: never; Returns: Json }
+      enqueue_github_sync: {
+        Args: {
+          p_artifact_id: string
+          p_artifact_type: string
+          p_operation: string
+          p_owner_user_id: string
+          p_payload?: Json
+          p_team_id: string
+        }
+        Returns: undefined
+      }
       generate_slug: { Args: { title: string }; Returns: string }
       generate_unique_slug: {
         Args: { p_exclude_id?: string; p_table: string; p_title: string }

@@ -597,12 +597,23 @@ export default function Docs() {
 
               <h3 className="text-lg font-semibold mt-8 mb-4">How it works</h3>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
-                <li><strong>One-way sync</strong> — Querino → GitHub. Edits made directly on GitHub are not pulled back.</li>
+                <li><strong>Automatic on save and delete</strong> — every time you create, update, or delete a prompt, prompt kit, skill or workflow, the change is queued and pushed to GitHub within ~30 seconds. No button click required.</li>
+                <li><strong>One-way sync</strong> — Querino → GitHub. Edits made directly on GitHub are not pulled back and will be overwritten on the next save.</li>
                 <li><strong>Markdown with YAML frontmatter</strong> — same format as Import &amp; Export, so files stay readable in any editor.</li>
                 <li><strong>Organized by type</strong> — prompts, prompt kits, skills and workflows are written to subfolders inside your chosen folder.</li>
-                <li><strong>Deduplicated</strong> — each artifact has a stable filename derived from its slug, so re-syncing updates the same file rather than creating duplicates.</li>
-                <li><strong>Workspace-aware</strong> — your personal workspace and each team workspace have independent configurations.</li>
+                <li><strong>Deduplicated &amp; rename-safe</strong> — each artifact has a stable filename derived from its slug. If you rename an artifact, the old file is removed and the new one is created in the same commit cycle.</li>
+                <li><strong>Workspace-aware</strong> — your personal workspace and each team workspace have independent configurations and push to their own repositories.</li>
+                <li><strong>Stats updates are ignored</strong> — purely cosmetic changes like rating averages or copy counts do not trigger a sync, so your repo stays free of noise commits.</li>
               </ul>
+
+              <h3 className="text-lg font-semibold mt-8 mb-4">When does sync run?</h3>
+              <p className="text-muted-foreground mb-4">
+                Whenever you save or delete an artifact, Querino writes a small entry to an internal queue. A background worker runs every ~30 seconds, picks up pending entries, and applies them to GitHub. In practice this means a commit usually appears in your repo within a minute of your save. If multiple quick saves happen in the same window, only the latest version is pushed — older queue entries are collapsed.
+              </p>
+              <p className="text-muted-foreground mb-4">
+                If GitHub Sync is not configured (no token, sync disabled, or no repository set), the queue entry is silently marked as <em>skipped</em>. Once you configure GitHub later, only changes from that point on will be pushed automatically — use the manual <strong>Sync now</strong> button in Settings to push everything that already exists as a one-time backfill.
+              </p>
+
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Setup</h3>
               <ol className="list-decimal pl-6 space-y-3 text-muted-foreground mb-4">
@@ -667,7 +678,8 @@ export default function Docs() {
                 <li><strong>"Repository not found"</strong> — double-check the <code>owner/name</code> format and that your token has access to that repo.</li>
                 <li><strong>"Bad credentials"</strong> — the token expired or was revoked. Generate a new one and paste it again.</li>
                 <li><strong>Push fails on a protected branch</strong> — either point Querino at an unprotected branch or relax your branch protection rules for the token's user.</li>
-                <li><strong>Nothing happens after saving</strong> — make sure the <em>Enable GitHub Sync</em> switch is on. Without it, Querino stores your config but won't push.</li>
+                <li><strong>Nothing happens after saving</strong> — make sure the <em>Enable GitHub Sync</em> switch is on and a valid token + repository are saved. Without it, queue entries are marked <em>skipped</em> and never reach GitHub.</li>
+                <li><strong>My change isn't on GitHub yet</strong> — sync runs every ~30 seconds in the background, so allow up to a minute. If it still doesn't appear, check Settings → GitHub Sync for any error message on the most recent attempt.</li>
               </ul>
             </div>
           </section>
