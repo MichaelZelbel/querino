@@ -832,7 +832,7 @@ export default function Docs() {
                 <li><strong>AI Credits</strong> — See your current balance and usage history.</li>
                 <li><strong>GitHub Sync</strong> — Configure automatic backup to a GitHub repository.</li>
                 <li><strong>Menerio</strong> — Connect or disconnect your Menerio account.</li>
-                <li><strong>MCP Setup</strong> — Instructions for connecting Querino via the Model Context Protocol (for AI coding assistants).</li>
+                <li><strong>MCP Setup & Tokens</strong> — Generate long-lived <code>qrn_mcp_</code> tokens and copy ready-made configuration for connecting Querino to AI assistants via the <Link to="/docs#mcp" className="text-primary hover:underline">Model Context Protocol</Link>.</li>
                 <li><strong>Team membership</strong> — Join a team by entering the Team ID.</li>
                 <li><strong>Account</strong> — Manage your subscription and account deletion.</li>
               </ul>
