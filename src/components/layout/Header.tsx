@@ -16,6 +16,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
 import { CommandPalette } from "@/components/CommandPalette";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
