@@ -6,6 +6,9 @@ enabled = true
 [functions.github-sync]
 verify_jwt = false
 
+[functions.github-sync-worker]
+verify_jwt = false
+
 [functions.delete-user]
 verify_jwt = false
 
