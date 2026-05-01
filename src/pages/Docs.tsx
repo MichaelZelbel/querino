@@ -430,7 +430,7 @@ export default function Docs() {
               </p>
 
               <Tip>
-                Premium users can copy personal artifacts to a team workspace directly from the artifact detail page — handy for sharing your best work with colleagues.
+                You can copy personal artifacts to a team workspace directly from the artifact detail page — handy for sharing your best work with colleagues.
               </Tip>
             </div>
           </section>
