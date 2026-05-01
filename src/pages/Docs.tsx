@@ -31,7 +31,6 @@ import {
   Crown,
   Package,
   Terminal,
-  Hammer,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -63,7 +62,7 @@ export default function Docs() {
     <div className="min-h-screen flex flex-col bg-background">
       <SEOHead
         title="Documentation — Querino"
-        description="Learn how to create, organize, and share AI prompts, prompt kits, skills, workflows, and claws with Querino."
+        description="Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino."
       />
       <Header />
       
@@ -93,7 +92,7 @@ export default function Docs() {
                 { icon: Package, label: "Prompt Kits", href: "#prompt-kits" },
                 { icon: Sparkles, label: "Skills", href: "#skills" },
                 { icon: Workflow, label: "Workflows", href: "#workflows" },
-                { icon: Hammer, label: "Claws", href: "#claws" },
+                
                 { icon: FolderOpen, label: "Collections", href: "#collections" },
                 { icon: Users, label: "Teams", href: "#teams" },
                 { icon: Wand2, label: "AI Tools", href: "#ai-tools" },
@@ -125,7 +124,7 @@ export default function Docs() {
             
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino is your home for AI artifacts — prompts, prompt kits, skills, workflows, and claws. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
+                Querino is your home for AI artifacts — prompts, prompt kits, skills, and workflows. Whether you want to find a great prompt someone else created, build a personal library, or share knowledge with your team, this is the place.
               </p>
               
               <Card className="mb-6">
@@ -151,7 +150,7 @@ export default function Docs() {
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
                     <div>
                       <p className="font-medium">Create your first artifact</p>
-                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, prompt kit, skill, workflow, or claw. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
+                      <p className="text-sm text-muted-foreground">Use the <strong>"+ Create"</strong> button in the header to write a prompt, prompt kit, skill, or workflow. Not sure what to write? Try the <Link to="/prompts/wizard" className="text-primary hover:underline">Kickstart Template</Link> — it generates a prompt from a short description.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -364,31 +363,6 @@ export default function Docs() {
                 </div>
               </div>
 
-              <Tip>
-                Workflows and Claws are closely related. The difference is mainly in intent: a Workflow documents a process for humans to follow, while a Claw defines a capability an AI agent can invoke.
-              </Tip>
-            </div>
-          </section>
-
-          {/* ── Claws ───────────────────────────────────────────── */}
-          <section className="scroll-mt-24">
-            <SectionHeader icon={Hammer} title="Claws" id="claws" />
-
-            <div className="prose prose-neutral dark:prose-invert max-w-none">
-              <p className="text-muted-foreground text-lg mb-6">
-                A <strong>Claw</strong> is a callable capability — a self-contained skill bundle following the <code>SKILL.md</code> convention that an AI agent (e.g. Claude or another assistant) can invoke as a tool. Where a Skill describes <em>how</em> the AI should behave, a Claw packages a concrete capability the AI can execute.
-              </p>
-
-              <h3 className="text-lg font-semibold mt-8 mb-4">What's in a Claw</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>A <code>SKILL.md</code> file describing the capability, when to use it, and how to call it.</li>
-                <li>Optional supporting scripts, references, or examples.</li>
-                <li>Metadata: title, description, category, tags, language.</li>
-              </ul>
-
-              <p className="text-muted-foreground mt-4">
-                Claws support the same lifecycle as other artifacts — versioning, reviews, comments, suggestions, AI Insights and Coach, translation, Markdown export, GitHub Sync, and team sharing.
-              </p>
             </div>
           </section>
 
@@ -648,7 +622,7 @@ export default function Docs() {
 
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino exposes its full library over the <strong>Model Context Protocol (MCP)</strong>. Connect an external AI assistant — Claude Desktop, Claude Code, Cursor, or any MCP-aware client — and it can read, search, create, update and delete your prompts, prompt kits, skills, workflows, claws and collections directly.
+                Querino exposes its full library over the <strong>Model Context Protocol (MCP)</strong>. Connect an external AI assistant — Claude Desktop, Claude Code, Cursor, or any MCP-aware client — and it can read, search, create, update and delete your prompts, prompt kits, skills, workflows and collections directly.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Connection details</h3>
@@ -672,7 +646,7 @@ export default function Docs() {
                 Once connected, your assistant gets a full toolset to manage your library:
               </p>
               <ul className="space-y-2 text-muted-foreground">
-                <li><strong>Prompts, Prompt Kits, Skills, Workflows, Claws</strong> — list, search, get, create, update, delete.</li>
+                <li><strong>Prompts, Prompt Kits, Skills, Workflows</strong> — list, search, get, create, update, delete.</li>
                 <li><strong>Collections</strong> — list, get with items, create, delete.</li>
                 <li><strong>Profile</strong> — read and update your own profile.</li>
               </ul>
@@ -725,7 +699,7 @@ export default function Docs() {
               </p>
 
               <Tip>
-                You can choose which artifact types to sync (Prompts, Skills, Claws, Workflows) in the Menerio settings. This is useful if you only want certain types to appear in your Menerio knowledge base.
+                You can choose which artifact types to sync (Prompts, Prompt Kits, Skills, Workflows) in the Menerio settings. This is useful if you only want certain types to appear in your Menerio knowledge base.
               </Tip>
             </div>
           </section>
