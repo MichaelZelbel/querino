@@ -102,6 +102,11 @@
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5);
     --shadow-glow: 0 0 20px hsl(239 67% 65% / 0.25);
 
+    /* Querino brand (dark variants) */
+    --accent-warm: 18 100% 79%;       /* #FFB597 */
+    --accent-warm-foreground: 12 78% 12%;
+    --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
+
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 210 14% 97%;
     --sidebar-primary: 239 67% 65%;
