@@ -1,110 +1,76 @@
-## Goal
+## Why `# ` doesn't currently turn into a heading
 
-Make Prompt Kits feel like a real "kit document" (à la promptkit.natebjones.com). Authors can write **intro text, section dividers, and explanatory paragraphs between prompts** using a rich Tiptap editor, while each `## Prompt: …` block stays a structured, individually copyable unit. Readers see a polished article-style layout with a "Copy this prompt" button on every prompt.
+Two things in our current `PromptKitRichEditor`:
 
-## What changes for the user
+1. We render content with `editor.commands.setContent(htmlString)` where `htmlString` mixes raw Markdown text and `<div data-prompt-block>` placeholders. Because `tiptap-markdown` is configured with `html: true`, the raw `#` characters often get parsed as plain text instead of rendered through ProseMirror's heading **input rule**. The input rule (`# ` → H1) only fires while typing — but it works when StarterKit's heading is enabled with all default levels. We currently rely on the default heading config, which is fine; the real bug is that the `Markdown` extension's `transformPastedText: true` and the way we feed mixed HTML+Markdown content through `setContent` interferes with input rules in some sessions, plus the toolbar has no H1 affordance so users can't tell.
+2. The toolbar exposes only H2/H3, never H1, and there's no block-type dropdown. So even if `#` worked, the UI wouldn't reflect Menerio's UX.
 
-**Editor (PromptKitNew / PromptKitEdit):**
-- Replace the line-numbered Markdown textarea with a **Tiptap rich-text editor** (bold, italic, headings H2/H3, lists, links, blockquote, code, code block, hr).
-- Special block: **"Prompt block"** — a custom Tiptap node rendered as a card with a title field on top and a code-style body below. Inserted via toolbar button "Insert prompt" or slash command `/prompt`.
-- Anything outside prompt blocks = free intro / between-prompt commentary.
-- Outline panel keeps showing detected prompts (now from prompt-block nodes instead of regex).
-- Editor serializes to Markdown on save — preserving the existing `## Prompt: <title>` convention so all downstream features (parser, GitHub sync, MCP, translate, search) keep working unchanged.
+The fix is to mirror Menerio's setup, which is battle-tested.
 
-**Detail view (PromptKitDetail):**
-- Render the kit as an article: intro prose, then for each prompt a **card** with `#N`, title, "Copy this prompt" button, and the prompt body in a monospace, expand/collapse block (long prompts collapsed by default with "Show full prompt").
-- "Copy entire kit" stays at top.
-- Between-prompt prose is rendered as styled markdown between the cards.
+## What changes
 
-## Technical design
+### 1. New shared editor toolbar (`src/components/editors/PromptKitEditorToolbar.tsx`)
 
-### 1. Markdown ↔ Tiptap conversion
+Port `Menerio/src/components/notes/EditorToolbar.tsx` adapted for our needs (no tables/embeds/wiki-links — those are Menerio-specific). Includes:
 
-Single source of truth in the DB stays **Markdown** (column `prompt_kits.content`), so:
-- existing `parsePromptKitItems`
-- GitHub sync (`generatePromptKitMarkdown`)
-- MCP tools, translate, AI coach, metadata suggestion, embeddings, semantic search
+- **Block-type dropdown**: Normal text, Heading 1, Heading 2, Heading 3 (label reflects current block).
+- Inline: bold, italic, underline, strikethrough, inline code, highlight, superscript, subscript.
+- Text color dropdown (using our existing palette tokens).
+- Lists: bullet, ordered, task list.
+- Block: blockquote, horizontal rule, code block.
+- Alignment: left / center / right / justify.
+- Link popover (URL input + Apply, plus unlink when active).
+- "Insert prompt" primary button (keeps our `promptBlock` integration).
+- Clear formatting.
+- Undo / Redo on the right.
 
-all keep working with zero migration.
+### 2. Updated `PromptKitRichEditor.tsx`
 
-Conversion rules:
-- `## Prompt: <title>\n\n<body>` ⇄ custom Tiptap node `promptBlock { title, body }` (body kept as plain text / fenced as needed).
-- All other Markdown ⇄ standard Tiptap nodes via `tiptap-markdown` extension.
+- Add extensions: `@tiptap/extension-underline`, `@tiptap/extension-text-align`, `@tiptap/extension-highlight`, `@tiptap/extension-task-list`, `@tiptap/extension-task-item`, `@tiptap/extension-text-style`, `@tiptap/extension-color`, `@tiptap/extension-superscript`, `@tiptap/extension-subscript`.
+- Configure `StarterKit` like Menerio: `heading: { levels: [1, 2, 3] }`, disable built-in `link` and `underline` (use the dedicated extensions).
+- Replace inline `Toolbar` with the new `PromptKitEditorToolbar`.
+- Keep `PromptBlock` node + `buildKitMarkdown` serializer unchanged.
+- Keep `tiptap-markdown` so input rules (`# `, `## `, `### `, `- `, `1. `, `> `, ``` ``` ```) all work as expected.
 
-### 2. Dependencies to add
+### 3. Markdown round-trip stays the same
 
-- `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`
-- `@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-typography`
-- `tiptap-markdown` (Markdown serializer/parser)
+DB still stores the same `## Prompt: <title>` Markdown. The `promptBlock` node still serializes through `buildKitMarkdown`. No DB / parser / GitHub sync / MCP / translate changes.
 
-No backend changes required.
+### 4. Dependencies to add
 
-### 3. New / changed files
+```
+@tiptap/extension-underline
+@tiptap/extension-text-align
+@tiptap/extension-highlight
+@tiptap/extension-task-list
+@tiptap/extension-task-item
+@tiptap/extension-text-style
+@tiptap/extension-color
+@tiptap/extension-superscript
+@tiptap/extension-subscript
+```
+
+(`@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-typography`, `tiptap-markdown` already installed.)
+
+### 5. Files
 
 **New**
-- `src/components/editors/PromptKitRichEditor.tsx` — Tiptap wrapper. Props: `value: string` (markdown), `onChange(markdown)`, `onOutlineChange(items)`. Exposes toolbar with "Insert prompt" button.
-- `src/components/editors/extensions/PromptBlockNode.tsx` — custom Tiptap Node (`name: 'promptBlock'`, `group: 'block'`, atom-ish with two editable fields: title input + body textarea). Includes a NodeView component rendering the prompt-card UI and a "remove" button.
-- `src/components/editors/promptKitMarkdown.ts` — helpers `markdownToTiptap(md)` and `tiptapToMarkdown(doc)` that handle the `## Prompt:` convention by serializing/deserializing `promptBlock` nodes.
-- `src/components/promptKits/PromptKitArticleView.tsx` — renderer for the detail page. Splits `parsePromptKitItems` output + the **pre-first-heading intro** + **between-headings prose** (extend parser to also emit "prose" segments) and renders a clean article with per-prompt copy cards.
+- `src/components/editors/PromptKitEditorToolbar.tsx` — the ported toolbar.
 
 **Changed**
-- `src/lib/promptKitParser.ts` — add `parsePromptKitDocument(md)` returning an ordered array of `{type:'prose', markdown}` and `{type:'prompt', index, title, body}` segments. Keep existing `parsePromptKitItems` for backward compatibility.
-- `src/pages/PromptKitNew.tsx` — swap `LineNumberedEditor` for `PromptKitRichEditor`. Drop "Add Prompt" plain-text button (replaced by toolbar). Outline derives from editor outline events. Default template seeds an intro paragraph + one empty prompt block.
-- `src/pages/PromptKitEdit.tsx` — same swap.
-- `src/pages/PromptKitDetail.tsx` — replace the current "items.map → card" block with `<PromptKitArticleView content={kit.content} onCopyItem={...} copiedIdx={...} />`. Keep all existing action buttons (copy all, edit, history, clone, copy to team, suggest, pin, collection, download, translate, menerio).
+- `src/components/editors/PromptKitRichEditor.tsx` — extension list + use new toolbar.
 
-**Untouched (intentionally)**
-- DB schema, RLS, edge functions, GitHub sync format, MCP tools, AI coach, translate, embeddings, suggestions, reviews, version history. Markdown round-trips so they all still work.
+**Untouched**
+- `PromptBlockNode.tsx`, `promptKitMarkdown.ts`, `promptKitParser.ts`, `PromptKitArticleView.tsx`, all pages, all backend.
 
-### 4. Tiptap "Prompt block" node — sketch
+## Why we don't just copy Menerio 1:1
 
-```text
-promptBlock
-├─ attrs: { title: string }
-└─ content: text*        # body kept as plain text inside a code-mark span
-```
-
-Serialized to Markdown as:
-```
-## Prompt: {title}
-
-{body}
-```
-
-Parsed back by scanning `## Prompt:` headings (reuse parser).
-
-### 5. Detail view layout
-
-```text
-[ Intro prose, rendered as markdown article ]
-[ Prose between prompts ... ]
-┌──────────────────────────────────────────┐
-│ #1  Knowledge Architecture Advisor [Copy]│
-│ ─────────────────────────────────────── │
-│ <prompt body, mono, collapsed > 600 chars│
-│ [ Show full prompt ]                     │
-└──────────────────────────────────────────┘
-[ More prose ... ]
-┌──────────────────────────────────────────┐
-│ #2  …                              [Copy]│
-└──────────────────────────────────────────┘
-```
-
-Uses `react-markdown` (already installed) + `@tailwindcss/typography` for the prose, matching the legal/docs styling memory.
-
-### 6. Backwards compatibility
-
-Existing kits load fine: their content is parsed, `## Prompt:` headings become prompt blocks in the editor, all surrounding text becomes regular prose. No migration script needed.
-
-## Out of scope
-
-- Drag-to-reorder prompt blocks (can follow up; Tiptap supports it but adds complexity).
-- Image upload inside kits.
-- Per-prompt metadata (tags / model). Single-prompt artifacts already cover that case.
+Menerio's editor includes wiki-links, video/audio/PDF embeds, tables, and a Markdown converter (`markdownToHtml` + `tiptapJsonToMarkdown`) tailored to notes. We don't need any of that for prompt kits — and we have our own `promptBlock` node and `## Prompt:` Markdown convention. So we port the **toolbar UX and extension stack** (the part you like), but keep our own serializer.
 
 ## Acceptance
 
-- Create a kit, write an intro paragraph, insert two prompt blocks separated by a paragraph, save → DB stores valid Markdown with `## Prompt: …` headings.
-- Reopen in editor → identical structure restored.
-- Detail page shows intro, between-prompt text, and a copy button per prompt that copies only that prompt's body.
-- "Copy entire kit", GitHub sync, translate, AI coach, version history, suggestions all keep working.
+- Typing `# ` at the start of a line creates an H1; `## ` → H2; `### ` → H3.
+- Block-type dropdown shows the current block name and lets the user switch.
+- Underline, strike, highlight, sup/sub, alignment, color, link popover, task list all work.
+- "Insert prompt" still inserts a `promptBlock` card; "Copy this prompt" on the detail page still works.
+- Existing kits load and save without content loss.
