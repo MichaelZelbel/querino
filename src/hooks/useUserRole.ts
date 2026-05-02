@@ -1,86 +1,62 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 export type AppRole = 'free' | 'premium' | 'premium_gift' | 'admin';
 
-interface UserRoleState {
-  role: AppRole | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
 /**
  * Hook to fetch and manage the current user's role from the user_roles table.
- * This is the authoritative source for role/plan information.
+ * Backed by TanStack Query so multiple components share a single cached request
+ * per user instead of each issuing its own Supabase query.
+ *
+ * Public API is intentionally identical to the previous useState/useEffect
+ * implementation — callers do not need to be updated.
  */
 export function useUserRole() {
   const { user } = useAuthContext();
-  const [state, setState] = useState<UserRoleState>({
-    role: null,
-    isLoading: true,
-    error: null,
-  });
+  const queryClient = useQueryClient();
 
-  const fetchRole = useCallback(async () => {
-    if (!user) {
-      setState({ role: null, isLoading: false, error: null });
-      return;
-    }
+  const userId = user?.id ?? null;
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-    try {
+  const query = useQuery({
+    queryKey: ["user-role", userId],
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 min — role rarely changes mid-session
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
+    queryFn: async (): Promise<AppRole> => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("user_id", userId!)
         .single();
 
       if (error) {
-        // If no row found, user might be new - default to 'free'
-        if (error.code === 'PGRST116') {
-          setState({ role: 'free', isLoading: false, error: null });
-        } else {
-          console.error("[useUserRole] Error fetching role:", error);
-          setState({ role: null, isLoading: false, error: error.message });
+        // If no row found, user is new → default to 'free'
+        if ((error as { code?: string }).code === "PGRST116") {
+          return "free";
         }
-        return;
+        throw error;
       }
+      return data.role as AppRole;
+    },
+  });
 
-      console.log("[useUserRole] Fetched role:", data.role, "for user:", user.id);
-      setState({ 
-        role: data.role as AppRole, 
-        isLoading: false, 
-        error: null 
-      });
-    } catch (err) {
-      console.error("[useUserRole] Unexpected error:", err);
-      setState({ 
-        role: null, 
-        isLoading: false, 
-        error: err instanceof Error ? err.message : "Unknown error" 
-      });
-    }
-  }, [user]);
+  const role: AppRole | null = userId ? (query.data ?? null) : null;
 
-  // Fetch role when user changes
-  useEffect(() => {
-    fetchRole();
-  }, [fetchRole]);
-
-  // Computed properties
-  const isAdmin = state.role === 'admin';
-  const isPremium = state.role === 'premium' || state.role === 'premium_gift' || state.role === 'admin';
-  const isFree = state.role === 'free';
+  const refetch = useCallback(async () => {
+    if (!userId) return;
+    await queryClient.invalidateQueries({ queryKey: ["user-role", userId] });
+  }, [queryClient, userId]);
 
   return {
-    role: state.role,
-    isLoading: state.isLoading,
-    error: state.error,
-    isAdmin,
-    isPremium,
-    isFree,
-    refetch: fetchRole,
+    role,
+    isLoading: !!userId && query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+    isAdmin: role === "admin",
+    isPremium: role === "premium" || role === "premium_gift" || role === "admin",
+    isFree: role === "free",
+    refetch,
   };
 }

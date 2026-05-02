@@ -1,70 +1,53 @@
-## Ziel
+# Performance-Optimierungen für Querino
 
-Statt manuellem "Sync to GitHub"-Button sollen Prompts (und konsequenterweise auch Skills, Workflows und Prompt Kits) **automatisch** mit GitHub synchronisiert werden:
-- beim **Speichern** (Create / Update) → Datei in GitHub anlegen oder aktualisieren
-- beim **Löschen** → Datei in GitHub entfernen
+Beim Durchgehen des Codes habe ich vier konkrete Stellen gefunden, die spürbar Bremswirkung im Browser haben — alle ohne Funktionsverlust korrigierbar. Sortiert nach Wirkung.
 
-Der manuelle "Sync now"-Button bleibt als Fallback / Full-Resync erhalten.
+## 1. Route-basiertes Code-Splitting (größte Wirkung)
 
-## Wie es funktionieren soll
+**Problem:** `src/App.tsx` importiert alle ~60 Seitenkomponenten statisch (Admin, Blog-CMS, Editoren mit Tiptap, Recharts, etc.). Dadurch landet der gesamte Anwendungscode in **einem JS-Bundle**, das beim ersten Aufruf der Landingpage geladen, geparst und ausgeführt werden muss — auch wenn der Nutzer nie ins Admin-Panel oder den Blog-Editor geht. Tiptap allein bringt ~12 Extensions mit.
 
-1. **Trigger**: Datenbank-Trigger auf `prompts`, `skills`, `workflows`, `prompt_kits` reagieren auf `INSERT`, `UPDATE`, `DELETE`.
-2. **Queue**: Trigger schreiben einen Eintrag in eine neue Tabelle `github_sync_queue` (artifact_type, artifact_id, operation: `upsert` | `delete`, user_id, status).
-3. **Worker**: Eine Edge Function `github-sync-worker` verarbeitet die Queue:
-   - Holt den Author / Workspace-Owner und dessen GitHub-Settings (`github_sync_enabled`, `github_repo`, `github_branch`, `github_folder`, PAT aus `user_credentials`).
-   - Wenn Sync für den User deaktiviert oder kein PAT vorhanden → Eintrag als `skipped` markieren.
-   - Bei `upsert`: Markdown rendern (vorhandene Generatoren in `github-sync/index.ts` wiederverwenden) und über GitHub Contents API mit dem aktuellen `sha` updaten / neu anlegen.
-   - Bei `delete`: Datei via Contents API DELETE entfernen.
-4. **Auslösung des Workers**:
-   - Direkt aus dem Trigger via `pg_net` HTTP-Aufruf an die Edge Function (asynchron, blockiert das Save nicht), **plus**
-   - `pg_cron` Job alle 1 Minute als Sicherheitsnetz, um liegengebliebene `pending` / `failed` (mit retry < 3) Einträge nachzuarbeiten.
-5. **Pfade**: Stabiler Dateipfad pro Artefakt: `<github_folder>/<type>s/<slug>-<shortId>.md`. Slug-Änderungen: alten Pfad zusätzlich löschen (über letzten gespeicherten Pfad in `github_sync_state`).
-6. **UI**:
-   - In Settings: Toggle "Auto-sync on save" (default an, sobald GitHub Sync aktiviert ist).
-   - Pro Artefakt klein anzeigbarer Sync-Status (last_synced_at, error).
-   - Manueller "Full resync"-Button bleibt.
-7. **Doku**: Sektion `#github-sync` in `src/pages/Docs.tsx` aktualisieren — "When does sync run?" beschreibt das neue Verhalten (auto on save & delete, plus optionaler Full Resync).
+**Lösung:** Statische Imports in `React.lazy(() => import(...))` umstellen und `<Routes>` in einen `<Suspense fallback={...}>` wickeln. Index/Discover/Auth bleiben eager (häufigste Einstiegspunkte), alles andere wird lazy geladen.
+
+Erwarteter Effekt: Initial-Bundle schrumpft je nach Aufteilung um 50–70%, deutlich schnellerer Time-to-Interactive auf der Landingpage.
+
+## 2. `useUserRole` als geteilten Cache statt N-fache Direktabfrage
+
+**Problem:** Den Konsolen-Logs ist klar zu entnehmen, dass `[useUserRole] Fetched role: admin` pro Navigation **4–6 mal** feuert. Der Hook nutzt `useState`/`useEffect` direkt mit Supabase — jede Komponente, die ihn aufruft (Header, PremiumGate, PremiumBadge, usePremiumCheck, BlogAdminLayout, Admin, LibraryPromptEdit), öffnet ihre eigene Anfrage. Das sind unnötige DB-Roundtrips bei jedem Routenwechsel.
+
+**Lösung:** `useUserRole` auf TanStack Query umstellen (`useQuery` mit `queryKey: ['user-role', user.id]`, `staleTime: 5min`). Damit teilen sich alle Aufrufer denselben Cache und es feuert genau **eine** Anfrage pro Session, statt 4–6 pro Seite. Die externe API des Hooks (`role`, `isAdmin`, `isPremium`, `refetch`) bleibt identisch — kein Aufrufer muss angepasst werden.
+
+## 3. Globale QueryClient-Defaults
+
+**Problem:** `new QueryClient()` in `App.tsx` verwendet die Standardwerte, d.h. `staleTime: 0` und `refetchOnWindowFocus: true`. Folge: Beim Tab-Wechsel werden alle aktiven Queries (Prompts, Skills, Workflows, Reviews, Activity-Feed, …) erneut abgeschickt. Das kostet Bandbreite und macht die App träge wirken.
+
+**Lösung:** Sinnvolle Defaults setzen — `staleTime: 60_000`, `gcTime: 5min`, `refetchOnWindowFocus: false`, `retry: 1`. Einzelne Queries können bei Bedarf weiterhin individuell abweichen. Funktional ändert sich nichts, nur das Refetch-Verhalten wird ruhiger.
+
+## 4. Aufräumen: Logging & Font-Loading
+
+- **Konsolen-Logs:** `[useUserRole] Fetched role:` und ein paar `console.log`/`console.warn` in den Hooks aus Production-Builds entfernen oder durch `import.meta.env.DEV`-Guard schützen. Console-Calls sind im Browser nicht gratis — vor allem bei jedem Render.
+- **Google Fonts:** Drei Font-Familien (Bricolage Grotesque mit Variable-Range, Inter, JetBrains Mono) werden synchron im `<head>` geladen → render-blocking. Stattdessen mit `media="print"` + `onload`-Swap-Pattern asynchron laden, plus `<link rel="preload">` für die wirklich kritische Familie (Inter). Spart ~200–400 ms First-Paint.
 
 ## Technische Details
 
-### Neue Tabelle `github_sync_queue`
-```text
-id uuid pk
-user_id uuid               -- Owner, dessen GitHub-Repo betroffen ist
-artifact_type text         -- 'prompt' | 'skill' | 'workflow' | 'prompt_kit'
-artifact_id uuid
-operation text             -- 'upsert' | 'delete'
-payload jsonb              -- Snapshot bei DELETE (slug, path), sonst {}
-status text                -- 'pending' | 'processing' | 'done' | 'failed' | 'skipped'
-attempts int default 0
-last_error text
-created_at, updated_at timestamptz
-```
-RLS: nur service_role schreibt/liest; User dürfen ihre eigenen Einträge SELECTen (für Status-UI).
+**Dateien, die angefasst werden:**
 
-### Neue Tabelle `github_sync_state`
-Pro (artifact_type, artifact_id): zuletzt verwendeter `path` und `sha`, damit Renames/Deletes sauber sind.
+- `src/App.tsx` — alle Page-Imports auf `lazy()` umstellen, `<Suspense>` einsetzen, `QueryClient` mit Defaults konfigurieren
+- `src/hooks/useUserRole.ts` — Refactor auf `useQuery` (öffentliche API unverändert)
+- `src/hooks/useAuth.ts`, `src/hooks/useUserRole.ts`, `src/hooks/useEmbeddings.ts` — `console.log` hinter DEV-Guard
+- `index.html` — Google-Fonts-Tag auf async-Load-Pattern umbauen
 
-### Trigger (Migration)
-- AFTER INSERT OR UPDATE OF (title, slug, content, description, category, tags, is_public/published) ON `prompts` → `enqueue_github_sync('prompt', NEW.id, 'upsert', NEW.author_id)`
-- AFTER DELETE → `enqueue_github_sync('prompt', OLD.id, 'delete', OLD.author_id, payload mit slug)`
-- Analog für `skills`, `workflows`, `prompt_kits` (Owner = `author_id`, bei Team-Artefakten zusätzlich `team_id` berücksichtigen — Phase 2, im ersten Wurf nur Personal).
-- Trigger ruft am Ende `pg_net.http_post` auf den Worker auf (best effort, Fehler ignorieren).
+**Was sich NICHT ändert:**
 
-### Edge Function `github-sync-worker`
-- `verify_jwt = false`, intern via `SERVICE_ROLE_KEY`.
-- Locked Batch Pull aus `github_sync_queue` (max 25, `status='pending'` oder `failed AND attempts<3`), `FOR UPDATE SKIP LOCKED`.
-- Pro Eintrag: GitHub Settings + PAT laden, Markdown bauen, Contents API call, State updaten, Queue-Eintrag auf `done` / `failed` (+attempts++).
-- Logging in `activity_events` (`github_sync_triggered`) bleibt.
+- Keine API-Signaturen, keine entfernten Features, keine UI-Änderungen
+- Keine zusätzlichen Dependencies
+- TanStack Query und Suspense sind bereits im Projekt vorhanden
 
-### `pg_cron`
-Job `github-sync-worker-tick` jede Minute → ruft Edge Function via `pg_net` an. Anlage über die Insert-/SQL-Tools (enthält Anon-Key + URL).
+**Risiko:** Sehr gering. Lazy Loading kann beim ersten Aufruf einer Route einen kurzen Suspense-Fallback zeigen — daher ein dezenter Loading-Spinner als Fallback. Der `useUserRole`-Refactor behält die exakt gleiche Rückgabe-API, sodass alle 7+ Aufrufer unverändert weiterlaufen.
 
-### Refactor bestehende `github-sync` Function
-- Behält den "Full snapshot"-Modus für den manuellen Resync-Button.
-- Markdown-Generatoren werden in ein Modul ausgelagert und vom Worker mitgenutzt.
+## Reihenfolge der Umsetzung
 
-## Offen / explizit out of scope (erstmal)
-- **Team-Repos**: erst Personal-Repos automatisch syncen. Team-Sync bleibt manuell, bis das Verhalten stabil ist.
-- **Debouncing** mehrfacher schneller Saves: Worker dedupliziert beim Pull (pro artifact_id letzten `upsert`-Eintrag nehmen, ältere als `done` markieren).
-- **Konfliktauflösung**: Sync bleibt einseitig Querino → GitHub. Externe Änderungen am Repo werden überschrieben (wie heute).
+1. QueryClient-Defaults + `useUserRole`-Refactor (sofort spürbar weniger Netzwerk-Traffic)
+2. Code-Splitting in `App.tsx` (größter Bundle-Impact)
+3. Logging-Cleanup + Font-Loading (Feinschliff)
+
+Soll ich es so umsetzen?
