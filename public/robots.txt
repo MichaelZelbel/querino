@@ -13,5 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap hosted on Supabase Edge Functions
-Sitemap: https://zvuwkffneqxqsihlnfsd.supabase.co/functions/v1/api/sitemap.xml
+Sitemap: https://querino.ai/sitemap.xml
