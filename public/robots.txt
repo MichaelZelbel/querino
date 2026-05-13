@@ -13,4 +13,5 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://querino.ai/sitemap.xml
+# Dynamic sitemap served by Supabase Edge Function (always up-to-date with public artifacts)
+Sitemap: https://zvuwkffneqxqsihlnfsd.supabase.co/functions/v1/api/sitemap.xml
