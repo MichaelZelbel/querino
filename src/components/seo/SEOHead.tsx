@@ -108,11 +108,26 @@ export function SEOHead({
       rssLink.remove();
     }
 
+    // JSON-LD structured data (managed by SEOHead — tagged with data-seo-jsonld)
+    document
+      .querySelectorAll('script[type="application/ld+json"][data-seo-jsonld]')
+      .forEach((el) => el.remove());
+    if (jsonLd) {
+      const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+      for (const block of blocks) {
+        const script = document.createElement("script");
+        script.setAttribute("type", "application/ld+json");
+        script.setAttribute("data-seo-jsonld", "true");
+        script.text = JSON.stringify(block);
+        document.head.appendChild(script);
+      }
+    }
+
     // Cleanup function
     return () => {
       // Reset title on unmount if needed
     };
-  }, [fullTitle, finalDescription, ogImage, ogType, canonicalUrl, publishedTime, author, noIndex, includeRssFeed, rssUrl]);
+  }, [fullTitle, finalDescription, ogImage, ogType, canonicalUrl, publishedTime, author, noIndex, includeRssFeed, rssUrl, jsonLd]);
 
   return null;
 }
