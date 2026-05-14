@@ -68,6 +68,23 @@ export default function BlogPost() {
   const ogImage = post.og_image_url || post.featured_image?.url;
   const canonicalUrl = `${window.location.origin}/blog/${post.slug}`;
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.seo_description || post.excerpt || undefined,
+    image: ogImage || undefined,
+    datePublished: post.published_at || undefined,
+    dateModified: (post as any).updated_at || post.published_at || undefined,
+    author: { "@type": "Person", name: authorName },
+    publisher: {
+      "@type": "Organization",
+      name: "Querino",
+      logo: { "@type": "ImageObject", url: `${window.location.origin}/favicon.png` },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+  };
+
   return (
     <>
       <SEOHead
@@ -79,6 +96,7 @@ export default function BlogPost() {
         publishedTime={post.published_at || undefined}
         author={authorName}
         includeRssFeed
+        jsonLd={articleJsonLd}
       />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
