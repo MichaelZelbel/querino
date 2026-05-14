@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getCallerUserId, assertCredits, CreditsExhaustedError } from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +53,25 @@ serve(async (req) => {
   }
 
   try {
+    let user_id: string;
+    try {
+      user_id = await getCallerUserId(req);
+    } catch {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    try {
+      await assertCredits(user_id);
+    } catch (e) {
+      if (e instanceof CreditsExhaustedError) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw e;
+    }
+
     const { artifactType, artifactId, mode, message, canvasContent, selection } =
       await req.json();
 
