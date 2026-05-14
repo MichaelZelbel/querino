@@ -10,6 +10,7 @@ interface SEOHeadProps {
   author?: string;
   noIndex?: boolean;
   includeRssFeed?: boolean;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 export function SEOHead({
