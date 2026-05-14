@@ -62,10 +62,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the user's Menerio API key from menerio_integration
+    // Get the user's Menerio API key + registered base URL
     const { data: integration, error: integrationError } = await supabase
       .from("menerio_integration")
-      .select("menerio_api_key")
+      .select("menerio_api_key, menerio_base_url")
       .eq("user_id", user_id)
       .eq("is_active", true)
       .maybeSingle();
@@ -75,6 +75,22 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "No active Menerio connection found for this user" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Allowlist check: callback host must match the user's registered Menerio base URL
+    try {
+      const baseUrl = new URL(integration.menerio_base_url);
+      if (baseUrl.host !== callbackUrl.host) {
+        return new Response(
+          JSON.stringify({ error: "menerio_callback host does not match registered Menerio base URL" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Stored Menerio base URL is invalid" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
