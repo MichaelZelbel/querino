@@ -23,6 +23,7 @@ export function SEOHead({
   author,
   noIndex = false,
   includeRssFeed = false,
+  jsonLd,
 }: SEOHeadProps) {
   const siteName = "Querino";
   const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
