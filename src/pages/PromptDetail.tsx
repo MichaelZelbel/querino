@@ -11,6 +11,7 @@ import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -307,8 +308,29 @@ export default function PromptDetail() {
     );
   }
 
+  const promptCanonical = `${window.location.origin}/prompts/${prompt.slug}`;
+  const promptDescription = prompt.summary || prompt.description || `${prompt.title} — AI prompt on Querino`;
+  const promptJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: prompt.title,
+    description: promptDescription,
+    category: prompt.category,
+    url: promptCanonical,
+    brand: { "@type": "Brand", name: "Querino" },
+    ...(prompt.author?.display_name && {
+      author: { "@type": "Person", name: prompt.author.display_name },
+    }),
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <SEOHead
+        title={prompt.title}
+        description={promptDescription}
+        canonicalUrl={promptCanonical}
+        jsonLd={promptJsonLd}
+      />
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 py-12">

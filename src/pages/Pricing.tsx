@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { PricingCards } from "@/components/pricing/PricingCards";
 import { FeatureComparisonTable } from "@/components/pricing/FeatureComparisonTable";
 import { useSearchParams } from "react-router-dom";
@@ -9,8 +10,32 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const fromDashboard = searchParams.get("from") === "dashboard";
 
+  const pricingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "Querino",
+    description: "AI prompt library, kits, skills, and workflows for creators.",
+    brand: { "@type": "Brand", name: "Querino" },
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Free",
+        price: "0",
+        priceCurrency: "EUR",
+        url: "https://querino.ai/pricing",
+        availability: "https://schema.org/InStock",
+      },
+    ],
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <SEOHead
+        title="Pricing"
+        description="Simple, transparent pricing for Querino — start free and upgrade when you're ready."
+        canonicalUrl="https://querino.ai/pricing"
+        jsonLd={pricingJsonLd}
+      />
       <Header />
       
       <main className="flex-1">
