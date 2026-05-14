@@ -1,53 +1,61 @@
-# Performance-Optimierungen für Querino
+## Was schiefläuft
 
-Beim Durchgehen des Codes habe ich vier konkrete Stellen gefunden, die spürbar Bremswirkung im Browser haben — alle ohne Funktionsverlust korrigierbar. Sortiert nach Wirkung.
+Beim Anlegen eines neuen Prompts passiert in Sachen Menerio aktuell **gar nichts** — und das ist ein echter Bug, nicht nur eine fehlende Einstellung.
 
-## 1. Route-basiertes Code-Splitting (größte Wirkung)
+In deinem Screenshot ist alles korrekt eingestellt:
+- "Auto‑Sync" an
+- "Integration active" an
+- "Prompts" als Artefakt‑Typ angehakt
+- Letzter Sync 30.04. — also vor diesem neuen Prompt
 
-**Problem:** `src/App.tsx` importiert alle ~60 Seitenkomponenten statisch (Admin, Blog-CMS, Editoren mit Tiptap, Recharts, etc.). Dadurch landet der gesamte Anwendungscode in **einem JS-Bundle**, das beim ersten Aufruf der Landingpage geladen, geparst und ausgeführt werden muss — auch wenn der Nutzer nie ins Admin-Panel oder den Blog-Editor geht. Tiptap allein bringt ~12 Extensions mit.
+Trotzdem landet das neue Prompt nicht in Menerio. Ursache liegt in der Datenbank.
 
-**Lösung:** Statische Imports in `React.lazy(() => import(...))` umstellen und `<Routes>` in einen `<Suspense fallback={...}>` wickeln. Index/Discover/Auth bleiben eager (häufigste Einstiegspunkte), alles andere wird lazy geladen.
+## Root Cause (technisch)
 
-Erwarteter Effekt: Initial-Bundle schrumpft je nach Aufteilung um 50–70%, deutlich schnellerer Time-to-Interactive auf der Landingpage.
+In `supabase/migrations/20260328162230_…queue_menerio_sync.sql` ist die Auto‑Sync‑Logik so gebaut:
 
-## 2. `useUserRole` als geteilten Cache statt N-fache Direktabfrage
+1. Es gibt **nur Trigger für `AFTER UPDATE` und `AFTER DELETE`** auf `prompts`, `skills`, `workflows`, `claws` — **kein `AFTER INSERT`**.
+2. Im Trigger‑Body steht zusätzlich: `IF OLD.menerio_synced = true …` — d. h. die Queue‑Insertion läuft **nur, wenn das Artefakt schon einmal gesynct war**.
+3. Die Felder `auto_sync` und `sync_artifact_types` aus `menerio_integration` werden vom Trigger gar nicht gelesen — die UI‑Toggles haben heute also nur Wirkung auf den manuellen "Sync all"‑Flow, nicht auf das automatische Queueing.
 
-**Problem:** Den Konsolen-Logs ist klar zu entnehmen, dass `[useUserRole] Fetched role: admin` pro Navigation **4–6 mal** feuert. Der Hook nutzt `useState`/`useEffect` direkt mit Supabase — jede Komponente, die ihn aufruft (Header, PremiumGate, PremiumBadge, usePremiumCheck, BlogAdminLayout, Admin, LibraryPromptEdit), öffnet ihre eigene Anfrage. Das sind unnötige DB-Roundtrips bei jedem Routenwechsel.
+Konsequenz: Ein **neu** erstelltes Prompt wird nie in `menerio_sync_queue` eingetragen → der Worker (`process-menerio-sync-queue`, alle 30 s per Cron) sieht es nie → es kommt nie in Menerio an. Erst wenn du es einmal manuell über den "Sync to Menerio"‑Button schickst, greift der UPDATE‑Trigger bei zukünftigen Änderungen.
 
-**Lösung:** `useUserRole` auf TanStack Query umstellen (`useQuery` mit `queryKey: ['user-role', user.id]`, `staleTime: 5min`). Damit teilen sich alle Aufrufer denselben Cache und es feuert genau **eine** Anfrage pro Session, statt 4–6 pro Seite. Die externe API des Hooks (`role`, `isAdmin`, `isPremium`, `refetch`) bleibt identisch — kein Aufrufer muss angepasst werden.
+Das passt auch zu deinem Screenshot: "Prompts 37 / 61 synced" — die 24 nicht gesyncten sind genau die, die nie manuell angestoßen wurden.
 
-## 3. Globale QueryClient-Defaults
+## Fix‑Plan
 
-**Problem:** `new QueryClient()` in `App.tsx` verwendet die Standardwerte, d.h. `staleTime: 0` und `refetchOnWindowFocus: true`. Folge: Beim Tab-Wechsel werden alle aktiven Queries (Prompts, Skills, Workflows, Reviews, Activity-Feed, …) erneut abgeschickt. Das kostet Bandbreite und macht die App träge wirken.
+### 1. Neue Migration: INSERT‑Trigger + Settings respektieren
 
-**Lösung:** Sinnvolle Defaults setzen — `staleTime: 60_000`, `gcTime: 5min`, `refetchOnWindowFocus: false`, `retry: 1`. Einzelne Queries können bei Bedarf weiterhin individuell abweichen. Funktional ändert sich nichts, nur das Refetch-Verhalten wird ruhiger.
+Neue Datei `supabase/migrations/<timestamp>_menerio_autosync_on_insert.sql`:
 
-## 4. Aufräumen: Logging & Font-Loading
+- `queue_menerio_sync()` so erweitern, dass sie:
+  - bei `TG_OP = 'INSERT'` einen `pending`‑Eintrag in `menerio_sync_queue` schreibt, **wenn**
+    - `NEW.author_id IS NOT NULL`,
+    - eine aktive `menerio_integration` für diesen User existiert (`is_active = true`),
+    - `auto_sync = true`,
+    - und `v_artifact_type = ANY(sync_artifact_types)`.
+  - bei `UPDATE` die Bedingung `OLD.menerio_synced = true` ergänzt um „**oder** Auto‑Sync ist aktiv und Typ ist erlaubt", damit auch Updates an noch nie gesyncten Artefakten erfasst werden.
+  - `auto_sync` / `sync_artifact_types` zusätzlich auch im UPDATE‑ und DELETE‑Pfad prüft.
+- Trigger `queue_menerio_sync_on_<table>_insert AFTER INSERT` auf `prompts`, `skills`, `workflows` anlegen (Claws sind laut Memory aus dem Produkt entfernt — überspringen oder für Konsistenz mitnehmen, ohne UI dafür).
 
-- **Konsolen-Logs:** `[useUserRole] Fetched role:` und ein paar `console.log`/`console.warn` in den Hooks aus Production-Builds entfernen oder durch `import.meta.env.DEV`-Guard schützen. Console-Calls sind im Browser nicht gratis — vor allem bei jedem Render.
-- **Google Fonts:** Drei Font-Familien (Bricolage Grotesque mit Variable-Range, Inter, JetBrains Mono) werden synchron im `<head>` geladen → render-blocking. Stattdessen mit `media="print"` + `onload`-Swap-Pattern asynchron laden, plus `<link rel="preload">` für die wirklich kritische Familie (Inter). Spart ~200–400 ms First-Paint.
+Damit funktioniert Auto‑Sync für alle künftigen neuen Artefakte, und die UI‑Toggles ("Auto‑Sync", "Artifact types to sync") bekommen endlich echte serverseitige Wirkung.
 
-## Technische Details
+### 2. Backfill für das jetzt fehlende Prompt (und die anderen 24)
 
-**Dateien, die angefasst werden:**
+Einmaliger SQL‑Block in derselben Migration, der für jeden User mit aktiver Integration + `auto_sync = true` alle eigenen, **noch nicht gesyncten** Artefakte der erlaubten Typen in `menerio_sync_queue` mit Status `pending` einreiht (mit Dedupe gegen bestehende `pending`‑Einträge). Der bestehende Cron‑Worker arbeitet sie dann innerhalb von ≤ 30 s ab.
 
-- `src/App.tsx` — alle Page-Imports auf `lazy()` umstellen, `<Suspense>` einsetzen, `QueryClient` mit Defaults konfigurieren
-- `src/hooks/useUserRole.ts` — Refactor auf `useQuery` (öffentliche API unverändert)
-- `src/hooks/useAuth.ts`, `src/hooks/useUserRole.ts`, `src/hooks/useEmbeddings.ts` — `console.log` hinter DEV-Guard
-- `index.html` — Google-Fonts-Tag auf async-Load-Pattern umbauen
+Alternativ ohne Backfill: du klickst einmalig in den Settings auf „Sync all" — das funktioniert heute schon und holt das fehlende Prompt rein. Empfehlung: Backfill mitnehmen, damit es „einfach geht".
 
-**Was sich NICHT ändert:**
+### 3. Verifikation
 
-- Keine API-Signaturen, keine entfernten Features, keine UI-Änderungen
-- Keine zusätzlichen Dependencies
-- TanStack Query und Suspense sind bereits im Projekt vorhanden
+- Migration anwenden.
+- Neues Test‑Prompt anlegen → in `menerio_sync_queue` muss sofort ein `pending`‑Row auftauchen.
+- Edge‑Function‑Logs von `process-menerio-sync-queue` prüfen (`supabase--edge_function_logs`), Status muss innerhalb 30 s auf `completed` gehen.
+- In Menerio sollte das Prompt erscheinen; in der UI „Last sync" aktualisiert sich.
+- `prompts.menerio_synced` für die neue Zeile = `true`.
 
-**Risiko:** Sehr gering. Lazy Loading kann beim ersten Aufruf einer Route einen kurzen Suspense-Fallback zeigen — daher ein dezenter Loading-Spinner als Fallback. Der `useUserRole`-Refactor behält die exakt gleiche Rückgabe-API, sodass alle 7+ Aufrufer unverändert weiterlaufen.
+## Was nicht Teil des Fixes ist
 
-## Reihenfolge der Umsetzung
-
-1. QueryClient-Defaults + `useUserRole`-Refactor (sofort spürbar weniger Netzwerk-Traffic)
-2. Code-Splitting in `App.tsx` (größter Bundle-Impact)
-3. Logging-Cleanup + Font-Loading (Feinschliff)
-
-Soll ich es so umsetzen?
+- UI‑Änderungen an `MenerioIntegrationSection` / Sync‑Buttons — die bleiben wie sie sind.
+- Änderungen an `render-for-menerio` oder am Worker — beide sind in Ordnung, sie werden heute nur nicht angetriggert.
+- Claws — gemäß Produktentscheidung entfernt; Trigger lassen wir auf den drei aktiven Typen.
