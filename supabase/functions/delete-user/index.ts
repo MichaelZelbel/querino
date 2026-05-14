@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { decode } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,54 +35,24 @@ serve(async (req) => {
 
     // Extract the JWT token from the header
     const token = authHeader.replace("Bearer ", "");
-    console.log("v3 - Token length:", token.length);
-    
-    // Decode the JWT to get claims (without verification - we'll verify via service role)
-    let payload: any;
-    try {
-      const [_header, decodedPayload, _signature] = decode(token);
-      payload = decodedPayload;
-      console.log("v3 - JWT decoded, sub:", payload?.sub);
-    } catch (decodeError: any) {
-      console.error("v3 - JWT decode failed:", decodeError.message);
-      return new Response(
-        JSON.stringify({ error: "Invalid token format" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    if (!payload?.sub) {
-      console.error("v3 - No sub claim in token");
-      return new Response(
-        JSON.stringify({ error: "Invalid token - no user ID" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const requestingUserId = payload.sub;
 
     // Create admin client for all privileged operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify the user exists in auth.users using the admin API
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(requestingUserId);
-    
-    console.log("v3 - Auth user lookup:", authUser?.user?.id || "not found", "error:", authError?.message || "none");
-    
-    if (authError || !authUser?.user) {
-      console.error("v3 - User not found in auth:", authError?.message);
+    // Cryptographically verify the JWT via Supabase (uses JWKS).
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !authData?.user) {
+      console.error("v4 - JWT verification failed:", authError?.message);
       return new Response(
-        JSON.stringify({ error: "Unauthorized - user not found" }),
+        JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("v3 - Requesting user ID verified:", requestingUserId);
+    const requestingUserId = authData.user.id;
+    console.log("v4 - Requesting user ID verified:", requestingUserId);
 
     // Check if requesting user is admin
     const { data: profile, error: profileError } = await supabaseAdmin
