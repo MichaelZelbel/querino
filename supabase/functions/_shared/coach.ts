@@ -124,12 +124,13 @@ interface StoredMessage {
   response_metadata?: Record<string, unknown>;
 }
 
-async function loadHistory(sessionId: string): Promise<ChatMessage[]> {
+async function loadHistory(sessionId: string, userId: string): Promise<ChatMessage[]> {
   const sb = getServiceClient();
   const { data, error } = await sb
     .from("prompt_coach_messages")
     .select("id, message")
     .eq("session_id", sessionId)
+    .eq("user_id", userId)
     .order("id", { ascending: true });
 
   if (error) {
@@ -154,13 +155,14 @@ async function loadHistory(sessionId: string): Promise<ChatMessage[]> {
 
 async function appendHistory(
   sessionId: string,
+  userId: string,
   human: string,
   ai: string,
 ): Promise<void> {
   const sb = getServiceClient();
   const rows = [
-    { session_id: sessionId, message: { type: "human", content: human, additional_kwargs: {}, response_metadata: {} } },
-    { session_id: sessionId, message: { type: "ai", content: ai, additional_kwargs: {}, response_metadata: {} } },
+    { session_id: sessionId, user_id: userId, message: { type: "human", content: human, additional_kwargs: {}, response_metadata: {} } },
+    { session_id: sessionId, user_id: userId, message: { type: "ai", content: ai, additional_kwargs: {}, response_metadata: {} } },
   ];
   const { error } = await sb.from("prompt_coach_messages").insert(rows);
   if (error) console.error("[coach.appendHistory] error:", error);
@@ -205,7 +207,7 @@ export function startCoachServer(cfg: CoachConfig) {
 
       await assertCredits(user_id);
 
-      const history = await loadHistory(session_id);
+      const history = await loadHistory(session_id, user_id);
 
       const truncatedCanvas = (canvas_content ?? "").toString().slice(0, CANVAS_TRUNCATE);
       const selectionBlock = selection?.text
@@ -273,7 +275,7 @@ ${truncatedCanvas}
 
       // Persist history (best-effort)
       try {
-        await appendHistory(session_id, message, assistantMessage);
+        await appendHistory(session_id, user_id, message, assistantMessage);
       } catch (e) {
         console.error(`[${cfg.feature}] history append failed:`, e);
       }
