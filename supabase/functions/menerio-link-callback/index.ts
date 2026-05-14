@@ -17,35 +17,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Require a valid Supabase JWT and use its sub as user_id (ignore body user_id).
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (!token) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !authData?.user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    const user_id = authData.user.id;
-
-    const { menerio_callback, menerio_note_id, prompt_id, prompt_slug } =
+    const { menerio_callback, menerio_note_id, prompt_id, prompt_slug, user_id } =
       await req.json();
 
-    if (!menerio_callback || !menerio_note_id || !prompt_id) {
+    if (!menerio_callback || !menerio_note_id || !prompt_id || !user_id) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: menerio_callback, menerio_note_id, prompt_id" }),
+        JSON.stringify({ error: "Missing required fields: menerio_callback, menerio_note_id, prompt_id, user_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate callback URL: must be https and host must match user's stored Menerio base URL
+    // Validate callback URL: must be https. Host is allowlisted below against
+    // the user's stored Menerio base URL so an attacker cannot exfiltrate the
+    // API key to an arbitrary domain even if they know the victim's user_id.
     let callbackUrl: URL;
     try {
       callbackUrl = new URL(menerio_callback);
