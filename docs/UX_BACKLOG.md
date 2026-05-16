@@ -90,13 +90,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Editors (Prompt / Skill / Workflow / PromptKit / Profile)
 - **Files:** new `src/hooks/useUnsavedChanges.ts`, new `src/components/editors/SaveStateBadge.tsx`; `LibraryPromptEdit.tsx`, `SkillEdit.tsx`, `WorkflowEdit.tsx`, `PromptKitEdit.tsx`, `EditProfile.tsx`.
 
-### 10. 🟥 Copy-prompt feedback is silent on Discover cards · S · ★★
+### 10. 🟩 Copy-prompt feedback is silent on Discover cards · S · ★★
+- **Shipped:** 2026-05-16 — Verified already implemented across all artifact cards: `PromptCard`, `LegacyPromptCard`, `SkillCard`, `WorkflowCard`, `PromptKitCard` each track a `copied` state, swap the button to `variant="success"` with `Check` icon + "Copied" label for 2s, then revert. Toast continues to fire in parallel.
 - **Area:** Discover / PromptCard
-- **Problem:** Each Discover card has a “Copy” button. A toast may fire, but the button itself does not switch to a “Copied ✓” state, so on noisy pages users tap twice unsure if it worked.
-- **Acceptance:**
-  - Clicking Copy on a `PromptCard` swaps the button content to `Check` icon + “Copied” for 1.5s, then reverts.
-  - Toast continues to fire as today (no regression).
-- **Files:** `src/components/prompts/PromptCard.tsx` (and any sibling card that exposes Copy).
+- **Files:** `src/components/prompts/PromptCard.tsx`, `LegacyPromptCard.tsx`, `src/components/skills/SkillCard.tsx`, `src/components/workflows/WorkflowCard.tsx`, `src/components/promptKits/PromptKitCard.tsx`.
 
 ---
 
