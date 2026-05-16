@@ -23,6 +23,7 @@ import {
   MoreVertical
 } from "lucide-react";
 import { mockPrompts, categories } from "@/data/mockPrompts";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -262,13 +263,13 @@ export default function PromptLibrary() {
         )}
 
         {filteredPrompts.length === 0 && (
-          <div className="text-center py-16">
-            <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg mb-4">No prompts found</p>
-            <Link to="/prompt-creation-publishing-premium-free-">
-              <Button>Create Your First Prompt</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={FolderOpen}
+            title="No prompts found"
+            description="Nothing here yet. Create your first prompt or browse Discover for ideas."
+            primaryAction={{ label: "Create Your First Prompt", to: "/prompt-creation-publishing-premium-free-", icon: Plus }}
+            secondaryAction={{ label: "Browse Discover", to: "/discover" }}
+          />
         )}
       </main>
 

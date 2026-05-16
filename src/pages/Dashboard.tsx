@@ -23,6 +23,7 @@ import {
   Crown
 } from "lucide-react";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -287,42 +288,20 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : userPrompts.length === 0 ? (
-              <Card variant="default" className="py-12 text-center">
-                <CardContent>
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <Library className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="mb-2 font-semibold text-foreground">No prompts yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Create your first prompt or explore the community
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <Link to="/prompts/new">
-                      <Button variant="default" size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Prompt
-                      </Button>
-                    </Link>
-                    <Link to="/discover">
-                      <Button variant="outline" size="sm">
-                        Discover Prompts
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={Library}
+                title="No prompts yet"
+                description="Create your first prompt, or explore the community to find inspiration."
+                primaryAction={{ label: "Create Prompt", to: "/prompts/new", icon: Plus }}
+                secondaryAction={{ label: "Discover Prompts", to: "/discover", icon: Sparkles }}
+              />
             ) : (
-              <Card variant="default" className="py-12 text-center">
-                <CardContent>
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <Search className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="mb-2 font-semibold text-foreground">No prompts found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Try adjusting your search or create a new prompt
-                  </p>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={Search}
+                title="No prompts found"
+                description="Try adjusting your search, or create a new prompt to fill the gap."
+                primaryAction={{ label: "Create Prompt", to: "/prompts/new", icon: Plus }}
+              />
             )}
           </section>
         </div>

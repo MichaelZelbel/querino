@@ -13,6 +13,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import { Search, FileText, Workflow, Sparkles, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const Discover = () => {
   const [activeTab, setActiveTab] = useState("prompts");
@@ -50,7 +51,17 @@ const Discover = () => {
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search prompt kits..." value={kitSearch} onChange={(e) => setKitSearch(e.target.value)} className="pl-10" /></div>
                 {kitsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
                 ) : kits && kits.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{kits.map((kit) => <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />)}</div>
-                ) : (<div className="py-12 text-center"><p className="text-lg text-muted-foreground">No prompt kits found.</p></div>)}
+                ) : (
+                  <EmptyState
+                    variant="compact"
+                    icon={Package}
+                    title={debouncedKitSearch ? "No prompt kits match your search" : "No prompt kits published yet"}
+                    description={debouncedKitSearch ? "Try a different keyword or clear the search." : "Be the first to publish a Prompt Kit for the community."}
+                    primaryAction={debouncedKitSearch
+                      ? { label: "Clear search", onClick: () => setKitSearch("") }
+                      : { label: "Create a Prompt Kit", to: "/prompt-kits/new", icon: Sparkles }}
+                  />
+                )}
               </div>
             </TabsContent>
 
@@ -59,7 +70,17 @@ const Discover = () => {
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search skills..." value={skillSearch} onChange={(e) => setSkillSearch(e.target.value)} className="pl-10" /></div>
                 {skillsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
                 ) : skills && skills.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{skills.map((skill) => <SkillCard key={skill.id} skill={skill} showAuthorInfo />)}</div>
-                ) : (<div className="py-12 text-center"><p className="text-lg text-muted-foreground">No skills found.</p></div>)}
+                ) : (
+                  <EmptyState
+                    variant="compact"
+                    icon={FileText}
+                    title={debouncedSkillSearch ? "No skills match your search" : "No skills published yet"}
+                    description={debouncedSkillSearch ? "Try a different keyword or clear the search." : "Be the first to publish a Skill for the community."}
+                    primaryAction={debouncedSkillSearch
+                      ? { label: "Clear search", onClick: () => setSkillSearch("") }
+                      : { label: "Create a Skill", to: "/skills/new", icon: Sparkles }}
+                  />
+                )}
               </div>
             </TabsContent>
 
@@ -68,7 +89,17 @@ const Discover = () => {
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search workflows..." value={workflowSearch} onChange={(e) => setWorkflowSearch(e.target.value)} className="pl-10" /></div>
                 {workflowsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
                 ) : workflows && workflows.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{workflows.map((workflow) => <WorkflowCard key={workflow.id} workflow={workflow} showAuthorInfo />)}</div>
-                ) : (<div className="py-12 text-center"><p className="text-lg text-muted-foreground">No workflows found.</p></div>)}
+                ) : (
+                  <EmptyState
+                    variant="compact"
+                    icon={Workflow}
+                    title={debouncedWorkflowSearch ? "No workflows match your search" : "No workflows published yet"}
+                    description={debouncedWorkflowSearch ? "Try a different keyword or clear the search." : "Be the first to publish a Workflow for the community."}
+                    primaryAction={debouncedWorkflowSearch
+                      ? { label: "Clear search", onClick: () => setWorkflowSearch("") }
+                      : { label: "Create a Workflow", to: "/workflows/new", icon: Sparkles }}
+                  />
+                )}
               </div>
             </TabsContent>
           </Tabs>

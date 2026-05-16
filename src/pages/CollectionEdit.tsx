@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ArrowLeft,
   Loader2,
@@ -355,9 +356,18 @@ export default function CollectionEdit() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No items yet. Add some!</p>
-                </div>
+                <EmptyState
+                  variant="compact"
+                  icon={FileText}
+                  title="No items in this collection yet"
+                  description="Add prompts, skills, or workflows from your library to organise them here."
+                  primaryAction={{
+                    label: "Add item",
+                    icon: Plus,
+                    onClick: () => setShowAddModal(true),
+                  }}
+                  secondaryAction={{ label: "Open my library", to: "/library" }}
+                />
               )}
             </CardContent>
           </Card>
