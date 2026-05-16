@@ -40,7 +40,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
   - Re-grep `rg '<Button[^>]*size="icon"' src/ -g '*.tsx'` and confirm zero hits without `aria-label` or text child.
 - **Files:** see grep above
 
-### 4. 🟥 Auth-redirect Library shows full Auth page · M · ★★
+### 4. 🟩 Auth-redirect Library shows full Auth page · M · ★★
+- **Shipped:** 2026-05-16 — Auth page now reads `?redirect=` and renders a primary-tinted `Alert` above the card (“Sign in to access your library / dashboard / settings / …”) with a friendly label resolved from the target path. URL stays as `/auth?redirect=…` while logged out; post-login redirect uses the existing `authRedirect` mechanism. Added the same `?redirect=/dashboard` guard to `Dashboard.tsx` (Library and Settings already had it).
 - **Area:** Auth / routing
 - **Problem:** `/library` (and other gated pages) silently render the Auth page in place of the requested route, with no “you need to sign in to view your library” context. After login, the user lands wherever the redirect logic decides — no explicit affordance.
 - **Acceptance:**
