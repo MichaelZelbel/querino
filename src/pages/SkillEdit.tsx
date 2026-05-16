@@ -409,8 +409,17 @@ export default function SkillEdit() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete this skill?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete your skill.
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-2">
+                        <p>This action cannot be undone. Deleting this skill will also remove:</p>
+                        <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                          <li>All saved versions and version history</li>
+                          <li>All comments, reviews and ratings</li>
+                          <li>Any edit suggestions submitted by others</li>
+                          <li>References from collections it belongs to</li>
+                          <li>Synced copies in connected GitHub repositories and Menerio</li>
+                        </ul>
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

@@ -1020,9 +1020,20 @@ export default function Settings() {
                           <AlertTriangle className="h-5 w-5" />
                           Confirm Account Deletion
                         </DialogTitle>
-                        <DialogDescription>
-                          This action is permanent and cannot be undone. All your data will be
-                          permanently deleted.
+                        <DialogDescription asChild>
+                          <div className="space-y-2">
+                            <p>This action is permanent and cannot be undone. Deleting your account will remove:</p>
+                            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                              <li>Your profile, avatar and public creator page</li>
+                              <li>All your prompts, skills, workflows and prompt kits — including every saved version</li>
+                              <li>All collections, pins and saved artifacts</li>
+                              <li>All comments, reviews, ratings and edit suggestions you authored</li>
+                              <li>Team memberships; teams you own will be transferred or deleted</li>
+                              <li>MCP tokens, GitHub sync configuration and Menerio integration</li>
+                              <li>AI credit balance and usage history</li>
+                            </ul>
+                            <p className="text-sm">This satisfies your GDPR Right to Erasure (Art. 17).</p>
+                          </div>
                         </DialogDescription>
                       </DialogHeader>
 

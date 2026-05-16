@@ -338,10 +338,22 @@ export default function TeamSettings() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Team?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the team "{team.name}" and remove
-                      all members. Team artifacts will remain but will no longer be
-                      associated with this team.
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-2">
+                        <p>
+                          This will permanently delete the team{" "}
+                          <span className="font-medium text-foreground">"{team.name}"</span>. This action cannot be undone.
+                        </p>
+                        <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                          <li>All members will be removed from the team</li>
+                          <li>Pending invitations and join requests will be cancelled</li>
+                          <li>Team activity feed and shared pins will be deleted</li>
+                          <li>
+                            Artifacts created in this team workspace will remain in their authors' personal libraries,
+                            but will no longer be shared with other team members
+                          </li>
+                        </ul>
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

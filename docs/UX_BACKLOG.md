@@ -80,12 +80,9 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Header / a11y
 - **Files:** `src/components/layout/Header.tsx`
 
-### 8. 🟥 Destructive buttons need blast-radius copy · M · ★★
+### 8. 🟩 Destructive buttons need blast-radius copy · M · ★★
+- **Shipped:** 2026-05-16 — Each destructive `AlertDialog`/`Dialog` body now lists cascade effects in plain language via a bulleted list (versions, comments/reviews, edit suggestions, collection references, GitHub + Menerio sync). `Settings.tsx` delete-account dialog enumerates every removed data class and references GDPR Art. 17. `TeamSettings.tsx` clarifies what survives (authored artifacts) vs. what is destroyed (membership, invites, activity, shared pins). Descriptions use `asChild` with a `div` wrapper so the list renders as valid HTML.
 - **Area:** Destructive actions
-- **Problem:** Existing `AlertDialog` confirms (artifact deletes, account deletion, team leave) read “Are you sure?” without showing what cascades — number of versions, sync queue entries, comments, suggestions.
-- **Acceptance:**
-  - For each destructive `AlertDialog` (`SkillEdit`, `WorkflowEdit`, `PromptKitEdit`, `LibraryPromptEdit`, `delete-my-account` flow, team leave/disband), the dialog body lists the side-effects in plain language (“Deletes 12 versions, 3 comments, removes from 2 collections, unsyncs from Menerio.”).
-  - Counts are fetched (or already in component state) before opening the dialog; if unknown, the body says “All related comments, versions and reviews will also be deleted.”
 - **Files:** `src/pages/SkillEdit.tsx`, `WorkflowEdit.tsx`, `PromptKitEdit.tsx`, `LibraryPromptEdit.tsx`, `Settings.tsx` (delete account), `TeamSettings.tsx`.
 
 ### 9. 🟥 Saving state is invisible in editors · M · ★★

@@ -352,8 +352,17 @@ export default function PromptKitEdit() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete this prompt kit?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete your prompt kit.
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-2">
+                        <p>This action cannot be undone. Deleting this prompt kit will also remove:</p>
+                        <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                          <li>All saved versions and version history</li>
+                          <li>All comments, reviews and ratings</li>
+                          <li>Any edit suggestions submitted by others</li>
+                          <li>References from collections it belongs to</li>
+                          <li>Synced copies in connected GitHub repositories and Menerio</li>
+                        </ul>
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
