@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Save, Globe, Twitter, Github, User, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -29,6 +31,12 @@ export default function EditProfile() {
   const [website, setWebsite] = useState("");
   const [twitter, setTwitter] = useState("");
   const [github, setGithub] = useState("");
+
+  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+    data: { displayName, avatarUrl, bio, website, twitter, github },
+    isSaving: saving,
+    onSave: () => handleSave(),
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -59,6 +67,7 @@ export default function EditProfile() {
         setTwitter(data.twitter || "");
         setGithub(data.github || "");
       }
+      markSaved();
     } catch (err) {
       console.error("Error loading profile:", err);
       toast.error("Failed to load profile");
@@ -87,6 +96,7 @@ export default function EditProfile() {
 
       if (error) throw error;
 
+      markSaved();
       toast.success("Profile updated successfully!");
       
       // Navigate to public profile
@@ -310,7 +320,12 @@ export default function EditProfile() {
                 <Button variant="outline" onClick={() => navigate("/settings")}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={saving} className="gap-2">
+              <div className="flex justify-end items-center gap-3 pt-4">
+                <SaveStateBadge isDirty={isDirty} isSaving={saving} savedAt={savedAt} className="mr-auto" />
+                <Button variant="outline" onClick={() => navigate("/settings")}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving} className="gap-2" title="Save (⌘S / Ctrl+S)">
                   <Save className="h-4 w-4" />
                   {saving ? "Saving..." : "Save Profile"}
                 </Button>
