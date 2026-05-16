@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Prompt } from "@/types/prompt";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface UserRatings {
   [promptId: string]: number;
@@ -465,9 +466,15 @@ export default function Library() {
                     </h2>
                   </div>
                   {filteredMyPrompts.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      {debouncedSearch ? "No prompts match your search." : "No prompts yet."}
-                    </p>
+                    <EmptyState
+                      variant="compact"
+                      icon={Search}
+                      title={debouncedSearch ? "No prompts match your search" : "No prompts yet"}
+                      description={debouncedSearch ? "Try a different keyword or clear your search." : "Create your first prompt to see it here."}
+                      primaryAction={debouncedSearch
+                        ? { label: "Clear search", onClick: () => setSearchQuery("") }
+                        : { label: "New Prompt", to: "/prompts/new", icon: Plus }}
+                    />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyPrompts.map((prompt) => (
@@ -497,9 +504,13 @@ export default function Library() {
                     </h2>
                   </div>
                   {filteredMySkills.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No skills match your search.
-                    </p>
+                    <EmptyState
+                      variant="compact"
+                      icon={Search}
+                      title="No skills match your search"
+                      description="Try a different keyword or clear your search."
+                      primaryAction={{ label: "Clear search", onClick: () => setSearchQuery("") }}
+                    />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMySkills.map((skill) => (
@@ -520,9 +531,13 @@ export default function Library() {
                     </h2>
                   </div>
                   {filteredMyWorkflows.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No workflows match your search.
-                    </p>
+                    <EmptyState
+                      variant="compact"
+                      icon={Search}
+                      title="No workflows match your search"
+                      description="Try a different keyword or clear your search."
+                      primaryAction={{ label: "Clear search", onClick: () => setSearchQuery("") }}
+                    />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyWorkflows.map((workflow) => (
@@ -543,9 +558,13 @@ export default function Library() {
                     </h2>
                   </div>
                   {filteredMyKits.length === 0 ? (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No prompt kits match your search.
-                    </p>
+                    <EmptyState
+                      variant="compact"
+                      icon={Search}
+                      title="No prompt kits match your search"
+                      description="Try a different keyword or clear your search."
+                      primaryAction={{ label: "Clear search", onClick: () => setSearchQuery("") }}
+                    />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredMyKits.map((kit) => (
