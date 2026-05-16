@@ -29,7 +29,8 @@ interface PromptWithAuthor extends Prompt {
 }
 
 const Dashboard = () => {
-  const { user } = useAuthContext();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuthContext();
   const { pinnedPrompts, loading: pinnedLoading, refetch: refetchPinned, isPromptPinned } = usePinnedPrompts();
   const [searchQuery, setSearchQuery] = useState("");
   const [userPrompts, setUserPrompts] = useState<PromptWithAuthor[]>([]);
@@ -40,6 +41,13 @@ const Dashboard = () => {
     totalCopies: 0,
     recentEdits: 0,
   });
+
+  // Redirect unauthenticated users to auth with a redirect intent
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth?redirect=/dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     refetchPinned();
