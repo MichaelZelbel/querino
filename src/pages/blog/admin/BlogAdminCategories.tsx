@@ -129,6 +129,7 @@ export default function BlogAdminCategories() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => openEditDialog(category)}
+                        aria-label="Edit category"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -137,6 +138,7 @@ export default function BlogAdminCategories() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => setDeleteId(category.id)}
+                        aria-label="Delete category"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

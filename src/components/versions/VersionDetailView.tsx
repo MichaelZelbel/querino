@@ -28,7 +28,7 @@ export function VersionDetailView({
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Header with back button */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0" aria-label="Back">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-2 min-w-0">

@@ -283,7 +283,7 @@ function StopwordsTab() {
                   <Badge variant="secondary">{sw.category}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => deleteWord(sw.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => deleteWord(sw.id)} aria-label="Delete word">
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>

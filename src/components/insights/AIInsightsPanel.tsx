@@ -82,6 +82,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             size="icon"
             className="h-7 w-7"
             onClick={() => setIsOpen(false)}
+            aria-label="Close insights"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
@@ -122,6 +123,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             className="h-7 w-7"
             onClick={hasInsights ? handleRefresh : handleGenerate}
             disabled={generating}
+            aria-label={hasInsights ? "Refresh insights" : "Generate insights"}
           >
             <RefreshCw className={cn("h-3.5 w-3.5", generating && "animate-spin")} />
           </Button>
@@ -130,6 +132,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             size="icon"
             className="h-7 w-7"
             onClick={() => setIsOpen(false)}
+            aria-label="Close insights"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>

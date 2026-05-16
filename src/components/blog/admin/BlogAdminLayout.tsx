@@ -69,7 +69,7 @@ export function BlogAdminLayout({ children, title, actions }: BlogAdminLayoutPro
           <div className="p-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                <a href="/">
+                <a href="/" aria-label="Back to site">
                   <ChevronLeft className="h-4 w-4" />
                 </a>
               </Button>

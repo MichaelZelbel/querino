@@ -136,6 +136,7 @@ export function Header() {
                 size="icon"
                 className="h-9 w-9"
                 onClick={() => setCommandPaletteOpen(true)}
+                aria-label="Open command palette"
               >
                 <Command className="h-4 w-4" />
               </Button>
@@ -285,6 +286,8 @@ export function Header() {
           size="icon"
           className="md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>

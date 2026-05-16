@@ -767,6 +767,7 @@ export default function LibraryPromptEdit() {
                     variant="destructive"
                     size="icon"
                     disabled={isDeleting}
+                    aria-label="Delete prompt"
                   >
                     {isDeleting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

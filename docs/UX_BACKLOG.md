@@ -30,7 +30,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
   - No layout shift after the banner closes.
 - **Files:** `src/components/CookieBanner.tsx`, possibly `src/App.tsx`
 
-### 3. 🟥 Add aria-label to icon-only buttons · S · ★★★
+### 3. 🟩 Add aria-label to icon-only buttons · S · ★★★
+- **Shipped:** 2026-05-16 — Added `aria-label` (plus `aria-pressed` / `aria-expanded` where stateful) to ~25 icon-only `Button` instances across header, library, editors, version panels, coach panels, slug editors, blog admin tables, moderation panel and team settings. Shadcn `ui/sidebar` primitive already exposes an accessible name and was left untouched. `BlogAdminLayout` uses `asChild` and its anchor child carries the label.
 - **Area:** Accessibility (global)
 - **Problem:** Multiple `<Button size="icon">` instances render an icon with no accessible name. Screen readers announce “button”. Examples: `BlogAdminPosts.tsx:175`, `BlogAdminLayout.tsx:71`, `PromptLibrary.tsx:140,232`, `ModerationPanel.tsx:286`, `VersionDetailView.tsx:31`, `VersionCompareView.tsx:182`, `PromptKitSlugEditor.tsx:94/97/117`, `PromptKitEditorToolbar.tsx:159`, destructive icon buttons in `SkillEdit.tsx:405`, `WorkflowEdit.tsx:412`, `PromptKitEdit.tsx:348`.
 - **Acceptance:**

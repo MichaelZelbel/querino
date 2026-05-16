@@ -248,6 +248,7 @@ export default function TeamSettings() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveMember(member.id)}
+                      aria-label="Remove member"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

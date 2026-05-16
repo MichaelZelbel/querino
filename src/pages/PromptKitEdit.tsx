@@ -345,7 +345,7 @@ export default function PromptKitEdit() {
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon" disabled={isDeleting}>
+                  <Button variant="destructive" size="icon" disabled={isDeleting} aria-label="Delete prompt kit">
                     {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   </Button>
                 </AlertDialogTrigger>
