@@ -130,6 +130,7 @@ export default function PromptKitEdit() {
           category: data.category || "",
           tags: data.tags || [],
           isPublic: data.published ?? false,
+          language: data.language || DEFAULT_LANGUAGE,
         });
         markSaved();
       } catch (err) {
