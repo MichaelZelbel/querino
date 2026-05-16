@@ -148,7 +148,7 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
                     variant="ghost" 
                     size="sm" 
                     className="h-7 text-xs text-destructive hover:text-destructive"
-                    onClick={handleDelete}
+                    onClick={handleDeleteClick}
                     disabled={loading}
                   >
                     <Trash2 className="h-3 w-3 mr-1" /> Delete
