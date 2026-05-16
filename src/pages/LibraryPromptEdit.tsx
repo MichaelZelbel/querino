@@ -74,6 +74,8 @@ import { SlugEditor } from "@/components/prompts/SlugEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { deterministicSessionId } from "@/lib/runCanvasAI";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 
 interface PromptVersion {
   id: string;
@@ -133,6 +135,12 @@ export default function LibraryPromptEdit() {
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
 
+  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+    data: { title, shortDescription, content, category, tags, isPublic, language },
+    isSaving,
+    onSave: () => handleSaveChanges(),
+  });
+
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
@@ -177,6 +185,7 @@ export default function LibraryPromptEdit() {
         setTags(typedPrompt.tags || []);
         setIsPublic(typedPrompt.is_public);
         setLanguage(typedPrompt.language || DEFAULT_LANGUAGE);
+        markSaved();
 
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
@@ -339,6 +348,7 @@ export default function LibraryPromptEdit() {
         return;
       }
 
+      markSaved();
       toast.success("Changes saved successfully!");
     } catch (err) {
       console.error("Error saving:", err);
@@ -734,10 +744,12 @@ export default function LibraryPromptEdit() {
                 </Sheet>
               )}
 
+              <SaveStateBadge isDirty={isDirty} isSaving={isSaving} savedAt={savedAt} className="mr-1" />
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSaving || isSavingVersion}
                 className="gap-2"
+                title="Save (⌘S / Ctrl+S)"
               >
                 {isSaving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

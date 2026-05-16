@@ -36,6 +36,8 @@ import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 
 interface KitFormData {
   title: string;
@@ -83,6 +85,12 @@ export default function PromptKitEdit() {
   const kitId = kit?.id;
   const items = parsePromptKitItems(formData.content);
 
+  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+    data: formData,
+    isSaving: isSubmitting,
+    onSave: () => handleSave(),
+  });
+
   const workspaceScope = currentWorkspace ?? "personal";
   const coachSessionId = kitId && user
     ? deterministicSessionId(workspaceScope, user.id, kitId)
@@ -124,6 +132,7 @@ export default function PromptKitEdit() {
           isPublic: data.published ?? false,
           language: data.language || DEFAULT_LANGUAGE,
         });
+        markSaved();
       } catch (err) {
         console.error(err);
         toast.error("Failed to load prompt kit");
@@ -262,6 +271,7 @@ export default function PromptKitEdit() {
         language: formData.language,
       });
 
+      markSaved();
       toast.success("Changes saved!");
     } catch {
       toast.error("Something went wrong");
@@ -339,7 +349,8 @@ export default function PromptKitEdit() {
                 <History className="h-4 w-4" />
                 History
               </Button>
-              <Button onClick={handleSave} disabled={isSubmitting} className="gap-2">
+              <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
+              <Button onClick={handleSave} disabled={isSubmitting} className="gap-2" title="Save (⌘S / Ctrl+S)">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
               </Button>
