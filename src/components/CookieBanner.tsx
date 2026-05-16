@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
@@ -7,6 +7,7 @@ type ConsentStatus = "accepted" | "declined" | null;
 
 export const CookieBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY) as ConsentStatus;
@@ -16,6 +17,29 @@ export const CookieBanner = () => {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Reserve space at the bottom of the page so the fixed banner never occludes content.
+  useEffect(() => {
+    if (!isVisible) {
+      document.body.style.paddingBottom = "";
+      return;
+    }
+    const el = bannerRef.current;
+    if (!el) return;
+    const apply = () => {
+      const h = el.getBoundingClientRect().height;
+      document.body.style.paddingBottom = `${Math.ceil(h)}px`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+      document.body.style.paddingBottom = "";
+    };
+  }, [isVisible]);
 
   const handleAccept = () => {
     localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
@@ -30,7 +54,7 @@ export const CookieBanner = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in">
+    <div ref={bannerRef} className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in">
       <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-4 shadow-lg backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
