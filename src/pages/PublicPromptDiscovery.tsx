@@ -140,12 +140,12 @@ export default function PublicPromptDiscovery() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={sortBy === "trending" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSortBy("trending")}
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-none"
               >
                 <TrendingUp className="h-4 w-4" />
                 Trending
@@ -154,7 +154,7 @@ export default function PublicPromptDiscovery() {
                 variant={sortBy === "recent" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSortBy("recent")}
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-none"
               >
                 <Clock className="h-4 w-4" />
                 Recent
@@ -163,7 +163,7 @@ export default function PublicPromptDiscovery() {
                 variant={sortBy === "rating" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSortBy("rating")}
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-none"
               >
                 <Star className="h-4 w-4" />
                 Top Rated
