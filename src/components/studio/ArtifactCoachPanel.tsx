@@ -342,6 +342,7 @@ export function ArtifactCoachPanel({
             disabled={!input.trim() || isLoading}
             size="icon"
             className="h-[60px] w-10 shrink-0"
+            aria-label="Send message"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
