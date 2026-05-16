@@ -347,6 +347,7 @@ export default function CollectionEdit() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveItem(item.id)}
+                        aria-label="Remove item from collection"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
