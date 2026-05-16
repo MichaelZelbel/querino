@@ -3,6 +3,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { MessageCircle, Pencil, Trash2, X, Check } from 'lucide-react';
 import { Comment } from '@/types/comment';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +33,7 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
   const [replyContent, setReplyContent] = useState('');
   const [editContent, setEditContent] = useState(comment.content);
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const isOwner = user?.id === comment.user_id;
   const displayName = comment.author?.display_name || 'Anonymous';
@@ -51,8 +62,12 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Delete this comment?')) return;
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteDialog(false);
     setLoading(true);
     try {
       await onDelete(comment.id);
@@ -133,7 +148,7 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
                     variant="ghost" 
                     size="sm" 
                     className="h-7 text-xs text-destructive hover:text-destructive"
-                    onClick={handleDelete}
+                    onClick={handleDeleteClick}
                     disabled={loading}
                   >
                     <Trash2 className="h-3 w-3 mr-1" /> Delete
@@ -179,6 +194,26 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
           ))}
         </div>
       )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete comment</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your comment. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete comment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
