@@ -62,8 +62,12 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Delete this comment?')) return;
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteDialog(false);
     setLoading(true);
     try {
       await onDelete(comment.id);
