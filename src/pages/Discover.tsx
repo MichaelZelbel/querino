@@ -33,14 +33,14 @@ const Discover = () => {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto max-w-full px-4 py-8 overflow-x-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-center mb-8">
-              <TabsList className="grid w-full max-w-2xl grid-cols-4">
-                <TabsTrigger value="prompts" className="gap-2"><Sparkles className="h-4 w-4" />Prompts</TabsTrigger>
-                <TabsTrigger value="kits" className="gap-2"><Package className="h-4 w-4" />Prompt Kits</TabsTrigger>
-                <TabsTrigger value="skills" className="gap-2"><FileText className="h-4 w-4" />Skills</TabsTrigger>
-                <TabsTrigger value="workflows" className="gap-2"><Workflow className="h-4 w-4" />Workflows</TabsTrigger>
+            <div className="mb-8 -mx-4 px-4 overflow-x-auto sm:mx-0 sm:px-0 sm:flex sm:justify-center">
+              <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-2xl sm:grid-cols-4">
+                <TabsTrigger value="prompts" className="gap-2 whitespace-nowrap"><Sparkles className="h-4 w-4" />Prompts</TabsTrigger>
+                <TabsTrigger value="kits" className="gap-2 whitespace-nowrap"><Package className="h-4 w-4" />Prompt Kits</TabsTrigger>
+                <TabsTrigger value="skills" className="gap-2 whitespace-nowrap"><FileText className="h-4 w-4" />Skills</TabsTrigger>
+                <TabsTrigger value="workflows" className="gap-2 whitespace-nowrap"><Workflow className="h-4 w-4" />Workflows</TabsTrigger>
               </TabsList>
             </div>
 
