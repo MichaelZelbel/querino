@@ -148,6 +148,7 @@ export default function BlogAdminMedia() {
                   variant="secondary"
                   className="h-8 w-8"
                   onClick={() => copyUrl(item.url, item.id)}
+                  aria-label={copiedId === item.id ? "Copied" : "Copy URL"}
                 >
                   {copiedId === item.id ? (
                     <Check className="h-4 w-4" />
@@ -160,6 +161,7 @@ export default function BlogAdminMedia() {
                   variant="secondary"
                   className="h-8 w-8"
                   onClick={() => openEditDialog(item)}
+                  aria-label="Edit media"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -168,6 +170,7 @@ export default function BlogAdminMedia() {
                   variant="destructive"
                   className="h-8 w-8"
                   onClick={() => setDeleteId(item.id)}
+                  aria-label="Delete media"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
