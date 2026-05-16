@@ -75,10 +75,9 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
   - Card grid collapses to single column with full-bleed padding ≤16px.
 - **Files:** `src/pages/Discover.tsx`, `src/pages/PublicPromptDiscovery.tsx`, related card components.
 
-### 7. 🟥 Mobile nav menu missing aria-label · S · ★★
+### 7. 🟩 Mobile nav menu missing aria-label · S · ★★
+- **Shipped:** 2026-05-16 — Verified during #3 sweep: header hamburger has `aria-label` toggling between "Open menu" / "Close menu" and `aria-expanded` bound to `mobileMenuOpen` state (`Header.tsx:289-290`).
 - **Area:** Header / a11y
-- **Problem:** The hamburger button in the header at <640px is icon-only with no accessible name (visible at 390px screenshot).
-- **Acceptance:** `aria-label="Open menu"` (and `aria-expanded` toggles with state) on the header trigger; same for any close button inside the sheet.
 - **Files:** `src/components/layout/Header.tsx`
 
 ### 8. 🟥 Destructive buttons need blast-radius copy · M · ★★
