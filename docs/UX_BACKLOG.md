@@ -85,15 +85,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Destructive actions
 - **Files:** `src/pages/SkillEdit.tsx`, `WorkflowEdit.tsx`, `PromptKitEdit.tsx`, `LibraryPromptEdit.tsx`, `Settings.tsx` (delete account), `TeamSettings.tsx`.
 
-### 9. 🟥 Saving state is invisible in editors · M · ★★
+### 9. 🟩 Saving state is invisible in editors · M · ★★
+- **Shipped:** 2026-05-16 — New `useUnsavedChanges<T>` hook (`src/hooks/useUnsavedChanges.ts`) snapshots a baseline on load + after each successful save, exposes `isDirty` / `savedAt` / `markSaved`, binds Cmd/Ctrl+S to the editor's save handler (no-op when clean or already saving), and installs a `beforeunload` guard while dirty. New `SaveStateBadge` (`src/components/editors/SaveStateBadge.tsx`) renders a small chip next to the Save button: "Saving…" (spinner) / "Unsaved changes" (amber) / "Saved · just now" (green, auto-refreshing relative time). Wired into `LibraryPromptEdit`, `SkillEdit`, `WorkflowEdit`, `PromptKitEdit` and `EditProfile`; Save buttons also gained `title="Save (⌘S / Ctrl+S)"`.
 - **Area:** Editors (Prompt / Skill / Workflow / PromptKit / Profile)
-- **Problem:** The project standardised on manual save (per memory: no autosave). But there is no consistent “unsaved changes” indicator, no Cmd/Ctrl+S, no `beforeunload` guard. A user editing a prompt for 10 minutes can navigate away and lose everything.
-- **Acceptance:**
-  - All edit pages show a small chip near the Save button: “Unsaved changes” / “Saved · just now”.
-  - Cmd/Ctrl+S triggers Save and is announced via `title` on the Save button.
-  - When form is dirty, navigating away (router or `beforeunload`) prompts confirmation.
-  - Reuse `AutosaveIndicator` styling but rename/repurpose for manual-save context, or create `SaveStateBadge`.
-- **Files:** `LibraryPromptEdit.tsx`, `SkillEdit.tsx`, `WorkflowEdit.tsx`, `PromptKitEdit.tsx`, `EditProfile.tsx`, `components/editors/AutosaveIndicator.tsx`.
+- **Files:** new `src/hooks/useUnsavedChanges.ts`, new `src/components/editors/SaveStateBadge.tsx`; `LibraryPromptEdit.tsx`, `SkillEdit.tsx`, `WorkflowEdit.tsx`, `PromptKitEdit.tsx`, `EditProfile.tsx`.
 
 ### 10. 🟥 Copy-prompt feedback is silent on Discover cards · S · ★★
 - **Area:** Discover / PromptCard
