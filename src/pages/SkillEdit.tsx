@@ -100,6 +100,13 @@ export default function SkillEdit() {
 
   const skillId = skill?.id;
 
+  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+    data: formData,
+    isSaving: isSubmitting,
+    onSave: () => handleSaveChanges(),
+  });
+
+
   // Session ID for the coach
   const workspaceScope = currentWorkspace ?? "personal";
   const coachSessionId = skillId && user
