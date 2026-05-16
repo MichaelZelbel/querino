@@ -182,19 +182,31 @@ export default function Auth() {
     );
   }
 
+  const redirectTarget = searchParams.get("redirect");
+  const redirectLabel = redirectTarget ? getRedirectLabel(redirectTarget) : null;
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       
       <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <img src={logoImg} alt="Querino" className="mx-auto mb-4 h-12 w-12" />
-            <CardTitle className="text-2xl font-bold">Welcome to Querino</CardTitle>
-            <CardDescription>
-              Sign in to access your prompt library and create amazing AI prompts
-            </CardDescription>
-          </CardHeader>
+        <div className="w-full max-w-md space-y-4">
+          {redirectLabel && (
+            <Alert className="border-primary/30 bg-primary/5">
+              <Lock className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                Sign in to access <span className="font-medium text-foreground">{redirectLabel}</span>.
+              </AlertDescription>
+            </Alert>
+          )}
+          <Card className="w-full">
+            <CardHeader className="text-center">
+              <img src={logoImg} alt="Querino" className="mx-auto mb-4 h-12 w-12" />
+              <CardTitle className="text-2xl font-bold">Welcome to Querino</CardTitle>
+              <CardDescription>
+                Sign in to access your prompt library and create amazing AI prompts
+              </CardDescription>
+            </CardHeader>
           
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "signin" | "signup")}>
