@@ -234,6 +234,7 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
               size="icon"
               className={`h-7 w-7 ${editor.isActive("link") ? "bg-accent text-accent-foreground" : ""}`}
               title="Insert link"
+              aria-label="Insert link"
               onClick={() => {
                 const existing = editor.getAttributes("link").href || "";
                 setLinkUrl(existing);
