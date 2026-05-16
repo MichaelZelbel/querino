@@ -20,7 +20,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
   - Cancel + close (Esc) leave the comment intact; only the explicit confirm deletes.
 - **Files:** `src/components/comments/CommentItem.tsx`
 
-### 2. 🟥 Cookie banner overlaps page content · S · ★★★
+### 2. 🟩 Cookie banner overlaps page content · S · ★★★
+- **Shipped:** 2026-05-16 — Banner measures its own height via `ResizeObserver` and applies matching `padding-bottom` to `document.body`, so fixed banner never occludes content; padding is cleared on dismiss.
 - **Area:** Global / Cookie consent
 - **Problem:** `CookieBanner` is `fixed bottom-0` with no body padding. On every public page (Home, Discover, Auth, mobile especially) it covers the primary CTA / form fields until accepted or declined.
 - **Acceptance:**
