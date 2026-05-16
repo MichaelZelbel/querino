@@ -60,6 +60,8 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={title}
+      aria-pressed={active}
     >
       {children}
     </Button>
