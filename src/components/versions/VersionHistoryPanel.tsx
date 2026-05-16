@@ -302,6 +302,7 @@ export function VersionHistoryPanel({
                   size="icon"
                   onClick={() => handleViewVersion(version)}
                   className="shrink-0"
+                  aria-label="View version"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
