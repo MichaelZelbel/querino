@@ -316,10 +316,6 @@ export default function EditProfile() {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => navigate("/settings")}>
-                  Cancel
-                </Button>
               <div className="flex justify-end items-center gap-3 pt-4">
                 <SaveStateBadge isDirty={isDirty} isSaving={saving} savedAt={savedAt} className="mr-auto" />
                 <Button variant="outline" onClick={() => navigate("/settings")}>
