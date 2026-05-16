@@ -102,6 +102,7 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
               variant="default"
               onClick={handleSave}
               disabled={updating}
+              aria-label="Save slug"
             >
               {updating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -114,6 +115,7 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
               variant="outline"
               onClick={handleCancel}
               disabled={updating}
+              aria-label="Cancel"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -141,6 +143,7 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
             variant="ghost"
             onClick={handleStartEdit}
             title="Edit slug"
+            aria-label="Edit slug"
           >
             <Pencil className="h-4 w-4" />
           </Button>
