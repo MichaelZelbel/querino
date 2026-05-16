@@ -65,7 +65,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
   - Search-empty variant differs from no-content-yet variant.
 - **Files:** new `src/components/ui/empty-state.tsx`; consumers listed above.
 
-### 6. 🟥 Discover tabs/cards overflow on mobile · M · ★★★
+### 6. 🟩 Discover tabs/cards overflow on mobile · M · ★★★
+- **Shipped:** 2026-05-16 — Discover tab strip is now horizontally scrollable inside its own container (negative-margin scroll lane at <640px, centered grid ≥640px) with `whitespace-nowrap` triggers; container has `overflow-x-hidden` to guarantee no page-level horizontal scroll. `PublicPromptDiscovery` sort buttons row uses `flex-wrap` with `flex-1` so the three sort buttons stack/share width cleanly at 390px. Card grids already collapse to single column on mobile.
 - **Area:** Discover
 - **Problem:** At 390px the Discover page horizontally scrolls — the segmented tabs row and the prompt grid both render wider than the viewport, and the cookie banner sits on top of the last visible card.
 - **Acceptance:**
