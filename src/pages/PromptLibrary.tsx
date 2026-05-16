@@ -189,6 +189,7 @@ export default function PromptLibrary() {
                       variant="ghost"
                       size="icon"
                       className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Prompt actions"
                     >
                       <MoreVertical className="h-4 w-4" />
                     </Button>
