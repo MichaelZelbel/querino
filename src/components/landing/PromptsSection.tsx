@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Search, TrendingUp, Clock, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type SortOption = "trending" | "newest" | "rating";
 
@@ -166,11 +167,19 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
         )}
 
         {!isLoading && !error && filteredAndSortedPrompts.length === 0 && (
-          <div className="py-12 text-center">
-            <p className="text-lg text-muted-foreground">
-              No prompts found. Try adjusting your search or filters.
-            </p>
-          </div>
+          <EmptyState
+            variant="compact"
+            icon={Search}
+            title="No prompts match your filters"
+            description="Try a broader search term, or clear the category filter."
+            primaryAction={{
+              label: "Clear filters",
+              onClick: () => {
+                setCategory("all");
+                setSearchQuery("");
+              },
+            }}
+          />
         )}
       </div>
     </section>

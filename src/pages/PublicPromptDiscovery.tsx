@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, TrendingUp, Clock, Star, Filter, Tag, X } from "lucide-react";
 import heroDiscover from "@/assets/hero-discover.png";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function PublicPromptDiscovery() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -261,16 +262,21 @@ export default function PublicPromptDiscovery() {
         )}
 
         {!isLoading && !error && sortedPrompts.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg">No prompts found matching your criteria.</p>
-            <Button variant="outline" className="mt-4" onClick={() => {
-              setSelectedCategory("all");
-              setSearchQuery("");
-              clearTags();
-            }}>
-              Clear Filters
-            </Button>
-          </div>
+          <EmptyState
+            icon={Search}
+            title="No prompts match your filters"
+            description="Try clearing the filters or browse a different category."
+            primaryAction={{
+              label: "Clear Filters",
+              icon: X,
+              onClick: () => {
+                setSelectedCategory("all");
+                setSearchQuery("");
+                clearTags();
+              },
+            }}
+            secondaryAction={{ label: "Browse all prompts", to: "/discover" }}
+          />
         )}
       </main>
 

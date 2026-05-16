@@ -54,7 +54,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 
 ## P1 — High Impact (next wave)
 
-### 5. 🟥 Empty states need real CTAs, not one-liners · M · ★★★
+### 5. 🟩 Empty states need real CTAs, not one-liners · M · ★★★
+- **Shipped:** 2026-05-16 — New `src/components/ui/empty-state.tsx` (`EmptyState` with `default` panel + `compact` inline variants, icon bubble, title, description, primary + secondary actions supporting `to` / `href` / `onClick`). Wired into `Dashboard` (no-prompts vs. no-results variants with Create + Discover CTAs), `PromptLibrary` (Create + Discover), `PublicPromptDiscovery` (Clear filters + Browse all), `PromptsSection` landing (Clear filters), `Discover` kits/skills/workflows tabs (search-empty vs. published-empty with Create CTA), `CollectionEdit` (Add item + Open library), and per-section search-empties in `Library` (My Prompts / Skills / Workflows / Prompt Kits) with Clear-search / New-prompt CTAs.
 - **Area:** Library / Dashboard / Discover / Collections
 - **Problem:** Empty messages are bare text (“No prompts yet.”, “No skills match your search.”, “No items yet. Add some!”). No icon, no primary action, no second-order suggestion (“try Discover”, “import from Markdown”, “run the Kickstart Template”).
 - **Acceptance:**
