@@ -124,6 +124,7 @@ export default function BlogAdminTags() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => openEditDialog(tag)}
+                        aria-label="Edit tag"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -132,6 +133,7 @@ export default function BlogAdminTags() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => setDeleteId(tag.id)}
+                        aria-label="Delete tag"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
