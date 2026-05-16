@@ -33,6 +33,7 @@ export const CommentItem = ({ comment, onReply, onEdit, onDelete, isReply = fals
   const [replyContent, setReplyContent] = useState('');
   const [editContent, setEditContent] = useState(comment.content);
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const isOwner = user?.id === comment.user_id;
   const displayName = comment.author?.display_name || 'Anonymous';
