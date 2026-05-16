@@ -9,11 +9,40 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Loader2, Mail, Github, CheckCircle2 } from "lucide-react";
+import { Loader2, Mail, Github, CheckCircle2, Lock } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { z } from "zod";
 import { storeRedirectPath, getAndClearRedirectPath, getRedirectFromParams } from "@/lib/authRedirect";
+
+const REDIRECT_LABELS: Record<string, string> = {
+  "/library": "your library",
+  "/dashboard": "your dashboard",
+  "/settings": "your settings",
+  "/activity": "your activity feed",
+  "/collections": "your collections",
+  "/prompts/new": "create a new prompt",
+  "/skills/new": "create a new skill",
+  "/workflows/new": "create a new workflow",
+  "/prompt-kits/new": "create a new prompt kit",
+};
+
+function getRedirectLabel(path: string): string | null {
+  if (!path || path === "/" || path === "/library") {
+    // /library is the default; only show banner when label is meaningful
+    if (path === "/library") return REDIRECT_LABELS["/library"];
+    return null;
+  }
+  if (REDIRECT_LABELS[path]) return REDIRECT_LABELS[path];
+  // Match dynamic edit paths
+  if (/^\/prompts\/[^/]+\/edit/.test(path)) return "edit this prompt";
+  if (/^\/skills\/[^/]+\/edit/.test(path)) return "edit this skill";
+  if (/^\/workflows\/[^/]+\/edit/.test(path)) return "edit this workflow";
+  if (/^\/prompt-kits\/[^/]+\/edit/.test(path)) return "edit this prompt kit";
+  if (path.startsWith("/teams")) return "team workspace";
+  return "this page";
+}
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
