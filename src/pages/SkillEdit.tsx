@@ -51,6 +51,8 @@ import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 
 interface SkillFormData {
   title: string;
@@ -244,6 +246,7 @@ export default function SkillEdit() {
         })
         .eq("id", skillId);
       if (error) { toast.error("Failed to update skill"); return; }
+      markSaved();
       toast.success("Changes saved!");
     } catch {
       toast.error("Something went wrong");
@@ -383,10 +386,12 @@ export default function SkillEdit() {
                 </Sheet>
               )}
 
+              <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSubmitting || isSavingVersion}
                 className="gap-2"
+                title="Save (⌘S / Ctrl+S)"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
