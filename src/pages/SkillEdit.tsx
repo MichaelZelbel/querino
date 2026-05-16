@@ -141,6 +141,7 @@ export default function SkillEdit() {
           isPublic: data.published ?? false,
           language: data.language || DEFAULT_LANGUAGE,
         });
+        markSaved();
       } catch (err) {
         console.error("Error fetching skill:", err);
         toast.error("Failed to load skill");
