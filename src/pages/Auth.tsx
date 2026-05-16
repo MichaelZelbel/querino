@@ -434,6 +434,7 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+        </div>
       </main>
       
       <Footer />
