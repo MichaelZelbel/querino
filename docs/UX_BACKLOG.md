@@ -10,7 +10,7 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 
 ## P0 — Quick Wins (now)
 
-### 1. 🟥 Replace native confirm in CommentItem · S · ★★★
+### 1. 🟧 Replace native confirm in CommentItem · S · ★★★
 - **Area:** Comments
 - **Problem:** Deleting a comment uses `window.confirm('Delete this comment?')` — looks like a 1998 browser dialog, can be blocked, ignores the design system, and gives no blast-radius context.
 - **Acceptance:**
