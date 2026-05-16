@@ -91,10 +91,10 @@ export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugCh
                 />
               </div>
             </div>
-            <Button size="icon" variant="default" onClick={handleSave} disabled={updating}>
+            <Button size="icon" variant="default" onClick={handleSave} disabled={updating} aria-label="Save slug">
               {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             </Button>
-            <Button size="icon" variant="outline" onClick={handleCancel} disabled={updating}>
+            <Button size="icon" variant="outline" onClick={handleCancel} disabled={updating} aria-label="Cancel">
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -114,7 +114,7 @@ export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugCh
             <span className="text-sm text-muted-foreground">/prompt-kits/</span>
             <span className="text-sm font-medium text-foreground">{currentSlug}</span>
           </div>
-          <Button size="icon" variant="ghost" onClick={handleStartEdit} title="Edit slug">
+          <Button size="icon" variant="ghost" onClick={handleStartEdit} title="Edit slug" aria-label="Edit slug">
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
