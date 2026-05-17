@@ -104,11 +104,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Command palette
 - **Files:** `src/components/CommandPalette.tsx`, `src/pages/Settings.tsx`
 
-### 12. 🟥 Sticky tab bar on Discover hides under header on scroll · S · ★1
+### 12. 🟩 Sticky tab bar on Discover hides under header on scroll · S · ★1
+- **Shipped:** 2026-05-16 — Discover tab strip wrapper is now `sticky top-16 z-30` with `bg-background/80 backdrop-blur` and a subtle bottom border, so the segmented tabs remain visible at any scroll depth while sitting flush beneath the `h-16` sticky header. Horizontal scroll container preserved for mobile.
 - **Area:** Discover
-- **Problem:** On long Discover pages, switching artifact tab requires scrolling back up. Tabs aren’t sticky.
-- **Acceptance:** Tabs row is `sticky top-[header-height]` with subtle backdrop-blur; visible at all scroll depths on `/discover`.
-- **Files:** `src/pages/Discover.tsx`, possibly tabs component
+- **Files:** `src/pages/Discover.tsx`
 
 ### 13. 🟥 Library section count headers wrap awkwardly · S · ★1
 - **Area:** Library

@@ -35,13 +35,15 @@ const Discover = () => {
       <main className="flex-1">
         <div className="container mx-auto max-w-full px-4 py-8 overflow-x-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="mb-8 -mx-4 px-4 overflow-x-auto sm:mx-0 sm:px-0 sm:flex sm:justify-center">
-              <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-2xl sm:grid-cols-4">
-                <TabsTrigger value="prompts" className="gap-2 whitespace-nowrap"><Sparkles className="h-4 w-4" />Prompts</TabsTrigger>
-                <TabsTrigger value="kits" className="gap-2 whitespace-nowrap"><Package className="h-4 w-4" />Prompt Kits</TabsTrigger>
-                <TabsTrigger value="skills" className="gap-2 whitespace-nowrap"><FileText className="h-4 w-4" />Skills</TabsTrigger>
-                <TabsTrigger value="workflows" className="gap-2 whitespace-nowrap"><Workflow className="h-4 w-4" />Workflows</TabsTrigger>
-              </TabsList>
+            <div className="sticky top-16 z-30 -mx-4 mb-8 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:flex sm:justify-center">
+              <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-2xl sm:grid-cols-4">
+                  <TabsTrigger value="prompts" className="gap-2 whitespace-nowrap"><Sparkles className="h-4 w-4" />Prompts</TabsTrigger>
+                  <TabsTrigger value="kits" className="gap-2 whitespace-nowrap"><Package className="h-4 w-4" />Prompt Kits</TabsTrigger>
+                  <TabsTrigger value="skills" className="gap-2 whitespace-nowrap"><FileText className="h-4 w-4" />Skills</TabsTrigger>
+                  <TabsTrigger value="workflows" className="gap-2 whitespace-nowrap"><Workflow className="h-4 w-4" />Workflows</TabsTrigger>
+                </TabsList>
+              </div>
             </div>
 
             <TabsContent value="prompts" className="mt-0"><PromptsSection showHeader={false} /></TabsContent>
