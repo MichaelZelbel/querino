@@ -897,7 +897,9 @@ export default function Settings() {
               <MenerioBulkSync />
 
               {/* MCP */}
-              <McpSetupSection />
+              <div id="mcp" className="scroll-mt-24">
+                <McpSetupSection />
+              </div>
             </div>
 
             {/* ── Privacy & Security ────────────── */}
