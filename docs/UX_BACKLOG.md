@@ -99,11 +99,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 
 ## P2 — Polish & Discovery
 
-### 11. 🟥 Command palette omits Settings/Pricing/Docs · S · ★1
+### 11. 🟩 Command palette omits Settings/Pricing/Docs · S · ★1
+- **Shipped:** 2026-05-16 — Navigation group in `CommandPalette` now includes Docs, Blog, Pricing (public), Settings and MCP Tokens (auth-only). MCP Tokens navigates to `/settings#mcp` with a new `id="mcp"` anchor wrapping `McpSetupSection` (`scroll-mt-24`). Existing `requiresAuth` filter keeps auth-gated entries hidden when logged out; partial-match search works via the existing query filter.
 - **Area:** Command palette
-- **Problem:** `CommandPalette` lists Dashboard / Discover / Activity but not Settings, Docs, Blog, Pricing, MCP setup — high-traffic destinations.
-- **Acceptance:** Navigation group includes Settings, Docs, Blog, Pricing (only when not auth-gated), MCP Tokens (auth-only). Search by partial match works for each.
-- **Files:** `src/components/CommandPalette.tsx`
+- **Files:** `src/components/CommandPalette.tsx`, `src/pages/Settings.tsx`
 
 ### 12. 🟥 Sticky tab bar on Discover hides under header on scroll · S · ★1
 - **Area:** Discover

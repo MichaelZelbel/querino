@@ -28,6 +28,10 @@ import {
   CreditCard,
   Globe,
   Package,
+  BookOpen,
+  Newspaper,
+  Tag,
+  KeyRound,
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -98,7 +102,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     { label: "Go to Dashboard", icon: LayoutDashboard, action: () => navigate("/dashboard"), requiresAuth: true },
     { label: "Go to Discover", icon: Compass, action: () => navigate("/discover"), requiresAuth: false },
     { label: "Go to Activity Feed", icon: Activity, action: () => navigate("/activity"), requiresAuth: false },
-    
+    { label: "Go to Docs", icon: BookOpen, action: () => navigate("/docs"), requiresAuth: false },
+    { label: "Go to Blog", icon: Newspaper, action: () => navigate("/blog"), requiresAuth: false },
+    { label: "Go to Pricing", icon: Tag, action: () => navigate("/pricing"), requiresAuth: false },
+    { label: "Open Settings", icon: Settings, action: () => navigate("/settings"), requiresAuth: true },
+    { label: "MCP Tokens", icon: KeyRound, action: () => navigate("/settings#mcp"), requiresAuth: true },
   ];
 
   // Filter quick actions based on query
