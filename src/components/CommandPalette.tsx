@@ -106,7 +106,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     { label: "Go to Blog", icon: Newspaper, action: () => navigate("/blog"), requiresAuth: false },
     { label: "Go to Pricing", icon: Tag, action: () => navigate("/pricing"), requiresAuth: false },
     { label: "Open Settings", icon: Settings, action: () => navigate("/settings"), requiresAuth: true },
-    { label: "MCP Tokens", icon: KeyRound, action: () => navigate("/settings?tab=mcp"), requiresAuth: true },
+    { label: "MCP Tokens", icon: KeyRound, action: () => navigate("/settings#mcp"), requiresAuth: true },
   ];
 
   // Filter quick actions based on query
