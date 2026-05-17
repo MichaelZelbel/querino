@@ -28,6 +28,10 @@ import {
   CreditCard,
   Globe,
   Package,
+  BookOpen,
+  Newspaper,
+  Tag,
+  KeyRound,
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
