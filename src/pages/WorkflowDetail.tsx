@@ -32,6 +32,7 @@ import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
@@ -203,6 +204,7 @@ export default function WorkflowDetail() {
   if (notFound || !workflow) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
+        <SEOHead title="Workflow Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">

@@ -286,6 +286,7 @@ export default function PromptDetail() {
   if (notFound || !prompt) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
+        <SEOHead title="Prompt Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
@@ -312,14 +313,27 @@ export default function PromptDetail() {
   const promptDescription = prompt.summary || prompt.description || `${prompt.title} — AI prompt on Querino`;
   const promptJsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": "CreativeWork",
     name: prompt.title,
+    headline: prompt.title,
     description: promptDescription,
-    category: prompt.category,
+    genre: prompt.category,
     url: promptCanonical,
-    brand: { "@type": "Brand", name: "Querino" },
+    inLanguage: prompt.language || "en",
+    ...(prompt.created_at && { datePublished: prompt.created_at }),
+    ...(prompt.updated_at && { dateModified: prompt.updated_at }),
     ...(prompt.author?.display_name && {
       author: { "@type": "Person", name: prompt.author.display_name },
+    }),
+    publisher: { "@type": "Organization", name: "Querino" },
+    ...(prompt.rating_count && prompt.rating_count > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: prompt.rating_avg,
+        ratingCount: prompt.rating_count,
+        bestRating: 5,
+        worstRating: 1,
+      },
     }),
   };
 

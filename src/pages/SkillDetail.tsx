@@ -28,6 +28,7 @@ import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -188,6 +189,7 @@ export default function SkillDetail() {
   if (notFound || !skill) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
+        <SEOHead title="Skill Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
