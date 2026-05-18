@@ -584,12 +584,13 @@ export default function Library() {
               {/* Saved Prompts Section - only show in personal workspace */}
               {!isTeamWorkspace && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <LibraryIcon className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={LibraryIcon}
+                    title="Saved Prompts"
+                    count={filteredSavedPrompts.length}
+                    total={savedPrompts.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {savedPrompts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
