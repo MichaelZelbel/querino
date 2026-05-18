@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -8,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,17 +22,20 @@ import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Package } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Package, CheckSquare } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import { SectionHeader } from "@/components/library/SectionHeader";
+import { BulkActionBar } from "@/components/library/BulkActionBar";
+import { BulkAddToCollectionModal, type BulkSelectionItem } from "@/components/library/BulkAddToCollectionModal";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +46,57 @@ import {
 } from "@/components/ui/dialog";
 import type { Prompt } from "@/types/prompt";
 import { EmptyState } from "@/components/ui/empty-state";
+
+type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
+const TABLE_BY_TYPE: Record<ArtifactType, "prompts" | "skills" | "workflows" | "prompt_kits"> = {
+  prompt: "prompts",
+  skill: "skills",
+  workflow: "workflows",
+  prompt_kit: "prompt_kits",
+};
+
+function SelectableCard({
+  selectMode,
+  selected,
+  onToggle,
+  children,
+  label,
+}: {
+  selectMode: boolean;
+  selected: boolean;
+  onToggle: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <div className={cn(selectMode && "pointer-events-none")}>{children}</div>
+      {selectMode && (
+        <>
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-pressed={selected}
+            aria-label={`${selected ? "Deselect" : "Select"} ${label}`}
+            className={cn(
+              "absolute inset-0 rounded-xl border-2 transition-colors",
+              selected
+                ? "border-primary bg-primary/5"
+                : "border-transparent hover:bg-foreground/[0.03]",
+            )}
+          />
+          <div className="absolute left-3 top-3 z-10 rounded-md bg-card/90 p-1 shadow-sm backdrop-blur">
+            <Checkbox
+              checked={selected}
+              onCheckedChange={onToggle}
+              aria-label={`Select ${label}`}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface UserRatings {
   [promptId: string]: number;
