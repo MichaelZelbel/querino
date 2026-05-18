@@ -500,12 +500,13 @@ export default function Library() {
               {/* My Skills Section */}
               {(mySkills?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Skills" : "My Skills"} ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={FileText}
+                    title={isTeamWorkspace ? "Team Skills" : "My Skills"}
+                    count={filteredMySkills.length}
+                    total={mySkills?.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMySkills.length === 0 ? (
                     <EmptyState
                       variant="compact"
