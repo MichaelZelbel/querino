@@ -18,6 +18,7 @@ import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
+import { SectionHeader } from "@/components/library/SectionHeader";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
@@ -427,12 +428,13 @@ export default function Library() {
               {/* Pinned Section - only show if user has pinned items */}
               {pinnedPrompts.length > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Pin className="h-5 w-5 text-warning" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      📌 Pinned ({filteredPinnedPrompts.length}{debouncedSearch ? ` of ${pinnedPrompts.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    iconNode={<Pin className="h-5 w-5 text-warning" />}
+                    title="📌 Pinned"
+                    count={filteredPinnedPrompts.length}
+                    total={pinnedPrompts.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredPinnedPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No pinned prompts match your search.
@@ -459,12 +461,13 @@ export default function Library() {
               {/* My Prompts Section - count includes ALL owned prompts, but renders only unpinned to avoid duplication */}
               {myPrompts.length > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({debouncedSearch ? `${filteredMyPrompts.length} of ` : ""}{myPrompts.length})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={Sparkles}
+                    title={isTeamWorkspace ? "Team Prompts" : "My Prompts"}
+                    count={debouncedSearch ? filteredMyPrompts.length : myPrompts.length}
+                    total={myPrompts.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMyPrompts.length === 0 ? (
                     <EmptyState
                       variant="compact"
@@ -497,12 +500,13 @@ export default function Library() {
               {/* My Skills Section */}
               {(mySkills?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Skills" : "My Skills"} ({filteredMySkills.length}{debouncedSearch ? ` of ${mySkills?.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={FileText}
+                    title={isTeamWorkspace ? "Team Skills" : "My Skills"}
+                    count={filteredMySkills.length}
+                    total={mySkills?.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMySkills.length === 0 ? (
                     <EmptyState
                       variant="compact"
@@ -524,12 +528,13 @@ export default function Library() {
               {/* My Workflows Section */}
               {(myWorkflows?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Workflow className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Workflows" : "My Workflows"} ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={Workflow}
+                    title={isTeamWorkspace ? "Team Workflows" : "My Workflows"}
+                    count={filteredMyWorkflows.length}
+                    total={myWorkflows?.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMyWorkflows.length === 0 ? (
                     <EmptyState
                       variant="compact"
@@ -551,12 +556,13 @@ export default function Library() {
               {/* My Prompt Kits Section */}
               {(myKits?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"} ({filteredMyKits.length}{debouncedSearch ? ` of ${myKits?.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={Package}
+                    title={isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"}
+                    count={filteredMyKits.length}
+                    total={myKits?.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMyKits.length === 0 ? (
                     <EmptyState
                       variant="compact"
@@ -578,12 +584,13 @@ export default function Library() {
               {/* Saved Prompts Section - only show in personal workspace */}
               {!isTeamWorkspace && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <LibraryIcon className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      Saved Prompts ({filteredSavedPrompts.length}{debouncedSearch ? ` of ${savedPrompts.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={LibraryIcon}
+                    title="Saved Prompts"
+                    count={filteredSavedPrompts.length}
+                    total={savedPrompts.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {savedPrompts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -625,20 +632,19 @@ export default function Library() {
               {/* Collections Section - only show in personal workspace */}
               {!isTeamWorkspace && (
                 <section>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="h-5 w-5 text-primary" />
-                      <h2 className="text-xl font-semibold text-foreground">
-                        My Collections ({myCollections?.length || 0})
-                      </h2>
-                    </div>
-                    <Link to="/collections/new">
-                      <Button size="sm" variant="outline" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        New Collection
-                      </Button>
-                    </Link>
-                  </div>
+                  <SectionHeader
+                    icon={FolderOpen}
+                    title="My Collections"
+                    count={myCollections?.length || 0}
+                    action={
+                      <Link to="/collections/new">
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          New Collection
+                        </Button>
+                      </Link>
+                    }
+                  />
                   {(!myCollections || myCollections.length === 0) ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">

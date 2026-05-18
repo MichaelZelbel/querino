@@ -109,11 +109,12 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Discover
 - **Files:** `src/pages/Discover.tsx`
 
-### 13. 🟥 Library section count headers wrap awkwardly · S · ★1
+### 13. 🟩 Library section count headers wrap awkwardly · S · ★1
 - **Area:** Library
 - **Problem:** Headers like “My Prompts (3 of 12)” mix italic count with bold title, and on small screens push action buttons to next line. Hierarchy is muddy.
 - **Acceptance:** Section header uses `h2` + muted count chip, single-line at ≥640px, action button right-aligned and stable.
-- **Files:** `src/pages/Library.tsx`
+- **Files:** `src/pages/Library.tsx`, `src/components/library/SectionHeader.tsx`
+- **Done (2026-05-18):** Extracted shared `SectionHeader` component that renders the title as an `h2` next to a muted, pill-shaped count chip (`bg-muted text-muted-foreground`, tabular nums). Layout uses `flex-wrap … sm:flex-nowrap` with `justify-between` and a `shrink-0` action slot, so on ≥640px viewports the title + count stay on one line and the “New Collection” button remains right-aligned and stable. Applied across all Library sections (Pinned, Prompts, Skills, Workflows, Prompt Kits, Saved Prompts, Collections).
 
 ### 14. 🟥 Sort/filter controls invisible on Library · M · ★★
 - **Area:** Library
