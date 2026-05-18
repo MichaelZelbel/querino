@@ -135,11 +135,12 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 
 ## P3 — A11y & Mobile
 
-### 16. 🟥 `<main>` landmark missing on most routes · S · ★★
+### 16. ✅ `<main>` landmark missing on most routes · S · ★★
 - **Area:** A11y
-- **Problem:** Routes render content inside generic `<div>`s. Screen-reader “skip to main” has nothing to land on.
+- **Problem:** Routes render content inside generic `<div>`s. Screen-reader "skip to main" has nothing to land on.
 - **Acceptance:** A single `<main>` wraps the `<Routes>` outlet (or each page wraps its content once). No nested `<main>` in any single render.
 - **Files:** `src/App.tsx` (or per-page layout)
+- **Done (2026-05-18):** Audited all routed pages. Most already wrapped their content in `<main>`. Added `<main>` to the three remaining pages: `SignUp.tsx` (both render branches), `CreateFromMenerio.tsx`, and `TeamSettings.tsx` (all four render branches: loading, not-found, no-permission, and primary). Blog admin routes inherit `<main>` from `BlogAdminLayout`. No nested-main risk since pages own their own wrapper rather than `App.tsx`.
 
 ### 17. 🟥 Touch targets <40px on header & toolbars · S · ★★
 - **Area:** Mobile
