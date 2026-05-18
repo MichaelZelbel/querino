@@ -363,7 +363,6 @@ export default function PromptDetail() {
             menerioNoteId={(prompt as any).menerio_note_id || null}
             isAuthor={!!isAuthor}
             busy={duplicating}
-            canDuplicate={!!user}
             onDuplicate={() =>
               user
                 ? duplicateArtifact("prompt", prompt, user.id)
