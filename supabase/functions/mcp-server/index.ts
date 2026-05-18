@@ -968,14 +968,41 @@ app.options("/*", (c) => {
 app.get("/mcp-server/health", (c) => {
   return c.json({ status: "ok" }, 200, corsHeaders);
 });
-app.get("/mcp-server", (c) => {
-  return c.json({
-    name: "querino-mcp",
-    version: "1.0.0",
-    description: "Querino MCP Server — manage prompts, prompt kits, skills, workflows, claws and collections.",
-    health: "ok",
-  }, 200, corsHeaders);
+
+// robots.txt — block search engines from crawling the MCP endpoint
+app.get("/robots.txt", (c) => {
+  return c.newResponse(
+    "User-agent: *\nDisallow: /\n",
+    200,
+    { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+  );
 });
+
+// Friendly landing page for browsers / crawlers hitting GET without auth.
+// Returns 200 + noindex so Google doesn't flag this as a 401 indexing error.
+const landingHtml = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Querino MCP Server</title>
+<style>body{font-family:system-ui,sans-serif;max-width:640px;margin:4rem auto;padding:0 1rem;line-height:1.5;color:#222}a{color:#4f46e5}</style>
+</head>
+<body>
+<h1>Querino MCP Server</h1>
+<p>This endpoint is a <a href="https://modelcontextprotocol.io/">Model Context Protocol</a> server and is not meant to be opened in a browser.</p>
+<p>To connect an MCP client, generate a token in <a href="https://querino.ai/settings">Settings → MCP Server</a> on querino.ai.</p>
+</body>
+</html>`;
+
+function isBrowserGet(req: Request): boolean {
+  if (req.method !== "GET") return false;
+  if (req.headers.get("authorization")) return false;
+  const accept = req.headers.get("accept") ?? "";
+  // Browsers and crawlers send Accept: text/html; MCP clients send application/json
+  return accept.includes("text/html") || accept === "" || accept === "*/*";
+}
 
 // MCP endpoint — handle all common path variants the proxy may forward:
 //   - "/"                     (Cloudflare Worker forwards mcp.querino.ai/ → /)
@@ -983,6 +1010,15 @@ app.get("/mcp-server", (c) => {
 //   - "/mcp-server"           (raw Supabase functions/v1/mcp-server)
 //   - "/mcp-server/mcp"       (legacy explicit path)
 const mcpHandler = async (c: any) => {
+  // Serve friendly landing page to browsers/crawlers instead of 401.
+  if (isBrowserGet(c.req.raw)) {
+    return c.newResponse(landingHtml, 200, {
+      ...corsHeaders,
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Robots-Tag": "noindex, nofollow",
+    });
+  }
+
   try {
     const auth = await authenticate(c.req.raw);
     const mcpServer = buildMcpServer(auth);
