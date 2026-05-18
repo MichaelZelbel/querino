@@ -1,5 +1,13 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +63,75 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // --- Sort / filter controls (state persisted in URL) ---
+  const ALL_TYPES = ["prompts", "skills", "workflows", "kits", "saved", "collections"] as const;
+  type LibType = (typeof ALL_TYPES)[number];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sort = (searchParams.get("sort") || "recent") as
+    | "recent"
+    | "oldest"
+    | "az"
+    | "za"
+    | "rating";
+  const typesParam = searchParams.get("types");
+  const activeTypes: LibType[] = typesParam
+    ? (typesParam.split(",").filter((t) => (ALL_TYPES as readonly string[]).includes(t)) as LibType[])
+    : [...ALL_TYPES];
+  const menerioFilter = (searchParams.get("menerio") || "all") as "all" | "synced" | "unsynced";
+
+  const updateParam = useCallback(
+    (key: string, value: string | null) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (!value) next.delete(key);
+          else next.set(key, value);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const setSort = (value: string) => updateParam("sort", value === "recent" ? null : value);
+  const setTypes = (values: string[]) => {
+    if (values.length === 0 || values.length === ALL_TYPES.length) {
+      updateParam("types", null);
+    } else {
+      updateParam("types", values.join(","));
+    }
+  };
+  const setMenerioFilter = (value: string) =>
+    updateParam("menerio", value === "all" ? null : value);
+
+  const isTypeVisible = (t: LibType) => activeTypes.includes(t);
+
+  function sortItems<T extends { title: string; created_at: string; rating_avg?: number }>(
+    items: T[],
+  ): T[] {
+    const copy = [...items];
+    switch (sort) {
+      case "oldest":
+        return copy.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      case "az":
+        return copy.sort((a, b) => a.title.localeCompare(b.title));
+      case "za":
+        return copy.sort((a, b) => b.title.localeCompare(a.title));
+      case "rating":
+        return copy.sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0));
+      case "recent":
+      default:
+        return copy.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    }
+  }
+
+  function applyMenerio<T extends { menerio_synced?: boolean }>(items: T[]): T[] {
+    if (menerioFilter === "all") return items;
+    if (menerioFilter === "synced") return items.filter((i) => i.menerio_synced);
+    return items.filter((i) => !i.menerio_synced);
+  }
   const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncSuccessDialogOpen, setSyncSuccessDialogOpen] = useState(false);
@@ -163,6 +240,41 @@ export default function Library() {
         (kit.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
     );
   }, [myKits, debouncedSearch]);
+
+  // Apply sort + Menerio filter on top of search-filtered lists
+  const displayPinnedPrompts = useMemo(
+    () => sortItems(applyMenerio(filteredPinnedPrompts)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredPinnedPrompts, sort, menerioFilter],
+  );
+  const displayMyPrompts = useMemo(
+    () => sortItems(applyMenerio(filteredMyPrompts)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMyPrompts, sort, menerioFilter],
+  );
+  const displayMySkills = useMemo(
+    () => sortItems(applyMenerio(filteredMySkills)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMySkills, sort, menerioFilter],
+  );
+  const displayMyWorkflows = useMemo(
+    () => sortItems(applyMenerio(filteredMyWorkflows)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMyWorkflows, sort, menerioFilter],
+  );
+  const displayMyKits = useMemo(
+    // Kits don't carry menerio_synced — sort only
+    () => sortItems(filteredMyKits),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMyKits, sort],
+  );
+  const displaySavedPrompts = useMemo(
+    () => sortItems(applyMenerio(filteredSavedPrompts)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredSavedPrompts, sort, menerioFilter],
+  );
+
+
 
 
   // Redirect to auth if not logged in
@@ -407,17 +519,86 @@ export default function Library() {
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-8 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search your library..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          {/* Search + sort/filter controls */}
+          <div className="mb-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search your library..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger className="h-9 w-[170px]" aria-label="Sort library">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most recent</SelectItem>
+                  <SelectItem value="oldest">Oldest first</SelectItem>
+                  <SelectItem value="az">Title A–Z</SelectItem>
+                  <SelectItem value="za">Title Z–A</SelectItem>
+                  <SelectItem value="rating">Top rated</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <ToggleGroup
+                type="multiple"
+                value={activeTypes}
+                onValueChange={(v) => setTypes(v)}
+                variant="outline"
+                size="sm"
+                aria-label="Filter by type"
+                className="flex-wrap"
+              >
+                <ToggleGroupItem value="prompts" aria-label="Show prompts">
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  Prompts
+                </ToggleGroupItem>
+                <ToggleGroupItem value="skills" aria-label="Show skills">
+                  <FileText className="mr-1 h-3.5 w-3.5" />
+                  Skills
+                </ToggleGroupItem>
+                <ToggleGroupItem value="workflows" aria-label="Show workflows">
+                  <Workflow className="mr-1 h-3.5 w-3.5" />
+                  Workflows
+                </ToggleGroupItem>
+                <ToggleGroupItem value="kits" aria-label="Show prompt kits">
+                  <Package className="mr-1 h-3.5 w-3.5" />
+                  Kits
+                </ToggleGroupItem>
+                {!isTeamWorkspace && (
+                  <>
+                    <ToggleGroupItem value="saved" aria-label="Show saved prompts">
+                      <LibraryIcon className="mr-1 h-3.5 w-3.5" />
+                      Saved
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="collections" aria-label="Show collections">
+                      <FolderOpen className="mr-1 h-3.5 w-3.5" />
+                      Collections
+                    </ToggleGroupItem>
+                  </>
+                )}
+              </ToggleGroup>
+
+              {hasMenerio && (
+                <Select value={menerioFilter} onValueChange={setMenerioFilter}>
+                  <SelectTrigger className="h-9 w-[180px]" aria-label="Filter by Menerio sync">
+                    <SelectValue placeholder="Menerio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All items</SelectItem>
+                    <SelectItem value="synced">Synced to Menerio</SelectItem>
+                    <SelectItem value="unsynced">Not synced</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
+
 
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -426,22 +607,22 @@ export default function Library() {
           ) : (
             <div className="space-y-12">
               {/* Pinned Section - only show if user has pinned items */}
-              {pinnedPrompts.length > 0 && (
+              {isTypeVisible('prompts') && pinnedPrompts.length > 0 && (
                 <section>
                   <SectionHeader
                     iconNode={<Pin className="h-5 w-5 text-warning" />}
                     title="📌 Pinned"
-                    count={filteredPinnedPrompts.length}
+                    count={displayPinnedPrompts.length}
                     total={pinnedPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredPinnedPrompts.length === 0 ? (
+                  {displayPinnedPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No pinned prompts match your search.
                     </p>
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredPinnedPrompts.map((prompt) => (
+                      {displayPinnedPrompts.map((prompt) => (
                         <PromptCard
                           key={prompt.id}
                           prompt={prompt}
@@ -459,16 +640,16 @@ export default function Library() {
               )}
 
               {/* My Prompts Section - count includes ALL owned prompts, but renders only unpinned to avoid duplication */}
-              {myPrompts.length > 0 && (
+              {isTypeVisible('prompts') && myPrompts.length > 0 && (
                 <section>
                   <SectionHeader
                     icon={Sparkles}
                     title={isTeamWorkspace ? "Team Prompts" : "My Prompts"}
-                    count={debouncedSearch ? filteredMyPrompts.length : myPrompts.length}
+                    count={displayMyPrompts.length}
                     total={myPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMyPrompts.length === 0 ? (
+                  {displayMyPrompts.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -480,7 +661,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMyPrompts.map((prompt) => (
+                      {displayMyPrompts.map((prompt) => (
                         <PromptCard
                           key={prompt.id}
                           prompt={prompt}
@@ -498,16 +679,16 @@ export default function Library() {
               )}
 
               {/* My Skills Section */}
-              {(mySkills?.length || 0) > 0 && (
+              {isTypeVisible('skills') && (mySkills?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={FileText}
                     title={isTeamWorkspace ? "Team Skills" : "My Skills"}
-                    count={filteredMySkills.length}
+                    count={displayMySkills.length}
                     total={mySkills?.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMySkills.length === 0 ? (
+                  {displayMySkills.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -517,7 +698,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMySkills.map((skill) => (
+                      {displayMySkills.map((skill) => (
                         <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
@@ -526,16 +707,16 @@ export default function Library() {
               )}
 
               {/* My Workflows Section */}
-              {(myWorkflows?.length || 0) > 0 && (
+              {isTypeVisible('workflows') && (myWorkflows?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={Workflow}
                     title={isTeamWorkspace ? "Team Workflows" : "My Workflows"}
-                    count={filteredMyWorkflows.length}
+                    count={displayMyWorkflows.length}
                     total={myWorkflows?.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMyWorkflows.length === 0 ? (
+                  {displayMyWorkflows.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -545,7 +726,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMyWorkflows.map((workflow) => (
+                      {displayMyWorkflows.map((workflow) => (
                         <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
@@ -554,16 +735,16 @@ export default function Library() {
               )}
 
               {/* My Prompt Kits Section */}
-              {(myKits?.length || 0) > 0 && (
+              {isTypeVisible('kits') && (myKits?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={Package}
                     title={isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"}
-                    count={filteredMyKits.length}
+                    count={displayMyKits.length}
                     total={myKits?.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMyKits.length === 0 ? (
+                  {displayMyKits.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -573,7 +754,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMyKits.map((kit) => (
+                      {displayMyKits.map((kit) => (
                         <PromptKitCard key={kit.id} kit={kit} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
@@ -582,12 +763,12 @@ export default function Library() {
               )}
 
               {/* Saved Prompts Section - only show in personal workspace */}
-              {!isTeamWorkspace && (
+              {!isTeamWorkspace && isTypeVisible("saved") && (
                 <section>
                   <SectionHeader
                     icon={LibraryIcon}
                     title="Saved Prompts"
-                    count={filteredSavedPrompts.length}
+                    count={displaySavedPrompts.length}
                     total={savedPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
@@ -609,13 +790,13 @@ export default function Library() {
                         </Button>
                       </Link>
                     </div>
-                  ) : filteredSavedPrompts.length === 0 ? (
+                  ) : displaySavedPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No saved prompts match your search.
                     </p>
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredSavedPrompts.map((prompt) => (
+                      {displaySavedPrompts.map((prompt) => (
                         <PromptCard
                           key={prompt.id}
                           prompt={prompt}
@@ -630,7 +811,7 @@ export default function Library() {
               )}
 
               {/* Collections Section - only show in personal workspace */}
-              {!isTeamWorkspace && (
+              {!isTeamWorkspace && isTypeVisible("collections") && (
                 <section>
                   <SectionHeader
                     icon={FolderOpen}

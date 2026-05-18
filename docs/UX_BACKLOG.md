@@ -116,11 +116,12 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Files:** `src/pages/Library.tsx`, `src/components/library/SectionHeader.tsx`
 - **Done (2026-05-18):** Extracted shared `SectionHeader` component that renders the title as an `h2` next to a muted, pill-shaped count chip (`bg-muted text-muted-foreground`, tabular nums). Layout uses `flex-wrap … sm:flex-nowrap` with `justify-between` and a `shrink-0` action slot, so on ≥640px viewports the title + count stay on one line and the “New Collection” button remains right-aligned and stable. Applied across all Library sections (Pinned, Prompts, Skills, Workflows, Prompt Kits, Saved Prompts, Collections).
 
-### 14. 🟥 Sort/filter controls invisible on Library · M · ★★
+### 14. 🟩 Sort/filter controls invisible on Library · M · ★★
 - **Area:** Library
 - **Problem:** Library only has search; no sort (recent / a-z / rating), no type filter, no “only synced/un-synced to Menerio” filter. Users with 60+ artifacts can’t triage.
 - **Acceptance:** A controls row above the first section: sort select + type checkboxes + a “synced to Menerio” toggle. State persists in URL query.
 - **Files:** `src/pages/Library.tsx`
+- **Done (2026-05-18):** New controls row on `/library` next to the search input: shadcn `Select` for sort (Most recent / Oldest / Title A–Z / Title Z–A / Top rated), a multi-select `ToggleGroup` for artifact types (Prompts, Skills, Workflows, Kits, plus Saved + Collections in personal workspace), and — when Menerio is connected — a Menerio sync `Select` (All / Synced / Not synced). All state is persisted in the URL query (`?sort=…&types=…&menerio=…`) via `useSearchParams`, defaults are omitted from the URL, and sections whose type is unchecked are hidden entirely. Sorting + Menerio filter are applied on top of the existing search-debounced lists via new `display*` memos; section counts now reflect the post-filter result. Kits are excluded from Menerio filtering since they don't carry a sync flag.
 
 ### 15. 🟥 Bulk actions on Library / Collections · L · ★★
 - **Area:** Library / Collections
