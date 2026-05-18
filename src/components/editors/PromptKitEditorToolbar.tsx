@@ -56,7 +56,7 @@ function ToolbarButton({
       type="button"
       variant="ghost"
       size="icon"
-      className={`h-7 w-7 ${active ? "bg-accent text-accent-foreground" : ""}`}
+      className={`h-10 w-10 sm:h-7 sm:w-7 ${active ? "bg-accent text-accent-foreground" : ""}`}
       onClick={onClick}
       disabled={disabled}
       title={title}
