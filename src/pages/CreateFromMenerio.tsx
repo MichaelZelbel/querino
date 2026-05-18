@@ -49,6 +49,6 @@ export default function CreateFromMenerio() {
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
         <p className="text-muted-foreground text-sm">Preparing your prompt…</p>
       </div>
-    </div>
+    </main>
   );
 }
