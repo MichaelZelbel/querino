@@ -33,6 +33,7 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
