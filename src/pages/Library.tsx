@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -8,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,17 +22,20 @@ import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Package } from "lucide-react";
+import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Package, CheckSquare } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import { SectionHeader } from "@/components/library/SectionHeader";
+import { BulkActionBar } from "@/components/library/BulkActionBar";
+import { BulkAddToCollectionModal, type BulkSelectionItem } from "@/components/library/BulkAddToCollectionModal";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +46,57 @@ import {
 } from "@/components/ui/dialog";
 import type { Prompt } from "@/types/prompt";
 import { EmptyState } from "@/components/ui/empty-state";
+
+type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
+const TABLE_BY_TYPE: Record<ArtifactType, "prompts" | "skills" | "workflows" | "prompt_kits"> = {
+  prompt: "prompts",
+  skill: "skills",
+  workflow: "workflows",
+  prompt_kit: "prompt_kits",
+};
+
+function SelectableCard({
+  selectMode,
+  selected,
+  onToggle,
+  children,
+  label,
+}: {
+  selectMode: boolean;
+  selected: boolean;
+  onToggle: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <div className={cn(selectMode && "pointer-events-none")}>{children}</div>
+      {selectMode && (
+        <>
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-pressed={selected}
+            aria-label={`${selected ? "Deselect" : "Select"} ${label}`}
+            className={cn(
+              "absolute inset-0 rounded-xl border-2 transition-colors",
+              selected
+                ? "border-primary bg-primary/5"
+                : "border-transparent hover:bg-foreground/[0.03]",
+            )}
+          />
+          <div className="absolute left-3 top-3 z-10 rounded-md bg-card/90 p-1 shadow-sm backdrop-blur">
+            <Checkbox
+              checked={selected}
+              onCheckedChange={onToggle}
+              aria-label={`Select ${label}`}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface UserRatings {
   [promptId: string]: number;
@@ -167,6 +223,122 @@ export default function Library() {
 
   // Check Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
+
+  const queryClient = useQueryClient();
+
+  // --- Bulk selection state ---
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
+  const [bulkAddOpen, setBulkAddOpen] = useState(false);
+
+  const selKey = (type: ArtifactType, id: string) => `${type}:${id}`;
+  const isSelected = useCallback(
+    (type: ArtifactType, id: string) => selected.has(selKey(type, id)),
+    [selected],
+  );
+  const toggleSelect = useCallback((type: ArtifactType, id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const key = selKey(type, id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+  }, []);
+
+  const selectedItems: BulkSelectionItem[] = useMemo(
+    () =>
+      Array.from(selected).map((key) => {
+        const [type, id] = key.split(":") as [ArtifactType, string];
+        return { type, id };
+      }),
+    [selected],
+  );
+
+  const groupSelected = useMemo(() => {
+    const groups: Record<ArtifactType, string[]> = {
+      prompt: [],
+      skill: [],
+      workflow: [],
+      prompt_kit: [],
+    };
+    for (const { type, id } of selectedItems) groups[type].push(id);
+    return groups;
+  }, [selectedItems]);
+
+  const handleBulkDelete = async () => {
+    if (!user || selectedItems.length === 0) return;
+    setBulkDeleting(true);
+    try {
+      let totalDeleted = 0;
+      for (const t of Object.keys(groupSelected) as ArtifactType[]) {
+        const ids = groupSelected[t];
+        if (ids.length === 0) continue;
+        const table = TABLE_BY_TYPE[t];
+        let q = (supabase.from(table) as any).delete().in("id", ids);
+        if (isTeamWorkspace) {
+          q = q.eq("team_id", currentWorkspace);
+        } else {
+          q = q.eq("author_id", user.id).is("team_id", null);
+        }
+        const { error } = await q;
+        if (error) {
+          console.error(`Bulk delete ${table} failed:`, error);
+          toast.error(`Failed to delete some ${table}`);
+        } else {
+          totalDeleted += ids.length;
+        }
+      }
+      if (totalDeleted > 0) {
+        toast.success(`Deleted ${totalDeleted} item${totalDeleted === 1 ? "" : "s"}.`);
+      }
+      // Refresh local + cached lists
+      setMyPrompts((prev) => prev.filter((p) => !groupSelected.prompt.includes(p.id)));
+      setSavedPrompts((prev) => prev.filter((p) => !groupSelected.prompt.includes(p.id)));
+      queryClient.invalidateQueries({ queryKey: ["skills"] });
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      queryClient.invalidateQueries({ queryKey: ["prompt_kits"] });
+      refetchPinned();
+      exitSelectMode();
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleBulkSyncMenerio = async () => {
+    if (!user || !hasMenerio) return;
+    const syncable = selectedItems.filter((i) => i.type !== "prompt_kit");
+    if (syncable.length === 0) {
+      toast.info("Selected items can't be synced to Menerio.");
+      return;
+    }
+    setBulkSyncing(true);
+    try {
+      const rows = syncable.map((i) => ({
+        user_id: user.id,
+        artifact_type: i.type,
+        artifact_id: i.id,
+        status: "pending" as const,
+      }));
+      const { error } = await supabase.from("menerio_sync_queue").insert(rows);
+      if (error) {
+        console.error("Bulk Menerio sync failed:", error);
+        toast.error("Failed to queue Menerio sync");
+      } else {
+        toast.success(`${rows.length} item${rows.length === 1 ? "" : "s"} queued for Menerio sync.`);
+        exitSelectMode();
+      }
+    } finally {
+      setBulkSyncing(false);
+    }
+  };
 
   // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
   const filteredMyPrompts = useMemo(() => {
@@ -596,8 +768,24 @@ export default function Library() {
                   </SelectContent>
                 </Select>
               )}
+
+              <Button
+                type="button"
+                variant={selectMode ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (selectMode) exitSelectMode();
+                  else setSelectMode(true);
+                }}
+                className="gap-2"
+                aria-pressed={selectMode}
+              >
+                <CheckSquare className="h-4 w-4" />
+                {selectMode ? "Done" : "Select"}
+              </Button>
             </div>
           </div>
+
 
 
           {isLoading ? (
@@ -623,16 +811,23 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayPinnedPrompts.map((prompt) => (
-                        <PromptCard
+                        <SelectableCard
                           key={prompt.id}
-                          prompt={prompt}
-                          showAuthorBadge
-                          currentUserId={user?.id}
-                          editPath="library"
-                          showSendToLLM
-                          isPinned
-                          showMenerioStatus={hasMenerio}
-                        />
+                          selectMode={selectMode}
+                          selected={isSelected("prompt", prompt.id)}
+                          onToggle={() => toggleSelect("prompt", prompt.id)}
+                          label={prompt.title}
+                        >
+                          <PromptCard
+                            prompt={prompt}
+                            showAuthorBadge
+                            currentUserId={user?.id}
+                            editPath="library"
+                            showSendToLLM
+                            isPinned
+                            showMenerioStatus={hasMenerio}
+                          />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
@@ -662,16 +857,23 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayMyPrompts.map((prompt) => (
-                        <PromptCard
+                        <SelectableCard
                           key={prompt.id}
-                          prompt={prompt}
-                          showAuthorBadge
-                          currentUserId={user?.id}
-                          editPath="library"
-                          showSendToLLM
-                          isPinned={isPromptPinned(prompt.id)}
-                          showMenerioStatus={hasMenerio}
-                        />
+                          selectMode={selectMode}
+                          selected={isSelected("prompt", prompt.id)}
+                          onToggle={() => toggleSelect("prompt", prompt.id)}
+                          label={prompt.title}
+                        >
+                          <PromptCard
+                            prompt={prompt}
+                            showAuthorBadge
+                            currentUserId={user?.id}
+                            editPath="library"
+                            showSendToLLM
+                            isPinned={isPromptPinned(prompt.id)}
+                            showMenerioStatus={hasMenerio}
+                          />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
@@ -699,7 +901,15 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayMySkills.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                        <SelectableCard
+                          key={skill.id}
+                          selectMode={selectMode}
+                          selected={isSelected("skill", skill.id)}
+                          onToggle={() => toggleSelect("skill", skill.id)}
+                          label={skill.title}
+                        >
+                          <SkillCard skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
@@ -727,7 +937,15 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayMyWorkflows.map((workflow) => (
-                        <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                        <SelectableCard
+                          key={workflow.id}
+                          selectMode={selectMode}
+                          selected={isSelected("workflow", workflow.id)}
+                          onToggle={() => toggleSelect("workflow", workflow.id)}
+                          label={workflow.title}
+                        >
+                          <WorkflowCard workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
@@ -755,7 +973,15 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayMyKits.map((kit) => (
-                        <PromptKitCard key={kit.id} kit={kit} showEditButton currentUserId={user?.id} />
+                        <SelectableCard
+                          key={kit.id}
+                          selectMode={selectMode}
+                          selected={isSelected("prompt_kit", kit.id)}
+                          onToggle={() => toggleSelect("prompt_kit", kit.id)}
+                          label={kit.title}
+                        >
+                          <PromptKitCard kit={kit} showEditButton currentUserId={user?.id} />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
@@ -873,8 +1099,27 @@ export default function Library() {
           </div>
         </div>
       </main>
-      
+
       <Footer />
+
+      <BulkActionBar
+        count={selected.size}
+        onClear={clearSelection}
+        onAddToCollection={() => setBulkAddOpen(true)}
+        onSyncMenerio={hasMenerio ? handleBulkSyncMenerio : undefined}
+        onDelete={handleBulkDelete}
+        deleting={bulkDeleting}
+        syncing={bulkSyncing}
+      />
+
+      <BulkAddToCollectionModal
+        open={bulkAddOpen}
+        onOpenChange={setBulkAddOpen}
+        items={selectedItems}
+        onDone={exitSelectMode}
+      />
+
+
 
       {/* GitHub Sync Success Dialog */}
       <Dialog open={syncSuccessDialogOpen} onOpenChange={setSyncSuccessDialogOpen}>
