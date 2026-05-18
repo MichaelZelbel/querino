@@ -63,6 +63,75 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // --- Sort / filter controls (state persisted in URL) ---
+  const ALL_TYPES = ["prompts", "skills", "workflows", "kits", "saved", "collections"] as const;
+  type LibType = (typeof ALL_TYPES)[number];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sort = (searchParams.get("sort") || "recent") as
+    | "recent"
+    | "oldest"
+    | "az"
+    | "za"
+    | "rating";
+  const typesParam = searchParams.get("types");
+  const activeTypes: LibType[] = typesParam
+    ? (typesParam.split(",").filter((t) => (ALL_TYPES as readonly string[]).includes(t)) as LibType[])
+    : [...ALL_TYPES];
+  const menerioFilter = (searchParams.get("menerio") || "all") as "all" | "synced" | "unsynced";
+
+  const updateParam = useCallback(
+    (key: string, value: string | null) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (!value) next.delete(key);
+          else next.set(key, value);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const setSort = (value: string) => updateParam("sort", value === "recent" ? null : value);
+  const setTypes = (values: string[]) => {
+    if (values.length === 0 || values.length === ALL_TYPES.length) {
+      updateParam("types", null);
+    } else {
+      updateParam("types", values.join(","));
+    }
+  };
+  const setMenerioFilter = (value: string) =>
+    updateParam("menerio", value === "all" ? null : value);
+
+  const isTypeVisible = (t: LibType) => activeTypes.includes(t);
+
+  function sortItems<T extends { title: string; created_at: string; rating_avg?: number }>(
+    items: T[],
+  ): T[] {
+    const copy = [...items];
+    switch (sort) {
+      case "oldest":
+        return copy.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      case "az":
+        return copy.sort((a, b) => a.title.localeCompare(b.title));
+      case "za":
+        return copy.sort((a, b) => b.title.localeCompare(a.title));
+      case "rating":
+        return copy.sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0));
+      case "recent":
+      default:
+        return copy.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    }
+  }
+
+  function applyMenerio<T extends { menerio_synced?: boolean }>(items: T[]): T[] {
+    if (menerioFilter === "all") return items;
+    if (menerioFilter === "synced") return items.filter((i) => i.menerio_synced);
+    return items.filter((i) => !i.menerio_synced);
+  }
   const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncSuccessDialogOpen, setSyncSuccessDialogOpen] = useState(false);
