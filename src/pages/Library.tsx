@@ -901,7 +901,15 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayMySkills.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                        <SelectableCard
+                          key={skill.id}
+                          selectMode={selectMode}
+                          selected={isSelected("skill", skill.id)}
+                          onToggle={() => toggleSelect("skill", skill.id)}
+                          label={skill.title}
+                        >
+                          <SkillCard skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
