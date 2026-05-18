@@ -543,17 +543,17 @@ export default function Library() {
                   <SectionHeader
                     iconNode={<Pin className="h-5 w-5 text-warning" />}
                     title="📌 Pinned"
-                    count={filteredPinnedPrompts.length}
+                    count={displayPinnedPrompts.length}
                     total={pinnedPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredPinnedPrompts.length === 0 ? (
+                  {displayPinnedPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No pinned prompts match your search.
                     </p>
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredPinnedPrompts.map((prompt) => (
+                      {displayPinnedPrompts.map((prompt) => (
                         <PromptCard
                           key={prompt.id}
                           prompt={prompt}
@@ -576,11 +576,11 @@ export default function Library() {
                   <SectionHeader
                     icon={Sparkles}
                     title={isTeamWorkspace ? "Team Prompts" : "My Prompts"}
-                    count={debouncedSearch ? filteredMyPrompts.length : myPrompts.length}
+                    count={debouncedSearch ? displayMyPrompts.length : myPrompts.length}
                     total={myPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMyPrompts.length === 0 ? (
+                  {displayMyPrompts.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -592,7 +592,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMyPrompts.map((prompt) => (
+                      {displayMyPrompts.map((prompt) => (
                         <PromptCard
                           key={prompt.id}
                           prompt={prompt}
@@ -615,11 +615,11 @@ export default function Library() {
                   <SectionHeader
                     icon={FileText}
                     title={isTeamWorkspace ? "Team Skills" : "My Skills"}
-                    count={filteredMySkills.length}
+                    count={displayMySkills.length}
                     total={mySkills?.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMySkills.length === 0 ? (
+                  {displayMySkills.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -629,7 +629,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMySkills.map((skill) => (
+                      {displayMySkills.map((skill) => (
                         <SkillCard key={skill.id} skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
@@ -643,11 +643,11 @@ export default function Library() {
                   <SectionHeader
                     icon={Workflow}
                     title={isTeamWorkspace ? "Team Workflows" : "My Workflows"}
-                    count={filteredMyWorkflows.length}
+                    count={displayMyWorkflows.length}
                     total={myWorkflows?.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMyWorkflows.length === 0 ? (
+                  {displayMyWorkflows.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -657,7 +657,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMyWorkflows.map((workflow) => (
+                      {displayMyWorkflows.map((workflow) => (
                         <WorkflowCard key={workflow.id} workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
                       ))}
                     </div>
@@ -671,11 +671,11 @@ export default function Library() {
                   <SectionHeader
                     icon={Package}
                     title={isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"}
-                    count={filteredMyKits.length}
+                    count={displayMyKits.length}
                     total={myKits?.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {filteredMyKits.length === 0 ? (
+                  {displayMyKits.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -685,7 +685,7 @@ export default function Library() {
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredMyKits.map((kit) => (
+                      {displayMyKits.map((kit) => (
                         <PromptKitCard key={kit.id} kit={kit} showEditButton currentUserId={user?.id} />
                       ))}
                     </div>
@@ -699,7 +699,7 @@ export default function Library() {
                   <SectionHeader
                     icon={LibraryIcon}
                     title="Saved Prompts"
-                    count={filteredSavedPrompts.length}
+                    count={displaySavedPrompts.length}
                     total={savedPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
@@ -721,13 +721,13 @@ export default function Library() {
                         </Button>
                       </Link>
                     </div>
-                  ) : filteredSavedPrompts.length === 0 ? (
+                  ) : displaySavedPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No saved prompts match your search.
                     </p>
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {filteredSavedPrompts.map((prompt) => (
+                      {displaySavedPrompts.map((prompt) => (
                         <PromptCard
                           key={prompt.id}
                           prompt={prompt}
