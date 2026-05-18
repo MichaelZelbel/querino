@@ -18,6 +18,7 @@ import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
+import { SectionHeader } from "@/components/library/SectionHeader";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
