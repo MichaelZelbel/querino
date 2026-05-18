@@ -973,7 +973,15 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayMyKits.map((kit) => (
-                        <PromptKitCard key={kit.id} kit={kit} showEditButton currentUserId={user?.id} />
+                        <SelectableCard
+                          key={kit.id}
+                          selectMode={selectMode}
+                          selected={isSelected("prompt_kit", kit.id)}
+                          onToggle={() => toggleSelect("prompt_kit", kit.id)}
+                          label={kit.title}
+                        >
+                          <PromptKitCard kit={kit} showEditButton currentUserId={user?.id} />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
