@@ -66,7 +66,7 @@ export const CookieBanner = () => {
               Tap Accept to let the algorithm treat you right.{" "}
               <a 
                 href="/cookies" 
-                className="text-primary underline-offset-4 hover:underline"
+                className="rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Learn more
               </a>

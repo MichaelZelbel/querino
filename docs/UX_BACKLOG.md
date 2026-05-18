@@ -147,11 +147,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Mobile
 - **Files:** `src/components/editors/PromptKitEditorToolbar.tsx`, `src/pages/blog/admin/BlogAdminPosts.tsx`.
 
-### 18. 🟥 Focus rings missing on custom buttons · S · ★1
+### 18. 🟩 Focus rings missing on custom buttons · S · ★1
+- **Shipped:** 2026-05-18 — Cookie banner "Learn more" `<a>` and every `<Link>`/`<a>` in `Footer.tsx` now carry `rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`, matching the design-system ring token used by shadcn Button. Tab-walking `/`, `/discover`, `/auth` shows visible focus on the brand logo link, all Product/Resources/Legal links, and the cookie banner link. Landing components (`HeroSection`, `FeaturesSection`, `PromptsSection`) already use shadcn `Button`/`Link` wrapped in `Button asChild`, which carries focus-visible by default — no plain `<button>` elements present.
 - **Area:** A11y
-- **Problem:** Cookie banner `<a>` and some plain `<button>`s in landing components rely on browser default outlines that get suppressed in dark theme.
-- **Acceptance:** Every interactive element has visible `focus-visible:ring` matching design system tokens; verified by Tab-walking `/`, `/discover`, `/auth`.
-- **Files:** `CookieBanner.tsx`, landing components
+- **Files:** `src/components/CookieBanner.tsx`, `src/components/layout/Footer.tsx`.
 
 ### 19. ⬜ Trust badge: synced-from-Menerio banner on imported artifacts · M · ★★
 - **Area:** Cross-feature trust
