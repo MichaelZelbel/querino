@@ -204,6 +204,7 @@ export default function WorkflowDetail() {
   if (notFound || !workflow) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
+        <SEOHead title="Workflow Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
