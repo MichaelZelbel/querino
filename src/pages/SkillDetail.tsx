@@ -227,6 +227,17 @@ export default function SkillDetail() {
             Back
           </button>
 
+          <MenerioOriginBanner
+            menerioNoteId={(skill as any).menerio_note_id || null}
+            isAuthor={!!isAuthor}
+            busy={duplicating}
+            onDuplicate={() =>
+              user
+                ? duplicateArtifact("skill", skill, user.id)
+                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
+            }
+          />
+
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <Badge variant="secondary" className="text-sm gap-1">
