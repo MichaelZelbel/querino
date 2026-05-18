@@ -142,11 +142,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Files:** `src/App.tsx` (or per-page layout)
 - **Done (2026-05-18):** Audited all routed pages. Most already wrapped their content in `<main>`. Added `<main>` to the three remaining pages: `SignUp.tsx` (both render branches), `CreateFromMenerio.tsx`, and `TeamSettings.tsx` (all four render branches: loading, not-found, no-permission, and primary). Blog admin routes inherit `<main>` from `BlogAdminLayout`. No nested-main risk since pages own their own wrapper rather than `App.tsx`.
 
-### 17. 🟥 Touch targets <40px on header & toolbars · S · ★★
+### 17. 🟩 Touch targets <40px on header & toolbars · S · ★★
+- **Shipped:** 2026-05-18 — Toolbar icon buttons in `PromptKitEditorToolbar` (`ToolbarButton`, text-color trigger, link trigger) and the post-actions trigger in `BlogAdminPosts.tsx` now use `h-10 w-10 sm:h-7 sm:w-7` / `sm:h-8 sm:w-8`, giving ≥40×40 hit area below the `sm` (640px) breakpoint while preserving the dense desktop look. Header icon buttons (command palette is desktop-only `md:flex`; mobile menu uses default `size="icon"` = 40×40) already meet the bar.
 - **Area:** Mobile
-- **Problem:** `Button size="icon"` defaults to 40×40 but several toolbar buttons override to `h-7 w-7` / `h-8 w-8` (`PromptKitEditorToolbar.tsx:159`, `BlogAdminPosts.tsx:175`).
-- **Acceptance:** All interactive icon buttons rendered at <640px have at least 40×40 hit area (use `min-h-10 min-w-10` wrapper if visual size must stay smaller).
-- **Files:** see grep above.
+- **Files:** `src/components/editors/PromptKitEditorToolbar.tsx`, `src/pages/blog/admin/BlogAdminPosts.tsx`.
 
 ### 18. 🟥 Focus rings missing on custom buttons · S · ★1
 - **Area:** A11y
