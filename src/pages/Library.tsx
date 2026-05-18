@@ -632,20 +632,19 @@ export default function Library() {
               {/* Collections Section - only show in personal workspace */}
               {!isTeamWorkspace && (
                 <section>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="h-5 w-5 text-primary" />
-                      <h2 className="text-xl font-semibold text-foreground">
-                        My Collections ({myCollections?.length || 0})
-                      </h2>
-                    </div>
-                    <Link to="/collections/new">
-                      <Button size="sm" variant="outline" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        New Collection
-                      </Button>
-                    </Link>
-                  </div>
+                  <SectionHeader
+                    icon={FolderOpen}
+                    title="My Collections"
+                    count={myCollections?.length || 0}
+                    action={
+                      <Link to="/collections/new">
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          New Collection
+                        </Button>
+                      </Link>
+                    }
+                  />
                   {(!myCollections || myCollections.length === 0) ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
