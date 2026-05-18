@@ -645,7 +645,7 @@ export default function Library() {
                   <SectionHeader
                     icon={Sparkles}
                     title={isTeamWorkspace ? "Team Prompts" : "My Prompts"}
-                    count={debouncedSearch ? displayMyPrompts.length : myPrompts.length}
+                    count={displayMyPrompts.length}
                     total={myPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
