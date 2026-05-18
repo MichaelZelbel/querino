@@ -126,7 +126,7 @@ async function handleGetSitemap(supabase: any) {
     { loc: "/discover", priority: "0.9", changefreq: "daily" },
     { loc: "/blog", priority: "0.8", changefreq: "daily" },
     
-    { loc: "/auth", priority: "0.5", changefreq: "monthly" },
+    // /auth intentionally excluded — login pages should not be advertised for indexing
     { loc: "/terms", priority: "0.3", changefreq: "yearly" },
     { loc: "/privacy", priority: "0.3", changefreq: "yearly" },
     { loc: "/cookies", priority: "0.3", changefreq: "yearly" },
