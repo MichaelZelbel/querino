@@ -74,28 +74,28 @@ export default function TeamSettings() {
 
   if (teamLoading || membersLoading) {
     return (
-      <div className="container max-w-4xl py-8">
+      <main className="container max-w-4xl py-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-48 bg-muted rounded" />
           <div className="h-64 bg-muted rounded" />
         </div>
-      </div>
+      </main>
     );
   }
 
   if (!team) {
     return (
-      <div className="container max-w-4xl py-8">
+      <main className="container max-w-4xl py-8">
         <p className="text-muted-foreground">Team not found or you don't have access.</p>
-      </div>
+      </main>
     );
   }
 
   if (!canManage) {
     return (
-      <div className="container max-w-4xl py-8">
+      <main className="container max-w-4xl py-8">
         <p className="text-muted-foreground">You don't have permission to manage this team.</p>
-      </div>
+      </main>
     );
   }
 
@@ -156,7 +156,7 @@ export default function TeamSettings() {
   };
 
   return (
-    <div className="container max-w-4xl py-8">
+    <main className="container max-w-4xl py-8">
       <Button
         variant="ghost"
         onClick={() => navigate(-1)}
@@ -371,6 +371,6 @@ export default function TeamSettings() {
           </Card>
         )}
       </div>
-    </div>
+    </main>
   );
 }
