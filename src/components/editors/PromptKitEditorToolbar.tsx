@@ -158,7 +158,7 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
         {/* Text color */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7" title="Text color" aria-label="Text color">
+            <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-7 sm:w-7" title="Text color" aria-label="Text color">
               <span className="text-xs font-bold" style={{ color: editor.getAttributes("textStyle").color || "inherit" }}>A</span>
             </Button>
           </DropdownMenuTrigger>
