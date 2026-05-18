@@ -1099,8 +1099,27 @@ export default function Library() {
           </div>
         </div>
       </main>
-      
+
       <Footer />
+
+      <BulkActionBar
+        count={selected.size}
+        onClear={clearSelection}
+        onAddToCollection={() => setBulkAddOpen(true)}
+        onSyncMenerio={hasMenerio ? handleBulkSyncMenerio : undefined}
+        onDelete={handleBulkDelete}
+        deleting={bulkDeleting}
+        syncing={bulkSyncing}
+      />
+
+      <BulkAddToCollectionModal
+        open={bulkAddOpen}
+        onOpenChange={setBulkAddOpen}
+        items={selectedItems}
+        onDone={exitSelectMode}
+      />
+
+
 
       {/* GitHub Sync Success Dialog */}
       <Dialog open={syncSuccessDialogOpen} onOpenChange={setSyncSuccessDialogOpen}>
