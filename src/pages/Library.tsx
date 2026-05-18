@@ -428,12 +428,13 @@ export default function Library() {
               {/* Pinned Section - only show if user has pinned items */}
               {pinnedPrompts.length > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Pin className="h-5 w-5 text-warning" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      📌 Pinned ({filteredPinnedPrompts.length}{debouncedSearch ? ` of ${pinnedPrompts.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    iconNode={<Pin className="h-5 w-5 text-warning" />}
+                    title="📌 Pinned"
+                    count={filteredPinnedPrompts.length}
+                    total={pinnedPrompts.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredPinnedPrompts.length === 0 ? (
                     <p className="py-8 text-center text-muted-foreground">
                       No pinned prompts match your search.
