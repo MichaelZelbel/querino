@@ -224,8 +224,122 @@ export default function Library() {
   // Check Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
-  // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
-  const filteredMyPrompts = useMemo(() => {
+  const queryClient = useQueryClient();
+
+  // --- Bulk selection state ---
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
+  const [bulkAddOpen, setBulkAddOpen] = useState(false);
+
+  const selKey = (type: ArtifactType, id: string) => `${type}:${id}`;
+  const isSelected = useCallback(
+    (type: ArtifactType, id: string) => selected.has(selKey(type, id)),
+    [selected],
+  );
+  const toggleSelect = useCallback((type: ArtifactType, id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const key = selKey(type, id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+  }, []);
+
+  const selectedItems: BulkSelectionItem[] = useMemo(
+    () =>
+      Array.from(selected).map((key) => {
+        const [type, id] = key.split(":") as [ArtifactType, string];
+        return { type, id };
+      }),
+    [selected],
+  );
+
+  const groupSelected = useMemo(() => {
+    const groups: Record<ArtifactType, string[]> = {
+      prompt: [],
+      skill: [],
+      workflow: [],
+      prompt_kit: [],
+    };
+    for (const { type, id } of selectedItems) groups[type].push(id);
+    return groups;
+  }, [selectedItems]);
+
+  const handleBulkDelete = async () => {
+    if (!user || selectedItems.length === 0) return;
+    setBulkDeleting(true);
+    try {
+      let totalDeleted = 0;
+      for (const t of Object.keys(groupSelected) as ArtifactType[]) {
+        const ids = groupSelected[t];
+        if (ids.length === 0) continue;
+        const table = TABLE_BY_TYPE[t];
+        let q = (supabase.from(table) as any).delete().in("id", ids);
+        if (isTeamWorkspace) {
+          q = q.eq("team_id", currentWorkspace);
+        } else {
+          q = q.eq("author_id", user.id).is("team_id", null);
+        }
+        const { error } = await q;
+        if (error) {
+          console.error(`Bulk delete ${table} failed:`, error);
+          toast.error(`Failed to delete some ${table}`);
+        } else {
+          totalDeleted += ids.length;
+        }
+      }
+      if (totalDeleted > 0) {
+        toast.success(`Deleted ${totalDeleted} item${totalDeleted === 1 ? "" : "s"}.`);
+      }
+      // Refresh local + cached lists
+      setMyPrompts((prev) => prev.filter((p) => !groupSelected.prompt.includes(p.id)));
+      setSavedPrompts((prev) => prev.filter((p) => !groupSelected.prompt.includes(p.id)));
+      queryClient.invalidateQueries({ queryKey: ["skills"] });
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      queryClient.invalidateQueries({ queryKey: ["prompt_kits"] });
+      refetchPinned();
+      exitSelectMode();
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleBulkSyncMenerio = async () => {
+    if (!user || !hasMenerio) return;
+    const syncable = selectedItems.filter((i) => i.type !== "prompt_kit");
+    if (syncable.length === 0) {
+      toast.info("Selected items can't be synced to Menerio.");
+      return;
+    }
+    setBulkSyncing(true);
+    try {
+      const rows = syncable.map((i) => ({
+        user_id: user.id,
+        artifact_type: i.type,
+        artifact_id: i.id,
+        status: "pending" as const,
+      }));
+      const { error } = await supabase.from("menerio_sync_queue").insert(rows);
+      if (error) {
+        console.error("Bulk Menerio sync failed:", error);
+        toast.error("Failed to queue Menerio sync");
+      } else {
+        toast.success(`${rows.length} item${rows.length === 1 ? "" : "s"} queued for Menerio sync.`);
+        exitSelectMode();
+      }
+    } finally {
+      setBulkSyncing(false);
+    }
+  };
+
     if (!debouncedSearch.trim()) return myPrompts;
     const search = debouncedSearch.toLowerCase();
     return myPrompts.filter(
