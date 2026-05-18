@@ -28,6 +28,7 @@ import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSect
 import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
