@@ -241,6 +241,41 @@ export default function Library() {
     );
   }, [myKits, debouncedSearch]);
 
+  // Apply sort + Menerio filter on top of search-filtered lists
+  const displayPinnedPrompts = useMemo(
+    () => sortItems(applyMenerio(filteredPinnedPrompts)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredPinnedPrompts, sort, menerioFilter],
+  );
+  const displayMyPrompts = useMemo(
+    () => sortItems(applyMenerio(filteredMyPrompts)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMyPrompts, sort, menerioFilter],
+  );
+  const displayMySkills = useMemo(
+    () => sortItems(applyMenerio(filteredMySkills)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMySkills, sort, menerioFilter],
+  );
+  const displayMyWorkflows = useMemo(
+    () => sortItems(applyMenerio(filteredMyWorkflows)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMyWorkflows, sort, menerioFilter],
+  );
+  const displayMyKits = useMemo(
+    // Kits don't carry menerio_synced — sort only
+    () => sortItems(filteredMyKits),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredMyKits, sort],
+  );
+  const displaySavedPrompts = useMemo(
+    () => sortItems(applyMenerio(filteredSavedPrompts)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredSavedPrompts, sort, menerioFilter],
+  );
+
+
+
 
   // Redirect to auth if not logged in
   useEffect(() => {
