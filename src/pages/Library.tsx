@@ -768,8 +768,24 @@ export default function Library() {
                   </SelectContent>
                 </Select>
               )}
+
+              <Button
+                type="button"
+                variant={selectMode ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (selectMode) exitSelectMode();
+                  else setSelectMode(true);
+                }}
+                className="gap-2"
+                aria-pressed={selectMode}
+              >
+                <CheckSquare className="h-4 w-4" />
+                {selectMode ? "Done" : "Select"}
+              </Button>
             </div>
           </div>
+
 
 
           {isLoading ? (
