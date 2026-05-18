@@ -36,6 +36,7 @@ import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { Languages } from "lucide-react";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
