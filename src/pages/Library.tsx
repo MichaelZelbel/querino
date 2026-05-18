@@ -811,16 +811,23 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {displayPinnedPrompts.map((prompt) => (
-                        <PromptCard
+                        <SelectableCard
                           key={prompt.id}
-                          prompt={prompt}
-                          showAuthorBadge
-                          currentUserId={user?.id}
-                          editPath="library"
-                          showSendToLLM
-                          isPinned
-                          showMenerioStatus={hasMenerio}
-                        />
+                          selectMode={selectMode}
+                          selected={isSelected("prompt", prompt.id)}
+                          onToggle={() => toggleSelect("prompt", prompt.id)}
+                          label={prompt.title}
+                        >
+                          <PromptCard
+                            prompt={prompt}
+                            showAuthorBadge
+                            currentUserId={user?.id}
+                            editPath="library"
+                            showSendToLLM
+                            isPinned
+                            showMenerioStatus={hasMenerio}
+                          />
+                        </SelectableCard>
                       ))}
                     </div>
                   )}
