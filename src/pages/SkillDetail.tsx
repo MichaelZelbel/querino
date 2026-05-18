@@ -189,6 +189,7 @@ export default function SkillDetail() {
   if (notFound || !skill) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
+        <SEOHead title="Skill Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
