@@ -519,17 +519,86 @@ export default function Library() {
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-8 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search your library..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          {/* Search + sort/filter controls */}
+          <div className="mb-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search your library..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger className="h-9 w-[170px]" aria-label="Sort library">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most recent</SelectItem>
+                  <SelectItem value="oldest">Oldest first</SelectItem>
+                  <SelectItem value="az">Title A–Z</SelectItem>
+                  <SelectItem value="za">Title Z–A</SelectItem>
+                  <SelectItem value="rating">Top rated</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <ToggleGroup
+                type="multiple"
+                value={activeTypes}
+                onValueChange={(v) => setTypes(v)}
+                variant="outline"
+                size="sm"
+                aria-label="Filter by type"
+                className="flex-wrap"
+              >
+                <ToggleGroupItem value="prompts" aria-label="Show prompts">
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  Prompts
+                </ToggleGroupItem>
+                <ToggleGroupItem value="skills" aria-label="Show skills">
+                  <FileText className="mr-1 h-3.5 w-3.5" />
+                  Skills
+                </ToggleGroupItem>
+                <ToggleGroupItem value="workflows" aria-label="Show workflows">
+                  <Workflow className="mr-1 h-3.5 w-3.5" />
+                  Workflows
+                </ToggleGroupItem>
+                <ToggleGroupItem value="kits" aria-label="Show prompt kits">
+                  <Package className="mr-1 h-3.5 w-3.5" />
+                  Kits
+                </ToggleGroupItem>
+                {!isTeamWorkspace && (
+                  <>
+                    <ToggleGroupItem value="saved" aria-label="Show saved prompts">
+                      <LibraryIcon className="mr-1 h-3.5 w-3.5" />
+                      Saved
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="collections" aria-label="Show collections">
+                      <FolderOpen className="mr-1 h-3.5 w-3.5" />
+                      Collections
+                    </ToggleGroupItem>
+                  </>
+                )}
+              </ToggleGroup>
+
+              {hasMenerio && (
+                <Select value={menerioFilter} onValueChange={setMenerioFilter}>
+                  <SelectTrigger className="h-9 w-[180px]" aria-label="Filter by Menerio sync">
+                    <SelectValue placeholder="Menerio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All items</SelectItem>
+                    <SelectItem value="synced">Synced to Menerio</SelectItem>
+                    <SelectItem value="unsynced">Not synced</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
+
 
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
