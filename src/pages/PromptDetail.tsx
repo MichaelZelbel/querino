@@ -359,6 +359,18 @@ export default function PromptDetail() {
             Back
           </button>
 
+          <MenerioOriginBanner
+            menerioNoteId={(prompt as any).menerio_note_id || null}
+            isAuthor={!!isAuthor}
+            busy={duplicating}
+            canDuplicate={!!user}
+            onDuplicate={() =>
+              user
+                ? duplicateArtifact("prompt", prompt, user.id)
+                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
+            }
+          />
+
           {/* Header Section */}
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
