@@ -232,7 +232,7 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
             <Button
               variant="ghost"
               size="icon"
-              className={`h-7 w-7 ${editor.isActive("link") ? "bg-accent text-accent-foreground" : ""}`}
+              className={`h-10 w-10 sm:h-7 sm:w-7 ${editor.isActive("link") ? "bg-accent text-accent-foreground" : ""}`}
               title="Insert link"
               aria-label="Insert link"
               onClick={() => {
