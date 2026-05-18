@@ -340,6 +340,8 @@ export default function Library() {
     }
   };
 
+  // Filter prompts based on search query (include ALL owned prompts, even pinned ones)
+  const filteredMyPrompts = useMemo(() => {
     if (!debouncedSearch.trim()) return myPrompts;
     const search = debouncedSearch.toLowerCase();
     return myPrompts.filter(
