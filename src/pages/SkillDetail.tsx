@@ -27,6 +27,7 @@ import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
 import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
