@@ -528,12 +528,13 @@ export default function Library() {
               {/* My Workflows Section */}
               {(myWorkflows?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Workflow className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Workflows" : "My Workflows"} ({filteredMyWorkflows.length}{debouncedSearch ? ` of ${myWorkflows?.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={Workflow}
+                    title={isTeamWorkspace ? "Team Workflows" : "My Workflows"}
+                    count={filteredMyWorkflows.length}
+                    total={myWorkflows?.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMyWorkflows.length === 0 ? (
                     <EmptyState
                       variant="compact"
