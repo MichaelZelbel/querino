@@ -763,7 +763,7 @@ export default function Library() {
               )}
 
               {/* Saved Prompts Section - only show in personal workspace */}
-              {!isTeamWorkspace && (
+              {!isTeamWorkspace && isTypeVisible("saved") && (
                 <section>
                   <SectionHeader
                     icon={LibraryIcon}
@@ -811,7 +811,7 @@ export default function Library() {
               )}
 
               {/* Collections Section - only show in personal workspace */}
-              {!isTeamWorkspace && (
+              {!isTeamWorkspace && isTypeVisible("collections") && (
                 <section>
                   <SectionHeader
                     icon={FolderOpen}
