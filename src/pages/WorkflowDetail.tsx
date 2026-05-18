@@ -32,6 +32,7 @@ import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
