@@ -561,28 +561,16 @@ export default function PromptDetail() {
               </>
             )}
 
-            {user && (
-              isPremium ? (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setShowRefineModal(true)}
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Refine with AI
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => navigate("/pricing")}
-                  className="gap-2"
-                >
-                  <Lock className="h-4 w-4" />
-                  Refine with AI
-                </Button>
-              )
+            {user && isPremium && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowRefineModal(true)}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Refine with AI
+              </Button>
             )}
 
             {user && (

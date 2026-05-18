@@ -927,7 +927,6 @@ Execute this test scenario:
 3. Validate that the landing page loads with:
    - Hero section with CTA
    - Features section
-   - Pricing preview
    - Public prompts section
    - Footer with links
 
@@ -936,11 +935,6 @@ Execute this test scenario:
 5. Validate that public prompts, skills, workflows, and claws are visible
 6. Switch between tabs and verify content loads
 7. Use search and category filters
-
---- Pricing Page ---
-8. Navigate to /pricing
-9. Validate that pricing cards are displayed with feature comparison
-10. Validate that CTA buttons point to /auth or contact
 
 --- Blog ---
 11. Navigate to /blog
