@@ -556,12 +556,13 @@ export default function Library() {
               {/* My Prompt Kits Section */}
               {(myKits?.length || 0) > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"} ({filteredMyKits.length}{debouncedSearch ? ` of ${myKits?.length}` : ""})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={Package}
+                    title={isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"}
+                    count={filteredMyKits.length}
+                    total={myKits?.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMyKits.length === 0 ? (
                     <EmptyState
                       variant="compact"
