@@ -123,11 +123,13 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Files:** `src/pages/Library.tsx`
 - **Done (2026-05-18):** New controls row on `/library` next to the search input: shadcn `Select` for sort (Most recent / Oldest / Title A–Z / Title Z–A / Top rated), a multi-select `ToggleGroup` for artifact types (Prompts, Skills, Workflows, Kits, plus Saved + Collections in personal workspace), and — when Menerio is connected — a Menerio sync `Select` (All / Synced / Not synced). All state is persisted in the URL query (`?sort=…&types=…&menerio=…`) via `useSearchParams`, defaults are omitted from the URL, and sections whose type is unchecked are hidden entirely. Sorting + Menerio filter are applied on top of the existing search-debounced lists via new `display*` memos; section counts now reflect the post-filter result. Kits are excluded from Menerio filtering since they don't carry a sync flag.
 
-### 15. 🟥 Bulk actions on Library / Collections · L · ★★
+### 15. ✅ Bulk actions on Library / Collections · L · ★★
 - **Area:** Library / Collections
 - **Problem:** No checkboxes, no “select all + delete / move to collection / sync to Menerio / publish”. Power users do everything one-by-one.
 - **Acceptance:** Multi-select mode with floating action bar (Delete, Add to Collection, Sync to Menerio). Confirmed via AlertDialog.
-- **Files:** `Library.tsx`, `Collections.tsx`, new `BulkActionBar.tsx`
+- **Files:** `Library.tsx`, new `BulkActionBar.tsx`, new `BulkAddToCollectionModal.tsx`
+- **Done (2026-05-18):** Added a "Select" toggle to the Library controls row. When enabled, every owned card (Pinned, My Prompts, My Skills, My Workflows, My Prompt Kits) renders with an overlay checkbox; the card body's click target is suppressed so taps toggle selection instead of navigating. A floating `BulkActionBar` (fixed bottom-center, rounded pill, `bg-card/95 backdrop-blur`) shows the selected count plus three actions: **Add to Collection** (opens a new bulk-aware `BulkAddToCollectionModal` that loops the `useAddToCollection` mutation across all selected items, with toasts for added/skipped/failed counts), **Sync to Menerio** (visible only when Menerio is connected; inserts pending rows into `menerio_sync_queue` for prompts/skills/workflows, ignoring kits), and **Delete** (confirmed via `AlertDialog`, runs scoped `supabase.from(table).delete().in("id", ids)` with `author_id` / `team_id` guards per workspace, then refreshes local state + invalidates TanStack queries). Saved Prompts and Collections sections are intentionally not selectable (the user doesn't own those rows). Exiting "Select" mode clears the selection.
+
 
 ---
 
