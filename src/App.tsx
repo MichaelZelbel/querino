@@ -115,7 +115,7 @@ const App = () => (
                 <Route path="/prompt-creation-publishing-premium-free-" element={<PromptCreation />} />
                 <Route path="/prompt-refinement-with-ai-tools-premium-" element={<PromptRefinement />} />
                 <Route path="/organizing-managing-prompt-library-free-premium-" element={<PromptLibrary />} />
-                <Route path="/pricing" element={<NotFound />} />
+                
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/cookies" element={<Cookies />} />
