@@ -461,12 +461,13 @@ export default function Library() {
               {/* My Prompts Section - count includes ALL owned prompts, but renders only unpinned to avoid duplication */}
               {myPrompts.length > 0 && (
                 <section>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">
-                      {isTeamWorkspace ? "Team Prompts" : "My Prompts"} ({debouncedSearch ? `${filteredMyPrompts.length} of ` : ""}{myPrompts.length})
-                    </h2>
-                  </div>
+                  <SectionHeader
+                    icon={Sparkles}
+                    title={isTeamWorkspace ? "Team Prompts" : "My Prompts"}
+                    count={debouncedSearch ? filteredMyPrompts.length : myPrompts.length}
+                    total={myPrompts.length}
+                    showFraction={!!debouncedSearch}
+                  />
                   {filteredMyPrompts.length === 0 ? (
                     <EmptyState
                       variant="compact"
