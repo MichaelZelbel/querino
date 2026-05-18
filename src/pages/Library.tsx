@@ -607,7 +607,7 @@ export default function Library() {
           ) : (
             <div className="space-y-12">
               {/* Pinned Section - only show if user has pinned items */}
-              {pinnedPrompts.length > 0 && (
+              {isTypeVisible('prompts') && pinnedPrompts.length > 0 && (
                 <section>
                   <SectionHeader
                     iconNode={<Pin className="h-5 w-5 text-warning" />}
@@ -640,7 +640,7 @@ export default function Library() {
               )}
 
               {/* My Prompts Section - count includes ALL owned prompts, but renders only unpinned to avoid duplication */}
-              {myPrompts.length > 0 && (
+              {isTypeVisible('prompts') && myPrompts.length > 0 && (
                 <section>
                   <SectionHeader
                     icon={Sparkles}
@@ -679,7 +679,7 @@ export default function Library() {
               )}
 
               {/* My Skills Section */}
-              {(mySkills?.length || 0) > 0 && (
+              {isTypeVisible('skills') && (mySkills?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={FileText}
@@ -707,7 +707,7 @@ export default function Library() {
               )}
 
               {/* My Workflows Section */}
-              {(myWorkflows?.length || 0) > 0 && (
+              {isTypeVisible('workflows') && (myWorkflows?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={Workflow}
@@ -735,7 +735,7 @@ export default function Library() {
               )}
 
               {/* My Prompt Kits Section */}
-              {(myKits?.length || 0) > 0 && (
+              {isTypeVisible('kits') && (myKits?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={Package}
