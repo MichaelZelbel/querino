@@ -1,5 +1,5 @@
 import { format, differenceInDays } from "date-fns";
-import { Check, Loader2, ArrowRight } from "lucide-react";
+import { AlertTriangle, Check, Loader2, ArrowRight } from "lucide-react";
 import { useAICredits } from "@/hooks/useAICredits";
 
 export function CreditsDisplay() {
