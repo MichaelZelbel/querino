@@ -28,6 +28,7 @@ import { WorkflowReviewSection } from "@/components/workflows/WorkflowReviewSect
 import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTeamModal";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
@@ -240,6 +241,17 @@ export default function WorkflowDetail() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
+
+          <MenerioOriginBanner
+            menerioNoteId={(workflow as any).menerio_note_id || null}
+            isAuthor={!!isAuthor}
+            busy={duplicating}
+            onDuplicate={() =>
+              user
+                ? duplicateArtifact("workflow", workflow, user.id)
+                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
+            }
+          />
 
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
