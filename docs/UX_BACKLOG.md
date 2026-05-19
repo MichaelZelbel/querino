@@ -152,11 +152,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** A11y
 - **Files:** `src/components/CookieBanner.tsx`, `src/components/layout/Footer.tsx`.
 
-### 19. ⬜ Trust badge: synced-from-Menerio banner on imported artifacts · M · ★★
+### 19. 🟩 Trust badge: synced-from-Menerio banner on imported artifacts · M · ★★
+- **Shipped:** 2026-05-18 — New `MenerioOriginBanner` (`src/components/menerio/MenerioOriginBanner.tsx`) — a subtle `Alert` with `CloudDownload` icon, "Synced from Menerio" title, provenance copy, and a "Duplicate to edit" CTA. Wired into `PromptDetail`, `SkillDetail`, `WorkflowDetail` (via existing `useDuplicateArtifact`) and `PromptKitDetail` (via `useClonePromptKit`). The banner renders only when `menerio_note_id` is set AND the viewer is not the author, so creators don't see a redundant note about their own sync. Unauthenticated viewers are redirected to `/auth?redirect=...` before duplicating; logged-in viewers get an instant clone routed to their library. Spinner state is bound to the underlying mutation's `duplicating` / `cloning` flag.
 - **Area:** Cross-feature trust
-- **Problem:** Artifacts originating from Menerio look identical to native ones. No “Synced from Menerio — duplicate to edit” banner.
-- **Acceptance:** When viewing an artifact whose source is Menerio, a subtle alert at the top of the detail page explains origin and offers “Duplicate to edit”. Edit button disabled with tooltip if user shouldn’t edit.
-- **Files:** `PromptDetail.tsx`, `SkillDetail.tsx`, `WorkflowDetail.tsx`, `PromptKitDetail.tsx`
+- **Files:** new `src/components/menerio/MenerioOriginBanner.tsx`; `src/pages/PromptDetail.tsx`, `src/pages/SkillDetail.tsx`, `src/pages/WorkflowDetail.tsx`, `src/pages/PromptKitDetail.tsx`.
 
 ### 20. ⬜ Low-credit warning banner · S · ★★
 - **Area:** AI Credits
