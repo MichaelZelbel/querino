@@ -241,6 +241,20 @@ export default function PromptKitDetail() {
             Back
           </button>
 
+          <MenerioOriginBanner
+            menerioNoteId={kit.menerio_note_id || null}
+            isAuthor={!!isAuthor}
+            busy={cloning}
+            onDuplicate={() =>
+              user
+                ? cloneKit(
+                    { id: kit.id, title: kit.title, description: kit.description, content: kit.content, category: kit.category, tags: kit.tags },
+                    user.id,
+                  )
+                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
+            }
+          />
+
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <Badge variant="secondary" className="text-sm gap-1">
