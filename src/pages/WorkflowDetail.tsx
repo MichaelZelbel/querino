@@ -242,6 +242,17 @@ export default function WorkflowDetail() {
             Back
           </button>
 
+          <MenerioOriginBanner
+            menerioNoteId={(workflow as any).menerio_note_id || null}
+            isAuthor={!!isAuthor}
+            busy={duplicating}
+            onDuplicate={() =>
+              user
+                ? duplicateArtifact("workflow", workflow, user.id)
+                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
+            }
+          />
+
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <Badge variant="secondary" className="text-sm gap-1">
