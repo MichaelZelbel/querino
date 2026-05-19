@@ -33,6 +33,7 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown/DownloadMarkdownButton";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
+import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { Languages } from "lucide-react";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
