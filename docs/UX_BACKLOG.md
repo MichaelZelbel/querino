@@ -157,11 +157,10 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Area:** Cross-feature trust
 - **Files:** new `src/components/menerio/MenerioOriginBanner.tsx`; `src/pages/PromptDetail.tsx`, `src/pages/SkillDetail.tsx`, `src/pages/WorkflowDetail.tsx`, `src/pages/PromptKitDetail.tsx`.
 
-### 20. ⬜ Low-credit warning banner · S · ★★
+### 20. 🟩 Low-credit warning banner · S · ★★
+- **Shipped:** 2026-05-18 — `CreditsDisplay` now derives `remainingRatio` and renders a warning state when below 10% (amber `warning` token: progress bar, header value, inline `AlertTriangle` chip with remaining count + reset date) and a destructive state when fully exhausted (red bar + chip with "Contact support" mailto fallback per the no-paid-plans policy). `useAICreditsGate` exposes a new `isLowCredits` boolean for callers that want an inline upsell, and rewrites the out-of-credits toast as a titled error ("Out of AI credits") with the concrete reset date instead of the generic message.
 - **Area:** AI Credits
-- **Problem:** Users only learn they’re out of credits when an AI action fails. No proactive warning at, say, <10% remaining.
-- **Acceptance:** Global `CreditsDisplay` shows a warning state below threshold; first AI-gated action shows an inline upsell instead of a generic error.
-- **Files:** `components/settings/CreditsDisplay.tsx`, `hooks/useAICreditsGate.ts`
+- **Files:** `src/components/settings/CreditsDisplay.tsx`, `src/hooks/useAICreditsGate.ts`.
 
 ---
 
