@@ -68,7 +68,7 @@ When sending requests, include all three of these headers:
   Content-Type: application/json
 
 About the token from section 0:
-• It is a long-lived personal access token, generated in Querino under Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token". The token is shown only once at creation.
+• It is a long-lived personal access token, generated in Querino under Settings → MCP Server → "Personal MCP Tokens" → "Create token". The token is shown only once at creation.
 • It always starts with the prefix "qrn_mcp_". It is NOT a Supabase session JWT and NOT my account password.
 • It does NOT expire after 1 hour. It stays valid until I revoke it in the same settings page (or until the optional expiration date I set when creating it).
 • If section 0 still contains the literal placeholder "<<<PASTE YOUR qrn_mcp_... TOKEN HERE>>>", stop immediately and ask me to paste my token into section 0 — do not try to connect.
@@ -140,10 +140,11 @@ export function McpSetupSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-foreground mb-1">MCP Server / API Access</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-1">MCP Server</h2>
         <p className="text-muted-foreground text-sm">
-          Connect AI agents like OpenClaw, Manus, Claude Desktop, or Cursor to manage your Querino data
-          via the Model Context Protocol. Authentication uses long-lived personal tokens that you create below.
+          Connect AI agents and MCP-compatible clients like OpenClaw, Manus, Claude Desktop, or Cursor
+          to manage your Querino data via the Model Context Protocol. Authentication uses long-lived
+          personal tokens that you create below.
         </p>
       </div>
 
