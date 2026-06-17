@@ -51,7 +51,7 @@ My Querino MCP token is:
 
     <<<PASTE YOUR qrn_mcp_... TOKEN HERE>>>
 
-^ Replace the line above (the part in <<< >>>) with your actual token before sending this prompt to the agent. The token starts with "qrn_mcp_" and you generate / copy it in Querino under Settings → MCP Server / API Access → "Personal MCP Tokens".
+^ Replace the line above (the part in <<< >>>) with your actual token before sending this prompt to the agent. The token starts with "qrn_mcp_" and you generate / copy it in Querino under Settings → MCP Server → "Personal MCP Tokens".
 
 Everywhere below where you see the placeholder MY_QUERINO_MCP_TOKEN, the agent must use exactly the token from this section — not ask me again, not invent one, not use my password or any other key.
 
