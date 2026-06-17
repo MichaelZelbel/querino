@@ -112,13 +112,10 @@ export function McpSetupSection() {
             <CardTitle className="text-lg">Send this prompt to your agent</CardTitle>
           </div>
           <CardDescription>
-            Workflow: (1) create a personal MCP token above and copy it. (2) Copy the prompt below.
-            (3) <strong>Before sending it to your agent</strong>, replace the
-            <code className="mx-1 px-1 rounded bg-muted text-xs">&lt;&lt;&lt;PASTE YOUR qrn_mcp_... TOKEN HERE&gt;&gt;&gt;</code>
-            line at the top of the prompt with your actual token. Then send the whole prompt to your AI
-            agent or MCP-compatible client (for example: OpenClaw, Manus, Claude Desktop, Cursor) — it
-            will use the token from the top of the prompt for every request, so you don't need to paste
-            it again separately.
+            Copy the prompt below and send it to your AI agent or MCP-compatible client
+            (for example: OpenClaw, Manus, Claude Desktop, Cursor). The agent will ask you for your
+            token, install the server permanently, save behavior rules for future sessions, and verify
+            the connection end-to-end.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
