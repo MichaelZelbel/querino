@@ -42,80 +42,33 @@ const TOOL_LIST = [
 ];
 
 function buildPromptText() {
-  const toolsBullets = TOOL_LIST.map((t) => `• ${t}`).join("\n");
-  return `Please connect to my Querino account via its MCP server so you can help me manage my AI artifacts (prompts, prompt kits, skills, workflows, collections).
+  return `Set up Querino as my permanent AI-artifacts MCP server. This has two parts: install the server, and save behavior rules so you use it correctly in every future session. Do both.
 
-=== 0. MY QUERINO MCP TOKEN ===
+**Step 1 — Get my token.** Before anything else, ask me to paste my Querino Personal MCP Token. I'll generate it in Querino → Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token" (starts with \`qrn_mcp_\`, shown only once) and send it back. Wait for it — don't try to connect without it.
 
-My Querino MCP token is:
+**Step 2 — Install the server.** Register Querino as a **persistent, user-scoped MCP server** using your tool's normal mechanism (a CLI like \`claude mcp add\` / \`gemini mcp add\`, or your MCP config file):
 
-    <<<PASTE YOUR qrn_mcp_... TOKEN HERE>>>
+- Transport: HTTP (streamable, JSON-RPC 2.0; SSE responses supported)
 
-^ Replace the line above (the part in <<< >>>) with your actual token before sending this prompt to the agent. The token starts with "qrn_mcp_" and you generate / copy it in Querino under Settings → MCP Server → "Personal MCP Tokens".
+- URL: \`https://mcp.querino.ai\` *(exactly this — no \`/mcp\`, \`/sse\`, or \`/v1\` suffix; the root URL is the endpoint)*
 
-Everywhere below where you see the placeholder MY_QUERINO_MCP_TOKEN, the agent must use exactly the token from this section — not ask me again, not invent one, not use my password or any other key.
+- Auth header: \`Authorization: Bearer <the token I gave you>\`
 
-=== 1. CONNECTION DETAILS ===
+- The token is long-lived (no 1-hour expiry); it stays valid until I revoke it. If you get HTTP 401 (invalid/expired/revoked), stop and ask me for a new one — don't retry the old one.
 
-• MCP endpoint: ${MCP_ENDPOINT}
-• Transport: MCP Streamable HTTP (the standard remote MCP transport over HTTP POST with JSON-RPC 2.0; SSE responses supported)
-• Auth: HTTP header "Authorization: Bearer MY_QUERINO_MCP_TOKEN" (use the token from section 0)
-• Method: connect directly to the endpoint above — do NOT append /mcp, /sse, /v1, or any other path. The root URL is the MCP endpoint.
+**Step 3 — Save behavior rules.** Ask my permission, then append the following to your **global / user-level** instructions file (e.g. \`~/.claude/CLAUDE.md\`, \`GEMINI.md\`, \`AGENTS.md\`, or your tool's user-scope rules) so they apply in every future session:
 
-When sending requests, include all three of these headers:
-  Authorization: Bearer MY_QUERINO_MCP_TOKEN
-  Accept: application/json, text/event-stream
-  Content-Type: application/json
+- **Tool-family routing.** A single reusable LLM instruction/template → \`prompt_*\`. Several prompts shipped together as one Markdown document → \`prompt_kit_*\`. A capability/framework for how to do something → \`skill_*\`. A multi-step process/pipeline → \`workflow_*\`. A mixed, user-curated grouping across types → \`collection_*\`. If unsure, ask one short clarifying question instead of guessing.
 
-About the token from section 0:
-• It is a long-lived personal access token, generated in Querino under Settings → MCP Server → "Personal MCP Tokens" → "Create token". The token is shown only once at creation.
-• It always starts with the prefix "qrn_mcp_". It is NOT a Supabase session JWT and NOT my account password.
-• It does NOT expire after 1 hour. It stays valid until I revoke it in the same settings page (or until the optional expiration date I set when creating it).
-• If section 0 still contains the literal placeholder "<<<PASTE YOUR qrn_mcp_... TOKEN HERE>>>", stop immediately and ask me to paste my token into section 0 — do not try to connect.
-• If you get HTTP 401 with a message about an invalid, expired, or revoked token, stop and ask me for a new one — do not retry with the old one.
+- **Safe access.** Prefer \`search_*\` when I don't already know the exact id/slug; never fabricate ids. Always call \`get_*\` before any \`update_*\`/\`delete_*\` so the current state is visible.
 
-=== 2. VERIFY THE CONNECTION ===
+- **Mutations.** Only create/update/delete when my intent is clear; if ambiguous, confirm first. \`delete_*\` requires explicit confirmation unless I already said "delete"/"remove" this turn. Never bulk-delete speculatively.
 
-After registering the server, please run this verification flow and report back what you got:
+- **Confirmation.** After any create/update/delete, end with a one-line confirmation: what changed and the id/slug it now has. Surface the real server error message on failure — don't hide it behind a generic message.
 
-1. Send an "initialize" request and confirm the server name and protocol version.
-2. Call "tools/list" and confirm you can see Querino tools (e.g. list_prompts, list_prompt_kits, get_my_profile, ...).
-3. Call "tools/call" with name "get_my_profile" and no arguments to confirm authentication works end-to-end.
+- **Output format.** Never use Markdown tables (they break in narrow chat). List each item as one short bullet: id/slug + title only. Show full details (content, tags, description) only when I explicitly ask.
 
-If any of these fail, tell me the exact error (status code + message) instead of silently retrying.
-
-=== 3. QUERINO DATA MODEL (decide which tool family to use) ===
-
-• Prompts → single reusable LLM instructions / templates. Use the prompt_* tools when I talk about "a prompt", instructions for an LLM, or text I want to reuse.
-• Prompt Kits → curated bundles of multiple related prompts kept together as one Markdown document (sections like "## Prompt: <Title>"). Use the prompt_kit_* tools when I talk about a kit, a bundle/collection of prompts shipped together, or a multi-prompt template.
-• Skills → structured, higher-level capabilities / frameworks (Markdown-based). Use the skill_* tools when I talk about a capability, framework, or "how the agent should do X".
-• Workflows → multi-step AI processes that combine prompts and/or skills. Use the workflow_* tools when I talk about a process, pipeline, or sequence of steps.
-• Collections → user-curated groups of mixed items (prompts, prompt kits, skills, workflows). Use the collection_* tools when I talk about grouping, organizing, or bundling items across types.
-
-If you're unsure which family applies, ask one short clarifying question instead of guessing. In particular: a single prompt → prompt_*; several prompts shipped together as one document → prompt_kit_*; a mixed grouping I curate → collection_*.
-
-=== 4. AVAILABLE TOOLS ===
-
-${toolsBullets}
-
-=== 5. AGENT USAGE GUIDANCE ===
-
-• Prefer search_* tools when you don't already know the exact id/slug of an item. Don't fabricate ids.
-• Always call get_* before update_* or delete_* so you (and I) can see the current state and you can show a diff or summary.
-• Only mutate data (create / update / delete) when I clearly intend it. If my request is ambiguous, confirm first.
-• Destructive actions (delete_*) require explicit confirmation from me, unless I already said "delete" or "remove" in this turn. Never delete in bulk speculatively.
-• When creating or updating, echo back the resulting id/slug + title so I can verify.
-• On errors, surface the real server error message; don't hide it behind a generic "something went wrong".
-
-=== 6. OUTPUT FORMATTING RULES (strict) ===
-
-• Never use markdown tables — they break in narrow chat windows.
-• Show each item as a short bullet line: key field (id or slug) + title/name only. One line per item.
-• Only show full details (description, content, tags, etc.) if I explicitly ask for them.
-• For simple entity lists (e.g. tags, categories), use a short comma-separated list or short bullets.
-• After any create/update/delete, end with a one-line confirmation: what changed, and the id/slug it now has.
-
-Use these tools whenever I ask you to view, add, edit, search, or delete my data in Querino.`;
+**Step 4 — Verify.** Confirm the MCP server is connected (list your servers and confirm Querino tools like \`list_prompts\`, \`get_my_profile\` appear), confirm the rules were written to the file, then call \`get_my_profile\` with no arguments to prove auth works end-to-end. Report all three results, with exact status codes/messages on any failure.`;
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
@@ -159,13 +112,10 @@ export function McpSetupSection() {
             <CardTitle className="text-lg">Send this prompt to your agent</CardTitle>
           </div>
           <CardDescription>
-            Workflow: (1) create a personal MCP token above and copy it. (2) Copy the prompt below.
-            (3) <strong>Before sending it to your agent</strong>, replace the
-            <code className="mx-1 px-1 rounded bg-muted text-xs">&lt;&lt;&lt;PASTE YOUR qrn_mcp_... TOKEN HERE&gt;&gt;&gt;</code>
-            line at the top of the prompt with your actual token. Then send the whole prompt to your AI
-            agent or MCP-compatible client (for example: OpenClaw, Manus, Claude Desktop, Cursor) — it
-            will use the token from the top of the prompt for every request, so you don't need to paste
-            it again separately.
+            Copy the prompt below and send it to your AI agent or MCP-compatible client
+            (for example: OpenClaw, Manus, Claude Desktop, Cursor). The agent will ask you for your
+            token, install the server permanently, save behavior rules for future sessions, and verify
+            the connection end-to-end.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
