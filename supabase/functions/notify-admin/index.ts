@@ -22,12 +22,25 @@ interface NotifyRequest {
   metadata?: Record<string, unknown>;
 }
 
+// All values in the notification come from the request body; escape them so
+// a caller can never inject HTML/links into the admin's mailbox.
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[NOTIFY-ADMIN] ${step}${detailsStr}`);
 };
 
-function getSubjectLine(eventType: EventType, userEmail: string): string {
+function getSubjectLine(eventType: EventType, rawEmail: string): string {
+  // Subjects are plain text; strip newlines so headers can't be smuggled.
+  const userEmail = rawEmail.replace(/[\r\n]/g, " ").slice(0, 200);
   switch (eventType) {
     case "signup":
       return `🎉 New User Signup: ${userEmail}`;
@@ -56,7 +69,7 @@ function getEmailBody(event: NotifyRequest): string {
     subscribe: {
       action: "A user has subscribed to Querino Premium!",
       label: "Subscription Details",
-      extra: `<li><strong>Mode:</strong> ${metadata?.mode || "live"}</li><li><strong>Product ID:</strong> ${metadata?.productId || "N/A"}</li>`,
+      extra: `<li><strong>Mode:</strong> ${esc(metadata?.mode || "live")}</li><li><strong>Product ID:</strong> ${esc(metadata?.productId || "N/A")}</li>`,
     },
     unsubscribe: {
       action: "A user has cancelled their Querino Premium subscription.",
@@ -85,9 +98,9 @@ li{margin:8px 0}
 <div class="content"><p>${s.action}</p>
 <p><strong>${s.label}:</strong></p>
 <ul>
-<li><strong>Email:</strong> ${userEmail}</li>
-<li><strong>User ID:</strong> ${userId || "N/A"}</li>
-<li><strong>Display Name:</strong> ${name}</li>
+<li><strong>Email:</strong> ${esc(userEmail)}</li>
+<li><strong>User ID:</strong> ${esc(userId || "N/A")}</li>
+<li><strong>Display Name:</strong> ${esc(name)}</li>
 ${s.extra}
 <li><strong>Timestamp:</strong> ${timestamp}</li>
 </ul></div>
@@ -102,6 +115,21 @@ serve(async (req) => {
 
   try {
     logStep("Function started");
+
+    // Server-to-server only: both callers (delete-my-account, the signup DB
+    // trigger) authenticate with the service-role key. Reject everyone else —
+    // this endpoint sends email to the admin and must not be publicly
+    // triggerable.
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.replace(/^Bearer\s+/i, "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!serviceRoleKey || bearer !== serviceRoleKey) {
+      logStep("Rejected unauthorized caller");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) {
