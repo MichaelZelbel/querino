@@ -36,6 +36,7 @@ import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
+import { moderateContent } from "@/lib/moderateContent";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
 
@@ -227,16 +228,36 @@ export default function PromptDetail() {
 
   const handleApplySuggestion = async (suggestion: any) => {
     if (!prompt) return;
-    
+
     const updates: any = { content: suggestion.content };
     if (suggestion.title) updates.title = suggestion.title;
     if (suggestion.description) updates.description = suggestion.description;
-    
+
+    if (prompt.is_public) {
+      const result = await moderateContent(
+        {
+          title: updates.title ?? prompt.title,
+          description: updates.description ?? prompt.description,
+          content: updates.content,
+        },
+        "edit_public",
+        "prompt",
+        prompt.id
+      );
+      if (!result.approved) {
+        toast.error(
+          result.reason ||
+            "This suggestion was blocked by moderation and cannot be applied to a public prompt."
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from('prompts')
       .update(updates)
       .eq('id', prompt.id);
-    
+
     if (error) throw error;
     
     // Refresh the prompt data
@@ -688,6 +709,7 @@ export default function PromptDetail() {
             promptContent={prompt.content}
             promptTitle={prompt.title}
             promptId={prompt.id}
+            isPublic={prompt.is_public}
             onPromptUpdated={fetchPrompt}
             userId={user?.id}
           />

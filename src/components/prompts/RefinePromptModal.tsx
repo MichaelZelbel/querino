@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { FRAMEWORK_OPTIONS, type PromptFramework } from "@/lib/promptGenerator";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { supabase } from "@/integrations/supabase/client";
+import { moderateContent } from "@/lib/moderateContent";
 
 interface RefinePromptModalProps {
   isOpen: boolean;
@@ -29,6 +30,8 @@ interface RefinePromptModalProps {
   promptContent: string;
   promptTitle?: string;
   promptId?: string;
+  /** When the prompt is public, saving the refined content runs moderation first. */
+  isPublic?: boolean;
   onApplyRefinedPrompt?: (refinedPrompt: string) => void;
   onPromptUpdated?: () => void;
   userId?: string;
@@ -50,6 +53,7 @@ export function RefinePromptModal({
   promptContent,
   promptTitle,
   promptId,
+  isPublic,
   onApplyRefinedPrompt,
   onPromptUpdated,
   userId,
@@ -127,6 +131,22 @@ export function RefinePromptModal({
 
     setIsUpdating(true);
     try {
+      if (isPublic) {
+        const result = await moderateContent(
+          { title: promptTitle, content: refinedPrompt },
+          "edit_public",
+          "prompt",
+          promptId
+        );
+        if (!result.approved) {
+          toast.error(
+            result.reason ||
+              "This content was blocked by moderation and cannot be saved to a public prompt."
+          );
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("prompts")
         .update({ content: refinedPrompt, updated_at: new Date().toISOString() })
