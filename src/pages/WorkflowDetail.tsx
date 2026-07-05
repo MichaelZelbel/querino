@@ -228,14 +228,48 @@ export default function WorkflowDetail() {
     );
   }
 
+  const workflowCanonical = `${window.location.origin}/workflows/${workflow.slug || workflow.id}`;
+  const workflowDescription = workflow.description || `${workflow.title} — AI workflow on Querino`;
+  const workflowJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: workflow.title,
+    headline: workflow.title,
+    description: workflowDescription,
+    genre: workflow.category,
+    url: workflowCanonical,
+    inLanguage: workflow.language || "en",
+    ...(workflow.created_at && { datePublished: workflow.created_at }),
+    ...(workflow.updated_at && { dateModified: workflow.updated_at }),
+    ...(workflow.author?.display_name && {
+      author: { "@type": "Person", name: workflow.author.display_name },
+    }),
+    publisher: { "@type": "Organization", name: "Querino" },
+    ...(workflow.rating_count && workflow.rating_count > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: workflow.rating_avg,
+        ratingCount: workflow.rating_count,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }),
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <SEOHead
+        title={workflow.title}
+        description={workflowDescription}
+        canonicalUrl={workflowCanonical}
+        jsonLd={workflowJsonLd}
+      />
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
           <button
-            onClick={() => navigate(-1)} 
+            onClick={() => navigate(-1)}
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

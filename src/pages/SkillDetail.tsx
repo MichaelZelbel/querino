@@ -213,14 +213,48 @@ export default function SkillDetail() {
     );
   }
 
+  const skillCanonical = `${window.location.origin}/skills/${skill.slug || skill.id}`;
+  const skillDescription = skill.description || `${skill.title} — AI skill on Querino`;
+  const skillJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: skill.title,
+    headline: skill.title,
+    description: skillDescription,
+    genre: skill.category,
+    url: skillCanonical,
+    inLanguage: skill.language || "en",
+    ...(skill.created_at && { datePublished: skill.created_at }),
+    ...(skill.updated_at && { dateModified: skill.updated_at }),
+    ...(skill.author?.display_name && {
+      author: { "@type": "Person", name: skill.author.display_name },
+    }),
+    publisher: { "@type": "Organization", name: "Querino" },
+    ...(skill.rating_count && skill.rating_count > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: skill.rating_avg,
+        ratingCount: skill.rating_count,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }),
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <SEOHead
+        title={skill.title}
+        description={skillDescription}
+        canonicalUrl={skillCanonical}
+        jsonLd={skillJsonLd}
+      />
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
           <button
-            onClick={() => navigate(-1)} 
+            onClick={() => navigate(-1)}
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
