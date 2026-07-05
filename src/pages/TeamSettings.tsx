@@ -50,17 +50,11 @@ export default function TeamSettings() {
   const removeMember = useRemoveTeamMember();
 
   const [teamName, setTeamName] = useState("");
-  const [githubRepo, setGithubRepo] = useState("");
-  const [githubBranch, setGithubBranch] = useState("main");
-  const [githubFolder, setGithubFolder] = useState("");
 
   // Initialize form when team loads
   useEffect(() => {
     if (team) {
       setTeamName(team.name);
-      setGithubRepo(team.github_repo || "");
-      setGithubBranch(team.github_branch || "main");
-      setGithubFolder(team.github_folder || "");
     }
   }, [team]);
 
@@ -105,9 +99,6 @@ export default function TeamSettings() {
         teamId: team.id,
         updates: {
           name: teamName || team.name,
-          github_repo: githubRepo || null,
-          github_branch: githubBranch || "main",
-          github_folder: githubFolder || null,
         },
       });
       toast.success("Team settings saved");
@@ -274,7 +265,8 @@ export default function TeamSettings() {
           </CardContent>
         </Card>
 
-        {/* GitHub Sync */}
+        {/* GitHub Sync — configured centrally in Settings to avoid a second,
+            token-less copy of the same form drifting out of sync. */}
         <Card>
           <CardHeader>
             <CardTitle>GitHub Sync</CardTitle>
@@ -282,39 +274,25 @@ export default function TeamSettings() {
               Sync team artifacts to a shared GitHub repository
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="github-repo">Repository (owner/repo)</Label>
-              <Input
-                id="github-repo"
-                value={githubRepo}
-                onChange={(e) => setGithubRepo(e.target.value)}
-                placeholder="myorg/prompts"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="github-branch">Branch</Label>
-                <Input
-                  id="github-branch"
-                  value={githubBranch}
-                  onChange={(e) => setGithubBranch(e.target.value)}
-                  placeholder="main"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="github-folder">Folder Path</Label>
-                <Input
-                  id="github-folder"
-                  value={githubFolder}
-                  onChange={(e) => setGithubFolder(e.target.value)}
-                  placeholder="prompts/"
-                />
-              </div>
-            </div>
-            <Button onClick={handleSaveSettings} disabled={updateTeam.isPending}>
-              {updateTeam.isPending ? "Saving..." : "Save GitHub Settings"}
-            </Button>
+          <CardContent className="space-y-3">
+            {team.github_repo ? (
+              <p className="text-sm text-muted-foreground">
+                Syncing to <strong>{team.github_repo}</strong> ({team.github_branch || "main"}
+                {team.github_folder ? `, /${team.github_folder}` : ""}).
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No repository configured yet.
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Configure the repository, access token, and test the connection in
+              Settings while this team's workspace is active. Trigger syncs from
+              the Library's "Sync to GitHub" button.
+            </p>
+            <Link to="/settings">
+              <Button variant="outline" size="sm">Open GitHub Sync Settings</Button>
+            </Link>
           </CardContent>
         </Card>
 
