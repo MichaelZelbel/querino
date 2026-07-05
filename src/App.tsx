@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider, Routes, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Routes, Route, Navigate } from "react-router-dom";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
@@ -18,7 +18,6 @@ import NotFound from "./pages/NotFound";
 // the blog CMS, the admin panel, or any feature page that the user
 // has not navigated to yet.
 const Discover = lazy(() => import("./pages/Discover"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PublicPromptDiscovery = lazy(() => import("./pages/PublicPromptDiscovery"));
 const SignUp = lazy(() => import("./pages/SignUp"));
@@ -105,7 +104,8 @@ const AppShell = () => (
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/library" element={<Library />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                {/* Legacy duplicate of /library */}
+                <Route path="/dashboard" element={<Navigate to="/library" replace />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/public-prompt-discovery-copy" element={<PublicPromptDiscovery />} />
                 <Route path="/free-user-sign-up-initial-exploration" element={<SignUp />} />
