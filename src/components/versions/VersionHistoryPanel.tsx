@@ -57,12 +57,29 @@ interface CurrentPromptData {
   tags: string[] | null;
 }
 
+export interface VersionTableConfig {
+  /** Versions table, e.g. "skill_versions" */
+  versionsTable: string;
+  /** FK column to the artifact, e.g. "skill_id" */
+  idColumn: string;
+  /** Live artifact table, e.g. "skills" */
+  artifactTable: string;
+}
+
+const PROMPT_CONFIG: VersionTableConfig = {
+  versionsTable: "prompt_versions",
+  idColumn: "prompt_id",
+  artifactTable: "prompts",
+};
+
 interface VersionHistoryPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   promptId: string;
   currentPrompt: CurrentPromptData;
   onRestoreComplete?: () => void;
+  /** Table config for non-prompt artifact types; defaults to prompts. */
+  tableConfig?: VersionTableConfig;
 }
 
 type ViewMode = "list" | "detail" | "compare";
@@ -73,6 +90,7 @@ export function VersionHistoryPanel({
   promptId,
   currentPrompt,
   onRestoreComplete,
+  tableConfig = PROMPT_CONFIG,
 }: VersionHistoryPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -93,10 +111,10 @@ export function VersionHistoryPanel({
 
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("prompt_versions")
+        const { data, error } = await (supabase
+          .from(tableConfig.versionsTable) as any)
           .select("*")
-          .eq("prompt_id", promptId)
+          .eq(tableConfig.idColumn, promptId)
           .order("version_number", { ascending: false });
 
         if (error) {
@@ -114,7 +132,8 @@ export function VersionHistoryPanel({
     }
 
     fetchVersions();
-  }, [open, promptId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, promptId, tableConfig.versionsTable]);
 
   // Reset view mode when panel closes
   useEffect(() => {
@@ -146,10 +165,10 @@ export function VersionHistoryPanel({
     try {
       // Fetch the latest version fresh so the next number can't collide
       // with inserts made since the panel loaded.
-      const { data: latest, error: latestError } = await supabase
-        .from("prompt_versions")
+      const { data: latest, error: latestError } = await (supabase
+        .from(tableConfig.versionsTable) as any)
         .select("version_number, title, description, content, tags")
-        .eq("prompt_id", promptId)
+        .eq(tableConfig.idColumn, promptId)
         .order("version_number", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -171,10 +190,10 @@ export function VersionHistoryPanel({
         latest.content === currentPrompt.content;
 
       if (!currentMatchesLatest) {
-        const { error: snapshotError } = await supabase
-          .from("prompt_versions")
+        const { error: snapshotError } = await (supabase
+          .from(tableConfig.versionsTable) as any)
           .insert({
-            prompt_id: promptId,
+            [tableConfig.idColumn]: promptId,
             version_number: nextVersionNumber,
             title: currentPrompt.title,
             description: currentPrompt.description,
@@ -192,10 +211,10 @@ export function VersionHistoryPanel({
       }
 
       // Create a new version entry for the restoration
-      const { error: versionError } = await supabase
-        .from("prompt_versions")
+      const { error: versionError } = await (supabase
+        .from(tableConfig.versionsTable) as any)
         .insert({
-          prompt_id: promptId,
+          [tableConfig.idColumn]: promptId,
           version_number: nextVersionNumber,
           title: restoringVersion.title,
           description: restoringVersion.description,
@@ -210,9 +229,9 @@ export function VersionHistoryPanel({
         return;
       }
 
-      // Update the main prompt with restored content
-      const { error: updateError } = await supabase
-        .from("prompts")
+      // Update the live artifact with restored content
+      const { error: updateError } = await (supabase
+        .from(tableConfig.artifactTable) as any)
         .update({
           title: restoringVersion.title,
           description: restoringVersion.description || "",

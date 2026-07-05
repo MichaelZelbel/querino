@@ -36,7 +36,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Loader2, X, ArrowLeft, Trash2, Save, FileText, Sparkles, Bot } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, Save, FileText, Sparkles, Bot, GitBranch, History } from "lucide-react";
+import { VersionHistoryPanel, type VersionTableConfig } from "@/components/versions";
+
+const WORKFLOW_VERSIONS_CONFIG: VersionTableConfig = {
+  versionsTable: "workflow_versions",
+  idColumn: "workflow_id",
+  artifactTable: "workflows",
+};
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
@@ -73,10 +80,13 @@ export default function WorkflowEdit() {
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
+  const [showVersionPanel, setShowVersionPanel] = useState(false);
+  const [changeNotes, setChangeNotes] = useState("");
 
   // AI-undo state
   const [previousContent, setPreviousContent] = useState<string | null>(null);
@@ -267,6 +277,103 @@ export default function WorkflowEdit() {
     }
   };
 
+  // Save the current state as a numbered version (workflow_versions), then
+  // persist to the live row. Mirrors the prompts flow.
+  const handleSaveAsNewVersion = async () => {
+    if (!user || !workflowId) return;
+    if (!formData.title.trim()) { toast.error("Title is required"); return; }
+    if (!formData.content.trim()) { toast.error("Workflow content is required"); return; }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "workflow",
+        workflowId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
+    setIsSavingVersion(true);
+    try {
+      const { data: latest } = await supabase.from("workflow_versions")
+        .select("version_number")
+        .eq("workflow_id", workflowId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextVersionNumber = (latest?.version_number ?? 0) + 1;
+
+      const { error: versionError } = await supabase.from("workflow_versions").insert({
+        workflow_id: workflowId,
+        version_number: nextVersionNumber,
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        content: formData.content.trim(),
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        change_notes: changeNotes.trim() || null,
+      });
+      if (versionError) {
+        console.error("Error creating workflow version:", versionError);
+        toast.error("Failed to create new version");
+        return;
+      }
+
+      const { error: updateError } = await (supabase.from("workflows") as any)
+        .update({
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          content: formData.content.trim(),
+          category: formData.category || null,
+          tags: formData.tags.length > 0 ? formData.tags : null,
+          published: formData.isPublic,
+          language: formData.language,
+        })
+        .eq("id", workflowId);
+      if (updateError) {
+        toast.error("Version created but failed to update workflow");
+        return;
+      }
+
+      setChangeNotes("");
+      markSaved();
+      toast.success(`Version ${nextVersionNumber} created!`);
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setIsSavingVersion(false);
+    }
+  };
+
+  // Reload the workflow into the form after a restore from the version panel.
+  const handleRestoreComplete = async () => {
+    if (!workflowId) return;
+    const { data } = await (supabase.from("workflows") as any)
+      .select("*")
+      .eq("id", workflowId)
+      .maybeSingle();
+    if (data) {
+      setWorkflow(data);
+      let workflowContent = data.content || "";
+      if (!workflowContent && data.json) {
+        workflowContent = typeof data.json === "string" ? data.json : JSON.stringify(data.json, null, 2);
+      }
+      setFormData({
+        title: data.title,
+        description: data.description || "",
+        content: workflowContent,
+        category: data.category || "",
+        tags: data.tags || [],
+        isPublic: data.published ?? false,
+        language: data.language || DEFAULT_LANGUAGE,
+      });
+      markSaved();
+    }
+  };
+
   const handleDelete = async () => {
     if (!workflowId) return;
     setIsDeleting(true);
@@ -374,12 +481,25 @@ export default function WorkflowEdit() {
               <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
               <Button
                 onClick={handleSaveChanges}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSavingVersion}
                 className="gap-2"
                 title="Save (⌘S / Ctrl+S)"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
+              </Button>
+              <Button
+                onClick={handleSaveAsNewVersion}
+                disabled={isSubmitting || isSavingVersion}
+                variant="secondary"
+                className="gap-2"
+              >
+                {isSavingVersion ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitBranch className="h-4 w-4" />}
+                Save as New Version
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setShowVersionPanel(true)}>
+                <History className="h-4 w-4" />
+                Version History
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -394,6 +514,7 @@ export default function WorkflowEdit() {
                       <div className="space-y-2">
                         <p>This action cannot be undone. Deleting this workflow will also remove:</p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                          <li>All saved versions and version history</li>
                           <li>All comments, reviews and ratings</li>
                           <li>Any edit suggestions submitted by others</li>
                           <li>References from collections it belongs to</li>
@@ -546,6 +667,20 @@ export default function WorkflowEdit() {
                     />
                   </div>
 
+                  {/* Change Notes */}
+                  <div className="space-y-2">
+                    <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
+                    <Textarea
+                      id="changeNotes"
+                      value={changeNotes}
+                      onChange={(e) => setChangeNotes(e.target.value)}
+                      placeholder="Optional: Describe what changed in this version"
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      These notes will be saved when you click "Save as New Version"
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -568,6 +703,23 @@ export default function WorkflowEdit() {
         category={moderationBlock?.category}
         supportHint={moderationBlock?.support_hint}
       />
+
+      {workflowId && (
+        <VersionHistoryPanel
+          open={showVersionPanel}
+          onOpenChange={setShowVersionPanel}
+          promptId={workflowId}
+          currentPrompt={{
+            id: workflowId,
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+            tags: formData.tags.length > 0 ? formData.tags : null,
+          }}
+          onRestoreComplete={handleRestoreComplete}
+          tableConfig={WORKFLOW_VERSIONS_CONFIG}
+        />
+      )}
     </div>
   );
 }

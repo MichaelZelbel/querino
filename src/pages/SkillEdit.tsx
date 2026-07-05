@@ -36,7 +36,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Loader2, X, ArrowLeft, Trash2, Save, Sparkles, Bot } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, Save, Sparkles, Bot, GitBranch, History } from "lucide-react";
+import { VersionHistoryPanel, type VersionTableConfig } from "@/components/versions";
+
+const SKILL_VERSIONS_CONFIG: VersionTableConfig = {
+  versionsTable: "skill_versions",
+  idColumn: "skill_id",
+  artifactTable: "skills",
+};
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
@@ -72,10 +79,13 @@ export default function SkillEdit() {
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [skill, setSkill] = useState<Skill | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
+  const [showVersionPanel, setShowVersionPanel] = useState(false);
+  const [changeNotes, setChangeNotes] = useState("");
 
   // AI-undo state
   const [previousContent, setPreviousContent] = useState<string | null>(null);
@@ -261,6 +271,99 @@ export default function SkillEdit() {
     }
   };
 
+  // Save the current state as a numbered version (skill_versions), then
+  // persist to the live row. Mirrors the prompts flow.
+  const handleSaveAsNewVersion = async () => {
+    if (!user || !skillId) return;
+    if (!formData.title.trim()) { toast.error("Title is required"); return; }
+    if (!formData.content.trim()) { toast.error("Content is required"); return; }
+
+    if (formData.isPublic) {
+      const result = await moderateContent(
+        { title: formData.title, description: formData.description, content: formData.content },
+        "edit_public",
+        "skill",
+        skillId
+      );
+      if (!result.approved) {
+        setModerationBlock(result);
+        return;
+      }
+    }
+
+    setIsSavingVersion(true);
+    try {
+      const { data: latest } = await supabase.from("skill_versions")
+        .select("version_number")
+        .eq("skill_id", skillId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextVersionNumber = (latest?.version_number ?? 0) + 1;
+
+      const { error: versionError } = await supabase.from("skill_versions").insert({
+        skill_id: skillId,
+        version_number: nextVersionNumber,
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        content: formData.content.trim(),
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        change_notes: changeNotes.trim() || null,
+      });
+      if (versionError) {
+        console.error("Error creating skill version:", versionError);
+        toast.error("Failed to create new version");
+        return;
+      }
+
+      const { error: updateError } = await (supabase.from("skills") as any)
+        .update({
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          content: formData.content.trim(),
+          category: formData.category || null,
+          tags: formData.tags.length > 0 ? formData.tags : null,
+          published: formData.isPublic,
+          language: formData.language,
+        })
+        .eq("id", skillId);
+      if (updateError) {
+        toast.error("Version created but failed to update skill");
+        return;
+      }
+
+      setChangeNotes("");
+      markSaved();
+      toast.success(`Version ${nextVersionNumber} created!`);
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setIsSavingVersion(false);
+    }
+  };
+
+  // Reload the skill into the form after a restore from the version panel.
+  const handleRestoreComplete = async () => {
+    if (!skillId) return;
+    const { data } = await (supabase.from("skills") as any)
+      .select("*")
+      .eq("id", skillId)
+      .maybeSingle();
+    if (data) {
+      setSkill(data);
+      setFormData({
+        title: data.title,
+        description: data.description || "",
+        content: data.content,
+        category: data.category || "",
+        tags: data.tags || [],
+        isPublic: data.published ?? false,
+        language: data.language || DEFAULT_LANGUAGE,
+      });
+      markSaved();
+    }
+  };
+
   const handleDelete = async () => {
     if (!skillId) return;
     setIsDeleting(true);
@@ -368,12 +471,25 @@ export default function SkillEdit() {
               <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
               <Button
                 onClick={handleSaveChanges}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSavingVersion}
                 className="gap-2"
                 title="Save (⌘S / Ctrl+S)"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
+              </Button>
+              <Button
+                onClick={handleSaveAsNewVersion}
+                disabled={isSubmitting || isSavingVersion}
+                variant="secondary"
+                className="gap-2"
+              >
+                {isSavingVersion ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitBranch className="h-4 w-4" />}
+                Save as New Version
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setShowVersionPanel(true)}>
+                <History className="h-4 w-4" />
+                Version History
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -388,6 +504,7 @@ export default function SkillEdit() {
                       <div className="space-y-2">
                         <p>This action cannot be undone. Deleting this skill will also remove:</p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                          <li>All saved versions and version history</li>
                           <li>All comments, reviews and ratings</li>
                           <li>Any edit suggestions submitted by others</li>
                           <li>References from collections it belongs to</li>
@@ -534,6 +651,20 @@ export default function SkillEdit() {
                     />
                   </div>
 
+                  {/* Change Notes */}
+                  <div className="space-y-2">
+                    <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
+                    <Textarea
+                      id="changeNotes"
+                      value={changeNotes}
+                      onChange={(e) => setChangeNotes(e.target.value)}
+                      placeholder="Optional: Describe what changed in this version"
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      These notes will be saved when you click "Save as New Version"
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -556,6 +687,23 @@ export default function SkillEdit() {
         category={moderationBlock?.category}
         supportHint={moderationBlock?.support_hint}
       />
+
+      {skillId && (
+        <VersionHistoryPanel
+          open={showVersionPanel}
+          onOpenChange={setShowVersionPanel}
+          promptId={skillId}
+          currentPrompt={{
+            id: skillId,
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+            tags: formData.tags.length > 0 ? formData.tags : null,
+          }}
+          onRestoreComplete={handleRestoreComplete}
+          tableConfig={SKILL_VERSIONS_CONFIG}
+        />
+      )}
     </div>
   );
 }
