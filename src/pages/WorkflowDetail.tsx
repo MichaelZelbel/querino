@@ -29,6 +29,7 @@ import { CopyWorkflowToTeamModal } from "@/components/workflows/CopyWorkflowToTe
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
+import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
@@ -376,6 +377,8 @@ export default function WorkflowDetail() {
                 </>
               )}
             </Button>
+
+            <SendToLLMButtons title={workflow.title} content={getWorkflowContent()} />
 
             {isAuthor && (
               <>

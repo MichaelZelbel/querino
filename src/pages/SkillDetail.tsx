@@ -25,6 +25,7 @@ import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { SkillReviewSection } from "@/components/skills/SkillReviewSection";
 import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
+import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
@@ -353,6 +354,8 @@ export default function SkillDetail() {
                 </>
               )}
             </Button>
+
+            <SendToLLMButtons title={skill.title} content={skill.content} />
 
             {isAuthor && (
               <>
