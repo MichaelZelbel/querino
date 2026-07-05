@@ -41,7 +41,7 @@ export function createReviewsHook(config: ReviewsConfig) {
       }
 
       try {
-        const { data, error } = await (supabase.from(config.table) as any)
+        const { data, error } = await (supabase.from(config.table as any) as any)
           .select(`
             *,
             profiles:user_id (
@@ -95,7 +95,7 @@ export function createReviewsHook(config: ReviewsConfig) {
 
       try {
         if (userReview) {
-          const { error } = await (supabase.from(config.table) as any)
+          const { error } = await (supabase.from(config.table as any) as any)
             .update({
               rating,
               comment: comment?.trim() || null,
@@ -107,7 +107,7 @@ export function createReviewsHook(config: ReviewsConfig) {
             return { error: new Error(error.message) };
           }
         } else {
-          const { error } = await (supabase.from(config.table) as any).insert({
+          const { error } = await (supabase.from(config.table as any) as any).insert({
             [config.idColumn]: itemId,
             user_id: userId,
             rating,
@@ -138,7 +138,7 @@ export function createReviewsHook(config: ReviewsConfig) {
       setSubmitting(true);
 
       try {
-        const { error } = await (supabase.from(config.table) as any)
+        const { error } = await (supabase.from(config.table as any) as any)
           .delete()
           .eq("id", userReview.id);
 

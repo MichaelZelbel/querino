@@ -1621,6 +1621,50 @@ export type Database = {
           },
         ]
       }
+      skill_versions: {
+        Row: {
+          change_notes: string | null
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          skill_id: string
+          tags: string[] | null
+          title: string
+          version_number: number
+        }
+        Insert: {
+          change_notes?: string | null
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          skill_id: string
+          tags?: string[] | null
+          title: string
+          version_number?: number
+        }
+        Update: {
+          change_notes?: string | null
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          skill_id?: string
+          tags?: string[] | null
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_versions_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
         Row: {
           author_id: string | null
@@ -1782,6 +1826,61 @@ export type Database = {
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_invites: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          role: string
+          team_id: string
+          token: string
+          used_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          role?: string
+          team_id: string
+          token?: string
+          used_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          role?: string
+          team_id?: string
+          token?: string
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invites_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2063,6 +2162,50 @@ export type Database = {
           },
           {
             foreignKeyName: "workflow_reviews_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_versions: {
+        Row: {
+          change_notes: string | null
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          tags: string[] | null
+          title: string
+          version_number: number
+          workflow_id: string
+        }
+        Insert: {
+          change_notes?: string | null
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          tags?: string[] | null
+          title: string
+          version_number?: number
+          workflow_id: string
+        }
+        Update: {
+          change_notes?: string | null
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          tags?: string[] | null
+          title?: string
+          version_number?: number
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_versions_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "workflows"
@@ -2379,6 +2522,13 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      redeem_team_invite: {
+        Args: { p_token: string }
+        Returns: {
+          team_id: string
+          team_name: string
+        }[]
       }
       search_prompt_kits_semantic: {
         Args: {

@@ -38,7 +38,7 @@ export function createArtifactListHook<T extends { id: string }>(
 ) {
   const fetchByIds = async (ids: string[]): Promise<T[]> => {
     if (ids.length === 0) return [];
-    const { data, error } = await (supabase.from(config.table) as any)
+    const { data, error } = await (supabase.from(config.table as any) as any)
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
       .in("id", ids);
     if (error || !data) return [];
@@ -51,7 +51,7 @@ export function createArtifactListHook<T extends { id: string }>(
     return useQuery<T[]>({
       queryKey: [config.queryKey, searchQuery, published, authorId, teamId, category, sortBy, limit],
       queryFn: async () => {
-        let query = (supabase.from(config.table) as any)
+        let query = (supabase.from(config.table as any) as any)
           .select(`
             *,
             profiles:author_id (
