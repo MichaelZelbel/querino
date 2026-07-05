@@ -55,7 +55,9 @@ import {
   Eye,
   Sparkles,
   Bot,
+  Info,
 } from "lucide-react";
+import { VersionHistoryPanel } from "@/components/versions";
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
@@ -130,6 +132,7 @@ export default function LibraryPromptEdit() {
 
   // AI coach panel state (mobile sheet)
   const [showCoachSheet, setShowCoachSheet] = useState(false);
+  const [showVersionPanel, setShowVersionPanel] = useState(false);
   const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   // Get the prompt ID for database operations
@@ -208,6 +211,40 @@ export default function LibraryPromptEdit() {
       fetchData();
     }
   }, [slug, user]);
+
+  // Reload the prompt + versions after a restore from the version panel.
+  const handleRestoreComplete = async () => {
+    if (!promptId) return;
+
+    const { data: promptData } = await supabase
+      .from("prompts")
+      .select("*")
+      .eq("id", promptId)
+      .maybeSingle();
+
+    if (promptData) {
+      const typedPrompt = promptData as Prompt;
+      setPrompt(typedPrompt);
+      setTitle(typedPrompt.title);
+      setShortDescription(typedPrompt.description);
+      setContent(typedPrompt.content);
+      setCategory(typedPrompt.category);
+      setTags(typedPrompt.tags || []);
+      setIsPublic(typedPrompt.is_public);
+      setLanguage(typedPrompt.language || DEFAULT_LANGUAGE);
+      markSaved();
+    }
+
+    const { data: versionsData } = await supabase
+      .from("prompt_versions")
+      .select("*")
+      .eq("prompt_id", promptId)
+      .order("version_number", { ascending: false });
+
+    if (versionsData) {
+      setVersions(versionsData as PromptVersion[]);
+    }
+  };
 
   const normalizeTag = (tag: string): string => {
     return tag
@@ -695,9 +732,19 @@ export default function LibraryPromptEdit() {
                 </Button>
               )}
 
-              <Button variant="outline" className="gap-2" onClick={() => setShowVersionDrawer(true)}>
+              <Button variant="outline" className="gap-2" onClick={() => setShowVersionPanel(true)}>
                 <History className="h-4 w-4" />
                 Version History
+              </Button>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowVersionDrawer(true)}
+                aria-label="Prompt details"
+                title="Prompt details"
+              >
+                <Info className="h-4 w-4" />
               </Button>
 
               {/* Mobile: AI Coach toggle */}
@@ -1021,53 +1068,33 @@ export default function LibraryPromptEdit() {
         isPublishing={isPublishing}
       />
 
-      {/* Version History & Details Drawer */}
+      {/* Full version manager (view / compare / restore) */}
+      {promptId && (
+        <VersionHistoryPanel
+          open={showVersionPanel}
+          onOpenChange={setShowVersionPanel}
+          promptId={promptId}
+          currentPrompt={{
+            id: promptId,
+            title,
+            description: shortDescription,
+            content,
+            tags: tags.length > 0 ? tags : null,
+          }}
+          onRestoreComplete={handleRestoreComplete}
+        />
+      )}
+
+      {/* Details Drawer */}
       <Sheet open={showVersionDrawer} onOpenChange={setShowVersionDrawer}>
         <SheetContent className="w-full sm:max-w-md p-0">
           <SheetHeader className="px-4 py-4 border-b border-border">
             <SheetTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-              Version History & Details
+              <Info className="h-5 w-5 text-primary" />
+              Prompt Details
             </SheetTitle>
           </SheetHeader>
-          <Tabs defaultValue="versions" className="h-[calc(100vh-80px)]">
-            <TabsList className="w-full rounded-none border-b border-border bg-transparent px-4 pt-2">
-              <TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger>
-              <TabsTrigger value="details" className="flex-1">Details</TabsTrigger>
-            </TabsList>
-            <TabsContent value="versions" className="mt-0 h-[calc(100%-44px)]">
-              <ScrollArea className="h-full">
-                <div className="p-4 space-y-3">
-                  {versions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">
-                      No versions yet. Click "Save as New Version" to create one.
-                    </p>
-                  ) : (
-                    versions.map((version) => (
-                      <div
-                        key={version.id}
-                        className="rounded-lg border border-border bg-card p-4 text-sm"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant={version === versions[0] ? "default" : "secondary"} className="text-xs">
-                            v{version.version_number}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(version.created_at), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                        <p className="font-medium text-foreground mt-2 truncate">{version.title}</p>
-                        {version.change_notes && (
-                          <p className="text-muted-foreground mt-1 line-clamp-2 italic">
-                            "{version.change_notes}"
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
+          <Tabs defaultValue="details" className="h-[calc(100vh-80px)]">
             <TabsContent value="details" className="mt-0">
               <div className="p-4 space-y-4">
                 <div className="flex items-start gap-3">
