@@ -139,8 +139,60 @@ export default function VersionHistory() {
 
     setIsRestoring(true);
     try {
-      // Get current version count to determine next version number
-      const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
+      // Fetch the live prompt content and the latest version fresh, so we can
+      // preserve unsaved-into-history content and avoid version-number collisions.
+      const [{ data: livePrompt, error: liveError }, { data: latest, error: latestError }] =
+        await Promise.all([
+          supabase
+            .from("prompts")
+            .select("title, description, content, tags")
+            .eq("id", id)
+            .maybeSingle(),
+          supabase
+            .from("prompt_versions")
+            .select("version_number, title, description, content")
+            .eq("prompt_id", id)
+            .order("version_number", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+
+      if (liveError || latestError || !livePrompt) {
+        console.error("Error fetching current state:", liveError || latestError);
+        toast.error("Failed to restore version. Please try again.");
+        return;
+      }
+
+      let nextVersionNumber = (latest?.version_number ?? 0) + 1;
+
+      // Snapshot the current live content first if it isn't already saved
+      // as the latest version — otherwise restoring would silently discard it.
+      const currentMatchesLatest =
+        latest &&
+        latest.title === livePrompt.title &&
+        (latest.description ?? "") === (livePrompt.description ?? "") &&
+        latest.content === livePrompt.content;
+
+      if (!currentMatchesLatest) {
+        const { error: snapshotError } = await supabase
+          .from("prompt_versions")
+          .insert({
+            prompt_id: id,
+            version_number: nextVersionNumber,
+            title: livePrompt.title,
+            description: livePrompt.description,
+            content: livePrompt.content,
+            tags: livePrompt.tags,
+            change_notes: `Snapshot before restoring v${restoringVersion.version_number}`,
+          });
+
+        if (snapshotError) {
+          console.error("Error snapshotting current content:", snapshotError);
+          toast.error("Failed to preserve current content. Restore cancelled.");
+          return;
+        }
+        nextVersionNumber += 1;
+      }
 
       // Create a new version entry for the restoration
       const { error: versionError } = await supabase

@@ -144,8 +144,52 @@ export function VersionHistoryPanel({
 
     setIsRestoring(true);
     try {
-      // Get current version count to determine next version number
-      const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
+      // Fetch the latest version fresh so the next number can't collide
+      // with inserts made since the panel loaded.
+      const { data: latest, error: latestError } = await supabase
+        .from("prompt_versions")
+        .select("version_number, title, description, content, tags")
+        .eq("prompt_id", promptId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestError) {
+        console.error("Error fetching latest version:", latestError);
+        toast.error("Failed to restore version. Please try again.");
+        return;
+      }
+
+      let nextVersionNumber = (latest?.version_number ?? 0) + 1;
+
+      // Snapshot the current live content first if it isn't already saved
+      // as the latest version — otherwise restoring would silently discard it.
+      const currentMatchesLatest =
+        latest &&
+        latest.title === currentPrompt.title &&
+        (latest.description ?? "") === (currentPrompt.description ?? "") &&
+        latest.content === currentPrompt.content;
+
+      if (!currentMatchesLatest) {
+        const { error: snapshotError } = await supabase
+          .from("prompt_versions")
+          .insert({
+            prompt_id: promptId,
+            version_number: nextVersionNumber,
+            title: currentPrompt.title,
+            description: currentPrompt.description,
+            content: currentPrompt.content,
+            tags: currentPrompt.tags,
+            change_notes: `Snapshot before restoring v${restoringVersion.version_number}`,
+          });
+
+        if (snapshotError) {
+          console.error("Error snapshotting current content:", snapshotError);
+          toast.error("Failed to preserve current content. Restore cancelled.");
+          return;
+        }
+        nextVersionNumber += 1;
+      }
 
       // Create a new version entry for the restoration
       const { error: versionError } = await supabase
