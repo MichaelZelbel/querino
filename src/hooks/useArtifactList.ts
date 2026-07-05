@@ -2,11 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeWithSemantic } from "./useSemanticMerge";
 
+export type ArtifactSortOption = "newest" | "rating";
+
 export interface ArtifactListOptions {
   searchQuery?: string;
   published?: boolean;
   authorId?: string;
   teamId?: string;
+  /** Server-side category filter (undefined/"all" = no filter). */
+  category?: string;
+  /** Browse sort. Ignored while searching (relevance order wins). */
+  sortBy?: ArtifactSortOption;
   /** Cap the number of rows fetched. Public discovery surfaces pass this so
    *  a growing catalog can't turn every page view into a full-table download. */
   limit?: number;
@@ -40,10 +46,10 @@ export function createArtifactListHook<T extends { id: string }>(
   };
 
   return function useArtifactList(options: ArtifactListOptions = {}) {
-    const { searchQuery = "", published, authorId, teamId, limit } = options;
+    const { searchQuery = "", published, authorId, teamId, category, sortBy = "newest", limit } = options;
 
     return useQuery<T[]>({
-      queryKey: [config.queryKey, searchQuery, published, authorId, teamId, limit],
+      queryKey: [config.queryKey, searchQuery, published, authorId, teamId, category, sortBy, limit],
       queryFn: async () => {
         let query = (supabase.from(config.table) as any)
           .select(`
@@ -53,11 +59,23 @@ export function createArtifactListHook<T extends { id: string }>(
               display_name,
               avatar_url
             )
-          `)
-          .order("created_at", { ascending: false });
+          `);
+
+        if (sortBy === "rating") {
+          query = query
+            .order("rating_avg", { ascending: false })
+            .order("rating_count", { ascending: false })
+            .order("created_at", { ascending: false });
+        } else {
+          query = query.order("created_at", { ascending: false });
+        }
 
         if (published !== undefined) {
           query = query.eq("published", published);
+        }
+
+        if (category && category !== "all") {
+          query = query.eq("category", category);
         }
 
         if (teamId) {

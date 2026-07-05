@@ -12,9 +12,19 @@ import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
-import { Search, FileText, Workflow, Sparkles, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, FileText, Workflow, Sparkles, Package, Clock, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { categoryOptions } from "@/types/prompt";
+import type { ArtifactSortOption } from "@/hooks/useArtifactList";
 
 const VALID_TABS = ["prompts", "kits", "skills", "workflows"];
 
@@ -34,12 +44,18 @@ const Discover = () => {
   const debouncedWorkflowSearch = useDebounce(workflowSearch, 300);
   const debouncedKitSearch = useDebounce(kitSearch, 300);
 
+  // Shared sort + category for the skills/workflows/kits tabs (prompts tab
+  // has its own richer toolbar inside PromptsSection).
+  const [tabSort, setTabSort] = useState<ArtifactSortOption>("newest");
+  const [tabCategory, setTabCategory] = useState("all");
+
   // Cap public discovery fetches — without a limit these downloaded the
   // entire table (full content bodies included) on every visit.
   const DISCOVER_LIMIT = 60;
-  const { data: skills, isLoading: skillsLoading } = useSkills({ published: true, searchQuery: debouncedSkillSearch, limit: DISCOVER_LIMIT });
-  const { data: workflows, isLoading: workflowsLoading } = useWorkflows({ published: true, searchQuery: debouncedWorkflowSearch, limit: DISCOVER_LIMIT });
-  const { data: kits, isLoading: kitsLoading } = usePromptKits({ published: true, searchQuery: debouncedKitSearch, limit: DISCOVER_LIMIT });
+  const listOptions = { published: true, sortBy: tabSort, category: tabCategory, limit: DISCOVER_LIMIT };
+  const { data: skills, isLoading: skillsLoading } = useSkills({ ...listOptions, searchQuery: debouncedSkillSearch });
+  const { data: workflows, isLoading: workflowsLoading } = useWorkflows({ ...listOptions, searchQuery: debouncedWorkflowSearch });
+  const { data: kits, isLoading: kitsLoading } = usePromptKits({ ...listOptions, searchQuery: debouncedKitSearch });
 
   const byTag = <T extends { tags?: string[] | null }>(items: T[] | undefined): T[] =>
     (items || []).filter((item) => !tagFilter || (item.tags || []).includes(tagFilter));
@@ -70,6 +86,45 @@ const Discover = () => {
       { replace: true }
     );
   };
+
+  // Sort + category toolbar shared by the non-prompt tabs
+  const tabToolbar = (isSearchingTab: boolean) => (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <Button
+        variant={tabSort === "newest" && !isSearchingTab ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setTabSort("newest")}
+        disabled={isSearchingTab}
+        className="gap-1.5"
+      >
+        <Clock className="h-4 w-4" />
+        Newest
+      </Button>
+      <Button
+        variant={tabSort === "rating" && !isSearchingTab ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => setTabSort("rating")}
+        disabled={isSearchingTab}
+        className="gap-1.5"
+      >
+        <Star className="h-4 w-4" />
+        Top Rated
+      </Button>
+      <Select value={tabCategory} onValueChange={setTabCategory}>
+        <SelectTrigger className="h-9 w-[160px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All categories</SelectItem>
+          {categoryOptions.map((cat) => (
+            <SelectItem key={cat.id} value={cat.id}>
+              {cat.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -110,6 +165,7 @@ const Discover = () => {
             <TabsContent value="kits" className="mt-0">
               <div className="space-y-6">
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search prompt kits..." value={kitSearch} onChange={(e) => setKitSearch(e.target.value)} className="pl-10" /></div>
+                {tabToolbar(!!debouncedKitSearch.trim())}
                 {kitsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
                 ) : visibleKits.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleKits.map((kit) => <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />)}</div>
                 ) : (
@@ -129,6 +185,7 @@ const Discover = () => {
             <TabsContent value="skills" className="mt-0">
               <div className="space-y-6">
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search skills..." value={skillSearch} onChange={(e) => setSkillSearch(e.target.value)} className="pl-10" /></div>
+                {tabToolbar(!!debouncedSkillSearch.trim())}
                 {skillsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
                 ) : visibleSkills.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleSkills.map((skill) => <SkillCard key={skill.id} skill={skill} showAuthorInfo />)}</div>
                 ) : (
@@ -148,6 +205,7 @@ const Discover = () => {
             <TabsContent value="workflows" className="mt-0">
               <div className="space-y-6">
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search workflows..." value={workflowSearch} onChange={(e) => setWorkflowSearch(e.target.value)} className="pl-10" /></div>
+                {tabToolbar(!!debouncedWorkflowSearch.trim())}
                 {workflowsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
                 ) : visibleWorkflows.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleWorkflows.map((workflow) => <WorkflowCard key={workflow.id} workflow={workflow} showAuthorInfo />)}</div>
                 ) : (
