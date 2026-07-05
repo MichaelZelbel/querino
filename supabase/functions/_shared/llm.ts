@@ -131,8 +131,13 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
     .maybeSingle();
 
   if (error) {
+    // Fail CLOSED: during an allowance-view outage, paid AI calls would
+    // otherwise go through ungated without limit. The message is distinct
+    // from the out-of-credits case so users know it's temporary.
     console.error("[llm.assertCredits] view error:", error);
-    return; // fail-open on infra errors; usage will still be ledgered
+    throw new Error(
+      "AI features are temporarily unavailable (credit check failed). Please try again in a moment.",
+    );
   }
   const remaining = Number(data?.remaining_tokens ?? 0);
   if (!data || remaining <= 0) {

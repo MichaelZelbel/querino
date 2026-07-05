@@ -4,7 +4,7 @@
 // embedding into the artefact table directly, and logs token usage.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getCallerUserId, getServiceClient } from "../_shared/llm.ts";
+import { assertCredits, CreditsExhaustedError, getCallerUserId, getServiceClient } from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,7 +50,19 @@ Deno.serve(async (req) => {
       return json({ error: "itemType and itemId must be provided together" }, 400);
     }
 
-    // 3. Call OpenAI
+    // 3. Credit gate — usage is ledgered below, but without this check a
+    // zero-balance user could loop the endpoint and drive OpenAI spend
+    // indefinitely. Callers (semantic merge) fall back to keyword search.
+    try {
+      await assertCredits(userId);
+    } catch (e) {
+      if (e instanceof CreditsExhaustedError) {
+        return json({ error: e.message, code: "credits_exhausted" }, 402);
+      }
+      throw e;
+    }
+
+    // 4. Call OpenAI
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       return json({ error: "OPENAI_API_KEY not configured" }, 500);
