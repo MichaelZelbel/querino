@@ -2606,6 +2606,7 @@ export type Database = {
           workflow_json: Json
         }[]
       }
+      store_service_role_key: { Args: { p_key: string }; Returns: Json }
       update_embedding: {
         Args: { p_embedding: string; p_item_id: string; p_item_type: string }
         Returns: undefined

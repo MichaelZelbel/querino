@@ -112,7 +112,7 @@ export function VersionHistoryPanel({
       setLoading(true);
       try {
         const { data, error } = await (supabase
-          .from(tableConfig.versionsTable) as any)
+          .from(tableConfig.versionsTable as any))
           .select("*")
           .eq(tableConfig.idColumn, promptId)
           .order("version_number", { ascending: false });
@@ -166,7 +166,7 @@ export function VersionHistoryPanel({
       // Fetch the latest version fresh so the next number can't collide
       // with inserts made since the panel loaded.
       const { data: latest, error: latestError } = await (supabase
-        .from(tableConfig.versionsTable) as any)
+        .from(tableConfig.versionsTable as any))
         .select("version_number, title, description, content, tags")
         .eq(tableConfig.idColumn, promptId)
         .order("version_number", { ascending: false })
@@ -191,7 +191,7 @@ export function VersionHistoryPanel({
 
       if (!currentMatchesLatest) {
         const { error: snapshotError } = await (supabase
-          .from(tableConfig.versionsTable) as any)
+          .from(tableConfig.versionsTable as any))
           .insert({
             [tableConfig.idColumn]: promptId,
             version_number: nextVersionNumber,
@@ -212,7 +212,7 @@ export function VersionHistoryPanel({
 
       // Create a new version entry for the restoration
       const { error: versionError } = await (supabase
-        .from(tableConfig.versionsTable) as any)
+        .from(tableConfig.versionsTable as any))
         .insert({
           [tableConfig.idColumn]: promptId,
           version_number: nextVersionNumber,
@@ -231,7 +231,7 @@ export function VersionHistoryPanel({
 
       // Update the live artifact with restored content
       const { error: updateError } = await (supabase
-        .from(tableConfig.artifactTable) as any)
+        .from(tableConfig.artifactTable as any))
         .update({
           title: restoringVersion.title,
           description: restoringVersion.description || "",
