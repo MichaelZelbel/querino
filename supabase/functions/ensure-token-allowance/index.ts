@@ -419,14 +419,13 @@ serve(async (req) => {
       // Admin trying to specify a different user ID - verify admin privileges
       logStep("Checking admin privileges for user_id override");
       
-      const { data: callerProfile, error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .select('role')
-        .eq('id', authenticatedUserId)
-        .single();
-      
-      if (profileError || callerProfile?.role !== 'admin') {
-        logStep("Admin check failed", { error: profileError?.message, role: callerProfile?.role });
+      // user_roles (via is_admin RPC) is the authoritative role source —
+      // profiles.role can drift and is not used for authorization.
+      const { data: isAdminData, error: adminError } = await supabaseAdmin
+        .rpc('is_admin', { _user_id: authenticatedUserId });
+
+      if (adminError || !isAdminData) {
+        logStep("Admin check failed", { error: adminError?.message });
         throw new Error("Only admins can specify a different user_id");
       }
       

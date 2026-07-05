@@ -54,17 +54,13 @@ serve(async (req) => {
     const requestingUserId = authData.user.id;
     console.log("v4 - Requesting user ID verified:", requestingUserId);
 
-    // Check if requesting user is admin
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", requestingUserId)
-      .single();
+    // Check if requesting user is admin. user_roles (via is_admin RPC) is
+    // the authoritative role source — profiles.role can drift.
+    const { data: isAdminData, error: adminError } = await supabaseAdmin
+      .rpc("is_admin", { _user_id: requestingUserId });
 
-    console.log("v3 - User profile:", profile, "Error:", profileError?.message);
-
-    if (profileError || profile?.role !== "admin") {
-      console.error("v3 - User is not admin:", profile?.role);
+    if (adminError || !isAdminData) {
+      console.error("v4 - User is not admin:", adminError?.message);
       return new Response(
         JSON.stringify({ error: "Only admins can delete users" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
