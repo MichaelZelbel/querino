@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Prompt } from "@/types/prompt";
 import { EmptyState } from "@/components/ui/empty-state";
+import { UpsellModal } from "@/components/premium/UpsellModal";
 
 type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 const TABLE_BY_TYPE: Record<ArtifactType, "prompts" | "skills" | "workflows" | "prompt_kits"> = {
@@ -114,6 +115,7 @@ export default function Library() {
   const { user, profile, loading: authLoading } = useAuthContext();
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([]);
+  const [showPlanUpsell, setShowPlanUpsell] = useState(false);
   const [myPrompts, setMyPrompts] = useState<Prompt[]>([]);
   const [userRatings, setUserRatings] = useState<UserRatings>({});
   const [loading, setLoading] = useState(true);
@@ -1100,19 +1102,26 @@ export default function Library() {
 
           {/* Plan Info */}
           <div className="mt-12 rounded-lg border border-border bg-muted/30 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-foreground">
                   Current Plan: <span className="capitalize">{profile?.plan_type || "Free"}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {profile?.plan_type === "free" 
-                    ? "Contact support for more information about premium features" 
+                  {profile?.plan_type === "free"
+                    ? "Premium adds AI insights, the Kickstart wizard, semantic search, GitHub sync and team workspaces."
                     : "You have access to all premium features"}
                 </p>
               </div>
+              {profile?.plan_type === "free" && (
+                <Button variant="outline" size="sm" onClick={() => setShowPlanUpsell(true)}>
+                  See what Premium includes
+                </Button>
+              )}
             </div>
           </div>
+
+          <UpsellModal open={showPlanUpsell} onOpenChange={setShowPlanUpsell} />
         </div>
       </main>
 
