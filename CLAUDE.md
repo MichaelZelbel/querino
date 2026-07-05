@@ -29,7 +29,7 @@ npm run preview    # Preview production build
 
 ```
 src/
-  components/      # Feature-based component directories (prompts/, skills/, workflows/, claws/, ui/, ...)
+  components/      # Feature-based component directories (prompts/, skills/, workflows/, promptKits/, ui/, ...)
   pages/           # Route-level page components (30+ pages)
   hooks/           # Custom React hooks (50+) — data fetching and feature logic
   contexts/        # AuthContext, WorkspaceContext
@@ -59,13 +59,15 @@ React Frontend → TanStack Query → Supabase Edge Functions → n8n Webhooks �
 - Edge Functions call n8n via HTTP webhook with `X-API-Key` auth header
 
 ### Artifact Types
-The four core artifact types follow the same CRUD pattern:
+The four web-surfaced artifact types follow the same CRUD pattern:
 - **Prompts** — `src/pages/Prompt*.tsx`, `src/hooks/usePrompts.ts`
 - **Skills** — `src/pages/Skill*.tsx`, `src/hooks/useSkills.ts`
 - **Workflows** — `src/pages/Workflow*.tsx`, `src/hooks/useWorkflows.ts`
-- **CLAWs** — `src/pages/Claw*.tsx`, `src/hooks/useClaws.ts`
+- **Prompt Kits** — `src/pages/PromptKit*.tsx`, `src/hooks/usePromptKits.ts`
 
 Each has: New / Detail / Edit pages, a card component, and a custom hook.
+
+**CLAWs** exist only in the database and the MCP server (`supabase/functions/mcp-server`) — there are NO `/claws` web pages, no `useClaws` hook, and no Claw page components. Do not add web links to `/claws/*`.
 
 ## Environment Variables
 
