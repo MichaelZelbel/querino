@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Trash2, UserPlus, Crown, Shield, User as UserIcon, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,14 +55,14 @@ export default function TeamSettings() {
   const [githubFolder, setGithubFolder] = useState("");
 
   // Initialize form when team loads
-  useState(() => {
+  useEffect(() => {
     if (team) {
       setTeamName(team.name);
       setGithubRepo(team.github_repo || "");
       setGithubBranch(team.github_branch || "main");
       setGithubFolder(team.github_folder || "");
     }
-  });
+  }, [team]);
 
   const canManage = userRole === "owner" || userRole === "admin";
   const isOwner = userRole === "owner";
@@ -188,7 +188,7 @@ export default function TeamSettings() {
               <Label htmlFor="team-name">Team Name</Label>
               <Input
                 id="team-name"
-                value={teamName || team.name}
+                value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
               />
             </div>
