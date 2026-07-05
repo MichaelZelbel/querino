@@ -232,22 +232,22 @@
 
 ### Task G2 (BLOCKED on Lovable queue): Real versioning for skills & workflows
 
-> **Status 2026-07-05:** the migration work order (skill_versions + workflow_versions
-> + team_invites + notify_admin_on_signup trigger auth fix) is queued as the next
-> message in the Lovable agent queue, but the queue is **paused by the user**.
-> Once unpaused and the migration confirms, build the frontend for G2/G3.
-> Note: the signup-notification trigger may fail (silently, non-blocking) until
-> that migration runs, because notify-admin now requires the service-role bearer.
+> **Status 2026-07-06:** migration applied (queue unpaused), tables + RPC verified
+> live via REST, G2/G3 frontends shipped. ONE OPEN ITEM: the migration stored a
+> PLACEHOLDER in the Vault secret `service_role_key`; signup notification emails
+> stay off (trigger warns and skips) until the real service-role key is stored in
+> Supabase Vault (Dashboard → Project Settings → Vault, or SQL:
+> `select vault.update_secret((select id from vault.secrets where name='service_role_key'), '<real key>');`).
 **Files:** New migration `supabase/migrations/*_skill_workflow_versions.sql` (tables mirroring `prompt_versions` + RLS); reinstate version UI from Task A3 wired to real tables; reuse `VersionHistoryPanel` generalized by type
 **Change:** Only after A3 shipped. Check `npx supabase db push` works against the linked project; if no DB access from this machine, send the migration as a work order to the Lovable agent via MCP.
 **Verify:** build+lint; live: save new version on a skill, restore it.
-- [ ] Done — commit `feat: real version history for skills and workflows`
+- [x] Done — commit `feat: real version history for skills and workflows`
 
 ### Task G3: Team invite links (no email dependency)
 **Files:** Read `useTeams.ts` + team tables first; new migration `team_invites` (token, team_id, role, expires_at, created_by + RLS) or reuse existing if present; modify `src/pages/TeamSettings.tsx` (~262-272), `src/hooks/useTeams.ts` (~185), new accept route `/team/join/:token`
 **Change:** Replace "share your team UUID" with generated expiring invite links. Email sending stays out (Resend wiring not required for value). Same DB-access caveat as G2.
 **Verify:** build+lint; live: generate link in one account, join from another.
-- [ ] Done — commit `feat: team invite links`
+- [x] Done — commit `feat: team invite links`
 
 ### Task G4: Semantic search + sort/category parity on Discover tabs
 **Files:** Modify `src/pages/Discover.tsx` (~51-106), reuse `useSearchPrompts.ts` hybrid pattern for skills/workflows/kits (embeddings already backfillable via admin panel — check `search_*` RPCs exist for other types first; if not, add RPC migrations, same DB caveat)
