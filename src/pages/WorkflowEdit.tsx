@@ -36,7 +36,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Loader2, X, ArrowLeft, Trash2, Save, GitBranch, FileText, Sparkles, Bot } from "lucide-react";
+import { Loader2, X, ArrowLeft, Trash2, Save, FileText, Sparkles, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
@@ -73,7 +73,6 @@ export default function WorkflowEdit() {
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
@@ -96,7 +95,6 @@ export default function WorkflowEdit() {
     language: DEFAULT_LANGUAGE,
   });
   const [tagInput, setTagInput] = useState("");
-  const [changeNotes, setChangeNotes] = useState("");
   const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
 
   const workflowId = workflow?.id;
@@ -269,33 +267,6 @@ export default function WorkflowEdit() {
     }
   };
 
-  const handleSaveAsNewVersion = async () => {
-    if (!user || !workflowId) return;
-    if (!formData.title.trim()) { toast.error("Title is required"); return; }
-    if (!formData.content.trim()) { toast.error("Workflow content is required"); return; }
-    setIsSavingVersion(true);
-    try {
-      const { error } = await (supabase.from("workflows") as any)
-        .update({
-          title: formData.title.trim(),
-          description: formData.description.trim() || null,
-          content: formData.content.trim(),
-          category: formData.category || null,
-          tags: formData.tags.length > 0 ? formData.tags : null,
-          published: formData.isPublic,
-          language: formData.language,
-        })
-        .eq("id", workflowId);
-      if (error) { toast.error("Failed to save changes"); return; }
-      setChangeNotes("");
-      toast.success("Workflow saved! (Versioning not yet available for workflows)");
-    } catch {
-      toast.error("Something went wrong");
-    } finally {
-      setIsSavingVersion(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!workflowId) return;
     setIsDeleting(true);
@@ -403,21 +374,12 @@ export default function WorkflowEdit() {
               <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
               <Button
                 onClick={handleSaveChanges}
-                disabled={isSubmitting || isSavingVersion}
+                disabled={isSubmitting}
                 className="gap-2"
                 title="Save (⌘S / Ctrl+S)"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
-              </Button>
-              <Button
-                onClick={handleSaveAsNewVersion}
-                disabled={isSubmitting || isSavingVersion}
-                variant="secondary"
-                className="gap-2"
-              >
-                {isSavingVersion ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitBranch className="h-4 w-4" />}
-                Save as New Version
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -432,7 +394,6 @@ export default function WorkflowEdit() {
                       <div className="space-y-2">
                         <p>This action cannot be undone. Deleting this workflow will also remove:</p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                          <li>All saved versions and version history</li>
                           <li>All comments, reviews and ratings</li>
                           <li>Any edit suggestions submitted by others</li>
                           <li>References from collections it belongs to</li>
@@ -585,20 +546,6 @@ export default function WorkflowEdit() {
                     />
                   </div>
 
-                  {/* Change Notes */}
-                  <div className="space-y-2">
-                    <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
-                    <Textarea
-                      id="changeNotes"
-                      value={changeNotes}
-                      onChange={(e) => setChangeNotes(e.target.value)}
-                      placeholder="Optional: Describe what changed in this version"
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      These notes will be saved when you click "Save as New Version"
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
