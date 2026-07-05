@@ -520,38 +520,12 @@ export default function LibraryPromptEdit() {
     }
   };
 
-  // AI Coach: apply content from AI
-  const handleApplyAIContent = async (newContent: string, changeNote?: string) => {
+  // AI Coach: apply content to the editor only. Versions are created on
+  // explicit save — per-apply inserts spammed history with drafts ahead of
+  // the live prompt and raced on version numbers.
+  const handleApplyAIContent = async (newContent: string) => {
     setPreviousContent(content);
     setContent(newContent);
-
-    // Auto-create version snapshot
-    if (promptId && user) {
-      const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
-      const { error } = await supabase
-        .from("prompt_versions")
-        .insert({
-          prompt_id: promptId,
-          version_number: nextVersionNumber,
-          title: title.trim(),
-          description: shortDescription.trim(),
-          content: newContent,
-          tags: tags.length > 0 ? tags : null,
-          change_notes: changeNote || "AI-assisted edit",
-        });
-
-      if (!error) {
-        const { data: newVersions } = await supabase
-          .from("prompt_versions")
-          .select("*")
-          .eq("prompt_id", promptId)
-          .order("version_number", { ascending: false });
-
-        if (newVersions) {
-          setVersions(newVersions as PromptVersion[]);
-        }
-      }
-    }
   };
 
   // AI Coach: undo last AI edit
