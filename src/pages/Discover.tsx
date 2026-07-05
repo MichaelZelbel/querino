@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PromptsSection } from "@/components/landing/PromptsSection";
@@ -15,11 +16,19 @@ import { Search, FileText, Workflow, Sparkles, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 
+const VALID_TABS = ["prompts", "kits", "skills", "workflows"];
+
 const Discover = () => {
-  const [activeTab, setActiveTab] = useState("prompts");
-  const [skillSearch, setSkillSearch] = useState("");
-  const [workflowSearch, setWorkflowSearch] = useState("");
-  const [kitSearch, setKitSearch] = useState("");
+  // Deep-linkable state: /discover?type=skills&tag=planning&q=meeting
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tagFilter = searchParams.get("tag") || "";
+  const initialQuery = searchParams.get("q") || "";
+  const typeParam = searchParams.get("type") || "prompts";
+
+  const [activeTab, setActiveTab] = useState(VALID_TABS.includes(typeParam) ? typeParam : "prompts");
+  const [skillSearch, setSkillSearch] = useState(initialQuery);
+  const [workflowSearch, setWorkflowSearch] = useState(initialQuery);
+  const [kitSearch, setKitSearch] = useState(initialQuery);
 
   const debouncedSkillSearch = useDebounce(skillSearch, 300);
   const debouncedWorkflowSearch = useDebounce(workflowSearch, 300);
@@ -29,12 +38,42 @@ const Discover = () => {
   const { data: workflows, isLoading: workflowsLoading } = useWorkflows({ published: true, searchQuery: debouncedWorkflowSearch });
   const { data: kits, isLoading: kitsLoading } = usePromptKits({ published: true, searchQuery: debouncedKitSearch });
 
+  const byTag = <T extends { tags?: string[] | null }>(items: T[] | undefined): T[] =>
+    (items || []).filter((item) => !tagFilter || (item.tags || []).includes(tagFilter));
+
+  const visibleSkills = byTag(skills);
+  const visibleWorkflows = byTag(workflows);
+  const visibleKits = byTag(kits);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("type", tab);
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const clearTag = () => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("tag");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
         <div className="container mx-auto max-w-full px-4 py-8 overflow-x-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <div className="sticky top-16 z-30 -mx-4 mb-8 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:flex sm:justify-center">
               <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
                 <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-2xl sm:grid-cols-4">
@@ -46,13 +85,30 @@ const Discover = () => {
               </div>
             </div>
 
-            <TabsContent value="prompts" className="mt-0"><PromptsSection showHeader={false} /></TabsContent>
+            {tagFilter && activeTab !== "prompts" && (
+              <div className="mb-6 flex items-center justify-center gap-2 text-sm">
+                <span className="text-muted-foreground">Filtered by tag:</span>
+                <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">#{tagFilter}</span>
+                <button onClick={clearTag} className="text-muted-foreground underline-offset-2 hover:underline">
+                  Clear
+                </button>
+              </div>
+            )}
+
+            <TabsContent value="prompts" className="mt-0">
+              <PromptsSection
+                showHeader={false}
+                tagFilter={tagFilter}
+                initialSearch={initialQuery}
+                onClearTag={clearTag}
+              />
+            </TabsContent>
 
             <TabsContent value="kits" className="mt-0">
               <div className="space-y-6">
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search prompt kits..." value={kitSearch} onChange={(e) => setKitSearch(e.target.value)} className="pl-10" /></div>
                 {kitsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
-                ) : kits && kits.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{kits.map((kit) => <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />)}</div>
+                ) : visibleKits.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleKits.map((kit) => <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />)}</div>
                 ) : (
                   <EmptyState
                     variant="compact"
@@ -71,7 +127,7 @@ const Discover = () => {
               <div className="space-y-6">
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search skills..." value={skillSearch} onChange={(e) => setSkillSearch(e.target.value)} className="pl-10" /></div>
                 {skillsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
-                ) : skills && skills.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{skills.map((skill) => <SkillCard key={skill.id} skill={skill} showAuthorInfo />)}</div>
+                ) : visibleSkills.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleSkills.map((skill) => <SkillCard key={skill.id} skill={skill} showAuthorInfo />)}</div>
                 ) : (
                   <EmptyState
                     variant="compact"
@@ -90,7 +146,7 @@ const Discover = () => {
               <div className="space-y-6">
                 <div className="relative mx-auto max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="text" placeholder="Search workflows..." value={workflowSearch} onChange={(e) => setWorkflowSearch(e.target.value)} className="pl-10" /></div>
                 {workflowsLoading ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20 w-full" /></div>)}</div>
-                ) : workflows && workflows.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{workflows.map((workflow) => <WorkflowCard key={workflow.id} workflow={workflow} showAuthorInfo />)}</div>
+                ) : visibleWorkflows.length > 0 ? (<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleWorkflows.map((workflow) => <WorkflowCard key={workflow.id} workflow={workflow} showAuthorInfo />)}</div>
                 ) : (
                   <EmptyState
                     variant="compact"

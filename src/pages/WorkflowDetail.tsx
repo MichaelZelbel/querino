@@ -262,14 +262,15 @@ export default function WorkflowDetail() {
               {workflow.tags && workflow.tags.length > 0 && (
                 <>
                   {workflow.tags.slice(0, 5).map((tag) => (
-                    <Badge 
-                      key={tag}
-                      variant="outline" 
-                      className="text-sm gap-1"
-                    >
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                    </Badge>
+                    <Link key={tag} to={`/discover?type=workflows&tag=${encodeURIComponent(tag)}`}>
+                      <Badge
+                        variant="outline"
+                        className="text-sm gap-1 cursor-pointer hover:bg-accent transition-colors"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </Badge>
+                    </Link>
                   ))}
                 </>
               )}

@@ -247,14 +247,15 @@ export default function SkillDetail() {
               {skill.tags && skill.tags.length > 0 && (
                 <>
                   {skill.tags.slice(0, 5).map((tag) => (
-                    <Badge 
-                      key={tag}
-                      variant="outline" 
-                      className="text-sm gap-1"
-                    >
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                    </Badge>
+                    <Link key={tag} to={`/discover?type=skills&tag=${encodeURIComponent(tag)}`}>
+                      <Badge
+                        variant="outline"
+                        className="text-sm gap-1 cursor-pointer hover:bg-accent transition-colors"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </Badge>
+                    </Link>
                   ))}
                 </>
               )}

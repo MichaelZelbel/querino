@@ -14,11 +14,22 @@ type SortOption = "trending" | "newest" | "rating";
 
 interface PromptsSectionProps {
   showHeader?: boolean;
+  /** Restrict results to prompts carrying this tag (from /discover?tag=...). */
+  tagFilter?: string;
+  /** Seed the search box (from /discover?q=...). */
+  initialSearch?: string;
+  /** Called when the user clears the active tag filter. */
+  onClearTag?: () => void;
 }
 
-export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
+export function PromptsSection({
+  showHeader = true,
+  tagFilter = "",
+  initialSearch = "",
+  onClearTag,
+}: PromptsSectionProps) {
   const [category, setCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState<SortOption>("trending");
   
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -33,9 +44,11 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
   const filteredAndSortedPrompts = useMemo(() => {
     if (!prompts) return [];
     
-    // Filter by category
+    // Filter by category and (when deep-linked) by tag
     const filtered = prompts.filter((prompt) => {
-      return category === "all" || prompt.category === category;
+      const categoryOk = category === "all" || prompt.category === category;
+      const tagOk = !tagFilter || (prompt.tags || []).includes(tagFilter);
+      return categoryOk && tagOk;
     });
 
     // Skip sorting when searching (server provides relevance/similarity-ranked results)
@@ -57,7 +70,7 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
           return 0;
       }
     });
-  }, [prompts, category, sortBy, isSearching]);
+  }, [prompts, category, sortBy, isSearching, tagFilter]);
 
   const sortOptions: { value: SortOption; label: string; icon: typeof TrendingUp }[] = [
     { value: "trending", label: "Trending", icon: TrendingUp },
@@ -123,6 +136,20 @@ export function PromptsSection({ showHeader = true }: PromptsSectionProps) {
           <div className="flex justify-center">
             <CategoryFilter selected={category} onSelect={setCategory} />
           </div>
+
+          {tagFilter && (
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <span className="text-muted-foreground">Filtered by tag:</span>
+              <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
+                #{tagFilter}
+              </span>
+              {onClearTag && (
+                <Button variant="ghost" size="sm" onClick={onClearTag}>
+                  Clear
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
