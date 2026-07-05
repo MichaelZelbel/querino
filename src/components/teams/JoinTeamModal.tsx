@@ -10,10 +10,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useJoinTeam } from "@/hooks/useJoinTeam";
+import { redeemTeamInvite } from "@/hooks/useTeamInvites";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Loader2, Users, ExternalLink } from "lucide-react";
 
 interface JoinTeamModalProps {
@@ -21,20 +23,45 @@ interface JoinTeamModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Accepts a full invite URL or a bare token. */
+function extractToken(input: string): string {
+  const trimmed = input.trim();
+  try {
+    const url = new URL(trimmed);
+    return url.searchParams.get("token") || trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
 export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
-  const [teamId, setTeamId] = useState("");
+  const [inviteInput, setInviteInput] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   const [joinedTeam, setJoinedTeam] = useState<{ teamId: string; teamName: string } | null>(null);
-  const { joinTeam, isJoining } = useJoinTeam();
   const { user } = useAuthContext();
   const { switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleJoin = async () => {
-    if (!user || !teamId.trim()) return;
-    
-    const result = await joinTeam(teamId.trim(), user.id);
-    if (result) {
-      setJoinedTeam(result);
+    if (!user || !inviteInput.trim()) return;
+
+    setIsJoining(true);
+    try {
+      const result = await redeemTeamInvite(extractToken(inviteInput));
+      await queryClient.invalidateQueries({ queryKey: ["user-teams"] });
+      setJoinedTeam({ teamId: result.team_id, teamName: result.team_name });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to join team";
+      toast.error(
+        message.includes("expired")
+          ? "This invite has expired. Ask a team admin for a new one."
+          : message.includes("not found")
+            ? "This invite is invalid or has been revoked."
+            : message
+      );
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -48,7 +75,7 @@ export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
   };
 
   const resetState = () => {
-    setTeamId("");
+    setInviteInput("");
     setJoinedTeam(null);
   };
 
@@ -94,24 +121,24 @@ export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
         <DialogHeader>
           <DialogTitle>Join a team</DialogTitle>
           <DialogDescription>
-            Enter the team ID shared with you to join the team workspace.
+            Paste the invite link (or token) a team admin shared with you.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="team-id">Team ID</Label>
+            <Label htmlFor="invite-link">Invite link</Label>
             <Input
-              id="team-id"
-              placeholder="e.g., a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-              value={teamId}
-              onChange={(e) => setTeamId(e.target.value)}
+              id="invite-link"
+              placeholder="https://querino.ai/team/join?token=…"
+              value={inviteInput}
+              onChange={(e) => setInviteInput(e.target.value)}
               disabled={isJoining}
             />
           </div>
-          
+
           <p className="text-sm text-muted-foreground">
-            Ask the team owner or admin for the team ID. You must have a Premium account to join teams.
+            Team owners and admins can create invite links in Team Settings.
           </p>
         </div>
 
@@ -119,7 +146,7 @@ export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
           <Button variant="outline" onClick={() => handleClose(false)} disabled={isJoining}>
             Cancel
           </Button>
-          <Button onClick={handleJoin} disabled={isJoining || !teamId.trim()}>
+          <Button onClick={handleJoin} disabled={isJoining || !inviteInput.trim()}>
             {isJoining ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

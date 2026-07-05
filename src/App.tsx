@@ -45,6 +45,7 @@ const CollectionNew = lazy(() => import("./pages/CollectionNew"));
 const CollectionDetail = lazy(() => import("./pages/CollectionDetail"));
 const CollectionEdit = lazy(() => import("./pages/CollectionEdit"));
 const TeamSettings = lazy(() => import("./pages/TeamSettings"));
+const TeamJoin = lazy(() => import("./pages/TeamJoin"));
 const Activity = lazy(() => import("./pages/Activity"));
 const TeamActivity = lazy(() => import("./pages/TeamActivity"));
 const UserActivity = lazy(() => import("./pages/UserActivity"));
@@ -128,6 +129,7 @@ const AppShell = () => (
                 <Route path="/collections/new" element={<CollectionNew />} />
                 <Route path="/collections/:id" element={<CollectionDetail />} />
                 <Route path="/collections/:id/edit" element={<CollectionEdit />} />
+                <Route path="/team/join" element={<TeamJoin />} />
                 <Route path="/team/:id/settings" element={<TeamSettings />} />
                 <Route path="/team/:id/activity" element={<TeamActivity />} />
                 <Route path="/activity" element={<Activity />} />

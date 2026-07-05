@@ -158,37 +158,9 @@ export function useDeleteTeam() {
   });
 }
 
-export function useAddTeamMember() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      teamId,
-      email,
-      role,
-    }: {
-      teamId: string;
-      email: string;
-      role: "admin" | "member";
-    }) => {
-      // Find user by email (search in profiles by looking up auth.users indirectly)
-      // Since we can't query auth.users directly, we'll need an edge function or different approach
-      // For MVP, we'll search by display_name or use a workaround
-      const { data: profiles, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .limit(100);
-
-      if (profileError) throw profileError;
-
-      // For MVP, just throw an error - in production you'd use an edge function
-      throw new Error("Invite by email requires an edge function. For now, please share your team ID with the user.");
-    },
-    onSuccess: (_, { teamId }) => {
-      queryClient.invalidateQueries({ queryKey: ["team-members", teamId] });
-    },
-  });
-}
+// Members join via invite links (team_invites + redeem_team_invite RPC,
+// see useTeamInvites.ts). The old not-implemented invite-by-email stub was
+// removed with that change.
 
 export function useAddTeamMemberById() {
   const queryClient = useQueryClient();

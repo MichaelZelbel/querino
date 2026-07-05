@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Trash2, UserPlus, Crown, Shield, User as UserIcon, Activity } from "lucide-react";
+import { ArrowLeft, Trash2, UserPlus, Crown, Shield, User as UserIcon, Activity, Link as LinkIcon, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useTeamInvites, useCreateTeamInvite, useRevokeTeamInvite, inviteUrl } from "@/hooks/useTeamInvites";
+import { format } from "date-fns";
 import {
   useTeam,
   useTeamMembers,
@@ -48,6 +50,9 @@ export default function TeamSettings() {
   const deleteTeam = useDeleteTeam();
   const updateMemberRole = useUpdateTeamMemberRole();
   const removeMember = useRemoveTeamMember();
+  const { data: invites = [] } = useTeamInvites(teamId);
+  const createInvite = useCreateTeamInvite();
+  const revokeInvite = useRevokeTeamInvite();
 
   const [teamName, setTeamName] = useState("");
 
@@ -104,6 +109,37 @@ export default function TeamSettings() {
       toast.success("Team settings saved");
     } catch (error) {
       toast.error("Failed to save settings");
+    }
+  };
+
+  const handleCreateInvite = async () => {
+    if (!user || !team) return;
+    try {
+      const invite = await createInvite.mutateAsync({ teamId: team.id, userId: user.id });
+      await navigator.clipboard.writeText(inviteUrl(invite.token)).catch(() => {});
+      toast.success("Invite link created and copied to clipboard");
+    } catch (error) {
+      console.error("Error creating invite:", error);
+      toast.error("Failed to create invite link");
+    }
+  };
+
+  const handleCopyInvite = async (token: string) => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl(token));
+      toast.success("Invite link copied");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    if (!team) return;
+    try {
+      await revokeInvite.mutateAsync({ inviteId, teamId: team.id });
+      toast.success("Invite revoked");
+    } catch {
+      toast.error("Failed to revoke invite");
     }
   };
 
@@ -250,16 +286,70 @@ export default function TeamSettings() {
 
             <Separator className="my-4" />
 
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-foreground">
                 <UserPlus className="h-4 w-4 inline mr-2" />
-                To invite members, share your team ID with them:
+                Invite members with a link
               </p>
-              <code className="block p-2 bg-muted rounded text-sm break-all">
-                {team.id}
-              </code>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleCreateInvite}
+                  disabled={createInvite.isPending}
+                  className="gap-2"
+                >
+                  {createInvite.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LinkIcon className="h-4 w-4" />
+                  )}
+                  Create invite link
+                </Button>
+              </div>
+
+              {invites.length > 0 && (
+                <div className="space-y-2">
+                  {invites.map((invite) => {
+                    const expired = new Date(invite.expires_at) < new Date();
+                    return (
+                      <div
+                        key={invite.id}
+                        className="flex items-center gap-2 rounded-lg border border-border p-2 text-sm"
+                      >
+                        <code className="min-w-0 flex-1 truncate bg-muted px-2 py-1 rounded text-xs">
+                          {inviteUrl(invite.token)}
+                        </code>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {expired
+                            ? "Expired"
+                            : `Expires ${format(new Date(invite.expires_at), "MMM d")}`}
+                          {invite.used_count > 0 && ` · ${invite.used_count} joined`}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => handleCopyInvite(invite.token)}
+                          aria-label="Copy invite link"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => handleRevokeInvite(invite.id)}
+                          aria-label="Revoke invite"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                Note: Email invites require additional setup. For now, share this ID.
+                Anyone with a link can join as a member until it expires (14 days) or is revoked.
               </p>
             </div>
           </CardContent>

@@ -617,7 +617,7 @@ export default function Settings() {
                   <div>
                     <p className="font-medium">Join a team</p>
                     <p className="text-sm text-muted-foreground">
-                      Enter a team ID shared with you to join their workspace.
+                      Paste an invite link shared with you to join their workspace.
                     </p>
                   </div>
                   <Button variant="outline" onClick={() => setShowJoinTeamModal(true)}>
