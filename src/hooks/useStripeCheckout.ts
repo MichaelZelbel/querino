@@ -3,8 +3,10 @@ import { toast } from "sonner";
 
 type BillingCycle = "monthly" | "yearly";
 
-// NOTE: Stripe checkout is currently disabled. To re-enable, restore
-// the Stripe SDK invocation from git history.
+// POLICY: Stripe checkout is deliberately disabled and must stay disabled.
+// Querino must not offer any self-serve purchase flow; "contact support"
+// is the only upgrade path. Do NOT restore checkout without the owner's
+// explicit instruction.
 
 export function useStripeCheckout() {
   const [isLoading] = useState(false);

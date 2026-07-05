@@ -55,7 +55,8 @@ export function useSubscription() {
     }
   }, [user]);
 
-  // NOTE: Stripe customer portal disabled. Contact support instead.
+  // POLICY: Stripe customer portal deliberately disabled — no self-serve
+  // billing anywhere in Querino. Do NOT restore without owner instruction.
   const openCustomerPortal = async () => {
     toast.info("To manage your subscription, contact support@querino.ai");
     return null;
@@ -67,11 +68,9 @@ export function useSubscription() {
     }
   }, [user, checkSubscription]);
 
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(() => checkSubscription(), 60000);
-    return () => clearInterval(interval);
-  }, [user, checkSubscription]);
+  // No background polling: self-serve checkout is disabled, so subscription
+  // state only changes through support. Callers can refresh on demand via
+  // checkSubscription().
 
   // Check for checkout success in URL (kept for backwards compat)
   useEffect(() => {

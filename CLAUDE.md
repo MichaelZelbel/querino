@@ -6,6 +6,14 @@ This file provides guidance for Claude Code when working in this repository.
 
 **Querino** is an open-source SaaS platform for discovering, creating, and sharing AI artifacts — prompts, skills, workflows, and CLAWs (callable capabilities). It is licensed under AGPL-3.0.
 
+## Non-negotiable product policy
+
+**No checkout, ever.** Querino must not contain a working payment/checkout
+flow: no Stripe checkout, no pricing/purchase page, no customer portal.
+The "contact support@querino.ai" stubs in `src/hooks/useStripeCheckout.ts`
+and `src/hooks/useSubscription.ts` are intentional. Premium is granted
+manually. Do not "fix" or restore any self-serve payment path.
+
 ## Tech Stack
 
 - **Frontend**: React 18 + TypeScript, Vite 5.4, React Router v6
