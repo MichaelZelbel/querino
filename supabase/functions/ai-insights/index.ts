@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeadersFor } from "../_shared/cors.ts";
 import {
   callLovableAI,
   assertCredits,
@@ -9,11 +10,6 @@ import {
   DEFAULT_MODEL,
 } from "../_shared/llm.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -80,6 +76,7 @@ Under 350 words. Specific, never generic. No emojis.`,
 };
 
 serve(async (req) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

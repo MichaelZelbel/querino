@@ -4,14 +4,9 @@
 // embedding into the artefact table directly, and logs token usage.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { corsHeadersFor } from "../_shared/cors.ts";
 import { assertCredits, CreditsExhaustedError, getCallerUserId, getServiceClient } from "../_shared/llm.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const EMBEDDING_MODEL = "text-embedding-3-small"; // 1536 dim — DO NOT change without DB migration
 const EMBEDDING_DIMENSIONS = 1536;
@@ -21,6 +16,13 @@ type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 const VALID_TYPES: ItemType[] = ["prompt", "skill", "workflow", "prompt_kit"];
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsHeadersFor(req);
+  const json = (payload: unknown, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -154,10 +156,3 @@ Deno.serve(async (req) => {
     return json({ error: "Internal error", details: String(e) }, 500);
   }
 });
-
-function json(payload: unknown, status: number) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}

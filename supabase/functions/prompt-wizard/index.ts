@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeadersFor } from "../_shared/cors.ts";
 import {
   assertCredits,
   callLovableAI,
@@ -8,10 +9,6 @@ import {
   RateLimitedError,
 } from "../_shared/llm.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const SYSTEM_PROMPT = `You are Querino, an expert prompt engineer. Generate high-quality prompts based on user requirements.
 
@@ -24,6 +21,7 @@ Format your output in clean Markdown with proper line breaks, bold headers, bull
 Output ONLY the generated prompt in Markdown format. No meta-commentary, no explanations, no preamble like "Here is your prompt:".`;
 
 serve(async (req) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
