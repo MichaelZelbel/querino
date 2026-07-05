@@ -27,7 +27,7 @@ export function createCloneHook<S extends { id: string; title: string }>(config:
       setCloning(true);
 
       try {
-        const { data, error } = await (supabase.from(config.table) as any)
+        const { data, error } = await (supabase.from(config.table as any) as any)
           .insert({
             ...config.buildInsert(source),
             title: `Copy of ${source.title}`,

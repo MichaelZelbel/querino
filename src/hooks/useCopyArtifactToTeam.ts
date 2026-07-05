@@ -45,7 +45,7 @@ export function createCopyToTeamHook<S extends { id: string }>(config: CopyToTea
           team_id: teamId,
         };
 
-        const { data, error } = await (supabase.from(config.table) as any)
+        const { data, error } = await (supabase.from(config.table as any) as any)
           .insert(insertData)
           .select("id, slug")
           .single();
