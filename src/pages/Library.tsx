@@ -537,6 +537,14 @@ export default function Library() {
 
   const hasContent = myPrompts.length > 0 || (mySkills?.length || 0) > 0 || (myWorkflows?.length || 0) > 0;
 
+  const libraryIsEmpty =
+    myPrompts.length === 0 &&
+    (mySkills?.length || 0) === 0 &&
+    (myWorkflows?.length || 0) === 0 &&
+    (myKits?.length || 0) === 0 &&
+    savedPrompts.length === 0 &&
+    (myCollections?.length || 0) === 0;
+
   // Fetch prompts - filtered by workspace
   useEffect(() => {
     async function fetchLibraryData() {
@@ -792,6 +800,14 @@ export default function Library() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : libraryIsEmpty ? (
+            <EmptyState
+              icon={LibraryIcon}
+              title={isTeamWorkspace ? "This team's library is empty" : "Your library is empty"}
+              description="Create your first prompt, or explore the community to find something worth saving."
+              primaryAction={{ label: "Create Prompt", to: "/prompts/new", icon: Plus }}
+              secondaryAction={{ label: "Explore Discover", to: "/discover", icon: Sparkles }}
+            />
           ) : (
             <div className="space-y-12">
               {/* Pinned Section - only show if user has pinned items */}
