@@ -462,7 +462,7 @@ export function Header() {
                       Sign In
                     </Button>
                   </Link>
-                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/auth?tab=signup" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="default" className="w-full">
                       Get Started
                     </Button>
