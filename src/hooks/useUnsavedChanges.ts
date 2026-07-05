@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBlocker } from "react-router-dom";
 
 interface Options<T> {
   data: T;
@@ -8,6 +9,8 @@ interface Options<T> {
   enableShortcut?: boolean;
   /** When true (default), prompts on tab close/reload while dirty. */
   enableBeforeUnload?: boolean;
+  /** When true (default), confirms before in-app navigation while dirty. */
+  enableNavigationGuard?: boolean;
 }
 
 interface Result {
@@ -31,6 +34,7 @@ export function useUnsavedChanges<T>({
   onSave,
   enableShortcut = true,
   enableBeforeUnload = true,
+  enableNavigationGuard = true,
 }: Options<T>): Result {
   const baselineRef = useRef<string | null>(null);
   const [, force] = useState(0);
@@ -85,6 +89,29 @@ export function useUnsavedChanges<T>({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [enableBeforeUnload, isDirty]);
+
+  // In-app navigation guard (beforeunload does not fire on router navigation)
+  const blocker = useBlocker(
+    useCallback(
+      ({ currentLocation, nextLocation }) =>
+        enableNavigationGuard &&
+        dirtyRef.current &&
+        currentLocation.pathname !== nextLocation.pathname,
+      [enableNavigationGuard]
+    )
+  );
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    const leave = window.confirm(
+      "You have unsaved changes. Leave without saving?"
+    );
+    if (leave) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
 
   return { isDirty, savedAt, markSaved };
 }

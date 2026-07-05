@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Routes, Route } from "react-router-dom";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
@@ -93,16 +93,14 @@ function RouteFallback() {
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
+// The whole tree lives under a single catch-all route of a data router so
+// hooks like useBlocker (unsaved-changes guard) are available, while the
+// existing <Routes> definitions stay unchanged.
+const AppShell = () => (
+  <AuthProvider>
+    <WorkspaceProvider>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/auth" element={<Auth />} />
@@ -167,12 +165,21 @@ const App = () => (
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-            <CookieBanner />
-          </WorkspaceProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      </Routes>
+      </Suspense>
+      <CookieBanner />
+    </WorkspaceProvider>
+  </AuthProvider>
+);
+
+const router = createBrowserRouter([{ path: "*", element: <AppShell /> }]);
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <RouterProvider router={router} />
     </TooltipProvider>
   </QueryClientProvider>
 );
