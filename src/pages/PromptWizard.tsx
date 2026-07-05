@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { premiumFeatures } from "@/components/premium/UpsellModal";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -164,9 +165,26 @@ export default function PromptWizard() {
                 Kickstart Template
               </h1>
               <p className="mt-2 text-muted-foreground">
-                The Kickstart Template uses AI to craft powerful prompts tailored to your needs. 
-                Contact support to learn more about this feature.
+                The Kickstart Template uses AI to craft powerful prompts tailored to your needs.
+                It's part of Querino Premium — contact support to learn more.
               </p>
+            </div>
+
+            <div className="mb-8 space-y-2">
+              {premiumFeatures.map(({ icon: Icon, label, description }) => (
+                <div key={label} className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center">
               <a href="mailto:support@querino.ai">
                 <Button variant="outline" className="gap-2">
                   Contact Support

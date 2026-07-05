@@ -9,6 +9,7 @@ import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { UpsellModal } from "@/components/premium/UpsellModal";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
@@ -59,6 +60,7 @@ export default function PromptDetail() {
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -608,14 +610,14 @@ export default function PromptDetail() {
               </>
             )}
 
-            {user && isPremium && (
+            {user && (
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => setShowRefineModal(true)}
+                onClick={() => (isPremium ? setShowRefineModal(true) : setShowUpsellModal(true))}
                 className="gap-2"
               >
-                <Sparkles className="h-4 w-4" />
+                {isPremium ? <Sparkles className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                 Refine with AI
               </Button>
             )}
@@ -712,6 +714,12 @@ export default function PromptDetail() {
             isPublic={prompt.is_public}
             onPromptUpdated={fetchPrompt}
             userId={user?.id}
+          />
+
+          <UpsellModal
+            open={showUpsellModal}
+            onOpenChange={setShowUpsellModal}
+            feature="Refine with AI"
           />
 
 
