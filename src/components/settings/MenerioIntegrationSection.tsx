@@ -18,7 +18,7 @@ const MENERIO_BASE_URL = "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1"
 const ARTIFACT_TYPES = [
   { value: "prompt", label: "Prompts" },
   { value: "skill", label: "Skills" },
-  { value: "claw", label: "Claws" },
+  { value: "claw", label: "CLAWs (MCP-only)" },
   { value: "workflow", label: "Workflows" },
 ] as const;
 

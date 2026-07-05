@@ -62,9 +62,8 @@ export function ReviewSection({
         return `/auth?redirect=/workflows/${slug}`;
       case "prompt_kit":
         return `/auth?redirect=/prompt-kits/${slug}`;
-      case "claw":
-        return `/auth?redirect=/claws/${slug}`;
       default:
+        // CLAWs and anything else have no web detail page to return to.
         return `/auth`;
     }
   };
