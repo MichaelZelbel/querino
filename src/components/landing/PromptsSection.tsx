@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { useSearchPrompts } from "@/hooks/useSearchPrompts";
@@ -31,46 +31,22 @@ export function PromptsSection({
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState<SortOption>("trending");
-  
+
   const debouncedSearch = useDebounce(searchQuery, 300);
   const isSearching = debouncedSearch.trim().length > 0;
-  
-  // Full-text search
-  const { data: prompts, isLoading, error } = useSearchPrompts({ 
-    searchQuery: debouncedSearch,
-    isPublic: true 
-  });
 
-  const filteredAndSortedPrompts = useMemo(() => {
-    if (!prompts) return [];
-    
-    // Filter by category and (when deep-linked) by tag
-    const filtered = prompts.filter((prompt) => {
-      const categoryOk = category === "all" || prompt.category === category;
-      const tagOk = !tagFilter || (prompt.tags || []).includes(tagFilter);
-      return categoryOk && tagOk;
+  // Server-side filtered + paginated (search results are relevance-ranked
+  // and capped server-side; browsing loads pages of 24 with Load More).
+  const { data: prompts, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useSearchPrompts({
+      searchQuery: debouncedSearch,
+      isPublic: true,
+      category,
+      tag: tagFilter || undefined,
+      sortBy,
     });
 
-    // Skip sorting when searching (server provides relevance/similarity-ranked results)
-    if (isSearching) {
-      return filtered;
-    }
-
-    return [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case "trending":
-          const trendingA = (a.copies_count || 0) + (a.rating_avg || 0) * 10;
-          const trendingB = (b.copies_count || 0) + (b.rating_avg || 0) * 10;
-          return trendingB - trendingA;
-        case "newest":
-          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-        case "rating":
-          return (b.rating_avg || 0) - (a.rating_avg || 0);
-        default:
-          return 0;
-      }
-    });
-  }, [prompts, category, sortBy, isSearching, tagFilter]);
+  const filteredAndSortedPrompts = prompts ?? [];
 
   const sortOptions: { value: SortOption; label: string; icon: typeof TrendingUp }[] = [
     { value: "trending", label: "Trending", icon: TrendingUp },
@@ -190,6 +166,19 @@ export function PromptsSection({
                 <PromptCard prompt={prompt} showAuthorInfo />
               </div>
             ))}
+          </div>
+        )}
+
+        {!isLoading && !error && hasNextPage && (
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="gap-2"
+            >
+              {isFetchingNextPage ? "Loading…" : "Load more prompts"}
+            </Button>
           </div>
         )}
 

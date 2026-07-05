@@ -34,9 +34,12 @@ const Discover = () => {
   const debouncedWorkflowSearch = useDebounce(workflowSearch, 300);
   const debouncedKitSearch = useDebounce(kitSearch, 300);
 
-  const { data: skills, isLoading: skillsLoading } = useSkills({ published: true, searchQuery: debouncedSkillSearch });
-  const { data: workflows, isLoading: workflowsLoading } = useWorkflows({ published: true, searchQuery: debouncedWorkflowSearch });
-  const { data: kits, isLoading: kitsLoading } = usePromptKits({ published: true, searchQuery: debouncedKitSearch });
+  // Cap public discovery fetches — without a limit these downloaded the
+  // entire table (full content bodies included) on every visit.
+  const DISCOVER_LIMIT = 60;
+  const { data: skills, isLoading: skillsLoading } = useSkills({ published: true, searchQuery: debouncedSkillSearch, limit: DISCOVER_LIMIT });
+  const { data: workflows, isLoading: workflowsLoading } = useWorkflows({ published: true, searchQuery: debouncedWorkflowSearch, limit: DISCOVER_LIMIT });
+  const { data: kits, isLoading: kitsLoading } = usePromptKits({ published: true, searchQuery: debouncedKitSearch, limit: DISCOVER_LIMIT });
 
   const byTag = <T extends { tags?: string[] | null }>(items: T[] | undefined): T[] =>
     (items || []).filter((item) => !tagFilter || (item.tags || []).includes(tagFilter));
