@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -78,50 +78,50 @@ export default function WorkflowDetail() {
   const isPersonalWorkflow = !(workflow as any)?.team_id;
   const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalWorkflow;
 
-  useEffect(() => {
-    async function fetchWorkflow() {
-      if (!slug) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await (supabase
-          .from("workflows") as any)
-          .select(`
-            *,
-            profiles:author_id (
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq("slug", slug)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching workflow:", error);
-          setNotFound(true);
-        } else if (!data) {
-          setNotFound(true);
-        } else {
-          const workflowData: WorkflowWithAuthor = {
-            ...data,
-            author: data.profiles || null,
-          };
-          setWorkflow(workflowData);
-        }
-      } catch (err) {
-        console.error("Error fetching workflow:", err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
+  const fetchWorkflow = useCallback(async () => {
+    if (!slug) {
+      setNotFound(true);
+      setLoading(false);
+      return;
     }
 
-    fetchWorkflow();
+    try {
+      const { data, error } = await (supabase
+        .from("workflows") as any)
+        .select(`
+          *,
+          profiles:author_id (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching workflow:", error);
+        setNotFound(true);
+      } else if (!data) {
+        setNotFound(true);
+      } else {
+        const workflowData: WorkflowWithAuthor = {
+          ...data,
+          author: data.profiles || null,
+        };
+        setWorkflow(workflowData);
+      }
+    } catch (err) {
+      console.error("Error fetching workflow:", err);
+      setNotFound(true);
+    } finally {
+      setLoading(false);
+    }
   }, [slug]);
+
+  useEffect(() => {
+    fetchWorkflow();
+  }, [fetchWorkflow]);
 
   // Get workflow content - use new content field, or fall back to json for legacy
   const getWorkflowContent = (): string => {
@@ -452,7 +452,7 @@ export default function WorkflowDetail() {
                 menerioSynced={(workflow as any).menerio_synced || false}
                 menerioSyncedAt={(workflow as any).menerio_synced_at || null}
                 menerioNoteId={(workflow as any).menerio_note_id || null}
-                onSyncComplete={() => window.location.reload()}
+                onSyncComplete={fetchWorkflow}
               />
             )}
 

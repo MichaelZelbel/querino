@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -76,50 +76,50 @@ export default function SkillDetail() {
   const isPersonalSkill = !(skill as any)?.team_id;
   const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalSkill;
 
-  useEffect(() => {
-    async function fetchSkill() {
-      if (!slug) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await (supabase
-          .from("skills") as any)
-          .select(`
-            *,
-            profiles:author_id (
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq("slug", slug)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching skill:", error);
-          setNotFound(true);
-        } else if (!data) {
-          setNotFound(true);
-        } else {
-          const skillData: SkillWithAuthor = {
-            ...data,
-            author: data.profiles || null,
-          };
-          setSkill(skillData);
-        }
-      } catch (err) {
-        console.error("Error fetching skill:", err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
+  const fetchSkill = useCallback(async () => {
+    if (!slug) {
+      setNotFound(true);
+      setLoading(false);
+      return;
     }
 
-    fetchSkill();
+    try {
+      const { data, error } = await (supabase
+        .from("skills") as any)
+        .select(`
+          *,
+          profiles:author_id (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching skill:", error);
+        setNotFound(true);
+      } else if (!data) {
+        setNotFound(true);
+      } else {
+        const skillData: SkillWithAuthor = {
+          ...data,
+          author: data.profiles || null,
+        };
+        setSkill(skillData);
+      }
+    } catch (err) {
+      console.error("Error fetching skill:", err);
+      setNotFound(true);
+    } finally {
+      setLoading(false);
+    }
   }, [slug]);
+
+  useEffect(() => {
+    fetchSkill();
+  }, [fetchSkill]);
 
   const handleCopy = async () => {
     if (!skill) return;
@@ -429,7 +429,7 @@ export default function SkillDetail() {
                 menerioSynced={(skill as any).menerio_synced || false}
                 menerioSyncedAt={(skill as any).menerio_synced_at || null}
                 menerioNoteId={(skill as any).menerio_note_id || null}
-                onSyncComplete={() => window.location.reload()}
+                onSyncComplete={fetchSkill}
               />
             )}
 
