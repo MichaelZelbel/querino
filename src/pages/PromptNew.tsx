@@ -203,7 +203,7 @@ export default function PromptNew() {
       }
 
       // Create version 1
-      await supabase.from("prompt_versions").insert({
+      const { error: versionError } = await supabase.from("prompt_versions").insert({
         prompt_id: newPrompt.id,
         version_number: 1,
         title: title.trim(),
@@ -212,6 +212,11 @@ export default function PromptNew() {
         tags: tags.length > 0 ? tags : null,
         change_notes: "Initial version",
       });
+
+      if (versionError) {
+        console.error("Error creating initial version:", versionError);
+        toast.warning("Prompt created, but the initial version entry could not be saved.");
+      }
 
       // Promote draft coach session to deterministic session for this prompt
       const workspaceScope = currentWorkspace ?? "personal";
