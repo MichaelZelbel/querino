@@ -58,7 +58,7 @@ export function TranslateModal({
   category,
 }: TranslateModalProps) {
   const navigate = useNavigate();
-  const { checkCredits } = useAICreditsGate();
+  const { checkCredits, hasCredits, isLoading: creditsLoading, credits } = useAICreditsGate();
   const { user } = useAuth();
   const [targetLanguage, setTargetLanguage] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
@@ -150,11 +150,23 @@ export function TranslateModal({
           </div>
         </div>
 
+        {credits && (
+          <p className="text-xs text-muted-foreground">
+            {hasCredits
+              ? `~${Math.floor(credits.remainingCredits)} AI credits remaining`
+              : "You're out of AI credits — they reset at the start of your next period."}
+          </p>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isTranslating}>
             Cancel
           </Button>
-          <Button onClick={handleTranslate} disabled={isTranslating || !targetLanguage} className="gap-2">
+          <Button
+            onClick={handleTranslate}
+            disabled={isTranslating || !targetLanguage || (!creditsLoading && !hasCredits)}
+            className="gap-2"
+          >
             {isTranslating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

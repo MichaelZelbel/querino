@@ -64,7 +64,7 @@ export function RefinePromptModal({
   const [refinedPrompt, setRefinedPrompt] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const { checkCredits } = useAICreditsGate();
+  const { checkCredits, hasCredits, isLoading: creditsLoading, credits } = useAICreditsGate();
 
   const handleRefine = async () => {
     // Check credits before making AI call
@@ -254,13 +254,25 @@ export function RefinePromptModal({
           )}
         </div>
 
+        {credits && (
+          <p className="text-xs text-muted-foreground">
+            {hasCredits
+              ? `~${Math.floor(credits.remainingCredits)} AI credits remaining`
+              : "You're out of AI credits — they reset at the start of your next period."}
+          </p>
+        )}
+
         <DialogFooter className="flex-col gap-2 sm:flex-row">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
 
           {!refinedPrompt ? (
-            <Button onClick={handleRefine} disabled={isRefining} className="gap-2">
+            <Button
+              onClick={handleRefine}
+              disabled={isRefining || (!creditsLoading && !hasCredits)}
+              className="gap-2"
+            >
               {isRefining ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />

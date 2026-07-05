@@ -39,7 +39,7 @@ export default function PromptWizard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
-  const { checkCredits } = useAICreditsGate();
+  const { checkCredits, hasCredits, isLoading: creditsLoading, credits } = useAICreditsGate();
 
   // Form state
   const [goal, setGoal] = useState("");
@@ -365,7 +365,11 @@ export default function PromptWizard() {
             </div>
 
             {/* Generate Button */}
-            <Button onClick={handleGenerate} disabled={isGenerating} className="w-full gap-2">
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating || (!creditsLoading && !hasCredits)}
+              className="w-full gap-2"
+            >
               {isGenerating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -373,6 +377,13 @@ export default function PromptWizard() {
               )}
               {isGenerating ? "Generating..." : "Generate Prompt"}
             </Button>
+            {credits && (
+              <p className="text-center text-xs text-muted-foreground">
+                {hasCredits
+                  ? `~${Math.floor(credits.remainingCredits)} AI credits remaining`
+                  : "You're out of AI credits — they reset at the start of your next period."}
+              </p>
+            )}
           </div>
 
           {/* Generated Prompt Section */}

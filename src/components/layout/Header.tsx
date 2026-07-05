@@ -17,6 +17,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CreditsPill } from "@/components/settings/CreditsPill";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -153,6 +154,8 @@ export function Header() {
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
             <>
+              <CreditsPill />
+
               {/* Create Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
