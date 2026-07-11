@@ -350,15 +350,9 @@ export default function PromptDetail() {
       author: { "@type": "Person", name: prompt.author.display_name },
     }),
     publisher: { "@type": "Organization", name: "Querino" },
-    ...(prompt.rating_count && prompt.rating_count > 0 && {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: prompt.rating_avg,
-        ratingCount: prompt.rating_count,
-        bestRating: 5,
-        worstRating: 1,
-      },
-    }),
+    // No aggregateRating: Google only allows ratings on specific types
+    // (Product, Book, ...) — on generic CreativeWork it is a critical
+    // "Invalid object type" error in Search Console.
   };
 
   return (

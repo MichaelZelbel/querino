@@ -231,15 +231,9 @@ export default function SkillDetail() {
       author: { "@type": "Person", name: skill.author.display_name },
     }),
     publisher: { "@type": "Organization", name: "Querino" },
-    ...(skill.rating_count && skill.rating_count > 0 && {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: skill.rating_avg,
-        ratingCount: skill.rating_count,
-        bestRating: 5,
-        worstRating: 1,
-      },
-    }),
+    // No aggregateRating: Google only allows ratings on specific types
+    // (Product, Book, ...) — on generic CreativeWork it is a critical
+    // "Invalid object type" error in Search Console.
   };
 
   return (
