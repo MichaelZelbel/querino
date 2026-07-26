@@ -121,7 +121,7 @@ export function VersionHistoryPanel({
           console.error("Error fetching versions:", error);
           toast.error("Failed to load version history");
         } else if (data) {
-          setVersions(data as PromptVersion[]);
+          setVersions(data as unknown as PromptVersion[]);
         }
       } catch (err) {
         console.error("Error fetching versions:", err);
