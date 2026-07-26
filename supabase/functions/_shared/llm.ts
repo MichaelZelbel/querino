@@ -121,14 +121,15 @@ export async function getCallerUserId(req: Request): Promise<string> {
  */
 export async function assertCredits(user_id: string, supabase?: SupabaseClient): Promise<void> {
   const sb = supabase ?? getServiceClient();
-  // Best-effort: ensure they have an active period (mirrors useAICredits flow).
-  // We do not call ensure-token-allowance here to avoid recursion; if the row
-  // is missing the user simply has no allowance and we block.
-  const { data, error } = await sb
-    .from("v_ai_allowance_current")
-    .select("remaining_tokens, remaining_credits")
-    .eq("user_id", user_id)
-    .maybeSingle();
+
+  const read = async () =>
+    await sb
+      .from("v_ai_allowance_current")
+      .select("remaining_tokens, remaining_credits")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+  let { data, error } = await read();
 
   if (error) {
     // Fail CLOSED: during an allowance-view outage, paid AI calls would
@@ -139,6 +140,22 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
       "AI features are temporarily unavailable (credit check failed). Please try again in a moment.",
     );
   }
+
+  // Brand new accounts have no allowance period yet. Provision one on demand
+  // instead of falsely reporting "out of credits" on their first AI action.
+  if (!data) {
+    try {
+      await ensureAllowance(sb, user_id, { createdBy: "llm.assertCredits" });
+    } catch (e) {
+      console.error("[llm.assertCredits] on-demand provisioning failed:", e);
+    }
+    const retry = await read();
+    data = retry.data;
+    if (retry.error) {
+      console.error("[llm.assertCredits] view error after provisioning:", retry.error);
+    }
+  }
+
   const remaining = Number(data?.remaining_tokens ?? 0);
   if (!data || remaining <= 0) {
     throw new CreditsExhaustedError(
