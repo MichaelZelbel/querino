@@ -192,7 +192,7 @@ async function createAllowancePeriod(
     rolloverTokens?: number;
     source: string;
   }
-): Promise<AllowanceResult["allowance"]> {
+): Promise<AllowanceResult> {
   const { 
     periodStart: customStart, 
     periodEnd: customEnd, 
