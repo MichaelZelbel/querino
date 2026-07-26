@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLogActivity } from './useLogActivity';
 import type { AIInsights, AIQuality } from '@/types/aiInsights';
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 type ItemType = 'prompt' | 'skill' | 'workflow' | 'prompt_kit';
 
@@ -115,7 +116,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
 
       if (fnError) {
         console.error('Edge function error:', fnError);
-        throw new Error(fnError.message || 'Failed to generate insights');
+        throw new Error(await getFunctionErrorMessage(fnError, 'Failed to generate insights'));
       }
 
       // Edge function already normalizes the response

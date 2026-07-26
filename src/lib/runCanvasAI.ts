@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 export type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -150,7 +151,7 @@ export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIRes
 
   if (error) {
     console.error(`[runCanvasAI:${artifactType}] Edge function error:`, error);
-    throw new Error(error.message || "AI request failed");
+    throw new Error(await getFunctionErrorMessage(error, "AI request failed"));
   }
 
   // Persist returned session id if provided

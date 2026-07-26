@@ -121,7 +121,7 @@ export function VersionHistoryPanel({
           console.error("Error fetching versions:", error);
           toast.error("Failed to load version history");
         } else if (data) {
-          setVersions(data as PromptVersion[]);
+          setVersions(data as unknown as PromptVersion[]);
         }
       } catch (err) {
         console.error("Error fetching versions:", err);
@@ -165,7 +165,7 @@ export function VersionHistoryPanel({
     try {
       // Fetch the latest version fresh so the next number can't collide
       // with inserts made since the panel loaded.
-      const { data: latest, error: latestError } = await (supabase
+      const { data: latestRow, error: latestError } = await (supabase
         .from(tableConfig.versionsTable as any))
         .select("version_number, title, description, content, tags")
         .eq(tableConfig.idColumn, promptId)
@@ -179,6 +179,7 @@ export function VersionHistoryPanel({
         return;
       }
 
+      const latest = latestRow as unknown as Partial<PromptVersion> | null;
       let nextVersionNumber = (latest?.version_number ?? 0) + 1;
 
       // Snapshot the current live content first if it isn't already saved

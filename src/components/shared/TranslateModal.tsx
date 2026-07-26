@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { generateSlug } from "@/hooks/useGenerateSlug";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 // CLAWs are MCP-only (no web pages), so they are not translatable here.
 type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
@@ -89,7 +90,7 @@ export function TranslateModal({
         },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error, "Failed to translate"));
       if (data?.error) throw new Error(data.error);
 
       // Pre-generate transliterated slug for the translated title

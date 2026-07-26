@@ -27,6 +27,7 @@ import {
   type PromptFramework,
 } from "@/lib/promptGenerator";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -101,7 +102,7 @@ export default function PromptWizard() {
         body: { structured_input: structuredInput },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error, "Failed to generate prompt"));
 
       const promptText = (data?.prompt || "").trim();
       if (!promptText) {
