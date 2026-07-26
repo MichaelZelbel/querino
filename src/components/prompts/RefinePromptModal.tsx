@@ -23,6 +23,7 @@ import { FRAMEWORK_OPTIONS, type PromptFramework } from "@/lib/promptGenerator";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { supabase } from "@/integrations/supabase/client";
 import { moderateContent } from "@/lib/moderateContent";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 interface RefinePromptModalProps {
   isOpen: boolean;
@@ -88,7 +89,7 @@ export function RefinePromptModal({
 
       if (error) {
         console.error("Edge function error:", error);
-        throw new Error(error.message || "Failed to refine prompt");
+        throw new Error(await getFunctionErrorMessage(error, "Failed to refine prompt"));
       }
 
       if (!data?.refinedPrompt) {
