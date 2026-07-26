@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 export type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
