@@ -219,31 +219,56 @@ async function createAllowancePeriod(
     source,
   });
 
+  const payload = {
+    user_id: userId,
+    period_start: periodStart.toISOString(),
+    period_end: periodEnd.toISOString(),
+    tokens_granted: tokensGranted,
+    tokens_used: 0,
+    source,
+    metadata: {
+      created_by: "ensure-token-allowance",
+      created_at: new Date().toISOString(),
+      rollover_tokens: rolloverTokens,
+      base_tokens: baseTokensGranted,
+    },
+  };
+
   const { data, error } = await supabaseAdmin
     .from("ai_allowance_periods")
-    .insert({
-      user_id: userId,
-      period_start: periodStart.toISOString(),
-      period_end: periodEnd.toISOString(),
-      tokens_granted: tokensGranted,
-      tokens_used: 0,
-      source,
-      metadata: {
-        created_by: "ensure-token-allowance",
-        created_at: new Date().toISOString(),
-        rollover_tokens: rolloverTokens,
-        base_tokens: baseTokensGranted,
-      },
-    })
+    .insert(payload)
     .select()
     .single();
 
-  if (error) {
+  if (!error) return { created: true, allowance: data };
+
+  // Idempotency: a concurrent call (or a retry) may already have created the
+  // period. 23505 = unique_violation on (user_id, period_start, period_end).
+  const isDuplicate =
+    error.code === "23505" || /duplicate key value/i.test(error.message ?? "");
+
+  if (!isDuplicate) {
     logStep("Error creating allowance", { error: error.message, userId });
     throw new Error(`Failed to create allowance period: ${error.message}`);
   }
 
-  return data;
+  logStep("Allowance period already exists (concurrent create), reading it", { userId });
+
+  const { data: existing, error: readError } = await supabaseAdmin
+    .from("ai_allowance_periods")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("period_start", payload.period_start)
+    .eq("period_end", payload.period_end)
+    .maybeSingle();
+
+  if (readError || !existing) {
+    throw new Error(
+      `Failed to read existing allowance period after conflict: ${readError?.message ?? "not found"}`,
+    );
+  }
+
+  return { created: false, allowance: existing };
 }
 
 /**
