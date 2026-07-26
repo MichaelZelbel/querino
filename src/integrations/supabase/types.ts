@@ -2509,6 +2509,7 @@ export type Database = {
         Returns: boolean
       }
       lookup_mcp_token: { Args: { p_token_hash: string }; Returns: string }
+      provision_ai_allowance: { Args: { _user_id: string }; Returns: undefined }
       record_llm_usage: {
         Args: {
           p_completion_tokens: number
