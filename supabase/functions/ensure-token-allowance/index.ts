@@ -332,15 +332,13 @@ async function ensureTokenAllowance(
     rolloverTokens = calculateRollover(previousPeriod, baseTokensGranted);
   }
 
-  const newAllowance = await createAllowancePeriod(supabaseAdmin, userId, {
+  return await createAllowancePeriod(supabaseAdmin, userId, {
     periodStart: options?.periodStart,
     periodEnd: options?.periodEnd,
     baseTokensGranted,
     rolloverTokens,
     source,
   });
-
-  return { created: true, allowance: newAllowance };
 }
 
 serve(async (req) => {
