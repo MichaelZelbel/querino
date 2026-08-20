@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCallerUserId } from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,17 +13,31 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Identity comes from the caller's JWT, never from the request body.
+    // This function spends the user's Menerio API key and writes to their
+    // prompts; a body-supplied user_id let anyone act as any user they could
+    // name. `supabase.functions.invoke` attaches the session token for us.
+    let user_id: string;
+    try {
+      user_id = await getCallerUserId(req);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { menerio_callback, menerio_note_id, prompt_id, prompt_slug, user_id } =
+    const { menerio_callback, menerio_note_id, prompt_id, prompt_slug } =
       await req.json();
 
-    if (!menerio_callback || !menerio_note_id || !prompt_id || !user_id) {
+    if (!menerio_callback || !menerio_note_id || !prompt_id) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: menerio_callback, menerio_note_id, prompt_id, user_id" }),
+        JSON.stringify({ error: "Missing required fields: menerio_callback, menerio_note_id, prompt_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -120,7 +135,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("menerio-link-callback error:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

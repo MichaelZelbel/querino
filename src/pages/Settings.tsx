@@ -131,9 +131,12 @@ export default function Settings() {
         .eq("id", user.id)
         .single();
 
+      // Only the existence of the token matters here — never pull the secret
+      // itself into the browser. Saving guards on the "•" placeholder and the
+      // connection test reads the real value server-side in `github-sync`.
       const { data: credentialData } = await supabase
         .from("user_credentials")
-        .select("credential_value")
+        .select("id")
         .eq("user_id", user.id)
         .eq("credential_type", "github_token")
         .is("team_id", null)
@@ -149,7 +152,7 @@ export default function Settings() {
         setPersonalGithubLastSynced(profileData.github_last_synced_at || null);
       }
 
-      setPersonalGithubToken(credentialData?.credential_value ? "••••••••••••••••" : "");
+      setPersonalGithubToken(credentialData?.id ? "••••••••••••••••" : "");
       setLoadingPersonalGithub(false);
     }
 
@@ -169,14 +172,15 @@ export default function Settings() {
           .eq("id", teamData.id)
           .single();
 
+        // Existence only — see the note in loadGithubSettings above.
         const { data: credentialData } = await supabase
           .from("user_credentials")
-          .select("credential_value")
+          .select("id")
           .eq("credential_type", "github_token")
           .eq("team_id", teamData.id)
           .maybeSingle();
 
-        setTeamGithubToken(credentialData?.credential_value ? "••••••••••••••••" : "");
+        setTeamGithubToken(credentialData?.id ? "••••••••••••••••" : "");
         setTeamGithubLastSynced(teamMeta?.github_last_synced_at || null);
       };
       loadTeamToken();

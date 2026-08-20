@@ -226,12 +226,12 @@ export default function PromptNew() {
       if (menerioNoteId && menerioCallback) {
         try {
           const cbResponse = await supabase.functions.invoke("menerio-link-callback", {
+            // No user_id — the function derives it from the session JWT.
             body: {
               menerio_callback: menerioCallback,
               menerio_note_id: menerioNoteId,
               prompt_id: newPrompt.id,
               prompt_slug: newPrompt.slug,
-              user_id: user.id,
             },
           });
           if (cbResponse.error) {

@@ -11,6 +11,19 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[ENSURE-TOKEN-ALLOWANCE] ${step}${detailsStr}`);
 };
 
+/**
+ * Compare two secrets without leaking their length or contents through timing.
+ * Returns false for empty input so a missing env var can never match.
+ */
+function constantTimeEquals(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 interface AllowanceResult {
   created: boolean;
   allowance: {
@@ -364,17 +377,37 @@ serve(async (req) => {
       force_tokens?: number;
       batch_init?: boolean;
     } = {};
-    
+
     try {
       body = await req.json();
     } catch {
       // No body or invalid JSON - will use auth token
     }
 
-    // If batch_init is true, initialize all users without active periods
+    // Resolve the caller BEFORE dispatching on the body. This function is
+    // declared `verify_jwt = false`, so the platform gateway lets anonymous
+    // requests through and every branch below has to prove who is calling.
+    const bearer = (req.headers.get("Authorization") ?? "")
+      .replace(/^Bearer\s+/i, "")
+      .trim();
+    const isServiceRole = constantTimeEquals(
+      bearer,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
+    // If batch_init is true, initialize all users without active periods.
+    // Machine-only: this walks every profile, so it must never be reachable
+    // by an anonymous caller or an ordinary logged-in user.
     if (body.batch_init === true) {
+      if (!isServiceRole) {
+        logStep("Rejected unauthorized batch_init");
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       logStep("Batch initialization requested");
-      
+
       // Get all users from profiles
       const { data: profiles, error: profilesError } = await supabaseAdmin
         .from("profiles")
@@ -384,53 +417,45 @@ serve(async (req) => {
         throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
       }
 
-      const results: { userId: string; status: string; balance?: AllowanceResult["allowance"]; error?: string }[] = [];
+      let created = 0;
+      let skipped = 0;
+      let errors = 0;
 
       for (const profile of profiles || []) {
         try {
           const result = await ensureTokenAllowance(supabaseAdmin, profile.id);
-          results.push({ 
-            userId: profile.id,
-            status: result.created ? "created" : "exists",
-            balance: result.allowance
-          });
+          if (result.created) created++;
+          else skipped++;
         } catch (err) {
-          results.push({ 
-            userId: profile.id, 
-            status: "error",
-            error: err instanceof Error ? err.message : String(err) 
+          errors++;
+          // Per-user detail goes to the log, never to the response body: the
+          // response previously carried every user id and allowance row.
+          logStep("Batch entry failed", {
+            userId: profile.id,
+            error: err instanceof Error ? err.message : String(err),
           });
         }
       }
-
-      const created = results.filter(r => r.status === "created").length;
-      const skipped = results.filter(r => r.status === "exists").length;
-      const errors = results.filter(r => r.status === "error").length;
 
       logStep("Batch initialization complete", { created, skipped, errors });
 
       return new Response(JSON.stringify({
         success: true,
         summary: { created, skipped, errors },
-        results,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    // Single user mode
-    let userId: string;
-
+    // Single user mode.
     // Always require auth token for non-batch operations
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!bearer) {
       throw new Error("No authorization header provided");
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(bearer);
+
     if (userError || !userData.user) {
       throw new Error(`Authentication error: ${userError?.message ?? "User not found"}`);
     }
@@ -438,10 +463,21 @@ serve(async (req) => {
     const authenticatedUserId = userData.user.id;
     logStep("Authenticated user", { userId: authenticatedUserId });
 
-    if (body.user_id && body.user_id !== authenticatedUserId) {
-      // Admin trying to specify a different user ID - verify admin privileges
-      logStep("Checking admin privileges for user_id override");
-      
+    // period_start, period_end, source and force_tokens decide how many tokens
+    // get granted and for how long. They are administrative overrides, so they
+    // need an admin even when the caller is only targeting their own account —
+    // otherwise any user can mint themselves an unlimited allowance.
+    const wantsPrivilegedOptions =
+      body.force_tokens !== undefined ||
+      body.period_start !== undefined ||
+      body.period_end !== undefined ||
+      body.source !== undefined;
+
+    const wantsOtherUser = !!body.user_id && body.user_id !== authenticatedUserId;
+
+    if (wantsPrivilegedOptions || wantsOtherUser) {
+      logStep("Checking admin privileges", { wantsPrivilegedOptions, wantsOtherUser });
+
       // user_roles (via is_admin RPC) is the authoritative role source —
       // profiles.role can drift and is not used for authorization.
       const { data: isAdminData, error: adminError } = await supabaseAdmin
@@ -449,17 +485,21 @@ serve(async (req) => {
 
       if (adminError || !isAdminData) {
         logStep("Admin check failed", { error: adminError?.message });
-        throw new Error("Only admins can specify a different user_id");
+        throw new Error(
+          wantsOtherUser
+            ? "Only admins can specify a different user_id"
+            : "Only admins can override period_start, period_end, source or force_tokens",
+        );
       }
-      
-      userId = body.user_id;
-      logStep("Admin override: using provided user_id", { userId, adminId: authenticatedUserId });
-    } else {
-      // Use the authenticated user's ID
-      userId = authenticatedUserId;
     }
 
-    // Build options
+    const userId = wantsOtherUser ? body.user_id! : authenticatedUserId;
+    if (wantsOtherUser) {
+      logStep("Admin override: using provided user_id", { userId, adminId: authenticatedUserId });
+    }
+
+    // Build options. Only reachable with admin rights (checked above); an
+    // ordinary caller lands here with an empty object and gets the plan default.
     const options: {
       periodStart?: Date;
       periodEnd?: Date;
@@ -467,17 +507,19 @@ serve(async (req) => {
       forceTokens?: number;
     } = {};
 
-    if (body.period_start) {
-      options.periodStart = new Date(body.period_start);
-    }
-    if (body.period_end) {
-      options.periodEnd = new Date(body.period_end);
-    }
-    if (body.source) {
-      options.source = body.source;
-    }
-    if (body.force_tokens !== undefined) {
-      options.forceTokens = body.force_tokens;
+    if (wantsPrivilegedOptions) {
+      if (body.period_start) {
+        options.periodStart = new Date(body.period_start);
+      }
+      if (body.period_end) {
+        options.periodEnd = new Date(body.period_end);
+      }
+      if (body.source) {
+        options.source = body.source;
+      }
+      if (body.force_tokens !== undefined) {
+        options.forceTokens = body.force_tokens;
+      }
     }
 
     const result = await ensureTokenAllowance(supabaseAdmin, userId, options);
