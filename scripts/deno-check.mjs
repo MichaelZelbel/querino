@@ -23,8 +23,8 @@
 //   node scripts/deno-check.mjs            check against the baseline
 //   node scripts/deno-check.mjs --update   record today's counts
 //
-// Deno is found at $DENO_BIN, or on PATH. CI installs it with
-// denoland/setup-deno.
+// Deno is a devDependency, so npm ci provides it on every machine and in CI.
+// $DENO_BIN overrides it if you want a different one.
 
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
@@ -38,11 +38,27 @@ const BASELINE_FILE = join(ROOT, "scripts", "deno-check-baseline.json");
 
 function denoBinary() {
   if (process.env.DENO_BIN) return process.env.DENO_BIN;
+
+  // Deno is a devDependency, so `npm ci` puts a real binary here on every
+  // machine and in CI. Nobody has to install a second runtime by hand, and
+  // nobody has to remember that this check needs one.
+  //
+  // The executable itself, not node_modules/.bin/deno.cmd: on Windows a .cmd
+  // shim cannot be spawned without a shell, and spawning through a shell means
+  // quoting 34 file paths by hand.
+  const vendored = join(
+    ROOT,
+    "node_modules",
+    "deno",
+    process.platform === "win32" ? "deno.exe" : "deno",
+  );
+  if (existsSync(vendored)) return vendored;
+
   const probe = spawnSync("deno", ["--version"], { encoding: "utf8", shell: true });
   if (probe.status === 0) return "deno";
+
   console.error("Deno was not found.\n");
-  console.error("  CI installs it with denoland/setup-deno.");
-  console.error("  Locally: https://docs.deno.com/runtime/getting_started/installation");
+  console.error("  It is a devDependency, so this usually means: npm ci");
   console.error("  Or point DENO_BIN at a binary you already have.");
   process.exit(2);
 }

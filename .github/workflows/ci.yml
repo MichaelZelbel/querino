@@ -5,7 +5,7 @@ name: CI
 #
 # Four gates, cheapest first:
 #
-#   checks    the two migration rules, the linter, and the edge-function types
+#   checks    the three migration rules, the linter, and the edge-function types
 #   build     the app compiles
 #   security  the suite in tests/security, against the deployed project
 #
@@ -62,10 +62,8 @@ jobs:
       - name: Lint, and the `any` count has not risen
         run: node scripts/lint-ratchet.mjs
 
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
+      # No setup-deno step: Deno is a pinned devDependency, so npm ci above
+      # already provided it. One less action, one less version to drift.
       - name: Edge function types have not got worse
         run: node scripts/deno-check.mjs
 
