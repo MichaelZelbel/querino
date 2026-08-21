@@ -1,10 +1,18 @@
-// Shared, idempotent AI-allowance provisioning.
+// AI-allowance provisioning, in one place.
 //
-// Mirrors the logic of the `ensure-token-allowance` edge function so that any
-// AI feature can provision a user's allowance period on demand instead of
-// failing with a false "out of credits" error. The insert is idempotent: it
-// upserts on the (user_id, period_start, period_end) unique constraint and
-// falls back to re-reading the existing row on conflict.
+// This file used to be one of THREE implementations of the same rules
+// (finding S4): here, again in ensure-token-allowance/index.ts, and a third
+// time as the SQL function provision_ai_allowance. They had already drifted:
+// only the two TypeScript copies carried unused tokens over from the previous
+// month, and they disagreed with the SQL about the token-to-credit rate
+// (finding M6), so what a user got depended on which path happened to run
+// first.
+//
+// The implementation now lives in the database, in ensure_ai_allowance, where
+// the transaction is: the read of the existing period, the rollover lookup and
+// the insert are one statement's worth of work under one snapshot, and the
+// overlap constraint can refuse a bad period rather than trusting the caller
+// to have checked. Everything here is a thin caller.
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -24,6 +32,7 @@ export interface EnsureAllowanceResult {
   allowance: AllowanceRow | null;
 }
 
+/** The current calendar month in UTC, the same boundaries the SQL uses. */
 export function getCurrentMonthPeriod(): { periodStart: Date; periodEnd: Date } {
   const now = new Date();
   return {
@@ -32,6 +41,7 @@ export function getCurrentMonthPeriod(): { periodStart: Date; periodEnd: Date } 
   };
 }
 
+/** The user's active allowance period, or null. */
 export async function getActiveAllowance(
   sb: SupabaseClient,
   userId: string,
@@ -48,90 +58,17 @@ export async function getActiveAllowance(
   return data as AllowanceRow | null;
 }
 
-async function getSettings(sb: SupabaseClient) {
-  const { data, error } = await sb
-    .from("ai_credit_settings")
-    .select("key, value_int")
-    .in("key", ["tokens_per_credit", "credits_free_per_month", "credits_premium_per_month"]);
-  if (error) throw new Error(`Failed to fetch token settings: ${error.message}`);
-  const s: Record<string, number> = {};
-  for (const row of data ?? []) s[(row as { key: string }).key] = (row as { value_int: number }).value_int;
-  return {
-    tokensPerCredit: s["tokens_per_credit"] ?? 200,
-    creditsFreePerMonth: s["credits_free_per_month"] ?? 0,
-    creditsPremiumPerMonth: s["credits_premium_per_month"] ?? 1500,
-  };
-}
-
 /**
- * Insert an allowance period idempotently. If a row already exists for the
- * same (user_id, period_start, period_end), the existing row is returned.
- */
-export async function upsertAllowancePeriod(
-  sb: SupabaseClient,
-  userId: string,
-  opts: {
-    periodStart: Date;
-    periodEnd: Date;
-    baseTokensGranted: number;
-    rolloverTokens?: number;
-    source: string;
-    createdBy?: string;
-  },
-): Promise<{ created: boolean; allowance: AllowanceRow }> {
-  const rolloverTokens = opts.rolloverTokens ?? 0;
-  const payload = {
-    user_id: userId,
-    period_start: opts.periodStart.toISOString(),
-    period_end: opts.periodEnd.toISOString(),
-    tokens_granted: opts.baseTokensGranted + rolloverTokens,
-    tokens_used: 0,
-    source: opts.source,
-    metadata: {
-      created_by: opts.createdBy ?? "ensure-token-allowance",
-      created_at: new Date().toISOString(),
-      rollover_tokens: rolloverTokens,
-      base_tokens: opts.baseTokensGranted,
-    },
-  };
-
-  const { data, error } = await sb
-    .from("ai_allowance_periods")
-    .insert(payload)
-    .select()
-    .single();
-
-  if (!error) return { created: true, allowance: data as AllowanceRow };
-
-  // 23505 = unique_violation → another concurrent call already created it.
-  const isDuplicate =
-    (error as { code?: string }).code === "23505" ||
-    /duplicate key value/i.test(error.message ?? "");
-
-  if (!isDuplicate) {
-    throw new Error(`Failed to create allowance period: ${error.message}`);
-  }
-
-  const { data: existing, error: readError } = await sb
-    .from("ai_allowance_periods")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("period_start", payload.period_start)
-    .eq("period_end", payload.period_end)
-    .maybeSingle();
-
-  if (readError || !existing) {
-    throw new Error(
-      `Failed to read existing allowance period after conflict: ${readError?.message ?? "not found"}`,
-    );
-  }
-  return { created: false, allowance: existing as AllowanceRow };
-}
-
-/**
- * Ensure the user has an active allowance period, creating the plan-appropriate
- * one (with rollover from the last expired period) when missing. Safe to call
- * concurrently and repeatedly.
+ * Ensure the user has an active allowance period, creating the one their role
+ * entitles them to when there is none. Idempotent, and safe to call
+ * concurrently: a caller that loses the race gets the winner's period back
+ * rather than an error.
+ *
+ * `forceTokens`, `periodStart`, `periodEnd` and `source` are administrative
+ * overrides. Nothing here checks that: the check belongs at the front door of
+ * whatever function is exposing them, because only that function knows who is
+ * calling. ensure-token-allowance requires is_admin before it passes any of
+ * them through.
  */
 export async function ensureAllowance(
   sb: SupabaseClient,
@@ -145,52 +82,25 @@ export async function ensureAllowance(
     createdBy?: string;
   },
 ): Promise<EnsureAllowanceResult> {
-  const existing = await getActiveAllowance(sb, userId);
-  if (existing) return { created: false, allowance: existing };
-
-  const settings = await getSettings(sb);
-
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("plan_type")
-    .eq("id", userId)
-    .maybeSingle();
-  const planType = (profile as { plan_type?: string } | null)?.plan_type ?? "free";
-
-  const baseTokensGranted =
-    opts?.forceTokens !== undefined
-      ? opts.forceTokens
-      : (planType === "premium" ? settings.creditsPremiumPerMonth : settings.creditsFreePerMonth) *
-        settings.tokensPerCredit;
-
-  const source = opts?.source ?? (planType === "premium" ? "subscription" : "free_tier");
-
-  let rolloverTokens = 0;
-  if (!opts?.skipRollover) {
-    const now = new Date().toISOString();
-    const { data: previous } = await sb
-      .from("ai_allowance_periods")
-      .select("*")
-      .eq("user_id", userId)
-      .lt("period_end", now)
-      .order("period_end", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const prev = previous as AllowanceRow | null;
-    if (prev) {
-      const remaining = Number(prev.tokens_granted) - Number(prev.tokens_used);
-      rolloverTokens = Math.min(Math.max(remaining, 0), baseTokensGranted);
-    }
-  }
-
-  const { periodStart: defaultStart, periodEnd: defaultEnd } = getCurrentMonthPeriod();
-
-  return await upsertAllowancePeriod(sb, userId, {
-    periodStart: opts?.periodStart ?? defaultStart,
-    periodEnd: opts?.periodEnd ?? defaultEnd,
-    baseTokensGranted,
-    rolloverTokens,
-    source,
-    createdBy: opts?.createdBy,
+  const { data, error } = await sb.rpc("ensure_ai_allowance", {
+    _user_id: userId,
+    _force_tokens: opts?.forceTokens ?? null,
+    _period_start: opts?.periodStart?.toISOString() ?? null,
+    _period_end: opts?.periodEnd?.toISOString() ?? null,
+    _source: opts?.source ?? null,
+    _skip_rollover: opts?.skipRollover ?? false,
+    _created_by: opts?.createdBy ?? "ensureAllowance",
   });
+
+  if (error) throw new Error(`Failed to ensure allowance: ${error.message}`);
+
+  // The function returns a table, so supabase-js hands back an array of one.
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | (AllowanceRow & { created: boolean })
+    | undefined;
+
+  if (!row) throw new Error("ensure_ai_allowance returned no row");
+
+  const { created, ...allowance } = row;
+  return { created, allowance: allowance as AllowanceRow };
 }

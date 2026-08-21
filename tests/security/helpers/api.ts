@@ -5,6 +5,7 @@
 import {
   ANON_KEY,
   FUNCTIONS_URL,
+  PROJECT_REF,
   REST_URL,
   SUPABASE_URL,
   requireTestUser,
@@ -228,4 +229,55 @@ export async function callMcpTool(
   }
 
   return { status: res.status, text, isError: text.startsWith("Error:") };
+}
+
+// ── Rolled-back SQL probes ────────────────────────────────────────────────
+
+/**
+ * Run SQL against the project inside BEGIN … ROLLBACK, through the Management
+ * API, and return whatever the block raised.
+ *
+ * Some invariants can only be shown by breaking something: that a drifted
+ * plan_type buys no credits needs a drifted plan_type, and that an overlapping
+ * period is refused needs the account's real period in place. Doing that
+ * through PostgREST means deleting rows and putting them back, and a suite
+ * that can leave the test account without an allowance is a suite that breaks
+ * the thing it is checking.
+ *
+ * The convention: the SQL ends with `RAISE EXCEPTION 'PROBE OK %', log;` so the
+ * transaction can never commit even if the rollback were skipped, and the log
+ * comes back in the error message.
+ */
+export async function sqlProbe(sql: string): Promise<string> {
+  const token = process.env.SUPABASE_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error(
+      "SUPABASE_ACCESS_TOKEN is needed for SQL probes. Run: . scripts/secrets.sh",
+    );
+  }
+
+  // A WAF in front of api.supabase.com rejects bodies with long prose comments
+  // (403, "error code: 1010"), so whole-line -- comments never go over the wire.
+  const body = sql
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*--/.test(line))
+    .join("\n");
+
+  const res = await fetch(
+    `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ query: `BEGIN;\n${body}\nROLLBACK;` }),
+    },
+  );
+
+  const text = await res.text();
+  let parsed: { message?: string } | string;
+  try {
+    parsed = JSON.parse(text) as { message?: string };
+  } catch {
+    parsed = text;
+  }
+  return typeof parsed === "string" ? parsed : (parsed.message ?? text);
 }

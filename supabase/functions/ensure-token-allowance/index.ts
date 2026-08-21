@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isAdminCaller, isMachineCaller } from "../_shared/internalAuth.ts";
+import { ensureAllowance, type EnsureAllowanceResult } from "../_shared/allowance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,335 +14,14 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[ENSURE-TOKEN-ALLOWANCE] ${step}${detailsStr}`);
 };
 
-interface AllowanceResult {
-  created: boolean;
-  allowance: {
-    id: string;
-    user_id: string;
-    period_start: string;
-    period_end: string;
-    tokens_granted: number;
-    tokens_used: number;
-    source: string;
-    metadata?: {
-      created_by?: string;
-      created_at?: string;
-      rollover_tokens?: number;
-      base_tokens?: number;
-    };
-  } | null;
-  error?: string;
-}
-
-/**
- * Get the current calendar month period boundaries
- * period_start = first day of current month at 00:00 UTC
- * period_end = first day of next month at 00:00 UTC
- */
-function getCurrentMonthPeriod(): { periodStart: Date; periodEnd: Date } {
-  const now = new Date();
-  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-  const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
-  return { periodStart, periodEnd };
-}
-
-/**
- * Fetch the admin-configured token settings
- */
-// deno-lint-ignore no-explicit-any
-async function getTokenSettings(supabaseAdmin: any): Promise<{
-  tokensPerCredit: number;
-  creditsFreePerMonth: number;
-  creditsPremiumPerMonth: number;
-}> {
-  const { data, error } = await supabaseAdmin
-    .from("ai_credit_settings")
-    .select("key, value_int")
-    .in("key", ["tokens_per_credit", "credits_free_per_month", "credits_premium_per_month"]);
-
-  if (error) {
-    logStep("Error fetching settings", { error: error.message });
-    throw new Error(`Failed to fetch token settings: ${error.message}`);
-  }
-
-  const settings: Record<string, number> = {};
-  // deno-lint-ignore no-explicit-any
-  data?.forEach((row: any) => {
-    settings[row.key] = row.value_int;
-  });
-
-  return {
-    tokensPerCredit: settings["tokens_per_credit"] ?? 200,
-    creditsFreePerMonth: settings["credits_free_per_month"] ?? 0,
-    creditsPremiumPerMonth: settings["credits_premium_per_month"] ?? 1500,
-  };
-}
-
-/**
- * Get user's plan type from profiles
- */
-// deno-lint-ignore no-explicit-any
-async function getUserPlanType(
-  supabaseAdmin: any,
-  userId: string
-): Promise<string> {
-  const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .select("plan_type")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) {
-    logStep("Error fetching user plan", { error: error.message, userId });
-    return "free";
-  }
-
-  return data?.plan_type ?? "free";
-}
-
-/**
- * Check if user has an active period (period_start <= now < period_end)
- */
-// deno-lint-ignore no-explicit-any
-async function getActiveAllowance(
-  supabaseAdmin: any,
-  userId: string
-): Promise<AllowanceResult["allowance"]> {
-  const now = new Date().toISOString();
-
-  const { data, error } = await supabaseAdmin
-    .from("ai_allowance_periods")
-    .select("*")
-    .eq("user_id", userId)
-    .lte("period_start", now)
-    .gt("period_end", now)
-    .maybeSingle();
-
-  if (error) {
-    logStep("Error checking active allowance", { error: error.message, userId });
-    throw new Error(`Failed to check active allowance: ${error.message}`);
-  }
-
-  return data;
-}
-
-/**
- * Get the most recent expired period for rollover calculation
- */
-// deno-lint-ignore no-explicit-any
-async function getMostRecentExpiredPeriod(
-  supabaseAdmin: any,
-  userId: string
-): Promise<AllowanceResult["allowance"]> {
-  const now = new Date().toISOString();
-
-  const { data, error } = await supabaseAdmin
-    .from("ai_allowance_periods")
-    .select("*")
-    .eq("user_id", userId)
-    .lt("period_end", now)
-    .order("period_end", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    logStep("Error fetching previous period", { error: error.message, userId });
-    return null;
-  }
-
-  return data;
-}
-
-/**
- * Calculate rollover tokens from previous period
- * Maximum rollover is capped at the monthly token allowance
- */
-function calculateRollover(
-  previousPeriod: AllowanceResult["allowance"],
-  monthlyTokens: number
-): number {
-  if (!previousPeriod) {
-    return 0;
-  }
-
-  // Calculate remaining tokens from previous period
-  const remainingTokens = previousPeriod.tokens_granted - previousPeriod.tokens_used;
-
-  // Cap rollover at monthly token allowance
-  const rolloverTokens = Math.min(Math.max(remainingTokens, 0), monthlyTokens);
-
-  logStep("Rollover calculation", {
-    remainingTokens,
-    monthlyTokens,
-    rolloverTokens,
-  });
-
-  return rolloverTokens;
-}
-
-/**
- * Create a new allowance period for the user
- * Tokens are the single source of truth - credits are calculated at display time
- */
-// deno-lint-ignore no-explicit-any
-async function createAllowancePeriod(
-  supabaseAdmin: any,
-  userId: string,
-  options: {
-    periodStart?: Date;
-    periodEnd?: Date;
-    baseTokensGranted: number;
-    rolloverTokens?: number;
-    source: string;
-  }
-): Promise<AllowanceResult> {
-  const { 
-    periodStart: customStart, 
-    periodEnd: customEnd, 
-    baseTokensGranted,
-    rolloverTokens = 0,
-    source 
-  } = options;
-  
-  // Use custom dates or default to calendar month
-  const { periodStart: defaultStart, periodEnd: defaultEnd } = getCurrentMonthPeriod();
-  const periodStart = customStart ?? defaultStart;
-  const periodEnd = customEnd ?? defaultEnd;
-
-  // Total tokens = base + rollover
-  const tokensGranted = baseTokensGranted + rolloverTokens;
-
-  logStep("Creating allowance period", {
-    userId,
-    periodStart: periodStart.toISOString(),
-    periodEnd: periodEnd.toISOString(),
-    baseTokensGranted,
-    rolloverTokens,
-    totalTokensGranted: tokensGranted,
-    source,
-  });
-
-  const payload = {
-    user_id: userId,
-    period_start: periodStart.toISOString(),
-    period_end: periodEnd.toISOString(),
-    tokens_granted: tokensGranted,
-    tokens_used: 0,
-    source,
-    metadata: {
-      created_by: "ensure-token-allowance",
-      created_at: new Date().toISOString(),
-      rollover_tokens: rolloverTokens,
-      base_tokens: baseTokensGranted,
-    },
-  };
-
-  const { data, error } = await supabaseAdmin
-    .from("ai_allowance_periods")
-    .insert(payload)
-    .select()
-    .single();
-
-  if (!error) return { created: true, allowance: data };
-
-  // Idempotency: a concurrent call (or a retry) may already have created the
-  // period. 23505 = unique_violation on (user_id, period_start, period_end).
-  const isDuplicate =
-    error.code === "23505" || /duplicate key value/i.test(error.message ?? "");
-
-  if (!isDuplicate) {
-    logStep("Error creating allowance", { error: error.message, userId });
-    throw new Error(`Failed to create allowance period: ${error.message}`);
-  }
-
-  logStep("Allowance period already exists (concurrent create), reading it", { userId });
-
-  const { data: existing, error: readError } = await supabaseAdmin
-    .from("ai_allowance_periods")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("period_start", payload.period_start)
-    .eq("period_end", payload.period_end)
-    .maybeSingle();
-
-  if (readError || !existing) {
-    throw new Error(
-      `Failed to read existing allowance period after conflict: ${readError?.message ?? "not found"}`,
-    );
-  }
-
-  return { created: false, allowance: existing };
-}
-
-/**
- * Main function: Ensure user has an active token allowance
- * - If active period exists: return it
- * - If no active period: create one based on user's plan with rollover from previous period
- */
-// deno-lint-ignore no-explicit-any
-async function ensureTokenAllowance(
-  supabaseAdmin: any,
-  userId: string,
-  options?: {
-    periodStart?: Date;
-    periodEnd?: Date;
-    source?: string;
-    forceTokens?: number;
-    skipRollover?: boolean;
-  }
-): Promise<AllowanceResult> {
-  logStep("Ensuring token allowance", { userId, options });
-
-  // Check for existing active period
-  const existingAllowance = await getActiveAllowance(supabaseAdmin, userId);
-  
-  if (existingAllowance) {
-    logStep("Found existing active allowance", { 
-      allowanceId: existingAllowance.id,
-      periodEnd: existingAllowance.period_end,
-    });
-    return { created: false, allowance: existingAllowance };
-  }
-
-  // No active period - create one
-  logStep("No active allowance found, creating new one");
-
-  // Get settings and user plan
-  const settings = await getTokenSettings(supabaseAdmin);
-  const planType = await getUserPlanType(supabaseAdmin, userId);
-
-  logStep("User plan and settings", { planType, settings });
-
-  // Determine base tokens based on plan
-  // Plan settings are in "credits" - multiply by tokensPerCredit to get tokens
-  let baseTokensGranted: number;
-  if (options?.forceTokens !== undefined) {
-    baseTokensGranted = options.forceTokens;
-  } else {
-    const planCredits = planType === "premium" 
-      ? settings.creditsPremiumPerMonth 
-      : settings.creditsFreePerMonth;
-    baseTokensGranted = planCredits * settings.tokensPerCredit;
-  }
-
-  const source = options?.source ?? (planType === "premium" ? "subscription" : "free_tier");
-
-  // Calculate rollover from previous period (unless skipped)
-  let rolloverTokens = 0;
-  
-  if (!options?.skipRollover) {
-    const previousPeriod = await getMostRecentExpiredPeriod(supabaseAdmin, userId);
-    rolloverTokens = calculateRollover(previousPeriod, baseTokensGranted);
-  }
-
-  return await createAllowancePeriod(supabaseAdmin, userId, {
-    periodStart: options?.periodStart,
-    periodEnd: options?.periodEnd,
-    baseTokensGranted,
-    rolloverTokens,
-    source,
-  });
-}
+// Everything this function used to compute for itself now lives in the SQL
+// function ensure_ai_allowance (finding S4). What is left here is the front
+// door: who is allowed to ask, and for whom.
+//
+// The rule the audit turned into a rule in CLAUDE.md applies twice below: an
+// identity is never read from the request body, and force_tokens / period_start
+// / period_end / source are administrative overrides that need is_admin even
+// when the caller is aiming at their own account (finding C2).
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -398,7 +78,7 @@ serve(async (req) => {
       // Get all users from profiles
       const { data: profiles, error: profilesError } = await supabaseAdmin
         .from("profiles")
-        .select("id, plan_type");
+        .select("id");
 
       if (profilesError) {
         throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
@@ -410,7 +90,9 @@ serve(async (req) => {
 
       for (const profile of profiles || []) {
         try {
-          const result = await ensureTokenAllowance(supabaseAdmin, profile.id);
+          const result = await ensureAllowance(supabaseAdmin, profile.id, {
+            createdBy: "ensure-token-allowance:batch_init",
+          });
           if (result.created) created++;
           else skipped++;
         } catch (err) {
@@ -509,7 +191,10 @@ serve(async (req) => {
       }
     }
 
-    const result = await ensureTokenAllowance(supabaseAdmin, userId, options);
+    const result: EnsureAllowanceResult = await ensureAllowance(supabaseAdmin, userId, {
+      ...options,
+      createdBy: "ensure-token-allowance",
+    });
 
     return new Response(JSON.stringify({
       success: true,
