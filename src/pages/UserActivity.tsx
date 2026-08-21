@@ -93,25 +93,38 @@ export default function UserActivity() {
                 {profile.display_name}'s Activity
               </h1>
               <p className="text-muted-foreground">
-                {isOwnProfile ? "Your recent activity" : "Public activity from this user"}
+                {isOwnProfile
+                  ? "Your recent activity"
+                  : "Activity is private to each account"}
               </p>
             </div>
           </div>
 
           {/* Activity Timeline */}
-          <div className="border border-border rounded-lg bg-card overflow-hidden">
-            <ActivityTimeline
-              events={events}
-              isLoading={isLoading}
-              isFetchingNextPage={isFetchingNextPage}
-              hasNextPage={hasNextPage ?? false}
-              fetchNextPage={fetchNextPage}
-              emptyMessage={isOwnProfile 
-                ? "You haven't performed any activity yet" 
-                : "No public activity from this user yet"
-              }
-            />
-          </div>
+          {isOwnProfile ? (
+            <div className="border border-border rounded-lg bg-card overflow-hidden">
+              <ActivityTimeline
+                events={events}
+                isLoading={isLoading}
+                isFetchingNextPage={isFetchingNextPage}
+                hasNextPage={hasNextPage ?? false}
+                fetchNextPage={fetchNextPage}
+                emptyMessage="You haven't performed any activity yet"
+              />
+            </div>
+          ) : (
+            // This page told every visitor "No public activity from this user
+            // yet", on every profile, always. There is no public activity:
+            // row-level security returns another person's events to nobody, and
+            // the events themselves carry the ids of artifacts that are mostly
+            // private. Saying it plainly beats implying the person does nothing.
+            <div className="border border-border rounded-lg bg-card p-8 text-center">
+              <p className="text-muted-foreground">
+                {profile.display_name} keeps their activity to themselves, as everyone here does.
+                Their published prompts, skills and workflows are on their profile.
+              </p>
+            </div>
+          )}
         </div>
       </main>
       <Footer />
