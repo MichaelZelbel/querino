@@ -647,20 +647,20 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Get GitHub token from user_credentials table using admin client
-      // (bypasses RLS so any team member can access the team's token)
-      const { data: credential, error: credError } = await supabaseAdmin
-        .from("user_credentials")
-        .select("credential_value")
-        .eq("credential_type", "github_token")
-        .eq("team_id", teamId)
-        .maybeSingle();
+      // The token is encrypted at rest in Supabase Vault, so it is read through
+      // read_user_credential rather than selected from the table (finding H3).
+      // The service-role client is what makes it readable at all, and it is
+      // also what lets any team member reach the team's token.
+      const { data: teamToken, error: credError } = await supabaseAdmin.rpc(
+        "read_user_credential",
+        { _credential_type: "github_token", _team_id: teamId },
+      );
 
       if (credError) {
         console.error("Credential fetch error:", credError);
       }
 
-      githubToken = credential?.credential_value || null;
+      githubToken = (teamToken as string | null) || null;
       githubRepo = team.github_repo;
       githubBranch = team.github_branch || "main";
       githubFolder = team.github_folder || "";
@@ -680,20 +680,21 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Get GitHub token from user_credentials table (secured with RLS)
-      const { data: credential, error: credError } = await supabase
-        .from("user_credentials")
-        .select("credential_value")
-        .eq("user_id", user.id)
-        .eq("credential_type", "github_token")
-        .is("team_id", null)
-        .maybeSingle();
+      // Same as the team branch: the value is in Vault, and only the service
+      // role can decrypt it. user.id came from the caller's JWT a few lines
+      // above, so scoping the admin client to it is the same guarantee RLS
+      // was giving, without leaving a decryptable token where a browser could
+      // ever select it.
+      const { data: userToken, error: credError } = await supabaseAdmin.rpc(
+        "read_user_credential",
+        { _credential_type: "github_token", _user_id: user.id },
+      );
 
       if (credError) {
         console.error("Credential fetch error:", credError);
       }
 
-      githubToken = credential?.credential_value || null;
+      githubToken = (userToken as string | null) || null;
       githubRepo = profile.github_repo;
       githubBranch = profile.github_branch || "main";
       githubFolder = profile.github_folder || "";

@@ -231,13 +231,13 @@ async function loadGitHubSettings(
       .maybeSingle();
     if (!team || !team.github_repo) return null;
 
-    const { data: cred } = await supabase
-      .from("user_credentials")
-      .select("credential_value")
-      .eq("team_id", teamId)
-      .eq("credential_type", "github_token")
-      .maybeSingle();
-    if (!cred?.credential_value) return null;
+    // Encrypted at rest in Vault; read_user_credential is the only way in and
+    // it is service-role only (finding H3).
+    const { data: teamToken } = await supabase.rpc("read_user_credential", {
+      _credential_type: "github_token",
+      _team_id: teamId,
+    });
+    if (!teamToken) return null;
 
     return {
       scope: "team",
@@ -245,7 +245,7 @@ async function loadGitHubSettings(
       repo: team.github_repo,
       branch: team.github_branch || "main",
       folder: team.github_folder || "",
-      token: cred.credential_value,
+      token: teamToken as string,
     };
   }
 
@@ -258,14 +258,11 @@ async function loadGitHubSettings(
     .maybeSingle();
   if (!profile?.github_sync_enabled || !profile?.github_repo) return null;
 
-  const { data: cred } = await supabase
-    .from("user_credentials")
-    .select("credential_value")
-    .eq("user_id", ownerUserId)
-    .is("team_id", null)
-    .eq("credential_type", "github_token")
-    .maybeSingle();
-  if (!cred?.credential_value) return null;
+  const { data: ownerToken } = await supabase.rpc("read_user_credential", {
+    _credential_type: "github_token",
+    _user_id: ownerUserId,
+  });
+  if (!ownerToken) return null;
 
   return {
     scope: "user",
@@ -273,7 +270,7 @@ async function loadGitHubSettings(
     repo: profile.github_repo,
     branch: profile.github_branch || "main",
     folder: profile.github_folder || "",
-    token: cred.credential_value,
+    token: ownerToken as string,
   };
 }
 
