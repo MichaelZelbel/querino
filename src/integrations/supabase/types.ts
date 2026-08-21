@@ -17,7 +17,7 @@ export type Database = {
       activity_events: {
         Row: {
           action: string
-          actor_id: string | null
+          actor_id: string
           created_at: string | null
           id: string
           item_id: string | null
@@ -27,7 +27,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          actor_id?: string | null
+          actor_id: string
           created_at?: string | null
           id?: string
           item_id?: string | null
@@ -37,7 +37,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          actor_id?: string | null
+          actor_id?: string
           created_at?: string | null
           id?: string
           item_id?: string | null
@@ -2482,6 +2482,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      internal_job_headers: { Args: never; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_item_owner: {
         Args: { p_item_id: string; p_item_type: string; p_user_id: string }
