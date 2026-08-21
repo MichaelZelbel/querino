@@ -248,6 +248,19 @@ export async function callMcpTool(
  * transaction can never commit even if the rollback were skipped, and the log
  * comes back in the error message.
  */
+/**
+ * Whether the account-scoped Supabase token is available.
+ *
+ * sqlProbe needs it, because rolling a transaction back is only possible
+ * through the Management API. CI does not have it on purpose: this repository
+ * is public, and that token reaches every Supabase project on the account, not
+ * just this one. The tests that need it skip there and run on a developer
+ * machine, where `. scripts/secrets.sh` provides it.
+ */
+export function hasManagementToken(): boolean {
+  return Boolean(process.env.SUPABASE_ACCESS_TOKEN);
+}
+
 export async function sqlProbe(sql: string): Promise<string> {
   const token = process.env.SUPABASE_ACCESS_TOKEN;
   if (!token) {
@@ -280,4 +293,40 @@ export async function sqlProbe(sql: string): Promise<string> {
     parsed = text;
   }
   return typeof parsed === "string" ? parsed : (parsed.message ?? text);
+}
+
+/**
+ * Run a read-only query against the project through the Management API and
+ * return its rows.
+ *
+ * Some invariants are only visible in the catalogue: which functions set
+ * search_path, which tables have row-level security, which views run as their
+ * caller. PostgREST does not expose pg_catalog, and it should not.
+ *
+ * Read-only by convention rather than by enforcement, so keep it that way:
+ * anything that changes state belongs in sqlProbe, which rolls back.
+ */
+export async function sqlQuery<T = unknown>(sql: string): Promise<T[]> {
+  const token = process.env.SUPABASE_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error("SUPABASE_ACCESS_TOKEN is needed for catalogue queries. Run: . scripts/secrets.sh");
+  }
+
+  const body = sql
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*--/.test(line))
+    .join("\n");
+
+  const res = await fetch(
+    `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ query: body }),
+    },
+  );
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Catalogue query failed (${res.status}): ${text.slice(0, 400)}`);
+  return JSON.parse(text) as T[];
 }

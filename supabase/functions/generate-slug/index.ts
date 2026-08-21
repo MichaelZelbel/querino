@@ -22,7 +22,7 @@ function generateSlug(title: string): string {
   result = result.replace(/\s+/g, "-");
 
   // Remove ASCII punctuation/symbols unsafe in URLs
-  result = result.replace(/[!@#$%^&*()+=\[\]{};:'",.<>?/\\|`~]/g, "");
+  result = result.replace(/[!@#$%^&*()+=[\]{};:'",.<>?/\\|`~]/g, "");
 
   // Replace underscores with hyphens
   result = result.replace(/_/g, "-");

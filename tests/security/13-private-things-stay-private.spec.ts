@@ -19,7 +19,7 @@
 
 import { test, expect } from "@playwright/test";
 import { ANON_KEY, REST_URL } from "./helpers/env";
-import { restAsService, restAsUser, signInTestUser } from "./helpers/api";
+import { hasManagementToken, restAsService, restAsUser, signInTestUser } from "./helpers/api";
 
 test.describe("Activity is private, and the app now says so", () => {
   test("a logged-out visitor sees no activity at all", async () => {
@@ -125,6 +125,7 @@ test.describe("A coach conversation belongs to someone", () => {
   });
 
   test("deleting an account takes its coach history with it", async () => {
+    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
     // Checked as a constraint rather than by deleting an account: the cascade
     // is the mechanism, and nothing else in the codebase cleans these tables.
     const res = await restAsService<Array<{ count: number }>>(

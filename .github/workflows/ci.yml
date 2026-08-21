@@ -1,0 +1,132 @@
+name: CI
+
+# Phase 3 of the 2026-08-20 security audit. Before this there was no CI at all:
+# no build check, no linter anyone read, and no test suite, which is finding S1.
+#
+# Four gates, cheapest first:
+#
+#   checks    the two migration rules, the linter, and the edge-function types
+#   build     the app compiles
+#   security  the suite in tests/security, against the deployed project
+#
+# The security suite talks to the real project, so it needs credentials and it
+# is skipped where they are not available, which includes every pull request
+# from a fork. That is a deliberate limit, not an oversight: those tests move a
+# real account's credit balance and put it back, and a fork must not be able to
+# do that.
+#
+# The credentials here are project-scoped on purpose. SUPABASE_ACCESS_TOKEN,
+# which the Management API needs, is scoped to the whole Supabase ACCOUNT, and
+# this repository is public: its CI must not hold a credential that reaches
+# every project Michael owns. The handful of tests that genuinely need it skip
+# here and run on a developer machine after `. scripts/secrets.sh`. Everything
+# else runs on the service role key, which reaches this project and nothing
+# else.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# The security suite writes to the live project and puts things back. Two runs
+# doing that at once would read each other's half-finished state, so runs are
+# serialised rather than cancelled: cancelling one mid-flight is exactly how the
+# test account ends up without an allowance period.
+concurrency:
+  group: querino-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Migrations declare their security
+        # Fails when a migration adds a SECURITY DEFINER function without
+        # SET search_path, a table without row-level security, or a view
+        # without security_invoker.
+        run: node scripts/check-migrations.mjs
+
+      - name: Lint, and the `any` count has not risen
+        run: node scripts/lint-ratchet.mjs
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Edge function types have not got worse
+        run: node scripts/deno-check.mjs
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  security:
+    name: Security suite
+    runs-on: ubuntu-latest
+    needs: [checks, build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Are the credentials here?
+        id: creds
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          QUERINO_TEST_EMAIL: ${{ secrets.QUERINO_TEST_EMAIL }}
+          QUERINO_TEST_PASSWORD: ${{ secrets.QUERINO_TEST_PASSWORD }}
+        run: |
+          if [ -n "$SUPABASE_SERVICE_ROLE_KEY" ] && [ -n "$QUERINO_TEST_EMAIL" ] && [ -n "$QUERINO_TEST_PASSWORD" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The security suite needs SUPABASE_SERVICE_ROLE_KEY, QUERINO_TEST_EMAIL and QUERINO_TEST_PASSWORD as repository secrets. It was skipped."
+          fi
+
+      - name: Run it
+        if: steps.creds.outputs.available == 'true'
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          QUERINO_TEST_EMAIL: ${{ secrets.QUERINO_TEST_EMAIL }}
+          QUERINO_TEST_PASSWORD: ${{ secrets.QUERINO_TEST_PASSWORD }}
+          INTERNAL_JOB_SECRET: ${{ secrets.INTERNAL_JOB_SECRET }}
+          QUERINO_PROJECT_REF: ${{ vars.QUERINO_PROJECT_REF || 'zvuwkffneqxqsihlnfsd' }}
+        run: npm test
+
+      - name: Keep the report
+        if: always() && steps.creds.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-suite-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -18,7 +18,7 @@
 // move.
 
 import { test, expect } from "@playwright/test";
-import { restAsService, restAsUser, signInTestUser, sqlProbe } from "./helpers/api";
+import { hasManagementToken, restAsService, restAsUser, signInTestUser, sqlProbe } from "./helpers/api";
 
 interface Allowance {
   id: string;
@@ -139,6 +139,7 @@ test.describe("M1 — user_roles decides who is premium, not a profile column", 
   // credits is worse than the bug it is checking for. It runs inside a
   // transaction that is rolled back instead.
   test("plan_type='premium' without the role buys nothing", async () => {
+    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
     const out = await sqlProbe(`
       DO $probe$
       DECLARE
@@ -176,6 +177,7 @@ test.describe("M1 — user_roles decides who is premium, not a profile column", 
   });
 
   test("a premium role grants the premium amount", async () => {
+    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
     const out = await sqlProbe(`
       DO $probe$
       DECLARE
@@ -214,6 +216,7 @@ test.describe("M1 — user_roles decides who is premium, not a profile column", 
   });
 
   test("unused tokens roll over, capped at one month", async () => {
+    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
     const out = await sqlProbe(`
       DO $probe$
       DECLARE

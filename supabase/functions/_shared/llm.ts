@@ -130,7 +130,9 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
       .eq("user_id", user_id)
       .maybeSingle();
 
-  let { data, error } = await read();
+  const first = await read();
+  let data = first.data;
+  const error = first.error;
 
   if (error) {
     // Fail CLOSED: during an allowance-view outage, paid AI calls would

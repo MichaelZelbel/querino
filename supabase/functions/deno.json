@@ -1,0 +1,10 @@
+{
+  "//": "Strict TypeScript for the edge functions, stated rather than assumed. Finding S2 of the 2026-08-20 audit: the app's tsconfig has noImplicitAny off and strictNullChecks off, so `tsc --noEmit` passed a very low bar. The money logic lives here and the file count is small, so this is where strictness starts. Deno already defaults to these; writing them down is what stops someone turning them off. scripts/deno-check.mjs is what enforces it, and it ratchets rather than blocking, because the existing functions do not pass yet.",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true
+  }
+}

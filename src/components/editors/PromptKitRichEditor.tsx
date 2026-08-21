@@ -87,7 +87,6 @@ export function PromptKitRichEditor({
     const current = buildKitMarkdown(editor as any);
     if ((value || "").trim() === (current || "").trim()) return;
     editor.commands.setContent(markdownToEditorContent(value || ""), { emitUpdate: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
 
   return (

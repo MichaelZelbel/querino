@@ -15,7 +15,7 @@
 //     silently stops working is the obvious way to "fix" this badly
 
 import { test, expect } from "@playwright/test";
-import { restAsService, restAsUser, sqlProbe } from "./helpers/api";
+import { hasManagementToken, restAsService, restAsUser, sqlProbe } from "./helpers/api";
 
 test.describe("H3 — a stored credential is not readable from the table", () => {
   test("no credential row carries a plaintext value", async () => {
@@ -73,6 +73,7 @@ test.describe("H3 — a stored credential is not readable from the table", () =>
   });
 
   test("an edge function can still read a token, and writing one still round-trips", async () => {
+    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
     const out = await sqlProbe(`
       DO $probe$
       DECLARE
