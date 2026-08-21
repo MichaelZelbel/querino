@@ -28,7 +28,6 @@ import { CopySkillToTeamModal } from "@/components/skills/CopySkillToTeamModal";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
-import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
@@ -255,17 +254,6 @@ export default function SkillDetail() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-
-          <MenerioOriginBanner
-            menerioNoteId={(skill as any).menerio_note_id || null}
-            isAuthor={!!isAuthor}
-            busy={duplicating}
-            onDuplicate={() =>
-              user
-                ? duplicateArtifact("skill", skill, user.id)
-                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
-            }
-          />
 
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">

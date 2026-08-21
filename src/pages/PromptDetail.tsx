@@ -34,7 +34,6 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
-import { MenerioOriginBanner } from "@/components/menerio/MenerioOriginBanner";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import { moderateContent } from "@/lib/moderateContent";
@@ -375,17 +374,6 @@ export default function PromptDetail() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-
-          <MenerioOriginBanner
-            menerioNoteId={(prompt as any).menerio_note_id || null}
-            isAuthor={!!isAuthor}
-            busy={duplicating}
-            onDuplicate={() =>
-              user
-                ? duplicateArtifact("prompt", prompt, user.id)
-                : navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)
-            }
-          />
 
           {/* Header Section */}
           <div className="mb-8">
