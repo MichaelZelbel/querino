@@ -26,7 +26,7 @@ Lovable's sandbox.
 |---|---|
 | `SUPABASE_ACCESS_TOKEN` **or** `SUPABASE_SERVICE_ROLE_KEY` | setup and teardown, and to read balances the tests then assert on. With the access token the suite fetches the service-role key from the Management API itself. |
 | `QUERINO_TEST_EMAIL`, `QUERINO_TEST_PASSWORD` | a non-admin account. Several tests are "a normal user must not be able to…", which needs a normal user. |
-| `INTERNAL_JOB_SECRET` | optional until Phase 1 ships. Without it the suite still checks that strangers are refused; it just skips checking that the real jobs are let through. |
+| `INTERNAL_JOB_SECRET` | the shared machine secret. Without it the suite still checks that strangers are refused; it just skips checking that the real jobs are let through. |
 
 ## What it touches
 
@@ -35,6 +35,9 @@ Only the test account, and it puts everything back:
 - moves that account's `tokens_used` to zero-remaining and restores it
 - writes and deletes `llm_usage_events` rows keyed to a per-run idempotency key
 - creates and deletes one private prompt, and one MCP token that expires in an hour
+- promotes the test account to admin for two assertions and demotes it again, in
+  `afterAll`, which runs even when a test fails, and again in the next run's
+  `beforeAll` in case a run was killed outright
 
 It never writes another user's rows. It does not create accounts, because a
 profile insert fires `notify_admin_on_signup` and mails a real person.
@@ -51,13 +54,15 @@ A red test here is a statement about production, not about the suite.
 | `01-batch-init-requires-a-machine-key` | C1 | Phase 0 (shipped) |
 | `02-force-tokens-needs-an-admin` | C2 | Phase 0 (shipped) |
 | `03-plan-type-is-not-self-service` | C3 | Phase 0 (shipped) |
-| `04-job-endpoints-require-the-internal-key` | H1 | **Phase 1** |
+| `04-job-endpoints-require-the-internal-key` | H1 | Phase 1 (shipped), except the orphan check |
 | `05-search-survives-punctuation` | M2 | when the filter input is escaped |
 | `06-no-credits-means-402` | the credit gate | now, and it must stay green through Phase 2 |
 | `07-idempotent-charging` | double charging | now, and it must stay green through Phase 2 |
+| `08-admin-can-still-run-the-jobs` | the human button on a machine endpoint | now |
 
-Files 04 and 05 are expected to fail until those fixes land. That is the point of
-writing them first.
+As of 2026-08-21 the suite is 46 green and 4 red. The four are the comma bug
+(three tests) and the `suggest-claw-metadata` orphan, which is deployed to
+production and has no source in this repository.
 
 ## The rule these tests exist to enforce
 

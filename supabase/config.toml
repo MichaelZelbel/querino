@@ -3,86 +3,151 @@ project_id = "zvuwkffneqxqsihlnfsd"
 [api]
 enabled = true
 
-[functions.github-sync]
-verify_jwt = false
+# ── verify_jwt ───────────────────────────────────────────────────────────────
+#
+# READ THIS BEFORE CHANGING ONE OF THESE.
+#
+# verify_jwt = true makes the Supabase gateway reject a request that carries no
+# Authorization header, or one whose bearer is not a valid project JWT, before
+# it reaches the function. It does NOT stop the public: the anon key IS a valid
+# project JWT and it ships inside every visitor's browser bundle. So this flag
+# is a floor, never the guard. Every function below still has to work out who
+# is calling it, and the ones that spend money or read private rows do.
+#
+# Until 2026-08-21 this file listed 29 functions while production ran 35, and
+# every one of the 35 was verify_jwt = false, including six the file never
+# mentioned. A config that describes two thirds of reality is worse than none,
+# because it reads like a decision. So all 35 are listed, each with its reason.
+#
+# The two questions that decide the flag:
+#   1. Does every legitimate caller send an Authorization header? If any does
+#      not, this must be false or that caller gets a 401 it cannot fix.
+#   2. Is the header a Supabase JWT? An MCP token is not, and neither is
+#      nothing at all.
+
+# ── Machine endpoints: pg_cron calls these with X-Internal-Key and no bearer ──
+# The real guard is _shared/internalAuth.ts. verify_jwt must stay false or the
+# scheduled jobs 401 at the gateway before the guard ever runs.
 
 [functions.github-sync-worker]
-verify_jwt = false
+verify_jwt = false  # pg_cron every 30s, X-Internal-Key only
 
-[functions.delete-user]
-verify_jwt = false
+[functions.ai-moderate-content]
+verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; admins may also trigger it by hand
 
-[functions.prompt-wizard]
-verify_jwt = false
-
-[functions.suggest-metadata]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
+[functions.process-menerio-sync-queue]
+verify_jwt = false  # pg_cron every 1min, X-Internal-Key only
 
 [functions.ensure-token-allowance]
-verify_jwt = false
+verify_jwt = false  # batch_init is reachable by a keyless machine caller holding X-Internal-Key
 
-[functions.suggest-skill-metadata]
-verify_jwt = false
-
-[functions.refine-prompt]
-verify_jwt = false
-
-[functions.delete-my-account]
-verify_jwt = false
-
-[functions.suggest-workflow-metadata]
-verify_jwt = false
-
-[functions.ai-insights]
-verify_jwt = false
-
-[functions.skill-coach]
-verify_jwt = false
-
-[functions.workflow-coach]
-verify_jwt = false
-
-[functions.blog-api]
-verify_jwt = false
+# ── Public by design: the caller is a stranger and that is the point ──────────
 
 [functions.api]
-verify_jwt = false
+verify_jwt = false  # serves /rss.xml and /sitemap.xml; feed readers and crawlers send no headers
 
-[functions.fetch-skill-md]
-verify_jwt = false
-
-[functions.notify-admin]
-verify_jwt = false
-
-[functions.canvas-ai]
-verify_jwt = false
-
-[functions.prompt-coach]
-verify_jwt = false
-
-[functions.translate-artifact]
-verify_jwt = false
+[functions.blog-api]
+verify_jwt = false  # public blog REST for external clients
 
 [functions.mcp-server]
-verify_jwt = false
+verify_jwt = false  # MCP clients send `Bearer qrn_mcp_…`, which is not a Supabase JWT; true breaks every client
 
-[functions.generate-slug]
-verify_jwt = false
+# ── Caller not established, so left as found ─────────────────────────────────
+# Nothing in src/ or supabase/ calls these by name. That means either an
+# external caller nobody wrote down, or dead code. Tightening the gateway on a
+# caller you cannot name is how you find out who it was, in production. Find
+# the caller, then decide.
 
-[functions.menerio-link-callback]
-verify_jwt = false
+[functions.canvas-ai]
+verify_jwt = false  # TODO: no caller found in this repository
 
-[functions.generate-embedding]
-verify_jwt = false
+[functions.create-checkout]
+verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
+
+[functions.customer-portal]
+verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
+
+[functions.fetch-skill-md]
+verify_jwt = false  # TODO: no caller found in this repository
+
+# ── Everything else: every caller sends a Supabase JWT ───────────────────────
+# Called from the browser through supabase.functions.invoke, which always sends
+# one, or from a database trigger holding the service-role key. Each still
+# derives the user from the JWT itself; this flag only turns away callers who
+# bring nothing at all.
+
+[functions.ai-insights]
+verify_jwt = true
 
 [functions.backfill-embeddings]
-verify_jwt = false
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.delete-my-account]
+verify_jwt = true
+
+[functions.delete-user]
+verify_jwt = true
+
+[functions.generate-embedding]
+verify_jwt = true
+
+[functions.generate-slug]
+verify_jwt = true
+
+[functions.github-sync]
+verify_jwt = true
+
+[functions.menerio-link-callback]
+verify_jwt = true
+
+[functions.moderate-content]
+verify_jwt = true
+
+[functions.notify-admin]
+verify_jwt = true  # called by the on_profile_created_notify_admin trigger with the service-role key
+
+[functions.prompt-coach]
+verify_jwt = true
+
+[functions.prompt-kit-coach]
+verify_jwt = true
+
+[functions.prompt-wizard]
+verify_jwt = true
+
+[functions.refine-prompt]
+verify_jwt = true
+
+[functions.render-for-menerio]
+verify_jwt = true
+
+[functions.skill-coach]
+verify_jwt = true
+
+[functions.suggest-metadata]
+verify_jwt = true
+
+[functions.suggest-promptkit-metadata]
+verify_jwt = true
+
+[functions.suggest-skill-metadata]
+verify_jwt = true
+
+[functions.suggest-workflow-metadata]
+verify_jwt = true
+
+[functions.translate-artifact]
+verify_jwt = true
+
+[functions.workflow-coach]
+verify_jwt = true
+
+# NOT LISTED, ON PURPOSE: suggest-claw-metadata.
+# It is deployed and ACTIVE in production (version 102, last touched
+# 2026-04-30) and its source does not exist in this repository. It is an
+# orphan of the removed Claws feature. Nothing here can vouch for what it does,
+# so it should be deleted from the project rather than described here. There is
+# a test for it in tests/security/04.

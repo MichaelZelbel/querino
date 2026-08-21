@@ -2,15 +2,17 @@
 // Processes pending entries in github_sync_queue and pushes/deletes files
 // in the owner's GitHub repository (personal or team) via the Contents API.
 //
-// Triggered by pg_cron every ~30s. No JWT verification (called via cron),
-// uses SUPABASE_SERVICE_ROLE_KEY internally.
+// Triggered by pg_cron every ~30s. Machine-only: it opens a service-role
+// client and pushes users' artifacts with their stored GitHub tokens, so the
+// caller has to prove it is one of our jobs (see _shared/internalAuth.ts).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireMachineCaller } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-internal-key",
 };
 
 const BATCH_SIZE = 25;
@@ -557,6 +559,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Machine-only. Before this check, anyone could drain the queue on demand.
+  const denied = requireMachineCaller(req, corsHeaders);
+  if (denied) return denied;
 
   try {
     const supabase = createClient(

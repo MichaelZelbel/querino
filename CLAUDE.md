@@ -6,6 +6,22 @@ This file provides guidance for Claude Code when working in this repository.
 
 **Querino** is an open-source SaaS platform for discovering, creating, and sharing AI artifacts — prompts, skills, workflows, and CLAWs (callable capabilities). It is licensed under AGPL-3.0.
 
+## Non-negotiable security rule
+
+**An edge function never reads an identity from a request body.** It derives the
+identity from the JWT with `getCallerUserId` (`supabase/functions/_shared/llm.ts`),
+or it is a machine endpoint and requires `X-Internal-Key`
+(`supabase/functions/_shared/internalAuth.ts`). There is no third option.
+
+This is written down because the same mistake was made three times and cost the
+whole user list: `ensure-token-allowance` handed out every account id to an
+unauthenticated POST, let any user mint themselves unlimited AI credits, and
+`menerio-link-callback` used whatever `user_id` the body named. If a machine
+endpoint also has a human button, use `requireMachineOrAdmin`, not a body flag.
+
+`tests/security/` fails when this is broken. Run `npm test` before shipping an
+edge function.
+
 ## Non-negotiable product policy
 
 **No checkout, ever.** Querino must not contain a working payment/checkout
@@ -30,6 +46,7 @@ manually. Do not "fix" or restore any self-serve payment path.
 npm run dev        # Start dev server at http://localhost:8080
 npm run build      # Production build
 npm run lint       # Run ESLint
+npm test           # Security test suite (tests/security/, see its README)
 npm run preview    # Preview production build
 ```
 

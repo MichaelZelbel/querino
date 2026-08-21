@@ -86,6 +86,11 @@ export default function Admin() {
   }, [isAdmin]);
 
   const initializeAndFetchAllowances = async () => {
+    // batch_init makes sure every account has a period for the current month,
+    // then we read the rows back. It used to return every user's allowance row
+    // in its response, which is exactly how an unauthenticated caller could
+    // download the whole user list, so it now answers with counts only and the
+    // table is filled from the database like every other panel here.
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -96,31 +101,12 @@ export default function Admin() {
 
       if (response.error) {
         console.error("Error initializing allowances:", response.error);
-        await fetchAllowances();
-        return;
-      }
-
-      if (response.data?.results) {
-        const allowanceMap: Record<string, AllowancePeriod> = {};
-        response.data.results.forEach((result: any) => {
-          if (result.status === "exists" || result.status === "created") {
-            const balance = result.balance;
-            allowanceMap[result.userId] = {
-              id: balance.id,
-              user_id: balance.user_id,
-              tokens_granted: balance.tokens_granted,
-              tokens_used: balance.tokens_used,
-            };
-          }
-        });
-        setAllowances(allowanceMap);
-      } else {
-        await fetchAllowances();
       }
     } catch (error) {
       console.error("Error in initializeAndFetchAllowances:", error);
-      await fetchAllowances();
     }
+
+    await fetchAllowances();
   };
 
   const fetchUsers = async () => {

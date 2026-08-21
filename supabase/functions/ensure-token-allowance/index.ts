@@ -1,28 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isAdminCaller, isMachineCaller } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-internal-key",
 };
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[ENSURE-TOKEN-ALLOWANCE] ${step}${detailsStr}`);
 };
-
-/**
- * Compare two secrets without leaking their length or contents through timing.
- * Returns false for empty input so a missing env var can never match.
- */
-function constantTimeEquals(a: string, b: string): boolean {
-  if (!a || !b || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return diff === 0;
-}
 
 interface AllowanceResult {
   created: boolean;
@@ -390,16 +379,14 @@ serve(async (req) => {
     const bearer = (req.headers.get("Authorization") ?? "")
       .replace(/^Bearer\s+/i, "")
       .trim();
-    const isServiceRole = constantTimeEquals(
-      bearer,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
 
     // If batch_init is true, initialize all users without active periods.
-    // Machine-only: this walks every profile, so it must never be reachable
-    // by an anonymous caller or an ordinary logged-in user.
+    // This walks every profile, so it must never be reachable by an anonymous
+    // caller or an ordinary logged-in user. Three callers are legitimate: the
+    // shared job secret, the service-role key, and a signed-in admin, because
+    // Admin.tsx runs this on mount to fill its allowance table.
     if (body.batch_init === true) {
-      if (!isServiceRole) {
+      if (!isMachineCaller(req) && !(await isAdminCaller(req))) {
         logStep("Rejected unauthorized batch_init");
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized" }),

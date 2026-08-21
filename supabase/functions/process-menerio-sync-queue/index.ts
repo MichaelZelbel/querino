@@ -1,15 +1,26 @@
+// Menerio sync queue worker.
+//
+// Triggered by pg_cron every minute. Machine-only: it opens a service-role
+// client, sends users' artifacts to their Menerio hosts with their stored API
+// keys, and deletes completed queue rows (see _shared/internalAuth.ts).
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireMachineCaller } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-internal-key",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Machine-only. Before this check, anyone could force a sync on demand.
+  const denied = requireMachineCaller(req, corsHeaders);
+  if (denied) return denied;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

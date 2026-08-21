@@ -1,9 +1,16 @@
+// AI moderation queue worker.
+//
+// Triggered by pg_cron every 2 minutes. Machine-only: every item it processes
+// is a paid call to the AI gateway, so an open endpoint here is a bill anyone
+// can run up (see _shared/internalAuth.ts).
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-internal-key",
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -253,6 +260,12 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Each hit spends money at the AI gateway, so the caller is either the
+  // pg_cron job holding the shared secret or a signed-in admin pressing
+  // "trigger AI review" in ModerationPanel.tsx. Never the public.
+  const denied = await requireMachineOrAdmin(req, corsHeaders);
+  if (denied) return denied;
 
   try {
     const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
