@@ -132,7 +132,13 @@ export function MenerioBulkSync() {
           const done = queueData.filter(
             (q: any) => q.status === "completed" || q.status === "failed"
           ).length;
-          completed = Math.max(done, toSync.length - (queueData.filter((q: any) => q.status === "pending" || q.status === "processing").length));
+          // Anything not finished is still outstanding. Naming the in-flight
+          // states here meant the counter silently stalled when the worker
+          // gained delete_processing (finding M4).
+          const outstanding = queueData.filter(
+            (q: any) => q.status !== "completed" && q.status !== "failed"
+          ).length;
+          completed = Math.max(done, toSync.length - outstanding);
           setProgress({ current: completed, total: toSync.length });
         }
 

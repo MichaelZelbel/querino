@@ -145,9 +145,10 @@ verify_jwt = true
 [functions.workflow-coach]
 verify_jwt = true
 
-# NOT LISTED, ON PURPOSE: suggest-claw-metadata.
-# It is deployed and ACTIVE in production (version 102, last touched
-# 2026-04-30) and its source does not exist in this repository. It is an
-# orphan of the removed Claws feature. Nothing here can vouch for what it does,
-# so it should be deleted from the project rather than described here. There is
-# a test for it in tests/security/04.
+# GONE, 21 August 2026: suggest-claw-metadata.
+# It was deployed and ACTIVE in production (version 103, last touched
+# 2026-04-30) with no source in this repository, an orphan of the removed Claws
+# feature. Nothing here could vouch for what it did, so it was deleted from the
+# project rather than described here. Its bundle is kept outside this public
+# repository in case anyone ever wants to read it again. The endpoint now
+# answers 404, and tests/security/04 fails if anything ever brings it back.

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDebounce } from "@/hooks/useDebounce";
+import { orIlikeContains, ownedByUserOrTeams } from "@/lib/postgrestFilter";
 
 export type ArtefactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -20,7 +21,8 @@ export function useCommandPaletteSearch(query: string) {
   const [artefacts, setArtefacts] = useState<SearchResult[]>([]);
   const [publicPrompts, setPublicPrompts] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [error, setError] = useState<string | null>(null);
+
   const debouncedQuery = useDebounce(query, 200);
   const { user } = useAuthContext();
   const { currentWorkspace, currentTeam, teams } = useWorkspace();
@@ -29,32 +31,39 @@ export function useCommandPaletteSearch(query: string) {
   useEffect(() => {
     if (!user || !debouncedQuery.trim()) {
       setArtefacts([]);
+      setError(null);
       return;
     }
 
     const searchArtefacts = async () => {
       setIsLoading(true);
+      setError(null);
       const results: SearchResult[] = [];
-      const searchTerm = `%${debouncedQuery}%`;
 
       try {
         // Build team IDs to search
         const teamIds = teams.map(t => t.id);
 
+        // "Mine, or one of my teams'". With no teams this drops the team
+        // clause rather than emitting team_id.in.(), which is a syntax error
+        // that used to fail the whole query silently (finding M3).
+        const scope = ownedByUserOrTeams("author_id", user.id, "team_id", teamIds);
+
         // Search prompts
         let promptQuery = supabase
           .from("prompts")
           .select("id, title, description, is_public, team_id")
-          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},content.ilike.${searchTerm}`)
+          .or(orIlikeContains(["title", "description", "content"], debouncedQuery))
           .limit(10);
 
         if (currentWorkspace === "personal") {
           promptQuery = promptQuery.eq("author_id", user.id).is("team_id", null);
         } else {
-          promptQuery = promptQuery.or(`author_id.eq.${user.id},team_id.in.(${teamIds.join(",")})`);
+          promptQuery = promptQuery.or(scope);
         }
 
-        const { data: prompts } = await promptQuery;
+        const { data: prompts, error: promptError } = await promptQuery;
+        if (promptError) throw promptError;
         prompts?.forEach((p) => {
           results.push({
             id: p.id,
@@ -71,16 +80,17 @@ export function useCommandPaletteSearch(query: string) {
         let skillQuery = supabase
           .from("skills")
           .select("id, title, description, published, team_id")
-          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},content.ilike.${searchTerm}`)
+          .or(orIlikeContains(["title", "description", "content"], debouncedQuery))
           .limit(10);
 
         if (currentWorkspace === "personal") {
           skillQuery = skillQuery.eq("author_id", user.id).is("team_id", null);
         } else {
-          skillQuery = skillQuery.or(`author_id.eq.${user.id},team_id.in.(${teamIds.join(",")})`);
+          skillQuery = skillQuery.or(scope);
         }
 
-        const { data: skills } = await skillQuery;
+        const { data: skills, error: skillError } = await skillQuery;
+        if (skillError) throw skillError;
         skills?.forEach((s) => {
           results.push({
             id: s.id,
@@ -97,16 +107,17 @@ export function useCommandPaletteSearch(query: string) {
         let workflowQuery = supabase
           .from("workflows")
           .select("id, title, description, published, team_id")
-          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
+          .or(orIlikeContains(["title", "description"], debouncedQuery))
           .limit(10);
 
         if (currentWorkspace === "personal") {
           workflowQuery = workflowQuery.eq("author_id", user.id).is("team_id", null);
         } else {
-          workflowQuery = workflowQuery.or(`author_id.eq.${user.id},team_id.in.(${teamIds.join(",")})`);
+          workflowQuery = workflowQuery.or(scope);
         }
 
-        const { data: workflows } = await workflowQuery;
+        const { data: workflows, error: workflowError } = await workflowQuery;
+        if (workflowError) throw workflowError;
         workflows?.forEach((w) => {
           results.push({
             id: w.id,
@@ -122,16 +133,17 @@ export function useCommandPaletteSearch(query: string) {
         // Search prompt kits (route uses slug, so we expose slug as id)
         let kitQuery = (supabase.from("prompt_kits") as any)
           .select("id, slug, title, description, published, team_id")
-          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},content.ilike.${searchTerm}`)
+          .or(orIlikeContains(["title", "description", "content"], debouncedQuery))
           .limit(10);
 
         if (currentWorkspace === "personal") {
           kitQuery = kitQuery.eq("author_id", user.id).is("team_id", null);
         } else {
-          kitQuery = kitQuery.or(`author_id.eq.${user.id},team_id.in.(${teamIds.join(",")})`);
+          kitQuery = kitQuery.or(scope);
         }
 
-        const { data: kits } = await kitQuery;
+        const { data: kits, error: kitError } = await kitQuery;
+        if (kitError) throw kitError;
         (kits as any[] | null)?.forEach((k) => {
           results.push({
             id: k.slug || k.id,
@@ -145,8 +157,12 @@ export function useCommandPaletteSearch(query: string) {
         });
 
         setArtefacts(results.slice(0, 12));
-      } catch (error) {
-        console.error("Command palette search error:", error);
+      } catch (err) {
+        // Never swallow this. An empty list and a failed query look identical
+        // to the user, and telling them apart is the whole of finding M2.
+        console.error("Command palette search error:", err);
+        setArtefacts([]);
+        setError(err instanceof Error ? err.message : "Search failed");
       } finally {
         setIsLoading(false);
       }
@@ -163,16 +179,15 @@ export function useCommandPaletteSearch(query: string) {
     }
 
     const searchPublic = async () => {
-      const searchTerm = `%${debouncedQuery}%`;
-
       try {
-        const { data } = await supabase
+        const { data, error: publicError } = await supabase
           .from("prompts")
           .select("id, title, description")
           .eq("is_public", true)
-          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
+          .or(orIlikeContains(["title", "description"], debouncedQuery))
           .order("rating_avg", { ascending: false })
           .limit(8);
+        if (publicError) throw publicError;
 
         setPublicPrompts(
           (data || []).map((p) => ({
@@ -183,8 +198,9 @@ export function useCommandPaletteSearch(query: string) {
             isPublic: true,
           }))
         );
-      } catch (error) {
-        console.error("Public search error:", error);
+      } catch (err) {
+        console.error("Public search error:", err);
+        setPublicPrompts([]);
       }
     };
 
@@ -195,6 +211,7 @@ export function useCommandPaletteSearch(query: string) {
     artefacts,
     publicPrompts,
     isLoading,
+    error,
     hasQuery: debouncedQuery.trim().length > 0,
   };
 }

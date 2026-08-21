@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { McpServer, StreamableHttpTransport } from "mcp-lite";
 import { createClient } from "@supabase/supabase-js";
+import { orIlikeContains } from "../_shared/postgrestFilter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +115,7 @@ function buildMcpServer(auth: Auth) {
         .from("prompts")
         .select("id, title, category, tags, is_public, language, updated_at")
         .eq("author_id", auth.userId)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(orIlikeContains(["title", "description"], query))
         .order("updated_at", { ascending: false })
         .limit(30);
       if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
@@ -261,7 +262,7 @@ function buildMcpServer(auth: Auth) {
         .from("skills")
         .select("id, title, category, tags, published, language, updated_at")
         .eq("author_id", auth.userId)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(orIlikeContains(["title", "description"], query))
         .order("updated_at", { ascending: false })
         .limit(30);
       if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
@@ -408,7 +409,7 @@ function buildMcpServer(auth: Auth) {
         .from("workflows")
         .select("id, title, category, tags, published, language, updated_at")
         .eq("author_id", auth.userId)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(orIlikeContains(["title", "description"], query))
         .order("updated_at", { ascending: false })
         .limit(30);
       if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
@@ -558,7 +559,7 @@ function buildMcpServer(auth: Auth) {
         .from("claws")
         .select("id, title, category, tags, published, source, language, updated_at")
         .eq("author_id", auth.userId)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(orIlikeContains(["title", "description"], query))
         .order("updated_at", { ascending: false })
         .limit(30);
       if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
@@ -842,7 +843,7 @@ function buildMcpServer(auth: Auth) {
         .from("prompt_kits")
         .select("id, slug, title, category, tags, published, language, updated_at")
         .eq("author_id", auth.userId)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%,content.ilike.%${query}%`)
+        .or(orIlikeContains(["title", "description", "content"], query))
         .order("updated_at", { ascending: false })
         .limit(30);
       if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };

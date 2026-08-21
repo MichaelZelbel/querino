@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireMachineCaller } from "../_shared/internalAuth.ts";
+import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,29 +28,32 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    // 1. Fetch up to 10 pending/delete_pending entries (oldest first)
-    const { data: queue, error: fetchErr } = await adminClient
-      .from("menerio_sync_queue")
-      .select("*")
-      .in("status", ["pending", "delete_pending"])
-      .order("created_at", { ascending: true })
-      .limit(10);
+    // 1. Claim up to 10 rows in ONE statement (finding M4).
+    //
+    // This used to be a SELECT followed by a separate UPDATE, and the job runs
+    // every minute. A slow tick left a gap in which the next tick selected the
+    // same rows and sent the same artifact to Menerio a second time.
+    // claim_menerio_sync_queue does the select and the status change together
+    // under FOR UPDATE SKIP LOCKED, so an overlapping tick skips them and takes
+    // the next ten instead. It also re-claims rows abandoned in 'processing' by
+    // a tick that died, which the old SELECT could never see again.
+    const { data: queue, error: claimErr } = await adminClient.rpc(
+      "claim_menerio_sync_queue",
+      { batch_size: 10 },
+    );
 
-    if (fetchErr || !queue || queue.length === 0) {
+    if (claimErr) {
+      console.error("claiming the queue failed:", claimErr.message);
+      return json({ error: claimErr.message }, 500);
+    }
+    if (!queue || queue.length === 0) {
       return json({ processed: 0 });
     }
-
-    // 2. Mark as processing
-    const ids = queue.map((q: any) => q.id);
-    await adminClient
-      .from("menerio_sync_queue")
-      .update({ status: "processing" })
-      .in("id", ids);
 
     let processed = 0;
     let failed = 0;
 
-    // 3. Process each entry
+    // 2. Process each claimed entry
     for (const item of queue) {
       try {
         // Check user has active menerio integration with auto_sync
@@ -98,7 +102,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4. Clean up completed entries older than 24 hours
+    // 3. Clean up completed entries older than 24 hours
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     await adminClient
       .from("menerio_sync_queue")
@@ -118,10 +122,7 @@ async function handleSync(
   integration: any,
   item: any
 ) {
-  const tableName =
-    item.artifact_type === "prompt" ? "prompts" :
-    item.artifact_type === "prompt_kit" ? "prompt_kits" :
-    `${item.artifact_type}s`;
+  const tableName = tableFor(item.artifact_type);
 
   const { data: artifact, error } = await adminClient
     .from(tableName)
@@ -133,7 +134,7 @@ async function handleSync(
     throw new Error(`Artifact not found: ${item.artifact_id}`);
   }
 
-  const notePayload = buildNotePayload(item.artifact_type, artifact, tableName);
+  const notePayload = buildNotePayload(item.artifact_type, artifact);
 
   const menerioUrl = `${integration.menerio_base_url.replace(/\/$/, "")}/receive-note`;
   const res = await fetch(menerioUrl, {
@@ -207,7 +208,7 @@ async function handleDelete(
   await res.json();
 }
 
-function buildNotePayload(artifactType: string, artifact: any, tableName: string) {
+function buildNotePayload(artifactType: string, artifact: any) {
   const tags = [
     artifactType,
     ...(artifact.tags || []),
@@ -233,7 +234,7 @@ function buildNotePayload(artifactType: string, artifact: any, tableName: string
   }
 
   const body = buildBody(artifactType, artifact);
-  const sourceUrl = `https://querino.ai/${tableName}/${artifact.slug || artifact.id}`;
+  const sourceUrl = publicUrlFor(artifactType, artifact.slug || artifact.id);
 
   return {
     source_id: artifact.id,
