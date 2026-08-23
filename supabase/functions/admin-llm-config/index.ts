@@ -25,6 +25,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const PROVIDERS = Object.keys(PROVIDER_SECRETS) as (keyof typeof PROVIDER_SECRETS)[];
+
+/**
+ * The caller's own user id, read from the JWT. Only used to stamp updated_by;
+ * authorisation has already happened in isAdminCaller. Never from the body.
+ */
+async function callerUserId(req: Request, admin: SupabaseClient): Promise<string | null> {
+  const header = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  if (!header.startsWith("Bearer ")) return null;
+  const { data } = await admin.auth.getUser(header.slice("Bearer ".length).trim());
+  return data?.user?.id ?? null;
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -109,6 +122,14 @@ Deno.serve(async (req: Request) => {
       tier?: string;
       prompt?: string;
       force?: boolean;
+      patch?: {
+        provider?: string;
+        model?: string;
+        system_prompt?: string | null;
+        temperature?: number | null;
+        max_tokens?: number | null;
+        enabled?: boolean;
+      };
     };
     const tier = body.tier === "free" || body.tier === "premium" ? body.tier : "default";
 
@@ -129,6 +150,43 @@ Deno.serve(async (req: Request) => {
       });
 
       return json({ configs, availability: providerAvailability(), providers: PROVIDER_PRESETS });
+    }
+
+    if (body.action === "save") {
+      const callSite = String(body.call_site ?? "");
+      if (!callSite) return json({ error: "call_site required" }, 400);
+      if (!getCallSiteMeta(callSite)) return json({ error: "Unknown call_site" }, 400);
+
+      const patch = body.patch ?? {};
+      if (patch.provider !== undefined && !PROVIDERS.includes(patch.provider as never)) {
+        return json({ error: `Unknown provider "${patch.provider}"` }, 400);
+      }
+      if (patch.model !== undefined && String(patch.model).trim().length === 0) {
+        return json({ error: "model cannot be empty" }, 400);
+      }
+
+      // Only these columns are writable. call_site and tier identify the row and
+      // are never patched, so a save can never rename or retier an entry.
+      const update: Record<string, unknown> = { updated_by: await callerUserId(req, admin) };
+      if (patch.provider !== undefined) update.provider = patch.provider;
+      if (patch.model !== undefined) update.model = String(patch.model).trim();
+      if (patch.system_prompt !== undefined) {
+        const p = patch.system_prompt;
+        update.system_prompt = p && p.trim().length > 0 ? p : null;
+      }
+      if (patch.temperature !== undefined) update.temperature = patch.temperature;
+      if (patch.max_tokens !== undefined) update.max_tokens = patch.max_tokens;
+      if (patch.enabled !== undefined) update.enabled = patch.enabled;
+
+      const { error } = await admin
+        .from("llm_call_configs")
+        .update(update)
+        .eq("call_site", callSite)
+        .eq("tier", tier);
+      if (error) throw error;
+
+      __clearConfigCache();
+      return json({ ok: true, call_site: callSite, tier });
     }
 
     if (body.action === "sync_defaults") {
