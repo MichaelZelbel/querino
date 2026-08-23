@@ -1,46 +1,54 @@
-# Google Search Console: "Soft 404" + "Excluded by 'noindex' tag"
+# GSC "Soft 404" + "Excluded by noindex" — verdict, fix, and stack question
 
-## Verdict: mostly intentional, one real gap
+## What the 11 URLs actually are
 
-Both new reasons are direct, expected consequences of the SEO fixes we shipped after the last GSC complaint.
+Verified against the code:
 
-**"Excluded by 'noindex' tag" — intentional, keep it.**
-We deliberately added `noIndex` to:
-- `NotFound.tsx` (404 route)
-- the "not found" branches of `PromptDetail`, `SkillDetail`, `WorkflowDetail`, `PromptKitDetail`
-- `TeamJoin` (private invite route)
-- the `mcp.querino.ai` landing page
+| Group | URLs | Status |
+|---|---|---|
+| Legacy UUID artifact URLs | 8 of 11 (`/prompts/<uuid>`, `/skills/<uuid>`, `/workflows/<uuid>`) | **Real, fixable loss.** `PromptDetail`/`SkillDetail`/`WorkflowDetail` look the record up by `slug` only (`.eq("slug", slug)`), then fall back to the `*_slug_redirects` table. A UUID matches neither, so the page renders the "not found" branch — which we recently gave `noIndex`. These artifacts still exist; Google just can't reach them anymore and the accumulated link equity is being thrown away. |
+| `/pricing` | 1 | **Intentional.** We deleted the page on purpose. Nothing to fix. |
+| `/prompts/export-everything-an-ai-knows-about-you-hub-import` | 1 | Either deleted or renamed without a redirect row. Needs a one-off check. |
+| `/discover?tag=ide` | 1 | Facet URL with no server-rendered content. Intentional to leave out of the index. |
 
-Google is reporting that it obeyed those tags. That is the desired outcome, not an error. Nothing to fix.
+So: the `noindex` half is working as designed, and the Soft 404 half is **one real bug** (UUID URLs no longer resolve) plus expected noise.
 
-**"Soft 404" — partly intentional, partly a real limitation.**
-Querino is a client-rendered SPA: every URL returns HTTP 200 with an empty shell, and the content (and the `noindex` tag) is only injected by JavaScript afterwards. So:
-- Deleted / unpublished / renamed artifacts still answer 200 → Google calls them Soft 404. Correct behaviour on Google's side, unavoidable on the current stack.
-- Thin or JS-dependent pages (e.g. `/discover` filter URLs, empty tag pages) can also be classified Soft 404 because the first HTML response has no content.
+## Recommendation: fix now on the current stack, migrate separately
 
-The homepage itself is healthy: GSC's stored inspection says "Submitted and indexed", canonical `https://querino.ai`, crawl successful, 995 impressions in the last 28 days.
+These are two independent decisions. The UUID fix is small and does not depend on the stack; do it first so the migration is not on the critical path for recovering those URLs.
 
-## Answering your two questions
+### Fix on the current stack (small)
+1. In each of the four detail pages, when the route param matches a UUID, look the artifact up by `id` instead of `slug`, then `navigate(/<route>/<slug>, { replace: true })`. This turns 8 dead URLs into working canonical pages.
+2. Check the one dead slug against the DB; if the prompt exists under a new slug, insert the missing `prompt_slug_redirects` row.
+3. Leave `/pricing`, `/discover?tag=*`, and all existing `noindex` tags exactly as they are.
 
-### 1. Fix on the current stack?
-Possible, but only partially:
-- Confirm which exact URLs GSC lists under Soft 404 (export from the report) — most are likely old artifact slugs that no longer exist. Those can simply be left as-is; Google drops them.
-- Add a `410 Gone` / real `404` response for deleted artifact slugs by serving artifact detail routes through the existing `api` edge function or a Cloudflare Worker (we already proxy `sitemap.xml` that way). This is the only way to send a real status code without SSR.
-- Make sure the sitemap never lists slugs that 404 (it already only queries public rows, so this should be clean — worth re-verifying).
-- Keep the `noindex` tags exactly as they are.
+Client-side redirects are not as strong as a server 301, but Google follows them and consolidates the signal, and it removes the Soft 404 classification entirely.
 
-Effort: small-to-medium. Result: Soft 404 count shrinks, but JS-rendered content stays a structural weakness.
+## Your real question: what can the TanStack migration break?
 
-### 2. Upgrade to the new stack?
-The new stack (server-rendered React Router framework) would fix the root cause, not the symptom:
-- Real HTTP status codes: 404/410 for missing artifacts, no more Soft 404 at all.
-- Server-rendered `<title>`, description, canonical and JSON-LD per route — no reliance on `SEOHead` mutating the DOM after hydration.
-- Better crawl budget and faster indexing for the artifact catalogue, which is Querino's main organic surface.
+Honest answer, per area:
 
-Effort: large (full migration of ~40 pages, edge functions stay as-is). Worth it if organic discovery of prompts/skills/workflows is a growth priority — currently 11 clicks / 995 impressions per 28 days, so there is real upside.
+**Edge functions — no risk.** `supabase/functions/**` is not touched by the migration. Your 34 functions, `config.toml`, and `supabase/migrations/**` stay exactly where they are and keep being deployed the same way. The migration only rewrites the frontend framework files.
 
-**Recommendation:** do not treat this GSC email as an incident. The `noindex` half is working as designed. For Soft 404, first export the affected URL list and confirm they are dead artifact slugs; if they are, no fix is needed. Plan the stack upgrade as a separate, deliberate SEO project rather than as a reaction to this email.
+**The MCP server — no risk.** It is a Supabase edge function (`supabase/functions/mcp-server`) on your own Supabase project, reached via `mcp.querino.ai`. Nothing in the frontend migration touches it.
 
-## What I need from you
-- Export the Soft 404 URL list from Search Console (Indexing → Pages → Soft 404 → Export) and paste a sample, so I can confirm whether they are dead artifact slugs or live pages being misjudged.
-- Tell me whether organic search is a priority for Querino in the next quarter — that decides whether the stack upgrade is worth scheduling.
+**The API — no risk.** `supabase/functions/api` (sitemap + RSS) and `blog-api` are likewise untouched. Note the new stack *can* serve a sitemap natively, which would let you eventually retire the Cloudflare Worker proxy — but that is optional cleanup, not part of the migration.
+
+**The user interface — this is where the real risk sits.** Concretely:
+- Every page moves from `src/App.tsx` routes to per-file routes under `src/routes/`. ~45 routes, plus your auth guards, all get re-generated.
+- TypeScript goes from loose to `strict`. Your `tsconfig` currently has `noImplicitAny: false`; the migration flips it on and produces a large error wave that has to be worked through.
+- Tailwind v3 → v4. Custom tokens in `src/index.css` are ported by hand; a missed token is a silent visual regression that no build check catches.
+- `SEOHead` mutates the DOM in `useEffect`; on SSR that pattern needs revisiting anyway (which is exactly the SEO upside).
+- Browser-only assumptions (`window`, `localStorage` at module scope) now run on the server and must be guarded.
+
+**Can it be repaired if it goes wrong?** Yes — the migration lands as a single chat turn and can be reverted from chat history, which restores the code *and* flips publishing back to the current pipeline. Your database, edge functions, and published domain are unaffected by a revert. The realistic failure mode is not "unrecoverable", it is "several hours of chasing type errors and visual regressions".
+
+### Suggested sequencing
+1. **Now:** ship the UUID-redirect fix + the one missing slug redirect. Recovers the 8 URLs within a crawl cycle.
+2. **Then:** decide on the migration as its own project, with time budgeted for the strict-TS wave and a careful visual pass. Given organic search is a Q-priority, the SSR upside (real 404/410 status codes, server-rendered titles/canonicals/JSON-LD for the whole artifact catalogue) is worth it — but it should not be rushed as a reaction to this email.
+
+## Technical detail for step 1
+
+- UUID detection: `/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i` on the `slug` route param.
+- Files: `src/pages/PromptDetail.tsx`, `SkillDetail.tsx`, `WorkflowDetail.tsx`, `PromptKitDetail.tsx` — each already has the slug-redirect fallback block to extend.
+- Only redirect when the record is publicly visible; otherwise keep the existing `noIndex` not-found branch.
