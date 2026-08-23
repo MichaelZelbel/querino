@@ -6,6 +6,9 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
+import { resolveConfig, type DbLike } from "../_shared/llm-config.ts";
+import { callProvider } from "../_shared/llm-providers.ts";
+import { PROVIDER_SECRETS } from "../_shared/llm-registry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +20,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const BATCH_SIZE = 5;
 const MAX_RETRIES = 3;
@@ -53,48 +55,64 @@ Context: This is a platform for sharing AI prompts and skills. Content about AI,
 
 You MUST respond with a JSON object using this exact tool call.`;
 
-  const response = await fetch(AI_GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Analyze this content for policy violations:\n\n${content.substring(0, 4000)}` },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "classify_content",
-            description: "Return the content moderation classification result.",
-            parameters: {
-              type: "object",
-              properties: {
-                safe: { type: "boolean", description: "true if content is safe, false if it violates policies" },
-                category: { type: "string", enum: ["none", "sexual", "hate", "malware", "pii", "injection"], description: "The violation category, or 'none' if safe" },
-                confidence: { type: "number", description: "Confidence score from 0.0 to 1.0" },
-                reason: { type: "string", description: "Brief explanation of the classification decision" },
-              },
-              required: ["safe", "category", "confidence", "reason"],
-              additionalProperties: false,
-            },
-          },
-        },
-      ],
-      tool_choice: { type: "function", function: { name: "classify_content" } },
-    }),
+  // Deliberately no credit gate. This runs from cron or an admin button, the
+  // cost is the platform's, and gating it on some user's balance would mean
+  // moderation stops the moment that user runs dry.
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
   });
+  const { effective } = await resolveConfig(
+    admin as unknown as DbLike,
+    "ai-moderate-content",
+    "default",
+    {
+      provider: "lovable",
+      model: "google/gemini-3-flash-preview",
+      systemPrompt,
+    },
+  );
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`AI Gateway error ${response.status}: ${text}`);
+  const secretName = PROVIDER_SECRETS[effective.provider];
+  const apiKey = Deno.env.get(secretName);
+  if (!apiKey) {
+    throw new Error(`${secretName} is not configured, which ai-moderate-content needs`);
   }
 
-  const data = await response.json();
+  const result = await callProvider({
+    provider: effective.provider,
+    model: effective.model,
+    apiKey,
+    temperature: effective.temperature,
+    maxTokens: effective.max_tokens,
+    messages: [
+      { role: "system", content: effective.system_prompt ?? systemPrompt },
+      { role: "user", content: `Analyze this content for policy violations:\n\n${content.substring(0, 4000)}` },
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "classify_content",
+          description: "Return the content moderation classification result.",
+          parameters: {
+            type: "object",
+            properties: {
+              safe: { type: "boolean", description: "true if content is safe, false if it violates policies" },
+              category: { type: "string", enum: ["none", "sexual", "hate", "malware", "pii", "injection"], description: "The violation category, or 'none' if safe" },
+              confidence: { type: "number", description: "Confidence score from 0.0 to 1.0" },
+              reason: { type: "string", description: "Brief explanation of the classification decision" },
+            },
+            required: ["safe", "category", "confidence", "reason"],
+            additionalProperties: false,
+          },
+        },
+      },
+    ],
+    toolChoice: { type: "function", function: { name: "classify_content" } },
+  });
+
+  // Shaped like the gateway response so the rest of this function is unchanged.
+  const data = { choices: [{ message: { tool_calls: result.tool_calls } }] };
   const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
   if (!toolCall?.function?.arguments) {
     throw new Error("No tool call in AI response");
