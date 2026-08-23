@@ -1,8 +1,35 @@
-# Every public content page is a 404 for logged-out visitors, right now
+# Every public content page was a 404 for logged-out visitors
 
-**This is not a migration issue.** It was found while taking the migration baseline, and
-it matters more than the migration does. Nothing here has been changed: the fix is a
-production database grant, and that needs Michael's go-ahead.
+## FIXED 2026-08-24
+
+Michael gave the go-ahead and the grant is applied to production. Verified logged-out
+with `node migration/prodcheck.mjs`: **5 of 5 checked pages back to their real content**,
+24 prompts listed on `/discover`, no console errors, no `noindex`.
+
+What was run, through the Supabase Management API:
+
+```sql
+GRANT SELECT (
+  id, display_name, avatar_url, bio, website, twitter, github,
+  created_at, updated_at,
+  github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at
+) ON public.profiles TO anon;
+```
+
+Recorded in the repo as `supabase/migrations/20260824013000_restore_anon_read_on_profiles.sql`
+on `main` (`2bce8dd`), so the next migration run does not undo it and the reasoning sits
+where the next person will look.
+
+**Not changed:** row-level security. The SELECT policy is still `TO authenticated`, so an
+anonymous visitor gets an empty author rather than an error, which is how the site
+behaved before 2026-08-23. Whether author names should be visible to logged-out visitors
+is a separate product decision, at the end of this file, and is still open.
+
+The account of what happened follows, unchanged.
+
+---
+
+**This was not a migration issue.** It was found while taking the migration baseline.
 
 ## What is happening
 
@@ -81,7 +108,7 @@ Reading the policy history on `profiles` in order:
 
 That is why this looks sudden even though half of it is eight months old.
 
-## The fix, not applied
+## The fix, as applied
 
 Minimum to bring the pages back, granting only the three columns the public pages
 render, and leaving `role`, `plan_type` and `plan_source` hidden as the August
@@ -108,8 +135,11 @@ USING (
 );
 ```
 
-Whether author identities are public is a product decision, so that second statement is
-written out but not chosen.
+The first statement was applied. **The second was not.** Whether author identities are
+public is a product decision, and it would reverse something a January migration closed
+on purpose ("Restrict profiles table visibility to reduce data harvesting risk"). Say the
+word and I will apply it. Until then a logged-out visitor sees the artefact without an
+author byline, and the page layout handles that cleanly.
 
 ## How to know it worked
 
