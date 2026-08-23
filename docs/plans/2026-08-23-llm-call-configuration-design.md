@@ -32,7 +32,8 @@ the repo's existing style (timestamp, then a sentence).
 
 ```sql
 CREATE TABLE public.llm_call_configs (
-  call_site    TEXT PRIMARY KEY,
+  call_site    TEXT NOT NULL,
+  tier         TEXT NOT NULL DEFAULT 'default',
   description  TEXT,
   provider     TEXT NOT NULL DEFAULT 'lovable',
   model        TEXT NOT NULL,
@@ -44,10 +45,30 @@ CREATE TABLE public.llm_call_configs (
   updated_by   UUID,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (call_site, tier),
   CONSTRAINT llm_call_configs_provider_chk
-    CHECK (provider IN ('lovable','openrouter','openai','anthropic','gemini'))
+    CHECK (provider IN ('lovable','openrouter','openai','anthropic','gemini')),
+  CONSTRAINT llm_call_configs_tier_chk
+    CHECK (tier IN ('default','free','premium'))
 );
 ```
+
+### Why `tier` is in the key on day one
+
+Per-tier configuration, cheaper models for free users and better ones for paying
+users, is **not built in this piece of work**. Whether it is even a good idea is
+an open question: the case against is that free users are the ones you most want
+to impress into converting.
+
+The column is here anyway because it is the one part of that feature that is
+expensive to add later. Adding tiering afterwards would mean migrating the
+primary key of a live table and re-touching all five layers: table, resolver,
+every caller, edge function and panel. Adding it now costs a column, a check
+constraint and the fallback chain in section 2.
+
+With the column present from the start, turning tiering on later is a tier
+selector in the panel and nothing else. No migration, no resolver change, no call
+site change. This build buys the option, not the feature.
 
 Row-level security on, with two policies, both gated on `is_admin(auth.uid())`:
 admins select, admins do everything. No policy for anyone else, so the anon key
@@ -58,9 +79,10 @@ The `updated_at` trigger uses `public.update_updated_at_column`, which is the
 function this repo actually has. Menerio's `handle_updated_at` does not exist
 here.
 
-The migration seeds all 17 rows (section 3) with the provider and model each call
-site uses today, and `system_prompt` NULL for every one of them. Applying the
-migration therefore changes no behaviour.
+The migration seeds all 17 rows (section 3) at tier `default`, with the provider
+and model each call site uses today, and `system_prompt` NULL for every one of
+them. No `free` or `premium` row is created. Applying the migration therefore
+changes no behaviour.
 
 **Usage ledger.** `llm_usage_events` already records `feature`, which is the same
 string as `call_site`, so no new column is needed. Two smaller changes inside
@@ -68,8 +90,10 @@ string as `call_site`, so no new column is needed. Two smaller changes inside
 
 - `p_provider` is currently the literal `"lovable-ai"`. It becomes the provider
   actually used.
-- `config_source`, either `db` or `fallback-default`, goes into the existing
-  `p_metadata` jsonb. This avoids changing the RPC signature.
+- `config_source`, one of `db-free`, `db-premium`, `db-default` or
+  `fallback-default`, goes into the existing `p_metadata` jsonb. This avoids
+  changing the RPC signature, and it makes the ledger say which tier's row
+  actually served a call once tiering is switched on.
 
 ## 2. Resolution layer
 
@@ -79,14 +103,27 @@ It splits into three files.
 **`_shared/llm-config.ts`** (new). Ported near-verbatim from Menerio's
 `llm-router.ts`, which is the part of that file worth copying:
 
-- `loadConfig(db, callSite)` with a 30 second in-memory cache, so a burst of
-  calls does not become a burst of selects.
-- `resolveConfig(db, callSite, defaults)` returning the effective config plus
-  a source of `db` or `fallback-default`.
+- `loadConfig(db, callSite, tier)` with a 30 second in-memory cache keyed on both,
+  so a burst of calls does not become a burst of selects.
+- `resolveTier(db, userId)` reading `user_roles` and mapping `premium`,
+  `premium_gift` and `admin` to `premium`, and `free` or a missing row to `free`.
+  Cached the same way, so it is not a query per call. Callers with no user, the
+  cron-driven ones, pass no id and resolve to `default` directly.
+- `resolveConfig(db, callSite, tier, defaults)` returning the effective config
+  plus a source of `db-<tier>`, `db-default` or `fallback-default`. It walks a
+  three step chain and takes the first enabled row it finds:
+  1. the row for `(callSite, tier)`
+  2. the row for `(callSite, 'default')`
+  3. the code default passed in by the caller
+
+  The chain is what makes a half-filled table safe. Today only step 2 ever hits,
+  because only `default` rows exist. When tiering is switched on later, a
+  `premium` row for one call site changes that call site alone and every other
+  one keeps falling through to `default`.
 - `interpolatePrompt(prompt, vars)` replacing `{{key}}`. A missing key collapses
   to an empty string with a console warning, so a misconfigured prompt never
   leaks literal `{{...}}` text to the model.
-- `resolveSystemPrompt(db, callSite, fallback, vars)` for callers that build
+- `resolveSystemPrompt(db, callSite, tier, fallback, vars)` for callers that build
   their own request and cannot go through `callLovableAI`.
 
 **`_shared/llm-providers.ts`** (new). Five transports. Lovable, OpenRouter and
@@ -116,7 +153,7 @@ its exact name and signature, so none of its existing callers change. Inside, it
 gains three steps before the fetch, using the service-role client it already
 builds with `getServiceClient()` rather than taking a new argument:
 
-1. `resolveConfig(getServiceClient(), opts.feature, {provider: 'lovable', model: opts.model ?? DEFAULT_MODEL})`
+1. `resolveConfig(getServiceClient(), opts.feature, await resolveTier(db, opts.user_id), {provider: 'lovable', model: opts.model ?? DEFAULT_MODEL})`
 2. If the resolved config carries a `system_prompt` that is non-null and
    non-empty after trimming, replace the system message in `opts.messages` with
    it (interpolated). If the caller sent no system message, prepend one. In every
@@ -164,8 +201,8 @@ directly with a hardcoded model and an inline system prompt:
 | `canvas-ai`          | Routed through `callLovableAI`. See section 6.               |
 | `ai-moderate-content`| Uses `resolveConfig` plus a transport, no credit gate. See 6.|
 
-All 17 seed as `lovable` / `google/gemini-3-flash-preview`, which is what every
-one of them uses today.
+All 17 seed at tier `default` as `lovable` / `google/gemini-3-flash-preview`,
+which is what every one of them uses today.
 
 **Placeholders**, listed under the prompt box in the panel so an administrator
 knows what a custom prompt may reference:
@@ -188,13 +225,16 @@ Three actions:
 
 - **`list`** backfills any missing rows and empty descriptions from the registry
   without overwriting administrator edits, then returns
-  `{configs, availability, providers}`.
+  `{configs, availability, providers}`. It takes an optional `tier` defaulting to
+  `default`, and only backfills that tier, so it never invents `free` or
+  `premium` rows on its own.
 - **`sync_defaults`** with an optional `force` to overwrite every column from the
-  registry. Destructive, used for rollout and migration.
-- **`test`** saves nothing itself; it reads the persisted row for one call site,
-  runs a single real call with a supplied prompt and test values substituted for
-  any placeholders, and returns provider, model, content, `config_source`,
-  latency and tokens spent.
+  registry. Destructive, used for rollout and migration. Operates on tier
+  `default` only.
+- **`test`** saves nothing itself; it reads the persisted row for one call site
+  and tier, runs a single real call with a supplied prompt and test values
+  substituted for any placeholders, and returns provider, model, content,
+  `config_source`, latency and tokens spent.
 
 `providers` in the `list` response is the preset catalogue: the five providers
 and their suggested models. It lives in **one server-side constant**, not in the
@@ -229,6 +269,13 @@ The free-text model field matters more than the preset list. A model released
 this morning is usable the same day by pasting its id, with no registry involved
 and no deploy.
 
+**No tier selector.** The panel reads and writes tier `default` only, and does not
+mention tiers at all. The column exists in the table and the resolver honours it,
+but an administrator has no way to create a `free` or `premium` row from the UI
+in this build, which is deliberate: the decision on whether tiering is worth
+having has not been made yet, and a control for an undecided feature is worse
+than no control.
+
 ## 6. Behaviour changes, stated rather than smuggled
 
 **`canvas-ai` starts deducting tokens.** Today it calls `assertCredits`, so it
@@ -253,8 +300,13 @@ needs no new tooling. Written first, before the code they cover:
 
 - `interpolatePrompt`: substitutes a value; a missing key collapses to an empty
   string rather than leaking `{{...}}`; a null prompt stays null.
-- `resolveConfig`: an enabled DB row wins; a disabled row falls back to the code
-  default; a missing row falls back; a failed load falls back rather than throws.
+- `resolveConfig` and its three step chain: a `premium` row wins for a premium
+  caller; with no `premium` row that caller falls through to the `default` row;
+  with neither, to the code default. A disabled tier row falls through rather
+  than blocking, so switching one off restores the tier below it. A failed load
+  falls back rather than throws.
+- `resolveTier`: `premium`, `premium_gift` and `admin` map to premium; `free` and
+  a missing row map to free; no user id gives `default`.
 - System message handling: a config prompt replaces an existing system message,
   prepends when there is none, and leaves the caller's message alone when the
   config carries no prompt.
@@ -300,7 +352,21 @@ dimension guard and a backfill plan, which is its own piece of work.
 `providers` from the `admin-llm-config` response. Today that is a constant in one
 server file. This is the seam for the follow-up below.
 
-## 9. Follow-up, deliberately not in this build
+## 9. Follow-ups, deliberately not in this build
+
+**Per-tier configuration.** Cheaper or slower models for free users, better ones
+for paying users, configured separately because a different model often wants a
+different system prompt. The table, the resolver and the ledger already support
+it after this build (section 1). What is missing is only the panel control: a
+tier selector that lets an administrator create a `free` or `premium` row
+alongside the `default` one.
+
+Worth deciding with data rather than now. The case against tiering is real: free
+users are the ones you most want to impress into paying, and giving them the
+weaker model is a strange way to sell the stronger one. The case for it is
+budget. Once this build has been live for a while, `llm_usage_events` grouped by
+feature and by user role answers which call sites actually cost money on free
+accounts, which is the number that settles the argument.
 
 **A shared model registry across applications.** Preset lists go stale as models
 ship and are retired. Three ways forward, in rising order of effort: fetch live
