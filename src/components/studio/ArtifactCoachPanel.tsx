@@ -104,7 +104,10 @@ export function ArtifactCoachPanel({
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const stored = localStorage.getItem(storageKey);
+      // This initialiser runs during render, where a server has no localStorage.
+      // Guard the read alone: the default greeting below must still be reached,
+      // or the server and the client would render different first messages.
+      const stored = typeof window === "undefined" ? null : localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored) as ChatMessage[];
     } catch {
       // ignore parse errors

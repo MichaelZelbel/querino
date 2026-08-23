@@ -34,6 +34,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
+import { siteOrigin } from "@/config/site";
 
 interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
@@ -226,7 +227,7 @@ export default function SkillDetail() {
     );
   }
 
-  const skillCanonical = `${window.location.origin}/skills/${skill.slug || skill.id}`;
+  const skillCanonical = `${siteOrigin()}/skills/${skill.slug || skill.id}`;
   const skillDescription = skill.description || `${skill.title} — AI skill on Querino`;
   const skillJsonLd = {
     "@context": "https://schema.org",

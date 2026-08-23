@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
+import { siteOrigin } from "@/config/site";
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -66,7 +67,7 @@ export default function BlogPost() {
     ? format(new Date(post.published_at), "MMMM d, yyyy")
     : null;
   const ogImage = post.og_image_url || post.featured_image?.url;
-  const canonicalUrl = `${window.location.origin}/blog/${post.slug}`;
+  const canonicalUrl = `${siteOrigin()}/blog/${post.slug}`;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -80,7 +81,7 @@ export default function BlogPost() {
     publisher: {
       "@type": "Organization",
       name: "Querino",
-      logo: { "@type": "ImageObject", url: `${window.location.origin}/favicon.png` },
+      logo: { "@type": "ImageObject", url: `${siteOrigin()}/favicon.png` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
   };

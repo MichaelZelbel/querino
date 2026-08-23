@@ -10,6 +10,7 @@ import { usePublicPosts, usePublicCategory } from "@/hooks/usePublicBlog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
+import { siteOrigin } from "@/config/site";
 
 export default function BlogCategory() {
   const { slug } = useParams<{ slug: string }>();
@@ -67,7 +68,7 @@ export default function BlogCategory() {
       <SEOHead
         title={`${category.name} - Blog`}
         description={category.description || `Posts in the ${category.name} category`}
-        canonicalUrl={`${window.location.origin}/blog/category/${category.slug}`}
+        canonicalUrl={`${siteOrigin()}/blog/category/${category.slug}`}
         includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">

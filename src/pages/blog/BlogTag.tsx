@@ -9,6 +9,7 @@ import { usePublicPosts, usePublicTag } from "@/hooks/usePublicBlog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
+import { siteOrigin } from "@/config/site";
 
 export default function BlogTag() {
   const { slug } = useParams<{ slug: string }>();
@@ -65,7 +66,7 @@ export default function BlogTag() {
       <SEOHead
         title={`#${tag.name} - Blog`}
         description={`Posts tagged with ${tag.name}`}
-        canonicalUrl={`${window.location.origin}/blog/tag/${tag.slug}`}
+        canonicalUrl={`${siteOrigin()}/blog/tag/${tag.slug}`}
         includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">

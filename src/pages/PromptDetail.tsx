@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { moderateContent } from "@/lib/moderateContent";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
+import { siteOrigin } from "@/config/site";
 
 interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -346,7 +347,7 @@ export default function PromptDetail() {
     );
   }
 
-  const promptCanonical = `${window.location.origin}/prompts/${prompt.slug}`;
+  const promptCanonical = `${siteOrigin()}/prompts/${prompt.slug}`;
   const promptDescription = prompt.summary || prompt.description || `${prompt.title} — AI prompt on Querino`;
   const promptJsonLd = {
     "@context": "https://schema.org",
