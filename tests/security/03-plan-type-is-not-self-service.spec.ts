@@ -16,23 +16,50 @@ interface Profile {
   bio: string | null;
 }
 
+// plan_type is no longer readable straight off the table. The 2026-08-23
+// hardening revoked SELECT on public.profiles and granted it back column by
+// column, deliberately leaving role / plan_type / plan_source out so they
+// cannot leak to a team-mate, and added get_my_plan() for the caller's own row.
+// So the two halves of a profile now come from two places. What this file
+// asserts is unchanged: the columns are still readable, they are just read the
+// way the application reads them.
 async function readProfile(): Promise<Profile> {
   const { userId } = await signInTestUser();
-  const res = await restAsUser<Profile[]>(
-    `profiles?id=eq.${userId}&select=id,plan_type,bio`,
+
+  const cols = await restAsUser<Array<{ id: string; bio: string | null }>>(
+    `profiles?id=eq.${userId}&select=id,bio`,
   );
-  expect(res.ok, `reading own profile failed: ${JSON.stringify(res.error)}`).toBe(true);
-  const row = res.data?.[0];
+  expect(cols.ok, `reading own profile failed: ${JSON.stringify(cols.error)}`).toBe(true);
+  const row = cols.data?.[0];
   if (!row) throw new Error("The test account has no profile row.");
-  return row;
+
+  const plan = await restAsUser<Array<{ plan_type: string | null }>>("rpc/get_my_plan", {
+    method: "POST",
+    body: {},
+  });
+  expect(plan.ok, `get_my_plan failed: ${JSON.stringify(plan.error)}`).toBe(true);
+
+  return { id: row.id, bio: row.bio, plan_type: plan.data?.[0]?.plan_type ?? null };
 }
 
+// The privileged columns must stay unreadable from the table itself, or the
+// hardening above is only a rename of the leak.
+async function readPlanTypeOffTheTable() {
+  const { userId } = await signInTestUser();
+  return restAsUser(`profiles?id=eq.${userId}&select=id,plan_type`);
+}
+
+// return=minimal, not representation. PostgREST hands the whole row back for
+// representation, and since the 2026-08-23 column grants a signed-in user may
+// not read plan_type, so every write would come back 42501 whether the trigger
+// allowed it or not. That would have made this file pass for the wrong reason:
+// green because the read was denied, not because the write was.
 async function patchProfile(patch: Record<string, unknown>) {
   const { userId } = await signInTestUser();
   return restAsUser(`profiles?id=eq.${userId}`, {
     method: "PATCH",
     body: patch,
-    headers: { Prefer: "return=representation" },
+    headers: { Prefer: "return=minimal" },
   });
 }
 
@@ -58,6 +85,15 @@ test.describe("C3 — a user cannot promote itself", () => {
 
     const after = await readProfile();
     expect(after.plan_type ?? "free").toBe("free");
+  });
+
+  test("plan_type is not readable off the profiles table at all", async () => {
+    const res = await readPlanTypeOffTheTable();
+    expect(
+      res.ok,
+      "a signed-in user selected plan_type straight from profiles. The column grants have " +
+        "come back, and with them the leak of role and plan_type to any team-mate.",
+    ).toBe(false);
   });
 
   test("role and plan_source are refused as well", async () => {
