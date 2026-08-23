@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
@@ -78,6 +79,18 @@ export default function SkillDetail() {
 
   const fetchSkill = useCallback(async () => {
     if (!slug) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    // Legacy /skills/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+    if (isUuid(slug)) {
+      const canonical = await resolveSlugFromId("skills", slug);
+      if (canonical) {
+        navigate(`/skills/${canonical}`, { replace: true });
+        return;
+      }
       setNotFound(true);
       setLoading(false);
       return;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Header } from "@/components/layout/Header";
@@ -112,6 +113,17 @@ export default function PromptKitDetail() {
   useEffect(() => {
     async function fetchKit() {
       if (!slug) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      // Legacy /prompt-kits/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+      if (isUuid(slug)) {
+        const canonical = await resolveSlugFromId("prompt_kits", slug);
+        if (canonical) {
+          navigate(`/prompt-kits/${canonical}`, { replace: true });
+          return;
+        }
         setNotFound(true);
         setLoading(false);
         return;

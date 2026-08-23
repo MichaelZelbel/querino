@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
@@ -96,6 +97,18 @@ export default function PromptDetail() {
 
   const fetchPrompt = async () => {
     if (!slug) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    // Legacy /prompts/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+    if (isUuid(slug)) {
+      const canonical = await resolveSlugFromId("prompts", slug);
+      if (canonical) {
+        navigate(`/prompts/${canonical}`, { replace: true });
+        return;
+      }
       setNotFound(true);
       setLoading(false);
       return;
