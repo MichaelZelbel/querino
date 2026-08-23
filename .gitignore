@@ -32,3 +32,8 @@ dist-ssr
 test-results/
 playwright-report/
 supabase/.temp/
+
+# `deno test` writes this. The repo has never tracked one, and committing it
+# would start enforcing a lockfile across all 35 edge functions, which is a
+# bigger change than the unit tests that created it.
+supabase/functions/deno.lock
