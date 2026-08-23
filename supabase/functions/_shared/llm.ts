@@ -6,9 +6,25 @@
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { ensureAllowance } from "./allowance.ts";
+import {
+  resolveConfig,
+  resolveTier,
+  interpolatePrompt,
+  applySystemPrompt,
+  type DbLike,
+  type EffectiveConfig,
+  type ConfigSource,
+} from "./llm-config.ts";
+import {
+  callProvider,
+  ProviderHttpError,
+  type ProviderRequest,
+  type ToolDefinition as ProviderToolDefinition,
+  type ToolChoice,
+} from "./llm-providers.ts";
+import { PROVIDER_SECRETS, type Provider } from "./llm-registry.ts";
 
 export const DEFAULT_MODEL = "google/gemini-3-flash-preview";
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -39,6 +55,8 @@ export interface CallOptions {
   metadata?: Record<string, unknown>;
   // Optional idempotency key. If omitted a UUID is generated.
   idempotency_key?: string;
+  /** Values for {{placeholder}} substitution in a configured system prompt. */
+  templateVars?: Record<string, string | number | null | undefined>;
 }
 
 export interface ToolCall {
@@ -56,6 +74,10 @@ export interface CallResult {
     total_tokens: number;
   };
   model: string;
+  /** The provider that actually served the call, after config resolution. */
+  provider: Provider;
+  /** Which row decided it: db-free, db-premium, db-default or fallback-default. */
+  config_source: ConfigSource;
   raw: unknown;
 }
 
@@ -168,79 +190,94 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
 }
 
 /**
- * Call the Lovable AI Gateway, record token usage, return parsed result.
- * Always atomic w.r.t. credit accounting via record_llm_usage.
+ * Turn a resolved config plus a caller's messages into a provider request.
+ * Exported and pure so the system-message swap is testable without network.
+ */
+export function buildProviderRequest(
+  config: EffectiveConfig,
+  opts: {
+    messages: ChatMessage[];
+    apiKey: string;
+    tools?: ToolDefinition[];
+    tool_choice?: ToolChoice;
+    templateVars?: Record<string, string | number | null | undefined>;
+  },
+): ProviderRequest {
+  const prompt = interpolatePrompt(config.system_prompt, opts.templateVars);
+  return {
+    provider: config.provider,
+    model: config.model,
+    messages: applySystemPrompt(opts.messages, prompt),
+    temperature: config.temperature,
+    maxTokens: config.max_tokens,
+    tools: opts.tools as ProviderToolDefinition[] | undefined,
+    toolChoice: opts.tool_choice,
+    apiKey: opts.apiKey,
+  };
+}
+
+/**
+ * Resolve this call site's configuration, call whichever provider it names,
+ * record token usage, return the parsed result. Always atomic w.r.t. credit
+ * accounting via record_llm_usage.
+ *
+ * The name is historical: it no longer only calls Lovable. Keeping it means the
+ * fifteen call sites that already pass a `feature` string became configurable
+ * without one line changing in any of them.
  */
 export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) {
-    throw new Error("LOVABLE_API_KEY is not configured");
-  }
-  const model = opts.model || DEFAULT_MODEL;
+  const sb = getServiceClient();
+  const db = sb as unknown as DbLike;
 
-  const body: Record<string, unknown> = {
-    model,
-    messages: opts.messages,
-    stream: false,
-  };
-  if (opts.temperature !== undefined) body.temperature = opts.temperature;
-  if (opts.tools && opts.tools.length > 0) {
-    body.tools = opts.tools;
-    body.tool_choice = opts.tool_choice ?? "auto";
-  }
-
-  const response = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
+  const tier = await resolveTier(db, opts.user_id ?? null);
+  const { effective, source } = await resolveConfig(db, opts.feature, tier, {
+    provider: "lovable",
+    model: opts.model || DEFAULT_MODEL,
+    temperature: opts.temperature ?? null,
   });
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    if (response.status === 429) throw new RateLimitedError(text || "Rate limited");
-    if (response.status === 402) throw new CreditsExhaustedError(text || "Payment required");
-    throw new GatewayError(response.status, text || `Gateway error ${response.status}`);
+  const secretName = PROVIDER_SECRETS[effective.provider];
+  const apiKey = Deno.env.get(secretName);
+  if (!apiKey) {
+    throw new Error(
+      `${secretName} is not configured, which call site "${opts.feature}" needs for provider "${effective.provider}"`,
+    );
   }
 
-  const json = await response.json() as {
-    choices?: Array<{
-      message?: {
-        content?: string | null;
-        tool_calls?: ToolCall[];
-      };
-    }>;
-    usage?: {
-      prompt_tokens?: number;
-      completion_tokens?: number;
-      total_tokens?: number;
-    };
-    model?: string;
-  };
+  const request = buildProviderRequest(effective, {
+    messages: opts.messages,
+    apiKey,
+    tools: opts.tools,
+    tool_choice: opts.tool_choice,
+    templateVars: opts.templateVars,
+  });
 
-  const choice = json.choices?.[0]?.message;
-  const usage = {
-    prompt_tokens: Number(json.usage?.prompt_tokens ?? 0),
-    completion_tokens: Number(json.usage?.completion_tokens ?? 0),
-    total_tokens: Number(json.usage?.total_tokens ?? 0),
-  };
-  const reportedModel = json.model || model;
-
-  // Best-effort token logging — never block the response on accounting errors.
+  let result;
   try {
-    const sb = getServiceClient();
+    result = await callProvider(request);
+  } catch (e) {
+    // Map the transport's error onto the classes every caller already handles,
+    // so rewiring the provider layer changed nothing for any of them.
+    if (e instanceof ProviderHttpError) {
+      if (e.status === 429) throw new RateLimitedError(e.message);
+      if (e.status === 402) throw new CreditsExhaustedError(e.message);
+      throw new GatewayError(e.status, e.message);
+    }
+    throw e;
+  }
+
+  // Best-effort token logging. Never block the response on accounting errors.
+  try {
     const { error } = await sb.rpc("record_llm_usage", {
       p_user_id: opts.user_id,
       p_idempotency_key: opts.idempotency_key ?? crypto.randomUUID(),
       p_feature: opts.feature,
-      p_provider: "lovable-ai",
-      p_model: reportedModel,
-      p_prompt_tokens: usage.prompt_tokens,
-      p_completion_tokens: usage.completion_tokens,
-      p_total_tokens: usage.total_tokens,
-      p_metadata: opts.metadata ?? {},
+      p_provider: effective.provider,
+      p_model: result.model,
+      p_prompt_tokens: result.usage.prompt_tokens,
+      p_completion_tokens: result.usage.completion_tokens,
+      p_total_tokens: result.usage.total_tokens,
+      p_metadata: { ...(opts.metadata ?? {}), config_source: source },
     });
     if (error) console.error("[llm.callLovableAI] record_llm_usage error:", error);
   } catch (e) {
@@ -248,10 +285,12 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
   }
 
   return {
-    content: choice?.content ?? null,
-    tool_calls: choice?.tool_calls ?? [],
-    usage,
-    model: reportedModel,
-    raw: json,
+    content: result.content,
+    tool_calls: result.tool_calls,
+    usage: result.usage,
+    model: result.model,
+    provider: effective.provider,
+    config_source: source,
+    raw: result.raw,
   };
 }

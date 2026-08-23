@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeadersFor } from "../_shared/cors.ts";
-import { getCallerUserId, assertCredits, CreditsExhaustedError } from "../_shared/llm.ts";
+import {
+  getCallerUserId,
+  assertCredits,
+  CreditsExhaustedError,
+  RateLimitedError,
+  GatewayError,
+  callLovableAI,
+} from "../_shared/llm.ts";
 
 
 function buildSystemPrompt(
@@ -79,11 +86,6 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
     const systemPrompt = buildSystemPrompt(mode || "chat_only", artifactType || "prompt", canvasContent);
 
     let userMessage = message;
@@ -91,42 +93,44 @@ serve(async (req) => {
       userMessage += `\n\n[Selected text (lines ${selection.start}-${selection.end})]: "${selection.text}"`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+    let rawContent = "";
+    try {
+      // Through the shared helper now, so canvas usage is recorded and
+      // deducted like every other AI call instead of being free after the gate.
+      const result = await callLovableAI({
+        user_id,
+        feature: "canvas-ai",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
         temperature: 0.4,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
+        templateVars: {
+          mode: mode || "chat_only",
+          artifactType: artifactType || "prompt",
+          canvasContent: canvasContent ?? "",
+        },
+      });
+      rawContent = result.content || "";
+    } catch (e) {
+      if (e instanceof RateLimitedError) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (response.status === 402) {
+      if (e instanceof CreditsExhaustedError) {
         return new Response(
           JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      const t = await response.text();
-      console.error("[canvas-ai] Gateway error:", response.status, t);
-      throw new Error(`AI gateway returned ${response.status}`);
+      if (e instanceof GatewayError) {
+        console.error("[canvas-ai] Gateway error:", e.status, e.message);
+        throw new Error(`AI gateway returned ${e.status}`);
+      }
+      throw e;
     }
-
-    const completion = await response.json();
-    const rawContent = completion.choices?.[0]?.message?.content || "";
 
     // Parse the JSON response safely
     let result: { assistantMessage: string; canvas?: { updated: boolean; content?: string; changeNote?: string } };
