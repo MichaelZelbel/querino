@@ -710,6 +710,54 @@ export type Database = {
         }
         Relationships: []
       }
+      llm_call_configs: {
+        Row: {
+          call_site: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          extra_options: Json
+          max_tokens: number | null
+          model: string
+          provider: string
+          system_prompt: string | null
+          temperature: number | null
+          tier: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          call_site: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          extra_options?: Json
+          max_tokens?: number | null
+          model: string
+          provider?: string
+          system_prompt?: string | null
+          temperature?: number | null
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          call_site?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          extra_options?: Json
+          max_tokens?: number | null
+          model?: string
+          provider?: string
+          system_prompt?: string | null
+          temperature?: number | null
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       llm_usage_events: {
         Row: {
           completion_tokens: number
@@ -843,6 +891,7 @@ export type Database = {
         Row: {
           artifact_id: string
           artifact_type: string
+          claimed_at: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -853,6 +902,7 @@ export type Database = {
         Insert: {
           artifact_id: string
           artifact_type: string
+          claimed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -863,6 +913,7 @@ export type Database = {
         Update: {
           artifact_id?: string
           artifact_type?: string
+          claimed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -1051,19 +1102,19 @@ export type Database = {
           id: number
           message: Json
           session_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           id?: number
           message: Json
           session_id: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           id?: number
           message?: Json
           session_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1072,19 +1123,19 @@ export type Database = {
           id: number
           message: Json
           session_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           id?: number
           message: Json
           session_id: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           id?: number
           message?: Json
           session_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1982,8 +2033,9 @@ export type Database = {
       user_credentials: {
         Row: {
           created_at: string
+          credential_secret_id: string | null
           credential_type: string
-          credential_value: string
+          credential_value: string | null
           id: string
           team_id: string | null
           updated_at: string
@@ -1991,8 +2043,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credential_secret_id?: string | null
           credential_type: string
-          credential_value: string
+          credential_value?: string | null
           id?: string
           team_id?: string | null
           updated_at?: string
@@ -2000,8 +2053,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credential_secret_id?: string | null
           credential_type?: string
-          credential_value?: string
+          credential_value?: string | null
           id?: string
           team_id?: string | null
           updated_at?: string
@@ -2363,46 +2417,23 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }
-        Insert: {
-          created_at?: string | null
-          credits_granted?: never
-          credits_used?: never
-          id?: string | null
-          metadata?: Json | null
-          period_end?: string | null
-          period_start?: string | null
-          remaining_credits?: never
-          remaining_tokens?: never
-          source?: string | null
-          tokens_granted?: number | null
-          tokens_per_credit?: never
-          tokens_used?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          credits_granted?: never
-          credits_used?: never
-          id?: string | null
-          metadata?: Json | null
-          period_end?: string | null
-          period_start?: string | null
-          remaining_credits?: never
-          remaining_tokens?: never
-          source?: string | null
-          tokens_granted?: number | null
-          tokens_per_credit?: never
-          tokens_used?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
         Relationships: []
       }
     }
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
       check_signup_allowed: { Args: never; Returns: Json }
+      claim_menerio_sync_queue: {
+        Args: { batch_size?: number; stale_after?: string }
+        Returns: {
+          artifact_id: string
+          artifact_type: string
+          created_at: string
+          id: string
+          status: string
+          user_id: string
+        }[]
+      }
       enqueue_github_sync: {
         Args: {
           p_artifact_id: string
@@ -2413,6 +2444,28 @@ export type Database = {
           p_team_id: string
         }
         Returns: undefined
+      }
+      ensure_ai_allowance: {
+        Args: {
+          _created_by?: string
+          _force_tokens?: number
+          _period_end?: string
+          _period_start?: string
+          _skip_rollover?: boolean
+          _source?: string
+          _user_id: string
+        }
+        Returns: {
+          created: boolean
+          id: string
+          metadata: Json
+          period_end: string
+          period_start: string
+          source: string
+          tokens_granted: number
+          tokens_used: number
+          user_id: string
+        }[]
       }
       generate_slug: { Args: { title: string }; Returns: string }
       generate_unique_slug: {
@@ -2511,6 +2564,10 @@ export type Database = {
       }
       lookup_mcp_token: { Args: { p_token_hash: string }; Returns: string }
       provision_ai_allowance: { Args: { _user_id: string }; Returns: undefined }
+      read_user_credential: {
+        Args: { _credential_type: string; _team_id?: string; _user_id?: string }
+        Returns: string
+      }
       record_llm_usage: {
         Args: {
           p_completion_tokens: number
@@ -2608,7 +2665,24 @@ export type Database = {
           workflow_json: Json
         }[]
       }
+      security_invariants: {
+        Args: never
+        Returns: {
+          detail: string
+          kind: string
+          name: string
+        }[]
+      }
+      security_invariants_scope: {
+        Args: never
+        Returns: {
+          public_tables: number
+          public_views: number
+          security_definer_functions: number
+        }[]
+      }
       store_service_role_key: { Args: { p_key: string }; Returns: Json }
+      tokens_per_credit: { Args: never; Returns: number }
       update_embedding: {
         Args: { p_embedding: string; p_item_id: string; p_item_type: string }
         Returns: undefined
