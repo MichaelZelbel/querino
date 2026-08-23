@@ -20,7 +20,8 @@ export default function UserActivity() {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url, bio, website, twitter, github")
-        .eq("display_name", username)
+        // enabled: !!username below is what guarantees this is set.
+        .eq("display_name", username!)
         .single();
 
       if (error) throw error;

@@ -83,7 +83,12 @@ export default function UserProfile() {
             .order("created_at", { ascending: false }) as any,
         ]);
 
-        setPrompts(promptsRes.data || []);
+        // The Prompt type promises non-null slug, ratings, counts, is_public and
+        // created_at; the prompts table allows NULL on all six. Widening Prompt to
+        // match costs 25 further strict errors and a product decision about what a
+        // prompt without a slug should render, so it is recorded as a migration risk
+        // rather than decided here. See migration/migration-risks.md.
+        setPrompts((promptsRes.data ?? []) as Prompt[]);
         setSkills(skillsRes.data || []);
         setWorkflows(workflowsRes.data || []);
       } catch (err) {

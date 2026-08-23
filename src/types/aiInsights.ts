@@ -14,6 +14,6 @@ export interface AIInsights {
   tags: string[];
   recommendations: string[];
   quality: AIQuality | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }

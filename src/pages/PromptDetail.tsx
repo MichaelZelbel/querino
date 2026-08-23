@@ -278,7 +278,8 @@ export default function PromptDetail() {
     const { data } = await supabase
       .from("prompts")
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("slug", slug)
+      // The caller returns early when slug is missing.
+      .eq("slug", slug!)
       .maybeSingle();
     
     if (data) {

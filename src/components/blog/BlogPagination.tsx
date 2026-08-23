@@ -10,7 +10,7 @@ interface BlogPaginationProps {
 export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPaginationProps) {
   if (totalPages <= 1) return null;
 
-  const pages = [];
+  const pages: number[] = [];
   const showEllipsisStart = currentPage > 3;
   const showEllipsisEnd = currentPage < totalPages - 2;
 

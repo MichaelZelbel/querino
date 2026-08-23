@@ -5,7 +5,8 @@ export interface Team {
   github_repo: string | null;
   github_branch: string | null;
   github_folder: string | null;
-  created_at: string;
+  github_last_synced_at: string | null;
+  created_at: string | null;
 }
 
 export interface TeamMember {
@@ -13,7 +14,7 @@ export interface TeamMember {
   team_id: string;
   user_id: string;
   role: 'owner' | 'admin' | 'member';
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface TeamMemberWithProfile extends TeamMember {
