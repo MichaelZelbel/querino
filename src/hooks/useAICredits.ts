@@ -51,11 +51,7 @@ export function useAICredits() {
           .select("*")
           .eq("user_id", user.id)
           .maybeSingle(),
-        supabase
-          .from("profiles")
-          .select("plan_type")
-          .eq("id", user.id)
-          .maybeSingle(),
+        supabase.rpc("get_my_plan"),
         supabase
           .from("ai_credit_settings")
           .select("key, value_int")
@@ -75,7 +71,7 @@ export function useAICredits() {
       const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
       
       // Determine plan base credits
-      const isPremium = profileResult.data?.plan_type === "premium";
+      const isPremium = (profileResult.data as any)?.[0]?.plan_type === "premium";
       const planBaseCredits = isPremium
         ? settingsMap["credits_premium_per_month"] || 1500
         : settingsMap["credits_free_per_month"] || 0;

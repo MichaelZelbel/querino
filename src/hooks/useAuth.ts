@@ -79,16 +79,25 @@ export function useAuth() {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
+      // role / plan_type / plan_source are column-restricted in the database
+      // (they must not leak to team-mates), so they come from the
+      // get_my_plan() RPC which only ever returns the caller's own row.
+      const [{ data, error }, { data: planRows }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "id, display_name, avatar_url, bio, website, twitter, github, created_at, updated_at, github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at"
+          )
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase.rpc("get_my_plan"),
+      ]);
 
       if (error) {
         console.error("Error fetching profile:", error);
       } else {
-        setProfile(data as Profile | null);
+        const plan = (planRows as any)?.[0] ?? {};
+        setProfile(data ? ({ ...data, ...plan } as Profile) : null);
       }
     } catch (err) {
       console.error("Error fetching profile:", err);
