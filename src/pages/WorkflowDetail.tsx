@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
