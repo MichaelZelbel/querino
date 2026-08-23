@@ -63,28 +63,20 @@ export function useEmbeddings(): UseEmbeddingsReturn {
   };
 
   /**
-   * Manual fallback: write a precomputed embedding via the RPC.
-   * Most callers should NOT need this — `generateEmbedding(text, itemType, itemId)`
-   * already persists for them.
+   * Persisting an embedding is server-only: `update_embedding` is a
+   * SECURITY DEFINER function with no ownership check, so EXECUTE is revoked
+   * from `authenticated` and only the `generate-embedding` edge function
+   * (service role, caller verified via JWT) may write vectors.
+   * Use `generateEmbedding(text, itemType, itemId)` — it persists for you.
    */
   const updateEmbedding = async (
     itemType: EmbeddingItemType,
     itemId: string,
-    embedding: number[]
+    _embedding: number[]
   ): Promise<boolean> => {
-    try {
-      const embeddingStr = `[${embedding.join(",")}]`;
-      const { error } = await supabase.rpc("update_embedding", {
-        p_item_type: itemType,
-        p_item_id: itemId,
-        p_embedding: embeddingStr,
-      });
-      if (error) throw new Error(error.message);
-      return true;
-    } catch (error) {
-      console.error("Failed to update embedding:", error);
-      throw error;
-    }
+    throw new Error(
+      "Writing embeddings from the client is not allowed. Use generateEmbedding(text, itemType, itemId)."
+    );
   };
 
   const refreshEmbedding = async (
