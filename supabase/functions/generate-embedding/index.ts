@@ -105,9 +105,35 @@ Deno.serve(async (req) => {
       console.error("[generate-embedding] usage logging threw:", e);
     }
 
-    // 5. Optional: persist into the right artefact table
+    // 5. Optional: persist into the right artefact table.
+    //    update_embedding() is SECURITY DEFINER with no ownership check and is
+    //    no longer callable by `authenticated`, so the ownership check lives
+    //    here: you may only rewrite the vector of your own artefact.
     let written = false;
     if (itemType && itemId) {
+      const TABLES: Record<ItemType, string> = {
+        prompt: "prompts",
+        skill: "skills",
+        workflow: "workflows",
+        prompt_kit: "prompt_kits",
+      };
+      const { data: owner, error: ownErr } = await sb
+        .from(TABLES[itemType])
+        .select("author_id")
+        .eq("id", itemId)
+        .maybeSingle();
+
+      if (ownErr) {
+        console.error("[generate-embedding] ownership lookup failed:", ownErr);
+        return json({ error: "Failed to verify ownership" }, 500);
+      }
+      if (!owner) {
+        return json({ error: "Item not found" }, 404);
+      }
+      if (owner.author_id !== userId) {
+        return json({ error: "Forbidden: you do not own this item" }, 403);
+      }
+
       const embeddingStr = `[${embedding.join(",")}]`;
       const { error: updErr } = await sb.rpc("update_embedding", {
         p_item_type: itemType,
