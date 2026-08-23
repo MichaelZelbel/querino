@@ -14,6 +14,7 @@
     "check:types": "node scripts/deno-check.mjs",
     "test": "playwright test --config=playwright.security.config.ts",
     "test:security": "playwright test --config=playwright.security.config.ts",
+    "test:unit": "deno test --config=supabase/functions/deno.json supabase/functions/_shared/",
     "preview": "vite preview"
   },
   "dependencies": {
