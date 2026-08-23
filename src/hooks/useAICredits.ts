@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+/** One row from the get_my_plan() RPC, which is how role and plan_type are
+ * read now that they are no longer selectable off the profiles table. */
+interface MyPlanRow {
+  role: string | null;
+  plan_type: string | null;
+  plan_source: string | null;
+}
+
+
 interface AICreditsData {
   id: string;
   tokensGranted: number;
@@ -71,7 +80,7 @@ export function useAICredits() {
       const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
       
       // Determine plan base credits
-      const isPremium = (profileResult.data as any)?.[0]?.plan_type === "premium";
+      const isPremium = (profileResult.data as MyPlanRow[] | null)?.[0]?.plan_type === "premium";
       const planBaseCredits = isPremium
         ? settingsMap["credits_premium_per_month"] || 1500
         : settingsMap["credits_free_per_month"] || 0;

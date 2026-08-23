@@ -241,9 +241,9 @@ export function UsersPanel() {
       });
 
       toast.success("User deleted successfully");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error(error.message || "Failed to delete user");
+      toast.error(error instanceof Error ? error.message : "Failed to delete user");
     } finally {
       setDeletingUserId(null);
     }

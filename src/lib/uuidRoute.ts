@@ -20,9 +20,14 @@ export async function resolveSlugFromId(
   table: "prompts" | "skills" | "workflows" | "prompt_kits",
   id: string,
 ): Promise<string | null> {
-  const { data } = await (supabase.from(table) as any)
+  // `table` is a union, so supabase-js cannot resolve which generated row type
+  // this query returns and the whole chain collapses. Only the shape actually
+  // read is asserted, rather than switching the client off with `any`: all four
+  // tables have a nullable slug, and nothing else here is touched.
+  const { data } = await supabase
+    .from(table)
     .select("slug")
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle<{ slug: string | null }>();
   return data?.slug ?? null;
 }

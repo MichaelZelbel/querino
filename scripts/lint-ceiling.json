@@ -3,7 +3,7 @@
     "@typescript-eslint/no-explicit-any"
   ],
   "note": "The ceiling on `any`. It may be lowered, never raised. See scripts/lint-ratchet.mjs.",
-  "total": 206,
+  "total": 205,
   "perFile": {
     "./src/components/admin/EmbeddingsBackfillPanel.tsx": 2,
     "./src/components/admin/ModerationPanel.tsx": 10,
@@ -36,7 +36,6 @@
     "./src/hooks/useSuggestions.ts": 1,
     "./src/hooks/useUpdatePromptKitSlug.ts": 1,
     "./src/lib/markdown.ts": 2,
-    "./src/pages/Admin.tsx": 1,
     "./src/pages/blog/BlogPost.tsx": 1,
     "./src/pages/CollectionDetail.tsx": 3,
     "./src/pages/CollectionEdit.tsx": 2,

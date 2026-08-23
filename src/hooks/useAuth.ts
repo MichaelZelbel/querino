@@ -4,6 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Profile } from "@/types/profile";
 
+/** One row from the get_my_plan() RPC, which is how role and plan_type are
+ * read now that they are no longer selectable off the profiles table. */
+interface MyPlanRow {
+  role: string | null;
+  plan_type: string | null;
+  plan_source: string | null;
+}
+
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -96,7 +105,7 @@ export function useAuth() {
       if (error) {
         console.error("Error fetching profile:", error);
       } else {
-        const plan = (planRows as any)?.[0] ?? {};
+        const plan = (planRows as MyPlanRow[] | null)?.[0] ?? {};
         setProfile(data ? ({ ...data, ...plan } as Profile) : null);
       }
     } catch (err) {
