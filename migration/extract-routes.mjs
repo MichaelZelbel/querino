@@ -1,7 +1,8 @@
 // Dumps the router as data so the post-migration route tree can be diffed against it.
 // Pre-migration it parses the <Route> elements out of src/App.tsx.
 // Post-migration, replace parseAppTsx() with a walk of src/routes/** and keep the output
-// format identical — routes.txt is the file that gets diffed.
+// format identical. routes.txt is then diffed against routes.before.txt, which is the
+// frozen pre-migration list and must not be regenerated.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
