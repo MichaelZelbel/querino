@@ -34,6 +34,18 @@ const JOB_ENDPOINTS: Array<{ name: string; body: Record<string, unknown>; does: 
     body: { batch_init: true },
     does: "walks every profile and provisions allowances",
   },
+  {
+    // Added 23 August 2026, when this stopped being admin-only so pg_cron
+    // could reach it. That change also set verify_jwt = false, which means
+    // the gateway no longer turns anyone away and the function's own guard is
+    // the only thing left. This row is what checks that the guard is there.
+    //
+    // dryRun so the positive control below counts rows instead of buying
+    // embeddings for all of them.
+    name: "backfill-embeddings",
+    body: { dryRun: true },
+    does: "reads every artifact with no embedding and spends real money embedding them",
+  },
 ];
 
 test.describe("H1 — machine endpoints are not open to the world", () => {

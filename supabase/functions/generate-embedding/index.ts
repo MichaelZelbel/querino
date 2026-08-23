@@ -1,16 +1,17 @@
 // Edge Function: generate-embedding
-// Replaces the n8n embedding webhook. Calls OpenAI text-embedding-3-small
-// (1536 dim — matches existing vector(1536) columns), optionally writes the
-// embedding into the artefact table directly, and logs token usage.
+// Replaces the n8n embedding webhook. Embeds text as text-embedding-3-small
+// (1536 dim — matches existing vector(1536) columns) through whichever
+// provider in _shared/embeddings.ts answers, optionally writes the embedding
+// into the artefact table directly, and logs token usage.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeadersFor } from "../_shared/cors.ts";
 import { assertCredits, CreditsExhaustedError, getCallerUserId, getServiceClient } from "../_shared/llm.ts";
+import { createEmbedding, EMBEDDING_DIMENSIONS, type EmbeddingResult } from "../_shared/embeddings.ts";
 
 
-const EMBEDDING_MODEL = "text-embedding-3-small"; // 1536 dim — DO NOT change without DB migration
-const EMBEDDING_DIMENSIONS = 1536;
-const MAX_INPUT_CHARS = 8000;
+// EMBEDDING_MODEL, EMBEDDING_DIMENSIONS and MAX_INPUT_CHARS now live in
+// _shared/embeddings.ts, so the two functions that embed cannot disagree.
 
 type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 const VALID_TYPES: ItemType[] = ["prompt", "skill", "workflow", "prompt_kit"];
@@ -64,45 +65,27 @@ Deno.serve(async (req) => {
       throw e;
     }
 
-    // 4. Call OpenAI
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) {
-      return json({ error: "OPENAI_API_KEY not configured" }, 500);
+    // 4. Turn it into a vector, whichever provider is answering today.
+    //
+    //    This used to call OpenAI directly. On 23 August the OpenAI balance hit
+    //    zero and every call here returned 429, which the semantic-merge caller
+    //    catches and turns into an empty list on purpose, so concept search on
+    //    the website silently became keyword search. _shared/embeddings.ts
+    //    tries each configured provider before giving up.
+    let result: EmbeddingResult;
+    try {
+      result = await createEmbedding(text);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error("[generate-embedding] no provider could answer:", detail);
+      return json({ error: "Embedding provider error", details: detail }, 502);
     }
 
-    const trimmed = text.slice(0, MAX_INPUT_CHARS);
-    const oaResp = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: trimmed,
-      }),
-    });
-
-    if (!oaResp.ok) {
-      const errText = await oaResp.text().catch(() => "");
-      console.error("[generate-embedding] OpenAI error:", oaResp.status, errText);
-      return json({ error: "Embedding provider error", status: oaResp.status, details: errText }, 502);
-    }
-
-    const oaJson = await oaResp.json() as {
-      data?: Array<{ embedding?: number[] }>;
-      usage?: { prompt_tokens?: number; total_tokens?: number };
-      model?: string;
-    };
-
-    const embedding = oaJson.data?.[0]?.embedding;
-    if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS) {
-      return json({ error: "Invalid embedding response", got: embedding?.length ?? null }, 502);
-    }
+    const embedding = result.embedding;
 
     // 4. Token logging (best-effort — never block response)
-    const promptTokens = Number(oaJson.usage?.prompt_tokens ?? 0);
-    const totalTokens = Number(oaJson.usage?.total_tokens ?? promptTokens);
+    const promptTokens = result.promptTokens;
+    const totalTokens = result.totalTokens;
     const sb = getServiceClient();
 
     try {
@@ -110,8 +93,8 @@ Deno.serve(async (req) => {
         p_user_id: userId,
         p_idempotency_key: crypto.randomUUID(),
         p_feature: "embedding",
-        p_provider: "openai",
-        p_model: oaJson.model || EMBEDDING_MODEL,
+        p_provider: result.provider,
+        p_model: result.model,
         p_prompt_tokens: promptTokens,
         p_completion_tokens: 0,
         p_total_tokens: totalTokens,
@@ -147,7 +130,7 @@ Deno.serve(async (req) => {
     return json({
       embedding,
       dimensions: EMBEDDING_DIMENSIONS,
-      model: oaJson.model || EMBEDDING_MODEL,
+      model: result.model,
       tokens: totalTokens,
       written,
     }, 200);

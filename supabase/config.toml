@@ -41,6 +41,9 @@ verify_jwt = false  # pg_cron every 1min, X-Internal-Key only
 [functions.ensure-token-allowance]
 verify_jwt = false  # batch_init is reachable by a keyless machine caller holding X-Internal-Key
 
+[functions.backfill-embeddings]
+verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; the Admin page button also calls it
+
 # ── Public by design: the caller is a stranger and that is the point ──────────
 
 [functions.api]
@@ -77,9 +80,6 @@ verify_jwt = false  # TODO: no caller found in this repository
 # bring nothing at all.
 
 [functions.ai-insights]
-verify_jwt = true
-
-[functions.backfill-embeddings]
 verify_jwt = true
 
 [functions.check-subscription]
