@@ -150,3 +150,71 @@ export async function createSearchablePrompt(): Promise<PromptFixture> {
     },
   };
 }
+
+// ── Searchable skill ──────────────────────────────────────────────────
+
+export interface SkillFixture {
+  id: string;
+  title: string;
+  /** Unique to this run, so an assertion cannot pass on somebody else's row. */
+  marker: string;
+  /** A word from the START of the title. */
+  firstTitleWord: string;
+  /** A word from the END of the title. Never adjacent to firstTitleWord. */
+  lastTitleWord: string;
+  /** A word that appears ONLY in the description. */
+  descriptionWord: string;
+  /** A word that appears ONLY in the content body. */
+  contentWord: string;
+  /** Two words that really are side by side in the title. */
+  adjacentPhrase: string;
+  /** The same two words the wrong way round. */
+  reversedPhrase: string;
+  remove: () => Promise<void>;
+}
+
+/**
+ * An UNPUBLISHED skill owned by the test account, with a distinct marker word
+ * planted in each of the three searched columns.
+ *
+ * The shape matters: the words a caller would naturally type are spread across
+ * title, description and content and are never adjacent, which is exactly the
+ * case a single `%whole query%` pattern cannot match.
+ */
+export async function createSearchableSkill(): Promise<SkillFixture> {
+  const { userId } = await signInTestUser();
+  const marker = randomBytes(4).toString("hex");
+  const title = `Seczz${marker} orchestrator, eight-phase feature runner`;
+
+  const res = await restAsService<Array<{ id: string }>>("skills", {
+    method: "POST",
+    body: {
+      author_id: userId,
+      title,
+      description: `Security suite fixture ${marker}. It interrogates the caller relentlessly.`,
+      content: `Fixture body. The word zqbody${marker} appears here and nowhere else.`,
+      category: "coding",
+      published: false,
+    },
+    headers: { Prefer: "return=representation" },
+  });
+  if (!res.ok || !res.data?.[0]) {
+    throw new Error(`Creating the skill search fixture failed: ${JSON.stringify(res.error)}`);
+  }
+
+  const id = res.data[0].id;
+  return {
+    id,
+    title,
+    marker: `Seczz${marker}`,
+    firstTitleWord: `Seczz${marker}`,
+    lastTitleWord: "runner",
+    descriptionWord: "interrogates",
+    contentWord: `zqbody${marker}`,
+    adjacentPhrase: "eight-phase feature",
+    reversedPhrase: "feature eight-phase",
+    remove: async () => {
+      await restAsService(`skills?id=eq.${id}`, { method: "DELETE" });
+    },
+  };
+}

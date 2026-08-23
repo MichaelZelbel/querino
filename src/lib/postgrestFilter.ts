@@ -2,8 +2,11 @@
 // functions and the browser share one implementation rather than a copy each.
 // Finding S4 of the August 2026 audit is what three copies of one rule cost.
 export {
+  allTermsFilters,
+  anyTermFilter,
   escapeFilterValue,
   ilikeContains,
   orIlikeContains,
   ownedByUserOrTeams,
+  tokenizeSearchQuery,
 } from "../../supabase/functions/_shared/postgrestFilter";

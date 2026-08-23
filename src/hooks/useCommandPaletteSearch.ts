@@ -3,9 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDebounce } from "@/hooks/useDebounce";
-import { orIlikeContains, ownedByUserOrTeams } from "@/lib/postgrestFilter";
+import { allTermsFilters, ownedByUserOrTeams } from "@/lib/postgrestFilter";
 
 export type ArtefactType = "prompt" | "skill" | "workflow" | "prompt_kit";
+
+// All four tables keep their text in the same three columns, and someone
+// typing into the palette does not know which one holds the word they
+// remember. The MCP server searches exactly these, so the box and the agent
+// answer the same question.
+const SEARCH_COLUMNS = ["title", "description", "content"] as const;
+
+/**
+ * "Every word appears somewhere in these columns."
+ *
+ * Each word becomes its own `or(...)`, and PostgREST ANDs repeated parameters,
+ * so a two-word search no longer requires the two words to sit side by side in
+ * one column. That requirement is what made multi-word searches come back
+ * empty; see the note in supabase/functions/_shared/postgrestFilter.ts.
+ */
+function withAllTerms<T extends { or(filters: string): T }>(
+  builder: T,
+  columns: readonly string[],
+  query: string,
+): T {
+  return allTermsFilters(columns, query).reduce((acc, filter) => acc.or(filter), builder);
+}
 
 export interface SearchResult {
   id: string;
@@ -53,8 +75,8 @@ export function useCommandPaletteSearch(query: string) {
         let promptQuery = supabase
           .from("prompts")
           .select("id, title, description, is_public, team_id")
-          .or(orIlikeContains(["title", "description", "content"], debouncedQuery))
           .limit(10);
+        promptQuery = withAllTerms(promptQuery, SEARCH_COLUMNS, debouncedQuery);
 
         if (currentWorkspace === "personal") {
           promptQuery = promptQuery.eq("author_id", user.id).is("team_id", null);
@@ -80,8 +102,8 @@ export function useCommandPaletteSearch(query: string) {
         let skillQuery = supabase
           .from("skills")
           .select("id, title, description, published, team_id")
-          .or(orIlikeContains(["title", "description", "content"], debouncedQuery))
           .limit(10);
+        skillQuery = withAllTerms(skillQuery, SEARCH_COLUMNS, debouncedQuery);
 
         if (currentWorkspace === "personal") {
           skillQuery = skillQuery.eq("author_id", user.id).is("team_id", null);
@@ -107,8 +129,8 @@ export function useCommandPaletteSearch(query: string) {
         let workflowQuery = supabase
           .from("workflows")
           .select("id, title, description, published, team_id")
-          .or(orIlikeContains(["title", "description"], debouncedQuery))
           .limit(10);
+        workflowQuery = withAllTerms(workflowQuery, SEARCH_COLUMNS, debouncedQuery);
 
         if (currentWorkspace === "personal") {
           workflowQuery = workflowQuery.eq("author_id", user.id).is("team_id", null);
@@ -133,8 +155,8 @@ export function useCommandPaletteSearch(query: string) {
         // Search prompt kits (route uses slug, so we expose slug as id)
         let kitQuery = (supabase.from("prompt_kits") as any)
           .select("id, slug, title, description, published, team_id")
-          .or(orIlikeContains(["title", "description", "content"], debouncedQuery))
           .limit(10);
+        kitQuery = withAllTerms(kitQuery, SEARCH_COLUMNS, debouncedQuery);
 
         if (currentWorkspace === "personal") {
           kitQuery = kitQuery.eq("author_id", user.id).is("team_id", null);
@@ -180,11 +202,12 @@ export function useCommandPaletteSearch(query: string) {
 
     const searchPublic = async () => {
       try {
-        const { data, error: publicError } = await supabase
-          .from("prompts")
-          .select("id, title, description")
-          .eq("is_public", true)
-          .or(orIlikeContains(["title", "description"], debouncedQuery))
+        const publicQuery = withAllTerms(
+          supabase.from("prompts").select("id, title, description").eq("is_public", true),
+          SEARCH_COLUMNS,
+          debouncedQuery,
+        );
+        const { data, error: publicError } = await publicQuery
           .order("rating_avg", { ascending: false })
           .limit(8);
         if (publicError) throw publicError;

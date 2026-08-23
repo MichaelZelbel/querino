@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { McpServer, StreamableHttpTransport } from "mcp-lite";
 import { createClient } from "@supabase/supabase-js";
-import { orIlikeContains } from "../_shared/postgrestFilter.ts";
+import { allTermsFilters, anyTermFilter, tokenizeSearchQuery } from "../_shared/postgrestFilter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +78,54 @@ function buildMcpServer(auth: Auth) {
 
   const sb = authedClient(auth);
 
+  // Every table below keeps its text in the same three columns, and an agent
+  // looking for "the skill about grilling me" has no idea which of the three
+  // holds the word it remembers. Searching all three costs nothing here and
+  // is what the command palette already does on the website.
+  const SEARCH_COLUMNS = ["title", "description", "content"] as const;
+
+  /**
+   * The body of every search_* tool.
+   *
+   * Two passes, because an empty answer is the one answer an agent cannot
+   * check: first "every word appears somewhere", then, only if that found
+   * nothing, "any word appears somewhere". A near miss the caller can reject
+   * beats a clean "nothing found" it will repeat as fact.
+   *
+   * Ownership is filtered here rather than by RLS, because this client holds
+   * the service-role key. `published` is deliberately not filtered: these
+   * tools search the caller's own shelf, drafts included.
+   */
+  const runSearch = async (table: string, columns: string, query: string) => {
+    const select = () =>
+      sb.from(table).select(columns).eq("author_id", auth.userId)
+        .order("updated_at", { ascending: false }).limit(30);
+
+    let strict = select();
+    for (const filter of allTermsFilters(SEARCH_COLUMNS, query)) {
+      strict = strict.or(filter);
+    }
+
+    const { data, error } = await strict;
+    if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+    if (data && data.length > 0) {
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    }
+
+    const loose = anyTermFilter(SEARCH_COLUMNS, query);
+    // One term is already its own loose pass, and a blank query has no terms
+    // at all; sending `or=()` in either case would be a parse error.
+    if (!loose || tokenizeSearchQuery(query).length < 2) {
+      return { content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }] };
+    }
+
+    const { data: partial, error: partialError } = await select().or(loose);
+    if (partialError) {
+      return { content: [{ type: "text", text: `Error: ${partialError.message}` }] };
+    }
+    return { content: [{ type: "text", text: JSON.stringify(partial ?? [], null, 2) }] };
+  };
+
   // ── PROMPTS ───────────────────────────────────────────────────────
 
   mcpServer.tool("list_prompts", {
@@ -104,22 +152,21 @@ function buildMcpServer(auth: Auth) {
   });
 
   mcpServer.tool("search_prompts", {
-    description: "Search your prompts by keyword in title or description.",
+    description:
+      "Search your prompts by keyword in title, description or content. " +
+      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      "Searches everything you own, drafts and private items included.",
     inputSchema: {
       type: "object",
-      properties: { query: { type: "string", description: "Search keyword" } },
+      properties: { query: { type: "string", description: "Search keywords" } },
       required: ["query"],
     },
     handler: async ({ query }: { query: string }) => {
-      const { data, error } = await sb
-        .from("prompts")
-        .select("id, title, category, tags, is_public, language, updated_at")
-        .eq("author_id", auth.userId)
-        .or(orIlikeContains(["title", "description"], query))
-        .order("updated_at", { ascending: false })
-        .limit(30);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      return await runSearch(
+        "prompts",
+        "id, title, category, tags, is_public, language, updated_at",
+        query,
+      );
     },
   });
 
@@ -251,22 +298,21 @@ function buildMcpServer(auth: Auth) {
   });
 
   mcpServer.tool("search_skills", {
-    description: "Search your skills by keyword.",
+    description:
+      "Search your skills by keyword in title, description or content. " +
+      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      "Searches everything you own, drafts and unpublished skills included.",
     inputSchema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: { query: { type: "string", description: "Search keywords" } },
       required: ["query"],
     },
     handler: async ({ query }: { query: string }) => {
-      const { data, error } = await sb
-        .from("skills")
-        .select("id, title, category, tags, published, language, updated_at")
-        .eq("author_id", auth.userId)
-        .or(orIlikeContains(["title", "description"], query))
-        .order("updated_at", { ascending: false })
-        .limit(30);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      return await runSearch(
+        "skills",
+        "id, title, category, tags, published, language, updated_at",
+        query,
+      );
     },
   });
 
@@ -398,22 +444,21 @@ function buildMcpServer(auth: Auth) {
   });
 
   mcpServer.tool("search_workflows", {
-    description: "Search your workflows by keyword.",
+    description:
+      "Search your workflows by keyword in title, description or content. " +
+      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      "Searches everything you own, drafts and unpublished workflows included.",
     inputSchema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: { query: { type: "string", description: "Search keywords" } },
       required: ["query"],
     },
     handler: async ({ query }: { query: string }) => {
-      const { data, error } = await sb
-        .from("workflows")
-        .select("id, title, category, tags, published, language, updated_at")
-        .eq("author_id", auth.userId)
-        .or(orIlikeContains(["title", "description"], query))
-        .order("updated_at", { ascending: false })
-        .limit(30);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      return await runSearch(
+        "workflows",
+        "id, title, category, tags, published, language, updated_at",
+        query,
+      );
     },
   });
 
@@ -548,22 +593,21 @@ function buildMcpServer(auth: Auth) {
   });
 
   mcpServer.tool("search_claws", {
-    description: "Search your claws by keyword.",
+    description:
+      "Search your claws by keyword in title, description or content. " +
+      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      "Searches everything you own, drafts and unpublished claws included.",
     inputSchema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: { query: { type: "string", description: "Search keywords" } },
       required: ["query"],
     },
     handler: async ({ query }: { query: string }) => {
-      const { data, error } = await sb
-        .from("claws")
-        .select("id, title, category, tags, published, source, language, updated_at")
-        .eq("author_id", auth.userId)
-        .or(orIlikeContains(["title", "description"], query))
-        .order("updated_at", { ascending: false })
-        .limit(30);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      return await runSearch(
+        "claws",
+        "id, title, category, tags, published, source, language, updated_at",
+        query,
+      );
     },
   });
 
@@ -832,22 +876,21 @@ function buildMcpServer(auth: Auth) {
   });
 
   mcpServer.tool("search_prompt_kits", {
-    description: "Search your prompt kits by keyword in title, description, or content.",
+    description:
+      "Search your prompt kits by keyword in title, description or content. " +
+      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      "Searches everything you own, drafts and unpublished kits included.",
     inputSchema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: { query: { type: "string", description: "Search keywords" } },
       required: ["query"],
     },
     handler: async ({ query }: { query: string }) => {
-      const { data, error } = await sb
-        .from("prompt_kits")
-        .select("id, slug, title, category, tags, published, language, updated_at")
-        .eq("author_id", auth.userId)
-        .or(orIlikeContains(["title", "description", "content"], query))
-        .order("updated_at", { ascending: false })
-        .limit(30);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      return await runSearch(
+        "prompt_kits",
+        "id, slug, title, category, tags, published, language, updated_at",
+        query,
+      );
     },
   });
 

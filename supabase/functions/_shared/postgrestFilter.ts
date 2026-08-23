@@ -130,3 +130,88 @@ export function ownedByUserOrTeams(
   const list = teamIds.map((id) => `"${escapeFilterValue(id)}"`).join(",");
   return `${mine},${teamIdColumn}.in.(${list})`;
 }
+
+// ---------------------------------------------------------------------------
+// Multi-word search
+// ---------------------------------------------------------------------------
+//
+// August 2026, reported from a Claude Code session: `search_skills` was asked
+// for "alamops implement orchestrator" and returned nothing, while the skill
+// it was looking for is titled "Implement (alamops): eight-phase feature
+// orchestrator, kept dormant". All three words are in the title. The session
+// concluded the record did not exist, and then that private records must be
+// invisible to search.
+//
+// Neither was true. The whole query string was being pasted into ONE
+// `%...%` pattern, so a multi-word search only ever matched when those words
+// appeared side by side, in that order, in a single column. One word worked,
+// two words usually did not, and the failure looked exactly like an empty
+// library.
+//
+// That is the same shape of harm as finding M2 above: a search that answers
+// "nothing" when it means "I did not understand the question". An agent
+// cannot tell those apart, so it reports the absence as fact.
+//
+// The fix is to treat the query as words. Each word gets its own filter, and
+// a row has to satisfy all of them; see {@link allTermsFilters}.
+
+/** Words past this are ignored. Dropping a word only ever widens the result
+ *  set, so a long query degrades into a looser search rather than a wrong
+ *  "nothing found". */
+const MAX_SEARCH_TERMS = 8;
+
+/**
+ * Split a search query into terms.
+ *
+ * Whitespace separates words. A "quoted phrase" stays one term, which is how
+ * a caller asks for the old side-by-side behaviour on purpose.
+ *
+ * Returns an empty array for a blank query; callers then apply no search
+ * filter at all rather than matching the empty string.
+ */
+export function tokenizeSearchQuery(query: string): string[] {
+  const terms: string[] = [];
+  const pattern = /"([^"]*)"|(\S+)/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(query)) !== null) {
+    const term = (match[1] ?? match[2] ?? "").trim();
+    if (term) terms.push(term);
+    if (terms.length >= MAX_SEARCH_TERMS) break;
+  }
+
+  return terms;
+}
+
+/**
+ * "Every word appears somewhere in these columns", as one `or(...)` expression
+ * per word.
+ *
+ * PostgREST ANDs repeated top-level query parameters, and supabase-js appends
+ * rather than replaces on each `.or()` call, so chaining these gives
+ * (word1 in any column) AND (word2 in any column) AND ...
+ *
+ *   let q = sb.from("skills").select("*").eq("author_id", id);
+ *   for (const f of allTermsFilters(SEARCH_COLUMNS, query)) q = q.or(f);
+ */
+export function allTermsFilters(columns: readonly string[], query: string): string[] {
+  return tokenizeSearchQuery(query).map((term) => orIlikeContains(columns, term));
+}
+
+/**
+ * "Any word appears somewhere in these columns", as a single `or(...)`
+ * expression.
+ *
+ * This is the second chance after {@link allTermsFilters} finds nothing. A
+ * caller that asked for four words and owns something matching three of them
+ * is better served by that near miss than by an empty list it will read as
+ * proof the thing does not exist.
+ *
+ * Returns an empty string when there is nothing to search for; callers should
+ * skip the query rather than send `or=()`, which is a parse error.
+ */
+export function anyTermFilter(columns: readonly string[], query: string): string {
+  return tokenizeSearchQuery(query)
+    .flatMap((term) => columns.map((column) => ilikeContains(column, term)))
+    .join(",");
+}
