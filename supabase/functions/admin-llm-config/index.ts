@@ -11,6 +11,8 @@ import {
   getCallSiteMeta,
   PROVIDER_PRESETS,
   PROVIDER_SECRETS,
+  DEFAULT_PROVIDER,
+  DEFAULT_MODEL,
 } from "../_shared/llm-registry.ts";
 import { callProvider, providerAvailability } from "../_shared/llm-providers.ts";
 import {
@@ -214,7 +216,7 @@ Deno.serve(async (req: Request) => {
         admin as unknown as DbLike,
         callSite,
         tier,
-        { provider: "lovable", model: "google/gemini-3-flash-preview" },
+        { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL },
       );
 
       const secretName = PROVIDER_SECRETS[effective.provider];

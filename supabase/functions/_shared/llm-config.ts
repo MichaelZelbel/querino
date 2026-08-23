@@ -6,7 +6,7 @@
 // chooses among them as a pure function. Menerio's version does both at once
 // and therefore cannot be tested without a database.
 
-import type { Provider, Tier } from "./llm-registry.ts";
+import { DEFAULT_PROVIDER, DEFAULT_MODEL, type Provider, type Tier } from "./llm-registry.ts";
 
 export interface ConfigRow {
   call_site: string;
@@ -226,9 +226,11 @@ export async function resolveSystemPrompt(
   fallback: string,
   vars?: Record<string, string | number | null | undefined>,
 ): Promise<string> {
+  // Only the resolved system_prompt is used here, so provider and model are
+  // placeholders; they still name the real default rather than a dead one.
   const { effective } = await resolveConfig(db, callSite, tier, {
-    provider: "lovable",
-    model: "",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
     systemPrompt: fallback,
   });
   return interpolatePrompt(effective.system_prompt, vars) ?? fallback;

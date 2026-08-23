@@ -22,9 +22,16 @@ import {
   type ToolDefinition as ProviderToolDefinition,
   type ToolChoice,
 } from "./llm-providers.ts";
-import { PROVIDER_SECRETS, type Provider } from "./llm-registry.ts";
+import {
+  PROVIDER_SECRETS,
+  DEFAULT_PROVIDER,
+  DEFAULT_MODEL as REGISTRY_DEFAULT_MODEL,
+  type Provider,
+} from "./llm-registry.ts";
 
-export const DEFAULT_MODEL = "google/gemini-3-flash-preview";
+// One source of truth, in llm-registry.ts. Re-exported here because several
+// functions already import DEFAULT_MODEL from this module.
+export const DEFAULT_MODEL = REGISTRY_DEFAULT_MODEL;
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -231,7 +238,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
 
   const tier = await resolveTier(db, opts.user_id ?? null);
   const { effective, source } = await resolveConfig(db, opts.feature, tier, {
-    provider: "lovable",
+    provider: DEFAULT_PROVIDER,
     model: opts.model || DEFAULT_MODEL,
     temperature: opts.temperature ?? null,
   });

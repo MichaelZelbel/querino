@@ -21,11 +21,17 @@ import {
 } from "./helpers/api";
 
 const CALL_SITE = "suggest-metadata";
-const CODE_DEFAULT = "google/gemini-3-flash-preview";
-const OVERRIDE_MODEL = "google/gemini-2.5-flash-lite";
 const ROW = `llm_call_configs?call_site=eq.${CALL_SITE}&tier=eq.default`;
 
 const CACHE_TTL_MS = 30_000;
+
+// A model this call site is definitely NOT set to, chosen per provider so the
+// override is real whatever the row currently says.
+const OVERRIDE_BY_PROVIDER: Record<string, string> = {
+  openrouter: "mistralai/mistral-small-3.2-24b-instruct",
+  lovable: "google/gemini-2.5-flash-lite",
+  openai: "gpt-4o-mini",
+};
 
 interface UsageRow {
   model: string;
@@ -33,12 +39,23 @@ interface UsageRow {
   metadata: Record<string, unknown>;
 }
 
+interface ConfigRow {
+  provider: string;
+  model: string;
+  enabled: boolean;
+}
+
+// Captured before the test overrides anything, restored afterwards. Hardcoding
+// the restore value would silently rewrite whatever an administrator had
+// configured, which is a nasty way for a test to damage production.
+let original: ConfigRow | null = null;
+
 test.describe("a call site uses its configured model", () => {
   test.afterAll(async () => {
-    // Put it back, so the suite leaves the project as it found it.
+    if (!original) return;
     await restAsService(ROW, {
       method: "PATCH",
-      body: { model: CODE_DEFAULT, enabled: true },
+      body: { provider: original.provider, model: original.model, enabled: original.enabled },
     });
   });
 
@@ -46,9 +63,20 @@ test.describe("a call site uses its configured model", () => {
     test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
     test.setTimeout(CACHE_TTL_MS + 90_000);
 
+    const current = await restAsService<ConfigRow[]>(`${ROW}&select=provider,model,enabled`);
+    original = current.data[0];
+    expect(original, "no default-tier row for this call site; is the migration applied?").toBeTruthy();
+
+    const overrideModel = OVERRIDE_BY_PROVIDER[original.provider];
+    expect(
+      overrideModel,
+      `no override model known for provider "${original.provider}"; add one to OVERRIDE_BY_PROVIDER`,
+    ).toBeTruthy();
+    expect(overrideModel, "the override must differ from the configured model").not.toBe(original.model);
+
     await restAsService(ROW, {
       method: "PATCH",
-      body: { model: OVERRIDE_MODEL, enabled: true },
+      body: { model: overrideModel, enabled: true },
     });
 
     // Outwait the resolver's per-isolate cache before invoking the call site.
@@ -84,8 +112,8 @@ test.describe("a call site uses its configured model", () => {
     expect(
       rows[0].model,
       "the config row named a model and the runtime used a different one, so the admin page lies",
-    ).toBe(OVERRIDE_MODEL);
-    expect(rows[0].provider).toBe("lovable");
+    ).toBe(overrideModel);
+    expect(rows[0].provider).toBe(original.provider);
     expect(rows[0].metadata.config_source).toBe("db-default");
   });
 });

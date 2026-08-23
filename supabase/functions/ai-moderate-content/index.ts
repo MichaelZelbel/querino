@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
 import { resolveConfig, type DbLike } from "../_shared/llm-config.ts";
 import { callProvider } from "../_shared/llm-providers.ts";
-import { PROVIDER_SECRETS } from "../_shared/llm-registry.ts";
+import { PROVIDER_SECRETS, DEFAULT_PROVIDER, DEFAULT_MODEL } from "../_shared/llm-registry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,8 +66,8 @@ You MUST respond with a JSON object using this exact tool call.`;
     "ai-moderate-content",
     "default",
     {
-      provider: "lovable",
-      model: "google/gemini-3-flash-preview",
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
       systemPrompt,
     },
   );

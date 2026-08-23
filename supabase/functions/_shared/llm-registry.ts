@@ -8,7 +8,21 @@
 export type Provider = "lovable" | "openrouter" | "openai" | "anthropic" | "gemini";
 export type Tier = "default" | "free" | "premium";
 
-export const DEFAULT_MODEL = "google/gemini-3-flash-preview";
+// The code defaults, used when the config table has no row for a call site or
+// cannot be read at all.
+//
+// These point at OpenRouter, not at the Lovable gateway. On 2026-08-23 the
+// Lovable workspace hit its credit limit and every AI call in the app returned
+// 502; a fallback that lands on a dead provider is not a fallback. Independence
+// from Lovable has to hold when the config table is unreachable too, otherwise
+// it is only independence on a good day.
+//
+// CHAT: interactive and user-facing, so it has to be quick and reliable.
+// BACKGROUND: short structured output nobody waits on, so it is the cheap one.
+export const DEFAULT_PROVIDER: Provider = "openrouter";
+export const DEFAULT_MODEL = "google/gemini-3.1-flash-lite";
+export const BACKGROUND_MODEL = "deepseek/deepseek-v4-flash";
+export const TRANSLATION_MODEL = "google/gemini-3.7-flash";
 
 export interface CallSiteMeta {
   call_site: string;
@@ -20,23 +34,23 @@ export interface CallSiteMeta {
 }
 
 export const CALL_SITES: CallSiteMeta[] = [
-  { call_site: "prompt-coach", description: "Chat coach that helps a user write a prompt.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "prompt-kit-coach", description: "Chat coach that helps a user write a prompt kit.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "skill-coach", description: "Chat coach that helps a user write a skill.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "workflow-coach", description: "Chat coach that helps a user write a workflow.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "suggest-metadata", description: "Suggests title, description and tags for a prompt.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "suggest-promptkit-metadata", description: "Suggests title, description and tags for a prompt kit.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "suggest-skill-metadata", description: "Suggests title, description and tags for a skill.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "suggest-workflow-metadata", description: "Suggests title, description and tags for a workflow.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "ai-insights-prompt", description: "Generates the AI insights shown on a prompt page.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "ai-insights-skill", description: "Generates the AI insights shown on a skill page.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "ai-insights-workflow", description: "Generates the AI insights shown on a workflow page.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "ai-insights-prompt_kit", description: "Generates the AI insights shown on a prompt kit page.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "prompt-wizard", description: "The guided wizard that builds a prompt from answers.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "prompt-refinement", description: "Refines an existing prompt on request.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "translate-artifact", description: "Translates an artifact into another language.", provider: "lovable", model: DEFAULT_MODEL, placeholders: ["targetLanguage"] },
-  { call_site: "canvas-ai", description: "The canvas assistant that edits an artifact in place.", provider: "lovable", model: DEFAULT_MODEL, placeholders: ["mode", "artifactType", "canvasContent"] },
-  { call_site: "ai-moderate-content", description: "Classifies queued user content against the content policies.", provider: "lovable", model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "prompt-coach", description: "Chat coach that helps a user write a prompt.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "prompt-kit-coach", description: "Chat coach that helps a user write a prompt kit.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "skill-coach", description: "Chat coach that helps a user write a skill.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "workflow-coach", description: "Chat coach that helps a user write a workflow.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "suggest-metadata", description: "Suggests title, description and tags for a prompt.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "suggest-promptkit-metadata", description: "Suggests title, description and tags for a prompt kit.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "suggest-skill-metadata", description: "Suggests title, description and tags for a skill.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "suggest-workflow-metadata", description: "Suggests title, description and tags for a workflow.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "ai-insights-prompt", description: "Generates the AI insights shown on a prompt page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "ai-insights-skill", description: "Generates the AI insights shown on a skill page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "ai-insights-workflow", description: "Generates the AI insights shown on a workflow page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "ai-insights-prompt_kit", description: "Generates the AI insights shown on a prompt kit page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
+  { call_site: "prompt-wizard", description: "The guided wizard that builds a prompt from answers.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "prompt-refinement", description: "Refines an existing prompt on request.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  { call_site: "translate-artifact", description: "Translates an artifact into another language.", provider: DEFAULT_PROVIDER, model: TRANSLATION_MODEL, placeholders: ["targetLanguage"] },
+  { call_site: "canvas-ai", description: "The canvas assistant that edits an artifact in place.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: ["mode", "artifactType", "canvasContent"] },
+  { call_site: "ai-moderate-content", description: "Classifies queued user content against the content policies.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
 ];
 
 const BY_CALL_SITE = new Map(CALL_SITES.map((c) => [c.call_site, c]));
@@ -78,15 +92,24 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     ],
   },
   {
+    // Prices are per million tokens, input/output, read from OpenRouter's public
+    // catalogue on 2026-08-23. They drift, so treat them as a rough ordering
+    // rather than a quote, and check openrouter.ai/models before trusting one.
+    // Every model here supports tool calling, which eleven of the seventeen
+    // call sites require and which fails silently on a model that lacks it.
     provider: "openrouter",
     label: "OpenRouter",
     models: [
+      { value: "google/gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite ($0.25/$1.50) — chat default" },
+      { value: "google/gemini-3.7-flash", label: "Gemini 3.7 Flash ($0.38/$1.88) — stronger, translation" },
+      { value: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash ($0.05/$0.10) — background default" },
+      { value: "qwen/qwen3.7-flash", label: "Qwen3.7 Flash ($0.03/$0.13) — cheapest sensible" },
+      { value: "mistralai/mistral-small-3.2-24b-instruct", label: "Mistral Small 3.2 24B ($0.08/$0.20)" },
+      { value: "z-ai/glm-4.7-flash", label: "GLM 4.7 Flash ($0.06/$0.40)" },
+      { value: "meta-llama/llama-4-scout", label: "Llama 4 Scout ($0.10/$0.30)" },
+      { value: "openai/gpt-5-mini", label: "GPT-5 Mini ($0.25/$2.00)" },
+      { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview ($0.50/$3.00) — dearest here" },
       { value: "openrouter/auto", label: "Auto (OpenRouter chooses)" },
-      { value: "openai/gpt-4o-mini", label: "OpenAI GPT-4o Mini" },
-      { value: "openai/gpt-4o", label: "OpenAI GPT-4o" },
-      { value: "anthropic/claude-3.5-sonnet", label: "Anthropic Claude 3.5 Sonnet" },
-      { value: "google/gemini-2.0-flash-001", label: "Google Gemini 2.0 Flash" },
-      { value: "deepseek/deepseek-r1:free", label: "DeepSeek R1 (free)" },
     ],
   },
   {
