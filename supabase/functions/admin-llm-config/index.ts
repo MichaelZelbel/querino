@@ -25,6 +25,7 @@ import {
   __clearConfigCache,
   type DbLike,
 } from "../_shared/llm-config.ts";
+import { normalizeUsageRow, summarizeUsage } from "../_shared/llm-usage-summary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,6 +129,7 @@ Deno.serve(async (req: Request) => {
       tier?: string;
       prompt?: string;
       force?: boolean;
+      days?: number;
       patch?: {
         provider?: string;
         model?: string;
@@ -207,6 +209,25 @@ Deno.serve(async (req: Request) => {
 
       __clearConfigCache();
       return json({ ok: true, call_site: callSite, tier });
+    }
+
+    if (body.action === "usage") {
+      // Zero or absent means all time. The ledger is small enough that reading
+      // all of it is the useful default when someone first opens the panel.
+      const days = Number(body.days ?? 30);
+      const since = Number.isFinite(days) && days > 0
+        ? new Date(Date.now() - days * 86_400_000).toISOString()
+        : null;
+
+      const { data, error } = await admin.rpc("admin_llm_usage_summary", { p_since: since });
+      if (error) throw error;
+
+      const rows = (data ?? []).map((r: Record<string, unknown>) => normalizeUsageRow(r));
+      // Every configured call site is passed in so the ones nobody has called
+      // still appear, at zero, instead of looking like they do not exist.
+      const summary = summarizeUsage(rows, CALL_SITES.map((c) => c.call_site));
+
+      return json({ ...summary, since, days: since ? days : null });
     }
 
     if (body.action === "sync_defaults") {

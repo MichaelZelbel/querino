@@ -14,6 +14,7 @@ import { EmbeddingsBackfillPanel } from "@/components/admin/EmbeddingsBackfillPa
 import { UsersPanel } from "@/components/admin/UsersPanel";
 
 const LLMConfigPanel = lazy(() => import("@/components/admin/LLMConfigPanel"));
+const LLMUsagePanel = lazy(() => import("@/components/admin/LLMUsagePanel"));
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -101,7 +102,10 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="llm" className="mt-6">
             <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-              <LLMConfigPanel />
+              <div className="space-y-6">
+                <LLMConfigPanel />
+                <LLMUsagePanel />
+              </div>
             </Suspense>
           </TabsContent>
         </Tabs>

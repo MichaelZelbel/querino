@@ -354,19 +354,39 @@ server file. This is the seam for the follow-up below.
 
 ## 9. Follow-ups, deliberately not in this build
 
-**Per-tier configuration.** Cheaper or slower models for free users, better ones
-for paying users, configured separately because a different model often wants a
-different system prompt. The table, the resolver and the ledger already support
-it after this build (section 1). What is missing is only the panel control: a
-tier selector that lets an administrator create a `free` or `premium` row
-alongside the `default` one.
+**Per-tier configuration: decided against, 2026-08-23.** Cheaper or slower models
+for free users, better ones for paying users. The table, the resolver and the
+ledger support it after this build (section 1). The only missing part is a tier
+selector in the panel. It is not being built, and the ledger is the reason.
 
-Worth deciding with data rather than now. The case against tiering is real: free
-users are the ones you most want to impress into paying, and giving them the
-weaker model is a strange way to sell the stronger one. The case for it is
-budget. Once this build has been live for a while, `llm_usage_events` grouped by
-feature and by user role answers which call sites actually cost money on free
-accounts, which is the number that settles the argument.
+Every AI call Querino had made by 2026-08-23, back to 26 January, is 300 calls.
+283 of them came from the two admin accounts. 17 came from free accounts, and 14
+of those 17 were the security suite's own test users (`@web-library.net`).
+Genuine free-user traffic in seven months: three calls, from two people, the last
+on 8 April. Premium and `premium_gift` accounts have made none at all.
+
+Priced at the most expensive model then configured (`google/gemini-3.7-flash`,
+$0.38/$1.88 per million), all free usage ever recorded cost $0.012, and $0.005
+excluding the test accounts. Every call by everyone, all time, cost $0.17.
+
+So the budget argument has no evidence behind it, and the argument against
+tiering keeps its force: free users are the ones you most want to impress into
+paying, and the weaker model is a strange way to sell the stronger one. There is
+also no population to split. Querino has 21 free accounts, 2 admins, one
+`premium_gift` that has never made an AI call, and no paying customers.
+
+**What would reverse this.** Moving free callers from `gemini-3.1-flash-lite` to
+`deepseek-v4-flash` saves roughly 85% per token. For that saving to be worth a
+configuration surface and its upkeep, free callers would need to be costing
+around $50 a month first, which is on the order of 40,000 free calls a month.
+Real paying users arriving is the other trigger, and the better one.
+
+Nothing is wasted by waiting. The option this build bought stays bought, and
+turning tiering on remains a panel change and nothing else.
+
+**Watching for the reversal.** Section 10 adds the usage view that makes this
+decision monitor itself, so the question can be re-asked from the panel rather
+than from hand-written SQL.
 
 **A shared model registry across applications.** Preset lists go stale as models
 ship and are retired. Three ways forward, in rising order of effort: fetch live
