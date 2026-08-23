@@ -101,6 +101,18 @@ export default function PromptDetail() {
       return;
     }
 
+    // Legacy /prompts/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+    if (isUuid(slug)) {
+      const canonical = await resolveSlugFromId("prompts", slug);
+      if (canonical) {
+        navigate(`/prompts/${canonical}`, { replace: true });
+        return;
+      }
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("prompts")

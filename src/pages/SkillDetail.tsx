@@ -83,6 +83,18 @@ export default function SkillDetail() {
       return;
     }
 
+    // Legacy /skills/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+    if (isUuid(slug)) {
+      const canonical = await resolveSlugFromId("skills", slug);
+      if (canonical) {
+        navigate(`/skills/${canonical}`, { replace: true });
+        return;
+      }
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await (supabase
         .from("skills") as any)

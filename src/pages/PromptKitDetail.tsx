@@ -116,6 +116,17 @@ export default function PromptKitDetail() {
         setLoading(false);
         return;
       }
+      // Legacy /prompt-kits/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+      if (isUuid(slug)) {
+        const canonical = await resolveSlugFromId("prompt_kits", slug);
+        if (canonical) {
+          navigate(`/prompt-kits/${canonical}`, { replace: true });
+          return;
+        }
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       try {
         const { data, error } = await (supabase.from("prompt_kits") as any)
           .select(`*, profiles:author_id (id, display_name, avatar_url)`)

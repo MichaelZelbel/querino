@@ -85,6 +85,18 @@ export default function WorkflowDetail() {
       return;
     }
 
+    // Legacy /workflows/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
+    if (isUuid(slug)) {
+      const canonical = await resolveSlugFromId("workflows", slug);
+      if (canonical) {
+        navigate(`/workflows/${canonical}`, { replace: true });
+        return;
+      }
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await (supabase
         .from("workflows") as any)
