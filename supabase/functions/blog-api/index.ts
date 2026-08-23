@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
 });
 
 async function handleGetPosts(supabase: any, params: URLSearchParams) {
-  const status = params.get("status") || "published";
+  // Public endpoint: never honour a client-supplied status — drafts stay private.
+  const status = "published";
   const limit = Math.min(parseInt(params.get("limit") || "20", 10), 100);
   const offset = parseInt(params.get("offset") || "0", 10);
   const categorySlug = params.get("category");
