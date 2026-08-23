@@ -2472,6 +2472,14 @@ export type Database = {
         Args: { p_exclude_id?: string; p_table: string; p_title: string }
         Returns: string
       }
+      get_my_plan: {
+        Args: never
+        Returns: {
+          plan_source: string
+          plan_type: string
+          role: string
+        }[]
+      }
       get_similar_prompt_kits: {
         Args: { match_limit?: number; target_id: string }
         Returns: {
