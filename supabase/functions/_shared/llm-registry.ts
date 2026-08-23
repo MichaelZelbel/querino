@@ -48,8 +48,8 @@ export const CALL_SITES: CallSiteMeta[] = [
   { call_site: "ai-insights-prompt_kit", description: "Generates the AI insights shown on a prompt kit page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
   { call_site: "prompt-wizard", description: "The guided wizard that builds a prompt from answers.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
   { call_site: "prompt-refinement", description: "Refines an existing prompt on request.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "translate-artifact", description: "Translates an artifact into another language.", provider: DEFAULT_PROVIDER, model: TRANSLATION_MODEL, placeholders: ["targetLanguage"] },
-  { call_site: "canvas-ai", description: "The canvas assistant that edits an artifact in place.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: ["mode", "artifactType", "canvasContent"] },
+  { call_site: "translate-artifact", description: "Translates an artifact into another language.", provider: DEFAULT_PROVIDER, model: TRANSLATION_MODEL, placeholders: ["artifactType", "sourceLanguage", "targetLanguage"] },
+  { call_site: "canvas-ai", description: "The canvas assistant that edits an artifact in place.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: ["mode", "artifactType", "canvasContent", "modeInstructions"] },
   { call_site: "ai-moderate-content", description: "Classifies queued user content against the content policies.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
 ];
 

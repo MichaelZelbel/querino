@@ -10,13 +10,8 @@ import {
   DEFAULT_MODEL,
   type ToolDefinition,
 } from "../_shared/llm.ts";
+import { SYSTEM_PROMPT } from "../_shared/prompts/refine-prompt.ts";
 
-
-const SYSTEM_PROMPT = `You are a senior prompt engineer for Querino. \
-Your job is to rewrite user prompts according to best practices: \
-clear context, explicit goal, well-structured sections, no ambiguity, no fluff. \
-If a framework is given (e.g. RISEN, CRISPE, RTF, CO-STAR), structure the rewrite to follow it. \
-Always preserve the user's intent and domain.`;
 
 const REFINE_TOOL: ToolDefinition = {
   type: "function",

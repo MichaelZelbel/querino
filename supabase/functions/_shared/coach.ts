@@ -12,6 +12,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeadersFor } from "./cors.ts";
+import { baseSystemSuffix } from "./prompts/coach-suffix.ts";
 import {
   callLovableAI,
   assertCredits,
@@ -75,38 +76,9 @@ const RESPOND_TOOL: ToolDefinition = {
   },
 };
 
-function baseSystemSuffix(artifactName: string): string {
-  return `
 
-----------------------------------------
-INPUT FORMAT
-----------------------------------------
-Each user turn arrives as a structured block:
-  mode: chat_only | collab_edit
-  user_message: <free text>
-  canvas_content: <the full current ${artifactName} text>
-  selection: <optional substring the user highlighted>
-
-----------------------------------------
-MODE RULES
-----------------------------------------
-If mode == "chat_only":
-- NEVER modify the canvas. Set canvas.updated = false.
-- Answer the user's question conversationally.
-
-If mode == "collab_edit":
-- You MAY modify the canvas if the user's request implies a change.
-- When you modify: set canvas.updated = true, return the FULL new canvas in canvas.content,
-  and a short canvas.changeNote describing what changed.
-- If the user only asks a question, set canvas.updated = false.
-
-----------------------------------------
-OUTPUT
-----------------------------------------
-ALWAYS reply by calling the \`respond\` tool. Never reply with plain text.`;
-}
-
-function buildSystemPrompt(cfg: CoachConfig): string {
+/** What a coach actually sends: its own text plus the block all four share. */
+export function buildSystemPrompt(cfg: CoachConfig): string {
   return cfg.systemPrompt + baseSystemSuffix(cfg.artifactName);
 }
 

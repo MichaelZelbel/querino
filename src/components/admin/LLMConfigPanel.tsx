@@ -36,11 +36,25 @@ interface Config {
   provider: Provider;
   model: string;
   system_prompt: string | null;
+  /** What this call site sends when system_prompt is null. Computed, never stored. */
+  default_system_prompt: string | null;
   temperature: number | null;
   max_tokens: number | null;
   enabled: boolean;
   updated_at: string;
   placeholders: string[];
+}
+
+/**
+ * Whether the box still holds the code default, ignoring surrounding whitespace.
+ *
+ * The same rule the server enforces on save. Kept in step deliberately: the
+ * badge would be a lie if the panel called something custom that the server
+ * then stored as null.
+ */
+function isStillTheDefault(text: string, fallback: string | null): boolean {
+  if (fallback === null) return false;
+  return text.trim() === fallback.trim();
 }
 
 interface TestResult {
@@ -93,10 +107,11 @@ export default function LLMConfigPanel() {
       <CardHeader>
         <CardTitle>LLM Call Configuration</CardTitle>
         <CardDescription>
-          Provider, model and system prompt for each AI call site. An inactive entry, or an empty
-          system prompt, falls back to the default in the code. Runtime context is substituted into{" "}
-          <code>{`{{placeholder}}`}</code> before the prompt is sent. A change can take up to 30
-          seconds to reach every call site.
+          Provider, model and system prompt for each AI call site. Edit shows the prompt that would
+          actually be sent, whether that is the one in the code or an override. Saving it unchanged
+          leaves the call site following the code; an inactive entry, or an empty system prompt, does
+          the same. Runtime context is substituted into <code>{`{{placeholder}}`}</code> before the
+          prompt is sent. A change can take up to 30 seconds to reach every call site.
         </CardDescription>
         <div className="flex flex-wrap gap-2 pt-2">
           {presets.map((p) => (
@@ -191,7 +206,13 @@ function EditDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [draft, setDraft] = useState<Config>({ ...config });
+  // The box opens showing the prompt that would actually be sent, so it can be
+  // read rather than guessed at. An untouched default is still saved as null:
+  // the server decides that, from the same rule isStillTheDefault uses here.
+  const [draft, setDraft] = useState<Config>({
+    ...config,
+    system_prompt: config.system_prompt ?? config.default_system_prompt ?? "",
+  });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testPrompt, setTestPrompt] = useState(
@@ -201,6 +222,12 @@ function EditDialog({
 
   const models = presets.find((p) => p.provider === draft.provider)?.models ?? [];
   const isCustomModel = !models.some((m) => m.value === draft.model);
+
+  // What the badge says, and what the server will conclude on save. An empty box
+  // and an untouched default are both "keep using the code".
+  const promptText = draft.system_prompt ?? "";
+  const isOverride =
+    promptText.trim().length > 0 && !isStillTheDefault(promptText, config.default_system_prompt);
 
   // Writes go through the admin function rather than PostgREST, so the whole
   // table stays behind one audited, admin-gated endpoint.
@@ -215,7 +242,10 @@ function EditDialog({
           patch: {
             provider: draft.provider,
             model: draft.model.trim(),
-            system_prompt: draft.system_prompt?.trim() ? draft.system_prompt : null,
+            // Null unless it is a real edit. The server concludes the same
+            // thing from the text alone, but sending it explicitly means the
+            // page is safe whichever of the two deploys lands first.
+            system_prompt: isOverride ? draft.system_prompt : null,
             temperature: draft.temperature,
             max_tokens: draft.max_tokens,
             enabled: draft.enabled,
@@ -326,12 +356,19 @@ function EditDialog({
 
           <div>
             <div className="flex items-center justify-between">
-              <Label>System prompt</Label>
-              {draft.system_prompt && (
+              <div className="flex items-center gap-2">
+                <Label>System prompt</Label>
+                <Badge variant={isOverride ? "default" : "secondary"} className="text-[10px]">
+                  {isOverride ? "Custom" : "Code default"}
+                </Badge>
+              </div>
+              {isOverride && config.default_system_prompt !== null && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setDraft({ ...draft, system_prompt: null })}
+                  onClick={() =>
+                    setDraft({ ...draft, system_prompt: config.default_system_prompt ?? "" })
+                  }
                 >
                   <RotateCcw className="h-3 w-3 mr-1" /> Reset to code default
                 </Button>
@@ -344,6 +381,11 @@ function EditDialog({
               placeholder="Leave empty to use the default in the code."
               className="font-mono text-xs"
             />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {isOverride
+                ? "Saved as an override. This call site stops following changes to the prompt in the code."
+                : "This is the prompt in the code. Saved as-is it stays that way, so the call site keeps following changes to it. Edit it to override, or clear the box to go back."}
+            </p>
             {draft.placeholders.length > 0 && (
               <p className="text-[11px] text-muted-foreground mt-1">
                 Available placeholders:{" "}

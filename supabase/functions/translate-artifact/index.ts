@@ -10,6 +10,8 @@ import {
   DEFAULT_MODEL,
   type ToolDefinition,
 } from "../_shared/llm.ts";
+import { interpolatePrompt } from "../_shared/llm-config.ts";
+import { SYSTEM_PROMPT } from "../_shared/prompts/translate-artifact.ts";
 
 
 const TOOL: ToolDefinition = {
@@ -66,15 +68,17 @@ serve(async (req) => {
 
     await assertCredits(user_id);
 
-    const systemPrompt = `You are a professional translator. Translate the following ${artifactType || "artifact"} from ${sourceLanguage} to ${targetLanguage}.
-
-Rules:
-- Preserve all Markdown formatting, headings, lists, and structure exactly.
-- Preserve template variables like {{variable}}, [PLACEHOLDER], and $variables exactly as-is — never translate them.
-- Preserve code blocks, inline code, URLs, file paths, and technical identifiers untranslated.
-- Translate tags contextually (they are short keywords/phrases) into lowercase ${targetLanguage} equivalents.
-- Keep the original tone and register (formal/informal).
-- Return the result via the translate_artifact tool.`;
+    // The text lives in _shared/prompts/translate-artifact.ts as a {{placeholder}}
+    // template so the LLM Config page can show it. These are also the vars an
+    // override is interpolated with, which is new: this call site never passed
+    // templateVars before, so its one advertised placeholder would have
+    // collapsed to an empty string.
+    const templateVars = {
+      artifactType: artifactType || "artifact",
+      sourceLanguage,
+      targetLanguage,
+    };
+    const systemPrompt = interpolatePrompt(SYSTEM_PROMPT, templateVars) ?? "";
 
     // Truncate content to keep token usage predictable.
     const truncatedContent = (content ?? "").toString().slice(0, 16000);
@@ -96,6 +100,7 @@ ${truncatedContent}`;
       tools: [TOOL],
       tool_choice: { type: "function", function: { name: "translate_artifact" } },
       temperature: 0.2,
+      templateVars,
       metadata: {
         artifact: artifactType || "unknown",
         source: sourceLanguage,

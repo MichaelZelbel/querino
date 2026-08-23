@@ -14,6 +14,10 @@ import {
   DEFAULT_PROVIDER,
   DEFAULT_MODEL,
 } from "../_shared/llm-registry.ts";
+import {
+  getDefaultSystemPrompt,
+  normalizeSystemPrompt,
+} from "../_shared/llm-default-prompts.ts";
 import { callProvider, providerAvailability } from "../_shared/llm-providers.ts";
 import {
   resolveConfig,
@@ -146,9 +150,18 @@ Deno.serve(async (req: Request) => {
         .order("call_site");
       if (error) throw error;
 
+      // default_system_prompt is what this call site sends with no override. The
+      // panel prefills the box with it, so an administrator can read the prompt
+      // in use instead of an empty textarea. It is computed from the code, never
+      // stored, which is what keeps `system_prompt IS NULL` meaning "still
+      // tracking the code" rather than "nobody has looked yet".
       const configs = (data ?? []).map((row: { call_site: string }) => {
         const meta = getCallSiteMeta(row.call_site);
-        return { ...row, placeholders: meta?.placeholders ?? [] };
+        return {
+          ...row,
+          placeholders: meta?.placeholders ?? [],
+          default_system_prompt: getDefaultSystemPrompt(row.call_site),
+        };
       });
 
       return json({ configs, availability: providerAvailability(), providers: PROVIDER_PRESETS });
@@ -172,9 +185,14 @@ Deno.serve(async (req: Request) => {
       const update: Record<string, unknown> = { updated_by: await callerUserId(req, admin) };
       if (patch.provider !== undefined) update.provider = patch.provider;
       if (patch.model !== undefined) update.model = String(patch.model).trim();
+      // An empty box means "use the code default", and so does a box still
+      // holding the code default. The panel prefills it now, so pressing Save
+      // without editing is the commonest thing that happens on this page; if
+      // that stored the text, the call site would silently stop tracking every
+      // later change to the code and the table's "Code default" column would
+      // start lying. Enforced here so no client can do it by accident.
       if (patch.system_prompt !== undefined) {
-        const p = patch.system_prompt;
-        update.system_prompt = p && p.trim().length > 0 ? p : null;
+        update.system_prompt = normalizeSystemPrompt(callSite, patch.system_prompt);
       }
       if (patch.temperature !== undefined) update.temperature = patch.temperature;
       if (patch.max_tokens !== undefined) update.max_tokens = patch.max_tokens;
@@ -212,11 +230,19 @@ Deno.serve(async (req: Request) => {
 
       // The panel saves before it tests, so this reads the persisted row.
       __clearConfigCache();
+      // The code default goes in as the fallback, so testing a call site that
+      // has no override exercises the prompt it really sends. Without it the
+      // test ran with no system message at all and told the administrator
+      // nothing about the prompt they were looking at.
       const { effective, source } = await resolveConfig(
         admin as unknown as DbLike,
         callSite,
         tier,
-        { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL },
+        {
+          provider: DEFAULT_PROVIDER,
+          model: DEFAULT_MODEL,
+          systemPrompt: getDefaultSystemPrompt(callSite),
+        },
       );
 
       const secretName = PROVIDER_SECRETS[effective.provider];

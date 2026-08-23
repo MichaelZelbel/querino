@@ -8,46 +8,28 @@ import {
   GatewayError,
   callLovableAI,
 } from "../_shared/llm.ts";
+import { interpolatePrompt } from "../_shared/llm-config.ts";
+import { SYSTEM_PROMPT, modeInstructions } from "../_shared/prompts/canvas-ai.ts";
 
 
+/**
+ * The prompt this call site sends when nobody has overridden it.
+ *
+ * The text lives in _shared/prompts/canvas-ai.ts as a {{placeholder}} template,
+ * so the LLM Config page can show it. Interpolating it here produces exactly
+ * what this function built inline before.
+ */
 function buildSystemPrompt(
   mode: string,
   artifactType: string,
   canvasContent: string,
 ): string {
-  const modeInstructions =
-    mode === "chat_only"
-      ? `The user wants advice only. Do NOT modify the prompt. Set canvas.updated to false.`
-      : mode === "rewrite"
-        ? `The user wants a full rewrite. Return the complete updated content in canvas.content. Set canvas.updated to true.`
-        : `The user wants collaborative editing. If the request is clear, return the full updated content in canvas.content with canvas.updated = true. If the request is unclear, ask ONE concise clarification question and set canvas.updated to false.`;
-
-  return `You are a professional prompt engineering assistant ("Prompt Coach").
-You are helping the user improve their ${artifactType} content.
-
-CURRENT CANVAS CONTENT:
----
-${canvasContent}
----
-
-MODE: ${mode}
-${modeInstructions}
-
-RULES:
-- You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no extra text.
-- JSON schema:
-  {
-    "assistantMessage": "string — your explanation, advice, or clarification question",
-    "canvas": {
-      "updated": boolean,
-      "content": "string — the FULL updated content (only if updated is true)",
-      "changeNote": "string — brief description of changes (only if updated is true)"
-    }
-  }
-- When canvas.updated is false, omit content and changeNote or set them to null.
-- When canvas.updated is true, return the COMPLETE content, not a diff.
-- Be concise but helpful in your assistantMessage.
-- If the user's request is unclear, ask ONE clarification question and do NOT modify the canvas.`;
+  return interpolatePrompt(SYSTEM_PROMPT, {
+    mode,
+    artifactType,
+    canvasContent,
+    modeInstructions: modeInstructions(mode),
+  }) ?? "";
 }
 
 serve(async (req) => {
@@ -105,10 +87,14 @@ serve(async (req) => {
           { role: "user", content: userMessage },
         ],
         temperature: 0.4,
+        // The same values the default template is built from, so an override
+        // written on the LLM Config page can use every placeholder the panel
+        // advertises rather than only some of them.
         templateVars: {
           mode: mode || "chat_only",
           artifactType: artifactType || "prompt",
           canvasContent: canvasContent ?? "",
+          modeInstructions: modeInstructions(mode || "chat_only"),
         },
       });
       rawContent = result.content || "";
