@@ -60,6 +60,19 @@ test.describe("a call site uses its configured model", () => {
       { prompt_content: "Write a haiku about a cat sitting on a warm windowsill." },
       asUser(session.accessToken),
     );
+
+    // A 502 here is almost never this feature. The usual cause is the Lovable
+    // workspace hitting its own credit limit, which the gateway reports as a
+    // 403 credit_limit_reached and which every AI call in the app fails on.
+    // Say so, rather than leaving the next person to suspect the resolver.
+    if (res.status === 502) {
+      throw new Error(
+        "suggest-metadata returned 502. Check the edge logs: if they say " +
+          "'credit_limit_reached', the Lovable workspace is out of AI credits and EVERY " +
+          "AI feature in Querino is down for real users. That is not a fault in the LLM " +
+          `configuration. Body: ${JSON.stringify(res.body)}`,
+      );
+    }
     expect(res.status, `suggest-metadata failed: ${JSON.stringify(res.body)}`).toBe(200);
 
     const rows = await sqlQuery<UsageRow>(

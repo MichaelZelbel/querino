@@ -79,6 +79,9 @@ verify_jwt = false  # TODO: no caller found in this repository
 # derives the user from the JWT itself; this flag only turns away callers who
 # bring nothing at all.
 
+[functions.admin-llm-config]
+verify_jwt = true  # admin panel only, through supabase.functions.invoke with a session JWT
+
 [functions.ai-insights]
 verify_jwt = true
 
