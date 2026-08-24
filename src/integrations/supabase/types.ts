@@ -2422,6 +2422,21 @@ export type Database = {
     }
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
+      admin_llm_usage_summary: {
+        Args: { p_since?: string }
+        Returns: {
+          call_site: string
+          caller_role: string
+          calls: number
+          completion_tokens: number
+          config_source: string
+          credits: number
+          is_machine: boolean
+          last_call_at: string
+          prompt_tokens: number
+          users: number
+        }[]
+      }
       check_signup_allowed: { Args: never; Returns: Json }
       claim_menerio_sync_queue: {
         Args: { batch_size?: number; stale_after?: string }

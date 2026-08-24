@@ -35,13 +35,7 @@ export function brokeredPreviewStorage() {
     new Promise((resolve) => {
       const requestId = newId();
       let done = false;
-      // Initialised, not merely declared: finish() calls clearTimeout(timer)
-      // and can run before the setTimeout below, so this must already hold a
-      // value. clearTimeout(undefined) is a no-op, which is the behaviour the
-      // uninitialised `let` had. Written this way because prefer-const flags a
-      // `let` that is declared and then assigned exactly once, and const cannot
-      // work here: finish() closes over the timer it is itself the target of.
-      let timer: ReturnType<typeof setTimeout> | undefined = undefined;
+      let timer: ReturnType<typeof setTimeout>;
       const finish = (r: { ok: boolean; value?: string | null } | null) => {
         if (done) return;
         done = true;
