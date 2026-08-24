@@ -1,7 +1,6 @@
 import { useParams, Link } from "@/lib/router-compat";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { BlogSidebar } from "@/components/blog/BlogSidebar";
 import { usePublicPost } from "@/hooks/usePublicBlog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -88,17 +87,6 @@ export default function BlogPost() {
 
   return (
     <>
-      <SEOHead
-        title={post.seo_title || post.title}
-        description={post.seo_description || post.excerpt || undefined}
-        ogImage={ogImage || undefined}
-        ogType="article"
-        canonicalUrl={canonicalUrl}
-        publishedTime={post.published_at || undefined}
-        author={authorName}
-        includeRssFeed
-        jsonLd={articleJsonLd}
-      />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1">

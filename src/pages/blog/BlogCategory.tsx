@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, useSearchParams, Link } from "@/lib/router-compat";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { BlogPagination } from "@/components/blog/BlogPagination";
 import { BlogSidebar } from "@/components/blog/BlogSidebar";
@@ -65,12 +64,6 @@ export default function BlogCategory() {
 
   return (
     <>
-      <SEOHead
-        title={`${category.name} - Blog`}
-        description={category.description || `Posts in the ${category.name} category`}
-        canonicalUrl={`${siteOrigin()}/blog/category/${category.slug}`}
-        includeRssFeed
-      />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1">

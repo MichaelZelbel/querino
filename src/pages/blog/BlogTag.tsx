@@ -1,7 +1,6 @@
 import { useParams, useSearchParams, Link } from "@/lib/router-compat";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { BlogPagination } from "@/components/blog/BlogPagination";
 import { BlogSidebar } from "@/components/blog/BlogSidebar";
@@ -63,12 +62,6 @@ export default function BlogTag() {
 
   return (
     <>
-      <SEOHead
-        title={`#${tag.name} - Blog`}
-        description={`Posts tagged with ${tag.name}`}
-        canonicalUrl={`${siteOrigin()}/blog/tag/${tag.slug}`}
-        includeRssFeed
-      />
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1">

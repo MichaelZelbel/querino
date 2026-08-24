@@ -37,20 +37,22 @@ import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { Languages } from "lucide-react";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
-import { SEOHead } from "@/components/seo/SEOHead";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
 }
 
-export default function PromptKitDetail() {
+// The route loader fetches this record on the server, so the first render already has
+// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
+// it keeps the page current and handles a slug change without a full navigation.
+export default function PromptKitDetail({ initialKit = null }: { initialKit?: KitWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { teams } = useWorkspace();
   const { cloneKit, cloning } = useClonePromptKit();
-  const [kit, setKit] = useState<KitWithAuthor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [kit, setKit] = useState<KitWithAuthor | null>(initialKit);
+  const [loading, setLoading] = useState(!initialKit);
   const [notFound, setNotFound] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -216,7 +218,6 @@ export default function PromptKitDetail() {
   if (notFound || !kit) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <SEOHead title="Prompt Kit Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">

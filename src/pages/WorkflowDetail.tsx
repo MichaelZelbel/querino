@@ -34,21 +34,23 @@ import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { siteOrigin } from "@/config/site";
 
 interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
 }
 
-export default function WorkflowDetail() {
+// The route loader fetches this record on the server, so the first render already has
+// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
+// it keeps the page current and handles a slug change without a full navigation.
+export default function WorkflowDetail({ initialWorkflow = null }: { initialWorkflow?: WorkflowWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneWorkflow, cloning } = useCloneWorkflow();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
-  const [workflow, setWorkflow] = useState<WorkflowWithAuthor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [workflow, setWorkflow] = useState<WorkflowWithAuthor | null>(initialWorkflow);
+  const [loading, setLoading] = useState(!initialWorkflow);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(true);
@@ -219,7 +221,6 @@ export default function WorkflowDetail() {
   if (notFound || !workflow) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <SEOHead title="Workflow Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
@@ -266,12 +267,6 @@ export default function WorkflowDetail() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SEOHead
-        title={workflow.title}
-        description={workflowDescription}
-        canonicalUrl={workflowCanonical}
-        jsonLd={workflowJsonLd}
-      />
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 py-12">

@@ -6,7 +6,7 @@ execute JavaScript sees none of it. That is the whole reason for the migration, 
 this file is the list of what has to survive it.
 
 Routes captured: 53. With their own title: 53.
-With a canonical URL: 10. With structured data: 53.
+With a canonical URL: 15. With structured data: 53.
 
 After the migration, re-run this spec and diff seo-inventory.json. Every field below
 must come back, and the canonical URLs must no longer depend on which host served
@@ -27,9 +27,9 @@ the page.
 
 - captured at: `/`
 - title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- description: `Thousands of curated prompts, your personal library, and a tiny mascot who genuinely cares whether your prompts are good.`
+- canonical: `https://querino.ai/`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
@@ -47,9 +47,10 @@ the page.
 ## `/activity`
 
 - captured at: `/activity`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Activity | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -58,18 +59,19 @@ the page.
 
 - captured at: `/admin`
 - title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- description: `Thousands of curated prompts, your personal library, and a tiny mascot who genuinely cares whether your prompts are good.`
+- canonical: `https://querino.ai/`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/auth`
 
 - captured at: `/auth`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -79,18 +81,19 @@ the page.
 - captured at: `/blog`
 - title: `Blog | Querino`
 - description: `Explore articles about AI prompts, workflows, and productivity tips.`
-- canonical: `http://localhost:4173/blog`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/blog`
-- twitter card: `summary`
-- rss link: `http://localhost:4173/api/rss.xml`
+- canonical: `https://querino.ai/blog`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/blog`
+- twitter card: `summary_large_image`
+- rss link: `https://querino.ai/api/rss.xml`
 - structured data: `Organization`, `WebSite`
 
 ## `/blog/:slug`
 
 - captured at: `/blog/baseline-no-published-post`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Post Not Found | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -98,9 +101,10 @@ the page.
 ## `/blog/admin`
 
 - captured at: `/blog/admin`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -108,9 +112,10 @@ the page.
 ## `/blog/admin/categories`
 
 - captured at: `/blog/admin/categories`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -118,9 +123,10 @@ the page.
 ## `/blog/admin/media`
 
 - captured at: `/blog/admin/media`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -128,9 +134,10 @@ the page.
 ## `/blog/admin/posts`
 
 - captured at: `/blog/admin/posts`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -138,9 +145,10 @@ the page.
 ## `/blog/admin/posts/:id/edit`
 
 - captured at: `/blog/admin/posts/00000000-0000-0000-0000-000000000000/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -148,9 +156,10 @@ the page.
 ## `/blog/admin/posts/new`
 
 - captured at: `/blog/admin/posts/new`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -158,9 +167,10 @@ the page.
 ## `/blog/admin/tags`
 
 - captured at: `/blog/admin/tags`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -168,9 +178,10 @@ the page.
 ## `/blog/category/:slug`
 
 - captured at: `/blog/category/baseline-no-category`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Category Not Found | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -178,9 +189,10 @@ the page.
 ## `/blog/tag/:slug`
 
 - captured at: `/blog/tag/baseline-no-tag`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Tag Not Found | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -188,9 +200,10 @@ the page.
 ## `/collections`
 
 - captured at: `/collections`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Collections | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -198,9 +211,10 @@ the page.
 ## `/collections/:id`
 
 - captured at: `/collections/00000000-0000-0000-0000-000000000000`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Collection | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -208,9 +222,10 @@ the page.
 ## `/collections/:id/edit`
 
 - captured at: `/collections/00000000-0000-0000-0000-000000000000/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Collections | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -218,9 +233,10 @@ the page.
 ## `/collections/new`
 
 - captured at: `/collections/new`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -230,27 +246,28 @@ the page.
 - captured at: `/community-guidelines`
 - title: `Community Guidelines — Querino`
 - description: `Querino's community guidelines for publishing AI artifacts. Learn what content is allowed and how we keep the platform safe.`
-- canonical: `http://localhost:4173/community-guidelines`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
-- twitter card: `summary`
+- canonical: `https://querino.ai/community-guidelines`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/community-guidelines`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/cookies`
 
 - captured at: `/cookies`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- title: `Cookies Policy | Querino`
+- description: `Which cookies Querino sets, what they are for, and how to control them.`
+- canonical: `https://querino.ai/cookies`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/cookies`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/create-from-menerio`
 
 - captured at: `/create-from-menerio`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -258,9 +275,10 @@ the page.
 ## `/dashboard`
 
 - captured at: `/dashboard`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -268,10 +286,10 @@ the page.
 ## `/discover`
 
 - captured at: `/discover`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- title: `Discover AI Prompts, Skills and Workflows | Querino`
+- description: `Browse curated AI prompts, prompt kits, skills and workflows shared by the Querino community.`
+- canonical: `https://querino.ai/discover`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/discover`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
@@ -280,27 +298,28 @@ the page.
 - captured at: `/docs`
 - title: `Documentation — Querino`
 - description: `Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino.`
-- canonical: `http://localhost:4173/docs`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
-- twitter card: `summary`
+- canonical: `https://querino.ai/docs`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/docs`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/impressum`
 
 - captured at: `/impressum`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- title: `Impressum | Querino`
+- description: `Legal notice and company information for Querino, operated by Zelbel Ltd.`
+- canonical: `https://querino.ai/impressum`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/impressum`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/library`
 
 - captured at: `/library`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -308,9 +327,10 @@ the page.
 ## `/library/:slug/edit`
 
 - captured at: `/library/conduct-a-project-premortem-and-plan-revision/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -318,9 +338,10 @@ the page.
 ## `/library/:slug/versions`
 
 - captured at: `/library/conduct-a-project-premortem-and-plan-revision/versions`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -328,19 +349,20 @@ the page.
 ## `/privacy`
 
 - captured at: `/privacy`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- title: `Privacy Policy | Querino`
+- description: `How Querino collects, uses and protects your data.`
+- canonical: `https://querino.ai/privacy`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/privacy`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/profile/edit`
 
 - captured at: `/profile/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -348,20 +370,21 @@ the page.
 ## `/prompt-kits/:slug`
 
 - captured at: `/prompt-kits/baseline-no-public-kit`
-- title: `Prompt Kit Not Found | Querino`
+- title: `Not Found | Querino`
 - description: `Discover and share AI prompts, skills, and workflows.`
-- canonical: `http://localhost:4173/prompt-kits/baseline-no-public-kit`
+- canonical: (none)
 - robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
-- twitter card: `summary`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/prompt-kits/:slug/edit`
 
 - captured at: `/prompt-kits/baseline-no-public-kit/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -369,9 +392,10 @@ the page.
 ## `/prompt-kits/new`
 
 - captured at: `/prompt-kits/new`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -381,17 +405,18 @@ the page.
 - captured at: `/prompts/conduct-a-project-premortem-and-plan-revision`
 - title: `Conduct a Project Premortem and Plan Revision | Querino`
 - description: `Perform a project premortem by identifying top failure modes and generating a revised, risk-mitigated version of a provided plan.`
-- canonical: `http://localhost:4173/prompts/conduct-a-project-premortem-and-plan-revision`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/prompts/conduct-a-project-premortem-and-plan-revision`
-- twitter card: `summary`
+- canonical: `https://querino.ai/prompts/conduct-a-project-premortem-and-plan-revision`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/prompts/conduct-a-project-premortem-and-plan-revision`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`, `CreativeWork`
 
 ## `/prompts/:slug/edit`
 
 - captured at: `/prompts/conduct-a-project-premortem-and-plan-revision/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -399,9 +424,10 @@ the page.
 ## `/prompts/new`
 
 - captured at: `/prompts/new`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -409,9 +435,10 @@ the page.
 ## `/prompts/wizard`
 
 - captured at: `/prompts/wizard`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -419,9 +446,10 @@ the page.
 ## `/settings`
 
 - captured at: `/settings`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -431,17 +459,18 @@ the page.
 - captured at: `/skills/anti-hallucination-reasoning-protocol`
 - title: `Anti-Hallucination Reasoning Protocol | Querino`
 - description: `Guides AI to maximize factual accuracy and minimize hallucination through strict rules.`
-- canonical: `http://localhost:4173/skills/anti-hallucination-reasoning-protocol`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/skills/anti-hallucination-reasoning-protocol`
-- twitter card: `summary`
+- canonical: `https://querino.ai/skills/anti-hallucination-reasoning-protocol`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/skills/anti-hallucination-reasoning-protocol`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`, `CreativeWork`
 
 ## `/skills/:slug/edit`
 
 - captured at: `/skills/anti-hallucination-reasoning-protocol/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -449,9 +478,10 @@ the page.
 ## `/skills/new`
 
 - captured at: `/skills/new`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -459,9 +489,10 @@ the page.
 ## `/team/:id/activity`
 
 - captured at: `/team/00000000-0000-0000-0000-000000000000/activity`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -469,9 +500,10 @@ the page.
 ## `/team/:id/settings`
 
 - captured at: `/team/00000000-0000-0000-0000-000000000000/settings`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -481,28 +513,29 @@ the page.
 - captured at: `/team/join`
 - title: `Join Team | Querino`
 - description: `Discover and share AI prompts, skills, and workflows.`
-- canonical: `http://localhost:4173/team/join`
+- canonical: (none)
 - robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
-- twitter card: `summary`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/terms`
 
 - captured at: `/terms`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- title: `Terms of Service | Querino`
+- description: `The terms that govern your use of Querino.`
+- canonical: `https://querino.ai/terms`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/terms`
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
 
 ## `/u/:username`
 
 - captured at: `/u/baseline-no-public-profile`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Profile Not Found | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -510,9 +543,10 @@ the page.
 ## `/u/:username/activity`
 
 - captured at: `/u/baseline-no-public-profile/activity`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Activity | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -522,17 +556,18 @@ the page.
 - captured at: `/workflows/create-validation-workflow`
 - title: `Create Validation Workflow | Querino`
 - description: `Generates a comprehensive validation workflow for analyzing codebases and ensuring production readiness.`
-- canonical: `http://localhost:4173/workflows/create-validation-workflow`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/workflows/create-validation-workflow`
-- twitter card: `summary`
+- canonical: `https://querino.ai/workflows/create-validation-workflow`
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `https://querino.ai/workflows/create-validation-workflow`
+- twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`, `CreativeWork`
 
 ## `/workflows/:slug/edit`
 
 - captured at: `/workflows/create-validation-workflow/edit`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`
@@ -540,9 +575,10 @@ the page.
 ## `/workflows/new`
 
 - captured at: `/workflows/new`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
+- title: `Sign In | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
 - canonical: (none)
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
 - twitter card: `summary_large_image`
 - structured data: `Organization`, `WebSite`

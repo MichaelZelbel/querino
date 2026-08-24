@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Loader2, Users, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -64,7 +63,6 @@ export default function TeamJoin() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SEOHead title="Join Team" noIndex />
       <Header />
       <main className="flex flex-1 items-center justify-center py-20">
         <div className="text-center">

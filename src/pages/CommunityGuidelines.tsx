@@ -3,7 +3,6 @@ import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { SEOHead } from "@/components/seo/SEOHead";
 
 export default function CommunityGuidelines() {
   const handlePrint = () => {
@@ -19,10 +18,6 @@ export default function CommunityGuidelines() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SEOHead
-        title="Community Guidelines — Querino"
-        description="Querino's community guidelines for publishing AI artifacts. Learn what content is allowed and how we keep the platform safe."
-      />
 
       {/* Background gradients */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

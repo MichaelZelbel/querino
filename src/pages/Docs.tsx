@@ -33,7 +33,6 @@ import {
   Terminal,
 } from "lucide-react";
 import { Link } from "@/lib/router-compat";
-import { SEOHead } from "@/components/seo/SEOHead";
 
 function SectionHeader({ icon: Icon, title, id, iconClassName }: { icon: any; title: string; id: string; iconClassName?: string }) {
   return (
@@ -60,10 +59,6 @@ function Tip({ children }: { children: React.ReactNode }) {
 export default function Docs() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <SEOHead
-        title="Documentation — Querino"
-        description="Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino."
-      />
       <Header />
       
       <main className="flex-1">

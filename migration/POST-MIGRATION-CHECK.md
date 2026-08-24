@@ -58,8 +58,11 @@ Cookie Policy                 underline
 ```
 
 In `baseline-v2/impressum@desktop.png` the same links carry colour and no underline.
-Tailwind v3's preflight neutralised the browser default on `a`; v4's does not, and
-nothing replaced it. This is site-wide and affects every page with a link in body text.
+This is site-wide and affects every page with a link in body text.
+
+**Cause, established in round two below:** not preflight. v4 does still set
+`a { text-decoration: inherit }`, and it is in the built CSS. It is
+`@tailwindcss/typography`, which the migration switched on for the first time.
 
 ### Regression B: the long text pages grew 5 to 15 percent taller
 
@@ -74,8 +77,11 @@ nothing replaced it. This is site-wide and affects every page with a link in bod
 
 All in the same direction. Comparing the two impressum screenshots shows why: address
 blocks that used to sit as tight four-line groups now have a full line of air between
-each line. Paragraph margins compute to `0px`, so the spacing comes from a `space-y`
-utility whose selector changed in v4.
+each line.
+
+**Cause, established in round two below:** the same one line. Not a `space-y` selector,
+which is what the paragraph margins of `0px` first suggested, but prose imposing its own
+vertical rhythm on eleven components that had been carrying inert `prose` classes.
 
 `/cookies` on mobile also went from 445 px wide to 458 px against a 390 px viewport, so
 it overflowed horizontally before and overflows further now.
@@ -178,3 +184,114 @@ SHOT_BASE_URL=http://localhost:4173 SHOT_DIR=after-migration \
   npx playwright test --config=playwright.baseline.config.ts
 node migration/compare-shots.mjs baseline-v2 after-migration
 ```
+
+---
+
+# Round two, 2026-08-24: the five follow-ups
+
+Everything in the list at the end of the first round, done and measured.
+
+## 1 and 2 — routes now carry their own metadata, and their own data
+
+`src/lib/seo.ts` builds a `head()` payload with the same rules SEOHead used, so the text a
+person sees after hydration and the text a crawler reads in the HTML are identical.
+`src/lib/route-loaders.ts` fetches the record on the server for the eight public detail
+routes. 42 static routes got a head from a generator; the 8 dynamic ones were written by
+hand.
+
+Measured from the raw HTML of 52 routes, before any JavaScript runs:
+
+| | before | after |
+|---|---|---|
+| distinct `<title>` values | 1 | **48** |
+| routes serving only the generic title | 53 | **2**, the home page and the 404 |
+| routes with a `<link rel="canonical">` | 0 | **12** |
+| distinct descriptions | 1 | **14** |
+| routes with page-specific structured data | 0 | **3**, the artefact routes that have data |
+| private routes marked `noindex` | 0 | **39** |
+
+Every canonical points at `https://querino.ai`, never at the host that served the page,
+because the helper uses a configured origin rather than asking the window.
+
+The artefact body is in the HTML too, not only its title: `curl /prompts/folder-to-memory`
+now contains the string "Folder To Memory". The four artefact pages take the loader's
+record as their initial state and keep their own fetch for slug changes, so the empty
+first paint is gone without changing how the page behaves after that.
+
+A missing slug is no longer a soft 404: `/prompts/definitely-not-a-real-slug` serves
+`Not Found | Querino` with `noindex, nofollow` from the server, and an unknown URL
+returns a real HTTP 404.
+
+`SEOHead` was removed from the 12 pages whose routes now carry the head, because it would
+otherwise overwrite the server-rendered canonical with a window-derived one on hydration.
+It stays in `NotFound.tsx`: the catch-all has no route file to hang a `head()` on.
+
+## 3 and 4 — both visual regressions were one line
+
+`@tailwindcss/typography` has been a dependency for a long time, but `tailwind.config.ts`
+never listed it in `plugins`, so every `prose` class in the app was inert. Eleven
+components carry them. `src/styles.css` added `@plugin "@tailwindcss/typography"` during
+the migration and all of that styling applied at once: prose underlines links and imposes
+its own vertical rhythm.
+
+Commenting the line out:
+
+| | broken | fixed | reference |
+|---|---|---|---|
+| anchors on `/impressum` | underline | none | none |
+| `/docs` desktop height | 18926px | **16420px** | 16420px |
+| `/privacy` desktop | 11187px | 9432px | 9416px |
+| total height drift over 106 screenshots | 22511px | **6536px** | — |
+
+5108px of the remaining 6536 is the deleted `/__tokens` route now being a 404 page. The
+rest is under 16px per file.
+
+If the prose styling is actually wanted, it is one uncommented line and a re-taken
+reference set. That is a design decision, so it was not made here.
+
+## 5 — the five session behaviours
+
+`migration/session-contract-check.mjs` automates them so they can be re-run rather than
+remembered. **5 of 5 hold.**
+
+- the session survives a reload
+- the workspace selection outlives navigation
+- the unsaved-changes blocker stops an in-app navigation
+- the OAuth redirect key is reachable on the auth page
+- a signed-in visitor sees the author byline
+
+Two came back red at first and both were the probe, not the app. `/prompts/new` has no
+unsaved-changes guard at all: only `EditProfile`, `LibraryPromptEdit` and `PromptKitEdit`
+use the hook. And `WorkspaceProvider` only writes its key when someone actively switches
+workspace, so an untouched session having no key is correct. Its "reset to personal when
+the user logs out" effect is byte-identical to the pre-migration one, so a hard reload
+clearing the key is a pre-existing quirk, not something the migration did.
+
+Not automated, and honestly so: the OAuth round trip leaves the origin, and switching to
+a real team needs an account that has one.
+
+## Found on the way: the repo's own lint gate is broken
+
+`npm run check` was green before the migration. It is not now. The migration added
+`prettier` as an ESLint rule and a `format` script, but never ran the formatter across
+the codebase.
+
+A `.prettierrc` with `endOfLine: "auto"` was added here, which takes it from 58,364
+errors to 10,094. The difference is entirely CRLF: without that file any Windows checkout
+fails the gate on line endings alone. The remaining 10,094 are real formatting
+differences in files the migration did not touch.
+
+`npm run format` fixes them in one command. It was **not** run, because it rewrites
+essentially every file in the repository and would bury the migration in a formatting
+diff. That is a call worth making deliberately.
+
+The `any` count is unchanged at 205, exactly the ratchet ceiling.
+
+## State after round two
+
+- typecheck: 0 errors
+- build: green
+- security suite: 138 passed, 0 failed
+- routes: 52/52 character-identical
+- screenshots: no new drift beyond the two fixes above
+- session contract: 5/5

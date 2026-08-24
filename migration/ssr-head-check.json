@@ -1,426 +1,418 @@
 [
   {
     "route": "/",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Querino - AI Prompt Library for Creators",
+    "canonical": "https://querino.ai/",
+    "desc": "Thousands of curated prompts, your personal library, and a tiny mascot",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/discover",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Discover AI Prompts, Skills and Workflows | Querino",
+    "canonical": "https://querino.ai/discover",
+    "desc": "Browse curated AI prompts, prompt kits, skills and workflows shared by",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/auth",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Sign In | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/library",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "My Library | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/dashboard",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "My Library | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/settings",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Settings | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/privacy",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Privacy Policy | Querino",
+    "canonical": "https://querino.ai/privacy",
+    "desc": "How Querino collects, uses and protects your data.",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/terms",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Terms of Service | Querino",
+    "canonical": "https://querino.ai/terms",
+    "desc": "The terms that govern your use of Querino.",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/cookies",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Cookies Policy | Querino",
+    "canonical": "https://querino.ai/cookies",
+    "desc": "Which cookies Querino sets, what they are for, and how to control them",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/impressum",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Impressum | Querino",
+    "canonical": "https://querino.ai/impressum",
+    "desc": "Legal notice and company information for Querino, operated by Zelbel L",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/create-from-menerio",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Create from Menerio | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/prompts/new",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "New Prompt | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/prompts/wizard",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Prompt Wizard | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/prompts/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Conduct a Project Premortem and Plan Revision | Querino"
+    "title": "Conduct a Project Premortem and Plan Revision | Querino",
+    "canonical": "https://querino.ai/prompts/conduct-a-project-premortem-and-plan-revision",
+    "desc": "Perform a project premortem by identifying top failure modes and gener",
+    "robots": null,
+    "ld": 3
   },
   {
     "route": "/prompts/:slug/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Prompt | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/library/:slug/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Prompt | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/library/:slug/versions",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Version History | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/skills/new",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "New Skill | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/skills/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Anti-Hallucination Reasoning Protocol | Querino"
+    "title": "Anti-Hallucination Reasoning Protocol | Querino",
+    "canonical": "https://querino.ai/skills/anti-hallucination-reasoning-protocol",
+    "desc": "Guides AI to maximize factual accuracy and minimize hallucination thro",
+    "robots": null,
+    "ld": 3
   },
   {
     "route": "/skills/:slug/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Skill | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/workflows/new",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "New Workflow | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/workflows/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Create Validation Workflow | Querino"
+    "title": "Create Validation Workflow | Querino",
+    "canonical": "https://querino.ai/workflows/create-validation-workflow",
+    "desc": "Generates a comprehensive validation workflow for analyzing codebases ",
+    "robots": null,
+    "ld": 3
   },
   {
     "route": "/workflows/:slug/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Workflow | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/prompt-kits/new",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "New Prompt Kit | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/prompt-kits/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Prompt Kit Not Found | Querino"
+    "title": "Not Found | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/prompt-kits/:slug/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Prompt Kit | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/u/:username",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Profile Not Found | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/profile/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Profile | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/collections",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Collections | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/collections/new",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "New Collection | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/collections/:id",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Collection | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/collections/:id/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Collection | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/team/join",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Join Team | Querino"
+    "title": "Join Team | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/team/:id/settings",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Team Settings | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/team/:id/activity",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Team Activity | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/activity",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Activity | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/u/:username/activity",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Activity | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/admin",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Admin | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/docs",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Documentation — Querino"
+    "title": "Documentation — Querino",
+    "canonical": "https://querino.ai/docs",
+    "desc": "Learn how to create, organize, and share AI prompts, prompt kits, skil",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/community-guidelines",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Community Guidelines — Querino"
+    "title": "Community Guidelines — Querino",
+    "canonical": "https://querino.ai/community-guidelines",
+    "desc": "Querino&#x27;s community guidelines for publishing AI artifacts. Learn",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/blog/admin",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Blog Admin | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/admin/posts",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Blog Posts | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/admin/posts/new",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "New Blog Post | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/admin/posts/:id/edit",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Edit Blog Post | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/admin/categories",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Blog Categories | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/admin/tags",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Blog Tags | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/admin/media",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Blog Media | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Blog | Querino"
+    "title": "Blog | Querino",
+    "canonical": "https://querino.ai/blog",
+    "desc": "Explore articles about AI prompts, workflows, and productivity tips.",
+    "robots": null,
+    "ld": 2
   },
   {
     "route": "/blog/category/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Category Not Found | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/tag/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Tag Not Found | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "/blog/:slug",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Querino - AI Prompt Library for Creators"
+    "title": "Post Not Found | Querino",
+    "canonical": null,
+    "desc": "Discover and share AI prompts, skills, and workflows.",
+    "robots": "noindex, nofollow",
+    "ld": 2
   },
   {
     "route": "*",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Page Not Found | Querino"
-  },
-  {
-    "route": "/__tokens",
-    "serverTitle": "Querino - AI Prompt Library for Creators",
-    "serverCanonical": null,
-    "serverLd": 2,
-    "serverDesc": "Discover, create, and master AI prompts. Access thousands of",
-    "clientTitle": "Page Not Found | Querino"
+    "title": "Querino - AI Prompt Library for Creators",
+    "canonical": null,
+    "desc": "Discover, create, and master AI prompts. Access thousands of curated p",
+    "robots": null,
+    "ld": 2
   }
 ]

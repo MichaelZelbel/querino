@@ -13,7 +13,6 @@ import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { UpsellModal } from "@/components/premium/UpsellModal";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,7 +45,10 @@ interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
 }
 
-export default function PromptDetail() {
+// The route loader fetches this record on the server, so the first render already has
+// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
+// it keeps the page current and handles a slug change without a full navigation.
+export default function PromptDetail({ initialPrompt = null }: { initialPrompt?: PromptWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -54,8 +56,8 @@ export default function PromptDetail() {
   const { clonePrompt, cloning } = useClonePrompt();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isPromptPinned, togglePin } = usePinnedPrompts();
-  const [prompt, setPrompt] = useState<PromptWithAuthor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [prompt, setPrompt] = useState<PromptWithAuthor | null>(initialPrompt);
+  const [loading, setLoading] = useState(!initialPrompt);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -324,7 +326,6 @@ export default function PromptDetail() {
   if (notFound || !prompt) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <SEOHead title="Prompt Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
@@ -371,12 +372,6 @@ export default function PromptDetail() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SEOHead
-        title={prompt.title}
-        description={promptDescription}
-        canonicalUrl={promptCanonical}
-        jsonLd={promptJsonLd}
-      />
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 py-12">

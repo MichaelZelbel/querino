@@ -30,7 +30,6 @@ import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
@@ -40,14 +39,17 @@ interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
 }
 
-export default function SkillDetail() {
+// The route loader fetches this record on the server, so the first render already has
+// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
+// it keeps the page current and handles a slug change without a full navigation.
+export default function SkillDetail({ initialSkill = null }: { initialSkill?: SkillWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { cloneSkill, cloning } = useCloneSkill();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
-  const [skill, setSkill] = useState<SkillWithAuthor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [skill, setSkill] = useState<SkillWithAuthor | null>(initialSkill);
+  const [loading, setLoading] = useState(!initialSkill);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -204,7 +206,6 @@ export default function SkillDetail() {
   if (notFound || !skill) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <SEOHead title="Skill Not Found" noIndex />
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
@@ -251,12 +252,6 @@ export default function SkillDetail() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SEOHead
-        title={skill.title}
-        description={skillDescription}
-        canonicalUrl={skillCanonical}
-        jsonLd={skillJsonLd}
-      />
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 py-12">
