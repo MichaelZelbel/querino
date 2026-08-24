@@ -281,9 +281,22 @@ errors to 10,094. The difference is entirely CRLF: without that file any Windows
 fails the gate on line endings alone. The remaining 10,094 are real formatting
 differences in files the migration did not touch.
 
-`npm run format` fixes them in one command. It was **not** run, because it rewrites
-essentially every file in the repository and would bury the migration in a formatting
-diff. That is a call worth making deliberately.
+`npm run format` was then run, as its own commit, and the gate is green again:
+**ESLint: 0 errors, 205 `any` (at the ceiling)**, which is exactly what it said before
+the migration.
+
+It needed three things, not one. A `.prettierignore`, because there was none and prettier
+would otherwise rewrite 430 files inside `.output`, both generated files, the migration
+screenshots and the recorded measurement JSON. Markdown is ignored too: `eslint.config.js`
+only lints `**/*.{ts,tsx}`, so formatting prose buys the gate nothing. Then the formatter
+over the remaining 370 files. Then two things it could not fix itself: one file with mixed
+line endings inside a call chain, and a `prefer-const` in `previewAuthStorage.ts` that is a
+false positive, because `timer` is assigned at the bottom of its block after `finish()`
+exists and `const` there would not compile.
+
+Proof it was whitespace only: **104 of 106 screenshots byte-identical** to the run before
+the formatter, and the two that differ are `admin@desktop` and `root@desktop`, two of the
+three files already known to move between runs because they render live data.
 
 The `any` count is unchanged at 205, exactly the ratchet ceiling.
 
@@ -295,3 +308,4 @@ The `any` count is unchanged at 205, exactly the ratchet ceiling.
 - routes: 52/52 character-identical
 - screenshots: no new drift beyond the two fixes above
 - session contract: 5/5
+- `npm run check`: green, 0 errors, `any` ceiling unmoved at 205
