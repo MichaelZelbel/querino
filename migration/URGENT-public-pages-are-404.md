@@ -2,11 +2,19 @@
 
 ## FIXED 2026-08-24
 
-Michael gave the go-ahead and the grant is applied to production. Verified logged-out
-with `node migration/prodcheck.mjs`: **5 of 5 checked pages back to their real content**,
-24 prompts listed on `/discover`, no console errors, no `noindex`.
+Michael gave the go-ahead and it is applied to production, in two steps.
 
-What was run, through the Supabase Management API:
+**Step one, the outage.** Verified logged-out with `node migration/prodcheck.mjs`:
+**5 of 5 checked pages back to their real content**, 24 prompts listed on `/discover`,
+no console errors, no `noindex`.
+
+**Step two, the bylines.** Michael then asked for author names and avatars to be visible
+to logged-out visitors again, so `anon` got its own SELECT policy and the grant was
+narrowed from 14 columns to the 7 the public pages actually read. The byline renders
+with its avatar, and the security suite is **132 green with nothing failing**, which it
+had not been all night.
+
+What was run in step one, through the Supabase Management API:
 
 ```sql
 GRANT SELECT (
@@ -20,10 +28,36 @@ Recorded in the repo as `supabase/migrations/20260824013000_restore_anon_read_on
 on `main` (`2bce8dd`), so the next migration run does not undo it and the reasoning sits
 where the next person will look.
 
-**Not changed:** row-level security. The SELECT policy is still `TO authenticated`, so an
-anonymous visitor gets an empty author rather than an error, which is how the site
-behaved before 2026-08-23. Whether author names should be visible to logged-out visitors
-is a separate product decision, at the end of this file, and is still open.
+And in step two:
+
+```sql
+REVOKE SELECT (created_at, updated_at, github_repo, github_branch,
+               github_folder, github_sync_enabled, github_last_synced_at)
+  ON public.profiles FROM anon;
+
+CREATE POLICY "Anonymous readers can view public content authors"
+ON public.profiles FOR SELECT TO anon
+USING (
+  EXISTS (SELECT 1 FROM public.prompts   WHERE prompts.author_id   = profiles.id AND prompts.is_public = true)
+  OR EXISTS (SELECT 1 FROM public.skills    WHERE skills.author_id    = profiles.id AND skills.published = true)
+  OR EXISTS (SELECT 1 FROM public.workflows WHERE workflows.author_id = profiles.id AND workflows.published = true)
+);
+```
+
+Recorded as `supabase/migrations/20260824021500_public_authors_are_visible_again.sql` on
+`main` (`f0d6ba6`).
+
+**What that exposes, measured immediately after applying:** `anon` can read **2 profiles
+in total**, being the two people with published content, not the user table. The
+"reduce data harvesting risk" reason behind the January migration survives: there is no
+anonymous path to a profile that has published nothing. `role`, `plan_type`,
+`plan_source` and the github sync settings all still answer `42501` to the anon key.
+The team-mate branch of the authenticated policy was deliberately **not** mirrored,
+because team membership is not public.
+
+**Still open, and it blocks nothing:** `prompt_kits` appears in neither policy, so a
+prompt kit author shows no byline unless they also have a public prompt, skill or
+workflow. That gap predates both.
 
 The account of what happened follows, unchanged.
 
