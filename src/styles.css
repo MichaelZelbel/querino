@@ -1,0 +1,464 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Querino design system — ported verbatim from the pre-migration
+ * src/index.css + tailwind.config.ts (Tailwind v3 -> v4).
+ *
+ * IMPORTANT: the colour tokens are HSL TRIPLES ("239 67% 59%"), not complete
+ * colours. They are consumed as hsl(var(--token)) and, in the custom CSS
+ * below, as hsl(var(--token) / 0.08) slash-opacity. Do NOT convert them to
+ * complete colours in @theme — that silently breaks every slash-opacity use.
+ * The @theme inline block therefore wraps each triple in hsl() at the
+ * utility-generation level, keeping the raw triples intact for custom CSS.
+ */
+
+@theme inline {
+  /* Fonts (from tailwind.config.ts fontFamily) */
+  --font-display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Display type scale with per-size line height and letter spacing */
+  --text-display-xl: 3.5rem;
+  --text-display-xl--line-height: 1.1;
+  --text-display-xl--letter-spacing: -0.02em;
+  --text-display-lg: 2.5rem;
+  --text-display-lg--line-height: 1.15;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-md: 2rem;
+  --text-display-md--line-height: 1.2;
+  --text-display-md--letter-spacing: -0.01em;
+  --text-display-sm: 1.5rem;
+  --text-display-sm--line-height: 1.3;
+  --text-display-sm--letter-spacing: -0.01em;
+
+  /* Colour utilities generated from the HSL-triple tokens */
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-warm: hsl(var(--accent-warm));
+  --color-accent-warm-foreground: hsl(var(--accent-warm-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* Radii (v3 borderRadius mapping) */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Shadows — resolve at use point to the :root/.dark shadow variables */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-glow: var(--shadow-glow);
+
+  /* Animations (v3 keyframes + animation config) */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.5s ease-out forwards;
+  --animate-fade-in-up: fade-in-up 0.6s ease-out forwards;
+  --animate-scale-in: scale-in 0.3s ease-out forwards;
+  --animate-slide-in-right: slide-in-right 0.4s ease-out forwards;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+}
+
+/* v3 container config: center, 2rem padding, screens: { "2xl": "1400px" }
+   (providing container.screens in v3 replaced the whole set — one media query). */
+@utility container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+/* Custom utilities (v3 @layer utilities -> v4 @utility) */
+@utility text-gradient {
+  background-image: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@utility card-gradient {
+  background: var(--gradient-card);
+}
+
+/* Fonts loaded via head() links in src/routes/__root.tsx (Bricolage Grotesque, Inter, JetBrains Mono) */
+
+:root {
+  --background: 210 14% 97%;
+  --foreground: 210 11% 14%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 210 11% 14%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 11% 14%;
+
+  --primary: 239 67% 59%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 14% 93%;
+  --secondary-foreground: 210 11% 14%;
+
+  --muted: 210 14% 93%;
+  --muted-foreground: 210 11% 45%;
+
+  --accent: 239 67% 95%;
+  --accent-foreground: 239 67% 45%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 210 14% 89%;
+  --input: 210 14% 89%;
+  --ring: 239 67% 59%;
+
+  --radius: 0.75rem;
+
+  /* Custom tokens */
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+
+  /* Querino brand: indigo primary + coral warm accent */
+  --accent-warm: 16 100% 74%;       /* #FF9B7A */
+  --accent-warm-foreground: 18 78% 27%;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(239 67% 59%) 0%, hsl(259 67% 65%) 100%);
+  --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 14% 97%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 14% 98%) 100%);
+  --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 hsl(210 11% 14% / 0.05);
+  --shadow-md: 0 4px 6px -1px hsl(210 11% 14% / 0.07), 0 2px 4px -2px hsl(210 11% 14% / 0.05);
+  --shadow-lg: 0 10px 15px -3px hsl(210 11% 14% / 0.08), 0 4px 6px -4px hsl(210 11% 14% / 0.05);
+  --shadow-glow: 0 0 20px hsl(239 67% 59% / 0.15);
+
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 210 11% 14%;
+  --sidebar-primary: 239 67% 59%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 239 67% 95%;
+  --sidebar-accent-foreground: 239 67% 45%;
+  --sidebar-border: 210 14% 89%;
+  --sidebar-ring: 239 67% 59%;
+}
+
+.dark {
+  --background: 220 20% 10%;
+  --foreground: 210 14% 97%;
+
+  --card: 220 20% 13%;
+  --card-foreground: 210 14% 97%;
+
+  --popover: 220 20% 13%;
+  --popover-foreground: 210 14% 97%;
+
+  --primary: 239 67% 65%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 20% 18%;
+  --secondary-foreground: 210 14% 97%;
+
+  --muted: 220 20% 18%;
+  --muted-foreground: 210 14% 60%;
+
+  --accent: 239 50% 20%;
+  --accent-foreground: 239 67% 75%;
+
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 20% 20%;
+  --input: 220 20% 20%;
+  --ring: 239 67% 65%;
+
+  --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+  --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4);
+  --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5);
+  --shadow-glow: 0 0 20px hsl(239 67% 65% / 0.25);
+
+  /* Querino brand (dark variants) */
+  --accent-warm: 18 100% 79%;       /* #FFB597 */
+  --accent-warm-foreground: 12 78% 12%;
+  --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
+
+  --sidebar-background: 220 20% 10%;
+  --sidebar-foreground: 210 14% 97%;
+  --sidebar-primary: 239 67% 65%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 239 50% 20%;
+  --sidebar-accent-foreground: 239 67% 75%;
+  --sidebar-border: 220 20% 20%;
+  --sidebar-ring: 239 67% 65%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
+  code, pre {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Tiptap editor (Prompt Kit) — explicit heading + block styles so they
+   survive Tailwind preflight regardless of `prose` specificity. */
+.ProseMirror { outline: none; }
+.ProseMirror h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 0.8em 0 0.4em; }
+.ProseMirror h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin: 0.7em 0 0.35em; }
+.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; margin: 0.6em 0 0.3em; }
+.ProseMirror p  { margin: 0.4em 0; }
+.ProseMirror blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1em;
+  color: hsl(var(--muted-foreground));
+  margin: 0.6em 0;
+}
+.ProseMirror code {
+  background: hsl(var(--muted));
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.ProseMirror pre {
+  background: hsl(var(--muted));
+  padding: 0.8em 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.ProseMirror pre code { background: transparent; padding: 0; }
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.5em; margin: 0.4em 0; }
+.ProseMirror ul { list-style: disc; }
+.ProseMirror ol { list-style: decimal; }
+.ProseMirror hr { border: 0; border-top: 1px solid hsl(var(--border)); margin: 1em 0; }
+.ProseMirror a { color: hsl(var(--primary)); text-decoration: underline; }
+.ProseMirror mark { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); padding: 0 0.15em; border-radius: 2px; }
+.ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.25em; }
+.ProseMirror ul[data-type="taskList"] li { display: flex; gap: 0.5em; align-items: flex-start; }
+.ProseMirror ul[data-type="taskList"] li > label { user-select: none; }
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ============================================================
+   Querino hero — stage, mascot, typing prompt, floating cards
+   Tokens: --primary (indigo), --accent-warm (coral), --grad-primary
+   ============================================================ */
+
+.querino-grad-text {
+  background-image: var(--grad-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* The stage that holds Quentin */
+.hero-stage {
+  position: relative;
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.08) 0%,
+    hsl(var(--accent-warm) / 0.08) 100%
+  );
+  border: 1px solid hsl(var(--primary) / 0.12);
+}
+.dark .stage-bg {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--primary) / 0.10) 0%,
+    hsl(var(--accent-warm) / 0.06) 100%
+  );
+  border-color: hsl(var(--primary) / 0.2);
+}
+
+.stage-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+          mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Speech bubble — top-right of stage, tail pointing down-left at Quentin */
+.speech-bubble {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(40px);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  z-index: 6;
+  white-space: nowrap;
+  animation: bubblePop 0.6s 1s ease-out backwards;
+}
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 18px;
+  width: 14px;
+  height: 14px;
+  background: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  transform: rotate(45deg);
+}
+
+/* ===== Keyframes for Quentin + floating cards + typing prompt ===== */
+@keyframes querioBob   { 50% { transform: translateY(-8px); } }
+@keyframes querioBlink { 96%, 100% { transform: scaleY(.1); } }
+@keyframes querioSparkle {
+  0%, 100% { transform: scale(.6); opacity: .3; }
+  50%      { transform: scale(1.2); opacity: 1; }
+}
+@keyframes bubblePop {
+  from { opacity: 0; transform: translateX(40px) scale(0.8) translateY(-8px); }
+  to   { opacity: 1; transform: translateX(40px) scale(1)   translateY(0); }
+}
+@keyframes blinkCaret {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+@keyframes floatCard0 {
+  0%,100% { transform: translate(calc(-50% + -180px), calc(-50% + -110px)) rotate(-12deg); }
+  50%     { transform: translate(calc(-50% + -180px), calc(-50% + -120px)) rotate(-9deg); }
+}
+@keyframes floatCard1 {
+  0%,100% { transform: translate(calc(-50% +  180px), calc(-50% +  -90px)) rotate(9deg); }
+  50%     { transform: translate(calc(-50% +  180px), calc(-50% + -100px)) rotate(12deg); }
+}
+@keyframes floatCard2 {
+  0%,100% { transform: translate(calc(-50% + -200px), calc(-50% +   90px)) rotate(7deg); }
+  50%     { transform: translate(calc(-50% + -200px), calc(-50% +   80px)) rotate(4deg); }
+}
+@keyframes floatCard3 {
+  0%,100% { transform: translate(calc(-50% +  190px), calc(-50% +  110px)) rotate(-10deg); }
+  50%     { transform: translate(calc(-50% +  190px), calc(-50% +  100px)) rotate(-7deg); }
+}
+@keyframes floatCard4 {
+  0%,100% { transform: translate(calc(-50% +    0px), calc(-50% + -200px)) rotate(0deg); }
+  50%     { transform: translate(calc(-50% +    0px), calc(-50% + -210px)) rotate(3deg); }
+}
+
+/* Reduced motion: kill ambient animation, but keep typing caret + slow type loop */
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage *,
+  .speech-bubble {
+    animation: none !important;
+  }
+  /* Caret can keep blinking — it indicates an active input */
+  .typing-caret {
+    animation: blinkCaret 1.4s step-end infinite !important;
+  }
+}

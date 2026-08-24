@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation, Navigate } from "react-router-dom";
+import { useLocation, Navigate } from "@/lib/router-compat";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import {

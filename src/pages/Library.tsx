@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "@/lib/router-compat";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Select,

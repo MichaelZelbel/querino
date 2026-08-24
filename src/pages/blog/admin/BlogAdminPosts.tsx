@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBlogPosts, useDeleteBlogPost } from "@/hooks/useBlogPosts";
 import { useBlogCategories } from "@/hooks/useBlogCategories";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useDebounce } from "@/hooks/useDebounce";

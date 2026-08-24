@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { HomeStats } from "./HomeStats";
 import { HeroStage } from "./HeroStage";

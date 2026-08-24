@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "@/lib/router-compat";
 import { BlogAdminLayout } from "@/components/blog/admin/BlogAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

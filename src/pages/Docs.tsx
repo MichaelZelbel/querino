@@ -32,7 +32,7 @@ import {
   Package,
   Terminal,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { SEOHead } from "@/components/seo/SEOHead";
 
 function SectionHeader({ icon: Icon, title, id, iconClassName }: { icon: any; title: string; id: string; iconClassName?: string }) {

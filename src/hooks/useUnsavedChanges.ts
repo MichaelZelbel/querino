@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker, type Location } from "react-router-dom";
+import { useBlocker, type Location } from "@/lib/router-compat";
 
 interface Options<T> {
   data: T;

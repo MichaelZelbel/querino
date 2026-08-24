@@ -8,7 +8,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ShieldAlert } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 
 interface ModerationBlockDialogProps {
   open: boolean;

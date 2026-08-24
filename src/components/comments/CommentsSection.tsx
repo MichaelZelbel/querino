@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { CommentItem } from './CommentItem';
 import { ItemType } from '@/types/comment';
 import { toast } from 'sonner';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/lib/router-compat';
 import { moderateContent } from '@/lib/moderateContent';
 
 interface CommentsSectionProps {
