@@ -175,6 +175,19 @@ export async function restAsUser<T = unknown>(
   return rest<T>(path, ANON_KEY, session.accessToken, opts);
 }
 
+/**
+ * PostgREST as a logged-out visitor: the anon key and nothing else.
+ *
+ * This is the caller nothing tested until 2026-08-24, and the gap cost a night of
+ * every public page answering "Not Found". Signed in, the same pages were fine.
+ */
+export async function restAsAnon<T = unknown>(
+  path: string,
+  opts: RestOptions = {},
+): Promise<RestResponse<T>> {
+  return rest<T>(path, ANON_KEY, ANON_KEY, opts);
+}
+
 /** PostgREST as service_role: bypasses RLS. Setup and teardown only. */
 export async function restAsService<T = unknown>(
   path: string,
