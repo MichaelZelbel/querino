@@ -21,7 +21,9 @@ import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
@@ -121,9 +123,19 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RssDotxmlRoute = RssDotxmlRouteImport.update({
+  id: '/rss.xml',
+  path: '/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -330,7 +342,9 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/impressum': typeof ImpressumRoute
   '/privacy': typeof PrivacyRoute
+  '/rss.xml': typeof RssDotxmlRoute
   '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/collections/new': typeof CollectionsNewRoute
@@ -383,7 +397,9 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/impressum': typeof ImpressumRoute
   '/privacy': typeof PrivacyRoute
+  '/rss.xml': typeof RssDotxmlRoute
   '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/collections/new': typeof CollectionsNewRoute
@@ -437,7 +453,9 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/impressum': typeof ImpressumRoute
   '/privacy': typeof PrivacyRoute
+  '/rss.xml': typeof RssDotxmlRoute
   '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/collections/new': typeof CollectionsNewRoute
@@ -492,7 +510,9 @@ export interface FileRouteTypes {
     | '/docs'
     | '/impressum'
     | '/privacy'
+    | '/rss.xml'
     | '/settings'
+    | '/sitemap.xml'
     | '/terms'
     | '/blog/$slug'
     | '/collections/new'
@@ -545,7 +565,9 @@ export interface FileRouteTypes {
     | '/docs'
     | '/impressum'
     | '/privacy'
+    | '/rss.xml'
     | '/settings'
+    | '/sitemap.xml'
     | '/terms'
     | '/blog/$slug'
     | '/collections/new'
@@ -598,7 +620,9 @@ export interface FileRouteTypes {
     | '/docs'
     | '/impressum'
     | '/privacy'
+    | '/rss.xml'
     | '/settings'
+    | '/sitemap.xml'
     | '/terms'
     | '/blog/$slug'
     | '/collections/new'
@@ -652,7 +676,9 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   ImpressumRoute: typeof ImpressumRoute
   PrivacyRoute: typeof PrivacyRoute
+  RssDotxmlRoute: typeof RssDotxmlRoute
   SettingsRoute: typeof SettingsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   BlogSlugRoute: typeof BlogSlugRoute
   CollectionsNewRoute: typeof CollectionsNewRoute
@@ -779,11 +805,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rss.xml': {
+      id: '/rss.xml'
+      path: '/rss.xml'
+      fullPath: '/rss.xml'
+      preLoaderRoute: typeof RssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -1068,7 +1108,9 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   ImpressumRoute: ImpressumRoute,
   PrivacyRoute: PrivacyRoute,
+  RssDotxmlRoute: RssDotxmlRoute,
   SettingsRoute: SettingsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   BlogSlugRoute: BlogSlugRoute,
   CollectionsNewRoute: CollectionsNewRoute,

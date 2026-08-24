@@ -31,7 +31,7 @@ export function SEOHead({
   const defaultDescription =
     "Discover and share AI prompts, skills, and workflows.";
   const finalDescription = description || defaultDescription;
-  const rssUrl = `${siteOrigin()}/api/rss.xml`;
+  const rssUrl = `${siteOrigin()}/rss.xml`;
 
   useEffect(() => {
     // Update document title

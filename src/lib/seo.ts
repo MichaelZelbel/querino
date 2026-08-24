@@ -84,7 +84,7 @@ export function pageHead(page: PageHead) {
       rel: "alternate",
       type: "application/rss+xml",
       title: `${SITE_NAME} Blog RSS Feed`,
-      href: `${SITE_ORIGIN}/api/rss.xml`,
+      href: `${SITE_ORIGIN}/rss.xml`,
     });
   }
 
