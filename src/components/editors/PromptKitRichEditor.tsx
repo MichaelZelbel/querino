@@ -67,7 +67,7 @@ export function PromptKitRichEditor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm md:prose-base dark:prose-invert max-w-none focus:outline-none px-4 py-4",
+          "prose prose-sm md:prose-base dark:prose-invert max-w-none focus:outline-hidden px-4 py-4",
       },
     },
     onUpdate: ({ editor }) => {
