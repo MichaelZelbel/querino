@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from "@/lib/router-compat";
 import { Building2, ChevronDown, Plus, User, Settings, Check, Crown, Lock } from "lucide-react";
 import {
   DropdownMenu,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker, type Location } from "react-router-dom";
+import { useBlocker } from "@tanstack/react-router";
 
 interface Options<T> {
   data: T;
@@ -90,26 +90,26 @@ export function useUnsavedChanges<T>({
     return () => window.removeEventListener("beforeunload", handler);
   }, [enableBeforeUnload, isDirty]);
 
-  // In-app navigation guard (beforeunload does not fire on router navigation)
-  const blocker = useBlocker(
-    useCallback(
-      ({ currentLocation, nextLocation }: { currentLocation: Location; nextLocation: Location }) =>
-        enableNavigationGuard &&
-        dirtyRef.current &&
-        currentLocation.pathname !== nextLocation.pathname,
-      [enableNavigationGuard]
-    )
-  );
+  // In-app navigation guard (beforeunload does not fire on router navigation).
+  // TanStack Router's blocker replaces react-router's useBlocker (data-router API).
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      enableNavigationGuard &&
+      dirtyRef.current &&
+      current.pathname !== next.pathname,
+    enableBeforeUnload: false,
+    withResolver: true,
+  });
 
   useEffect(() => {
-    if (blocker.state !== "blocked") return;
+    if (blocker.status !== "blocked") return;
     const leave = window.confirm(
       "You have unsaved changes. Leave without saving?"
     );
     if (leave) {
-      blocker.proceed();
+      blocker.proceed?.();
     } else {
-      blocker.reset();
+      blocker.reset?.();
     }
   }, [blocker]);
 

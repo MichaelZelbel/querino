@@ -16,7 +16,7 @@ import {
 import { MessageCircle, Pencil, Trash2, X, Check } from 'lucide-react';
 import { Comment } from '@/types/comment';
 import { useAuth } from '@/hooks/useAuth';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 
 interface CommentItemProps {
   comment: Comment;

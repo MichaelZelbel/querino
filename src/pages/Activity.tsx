@@ -3,7 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useOwnActivityFeed } from "@/hooks/useActivityEvents";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 
 export default function Activity() {

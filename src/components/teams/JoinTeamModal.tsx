@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { redeemTeamInvite } from "@/hooks/useTeamInvites";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Users, ExternalLink } from "lucide-react";

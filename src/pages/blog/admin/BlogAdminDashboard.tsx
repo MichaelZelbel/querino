@@ -6,7 +6,7 @@ import { useBlogCategories } from "@/hooks/useBlogCategories";
 import { useBlogTags } from "@/hooks/useBlogTags";
 import { useBlogMedia } from "@/hooks/useBlogMedia";
 import { FileText, FolderOpen, Tags, Image, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { formatDistanceToNow } from "date-fns";
 
 export default function BlogAdminDashboard() {

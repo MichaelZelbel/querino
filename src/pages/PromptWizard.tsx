@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { premiumFeatures } from "@/components/premium/UpsellModal";
