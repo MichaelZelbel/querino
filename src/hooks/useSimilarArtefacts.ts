@@ -47,11 +47,15 @@ export function useSimilarPrompts(promptId: string | undefined, limit = 6) {
       return;
     }
 
+    // Captured after the guard: the async function below closes over the
+    // parameter, so the narrowing above does not reach inside it.
+    const targetId = promptId;
+
     async function fetchSimilar() {
       setLoading(true);
       try {
         const { data, error } = await supabase.rpc("get_similar_prompts", {
-          target_id: promptId,
+          target_id: targetId,
           match_limit: limit,
         });
 
@@ -85,11 +89,15 @@ export function useSimilarSkills(skillId: string | undefined, limit = 6) {
       return;
     }
 
+    // Captured after the guard: the async function below closes over the
+    // parameter, so the narrowing above does not reach inside it.
+    const targetId = skillId;
+
     async function fetchSimilar() {
       setLoading(true);
       try {
         const { data, error } = await supabase.rpc("get_similar_skills", {
-          target_id: skillId,
+          target_id: targetId,
           match_limit: limit,
         });
 
@@ -123,11 +131,15 @@ export function useSimilarWorkflows(workflowId: string | undefined, limit = 6) {
       return;
     }
 
+    // Captured after the guard: the async function below closes over the
+    // parameter, so the narrowing above does not reach inside it.
+    const targetId = workflowId;
+
     async function fetchSimilar() {
       setLoading(true);
       try {
         const { data, error } = await supabase.rpc("get_similar_workflows", {
-          target_id: workflowId,
+          target_id: targetId,
           match_limit: limit,
         });
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker } from "react-router-dom";
+import { useBlocker, type Location } from "react-router-dom";
 
 interface Options<T> {
   data: T;
@@ -93,7 +93,7 @@ export function useUnsavedChanges<T>({
   // In-app navigation guard (beforeunload does not fire on router navigation)
   const blocker = useBlocker(
     useCallback(
-      ({ currentLocation, nextLocation }) =>
+      ({ currentLocation, nextLocation }: { currentLocation: Location; nextLocation: Location }) =>
         enableNavigationGuard &&
         dirtyRef.current &&
         currentLocation.pathname !== nextLocation.pathname,

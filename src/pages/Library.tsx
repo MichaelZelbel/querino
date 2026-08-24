@@ -255,7 +255,10 @@ export default function Library() {
     setSelected(new Set());
   }, []);
 
-  const selectedItems: BulkSelectionItem[] = useMemo(
+  // BulkSelectionItem also allows "claw", which the library grid never produces and
+  // which TABLE_BY_TYPE has no row for. Keeping the narrower union here is what lets
+  // groups[type] stay exhaustive. The array is still a valid BulkSelectionItem[].
+  const selectedItems: { type: ArtifactType; id: string }[] = useMemo(
     () =>
       Array.from(selected).map((key) => {
         const [type, id] = key.split(":") as [ArtifactType, string];

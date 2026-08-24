@@ -25,7 +25,8 @@ export function useTeamInvites(teamId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase.from("team_invites")
         .select("*")
-        .eq("team_id", teamId)
+        // enabled: !!teamId above is what guarantees this is set.
+        .eq("team_id", teamId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as TeamInvite[];

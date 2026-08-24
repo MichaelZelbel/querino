@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { CommentItem } from './CommentItem';
 import { ItemType } from '@/types/comment';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { moderateContent } from '@/lib/moderateContent';
 
 interface CommentsSectionProps {
@@ -18,6 +18,9 @@ interface CommentsSectionProps {
 }
 
 export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionProps) => {
+  // The router knows the path without a browser, so the sign-in redirect keeps
+  // working when this component renders on a server.
+  const { pathname } = useLocation();
   const { user } = useAuth();
   const { comments, loading, error, totalCount, createComment, editComment, deleteComment } = useComments(itemType, itemId);
   const [newComment, setNewComment] = useState('');
@@ -122,7 +125,7 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
       ) : (
         <div className="mb-6 p-4 bg-muted/50 rounded-lg text-center">
           <p className="text-muted-foreground">
-            <Link to={`/auth?redirect=${encodeURIComponent(window.location.pathname)}`} className="text-primary hover:underline">
+            <Link to={`/auth?redirect=${encodeURIComponent(pathname)}`} className="text-primary hover:underline">
               Sign in
             </Link>
             {' '}to join the discussion

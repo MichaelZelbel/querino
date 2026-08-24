@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { siteOrigin } from "@/config/site";
 
 interface SEOHeadProps {
   title: string;
@@ -29,7 +30,7 @@ export function SEOHead({
   const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   const defaultDescription = "Discover and share AI prompts, skills, and workflows.";
   const finalDescription = description || defaultDescription;
-  const rssUrl = `${window.location.origin}/api/rss.xml`;
+  const rssUrl = `${siteOrigin()}/api/rss.xml`;
 
   useEffect(() => {
     // Update document title

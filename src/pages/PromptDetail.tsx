@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { moderateContent } from "@/lib/moderateContent";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
+import { siteOrigin } from "@/config/site";
 
 interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -278,7 +279,8 @@ export default function PromptDetail() {
     const { data } = await supabase
       .from("prompts")
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("slug", slug)
+      // The caller returns early when slug is missing.
+      .eq("slug", slug!)
       .maybeSingle();
     
     if (data) {
@@ -345,7 +347,7 @@ export default function PromptDetail() {
     );
   }
 
-  const promptCanonical = `${window.location.origin}/prompts/${prompt.slug}`;
+  const promptCanonical = `${siteOrigin()}/prompts/${prompt.slug}`;
   const promptDescription = prompt.summary || prompt.description || `${prompt.title} — AI prompt on Querino`;
   const promptJsonLd = {
     "@context": "https://schema.org",

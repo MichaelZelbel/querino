@@ -1,0 +1,373 @@
+[
+  {
+    "route": "/",
+    "url": "/",
+    "data": "static",
+    "guard": "public",
+    "name": "root"
+  },
+  {
+    "route": "/discover",
+    "url": "/discover",
+    "data": "static",
+    "guard": "public",
+    "name": "discover"
+  },
+  {
+    "route": "/auth",
+    "url": "/auth",
+    "data": "static",
+    "guard": "public",
+    "name": "auth"
+  },
+  {
+    "route": "/library",
+    "url": "/library",
+    "data": "static",
+    "guard": "public",
+    "name": "library"
+  },
+  {
+    "route": "/dashboard",
+    "url": "/dashboard",
+    "data": "static",
+    "guard": "redirect",
+    "name": "dashboard"
+  },
+  {
+    "route": "/settings",
+    "url": "/settings",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "settings"
+  },
+  {
+    "route": "/privacy",
+    "url": "/privacy",
+    "data": "static",
+    "guard": "public",
+    "name": "privacy"
+  },
+  {
+    "route": "/terms",
+    "url": "/terms",
+    "data": "static",
+    "guard": "public",
+    "name": "terms"
+  },
+  {
+    "route": "/cookies",
+    "url": "/cookies",
+    "data": "static",
+    "guard": "public",
+    "name": "cookies"
+  },
+  {
+    "route": "/impressum",
+    "url": "/impressum",
+    "data": "static",
+    "guard": "public",
+    "name": "impressum"
+  },
+  {
+    "route": "/create-from-menerio",
+    "url": "/create-from-menerio",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "create-from-menerio"
+  },
+  {
+    "route": "/prompts/new",
+    "url": "/prompts/new",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "prompts_new"
+  },
+  {
+    "route": "/prompts/wizard",
+    "url": "/prompts/wizard",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "prompts_wizard"
+  },
+  {
+    "route": "/prompts/:slug",
+    "url": "/prompts/conduct-a-project-premortem-and-plan-revision",
+    "data": "sitemap",
+    "guard": "public",
+    "name": "prompts_slug"
+  },
+  {
+    "route": "/prompts/:slug/edit",
+    "url": "/prompts/conduct-a-project-premortem-and-plan-revision/edit",
+    "data": "sitemap",
+    "guard": "in-page-auth-check",
+    "name": "prompts_slug_edit"
+  },
+  {
+    "route": "/library/:slug/edit",
+    "url": "/library/conduct-a-project-premortem-and-plan-revision/edit",
+    "data": "sitemap",
+    "guard": "in-page-auth-check",
+    "name": "library_slug_edit"
+  },
+  {
+    "route": "/library/:slug/versions",
+    "url": "/library/conduct-a-project-premortem-and-plan-revision/versions",
+    "data": "sitemap",
+    "guard": "in-page-auth-check",
+    "name": "library_slug_versions"
+  },
+  {
+    "route": "/skills/new",
+    "url": "/skills/new",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "skills_new"
+  },
+  {
+    "route": "/skills/:slug",
+    "url": "/skills/anti-hallucination-reasoning-protocol",
+    "data": "sitemap",
+    "guard": "public",
+    "name": "skills_slug"
+  },
+  {
+    "route": "/skills/:slug/edit",
+    "url": "/skills/anti-hallucination-reasoning-protocol/edit",
+    "data": "sitemap",
+    "guard": "in-page-auth-check",
+    "name": "skills_slug_edit"
+  },
+  {
+    "route": "/workflows/new",
+    "url": "/workflows/new",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "workflows_new"
+  },
+  {
+    "route": "/workflows/:slug",
+    "url": "/workflows/create-validation-workflow",
+    "data": "sitemap",
+    "guard": "public",
+    "name": "workflows_slug"
+  },
+  {
+    "route": "/workflows/:slug/edit",
+    "url": "/workflows/create-validation-workflow/edit",
+    "data": "sitemap",
+    "guard": "in-page-auth-check",
+    "name": "workflows_slug_edit"
+  },
+  {
+    "route": "/prompt-kits/new",
+    "url": "/prompt-kits/new",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "prompt-kits_new"
+  },
+  {
+    "route": "/prompt-kits/:slug",
+    "url": "/prompt-kits/baseline-no-public-kit",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "prompt-kits_slug"
+  },
+  {
+    "route": "/prompt-kits/:slug/edit",
+    "url": "/prompt-kits/baseline-no-public-kit/edit",
+    "data": "synthetic",
+    "guard": "in-page-auth-check",
+    "name": "prompt-kits_slug_edit"
+  },
+  {
+    "route": "/u/:username",
+    "url": "/u/baseline-no-public-profile",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "u_username"
+  },
+  {
+    "route": "/profile/edit",
+    "url": "/profile/edit",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "profile_edit"
+  },
+  {
+    "route": "/collections",
+    "url": "/collections",
+    "data": "static",
+    "guard": "public",
+    "name": "collections"
+  },
+  {
+    "route": "/collections/new",
+    "url": "/collections/new",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "collections_new"
+  },
+  {
+    "route": "/collections/:id",
+    "url": "/collections/00000000-0000-0000-0000-000000000000",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "collections_id"
+  },
+  {
+    "route": "/collections/:id/edit",
+    "url": "/collections/00000000-0000-0000-0000-000000000000/edit",
+    "data": "synthetic",
+    "guard": "in-page-auth-check",
+    "name": "collections_id_edit"
+  },
+  {
+    "route": "/team/join",
+    "url": "/team/join",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "team_join"
+  },
+  {
+    "route": "/team/:id/settings",
+    "url": "/team/00000000-0000-0000-0000-000000000000/settings",
+    "data": "synthetic",
+    "guard": "in-page-auth-check",
+    "name": "team_id_settings"
+  },
+  {
+    "route": "/team/:id/activity",
+    "url": "/team/00000000-0000-0000-0000-000000000000/activity",
+    "data": "synthetic",
+    "guard": "in-page-auth-check",
+    "name": "team_id_activity"
+  },
+  {
+    "route": "/activity",
+    "url": "/activity",
+    "data": "static",
+    "guard": "in-page-auth-check",
+    "name": "activity"
+  },
+  {
+    "route": "/u/:username/activity",
+    "url": "/u/baseline-no-public-profile/activity",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "u_username_activity"
+  },
+  {
+    "route": "/admin",
+    "url": "/admin",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "admin"
+  },
+  {
+    "route": "/docs",
+    "url": "/docs",
+    "data": "static",
+    "guard": "public",
+    "name": "docs"
+  },
+  {
+    "route": "/community-guidelines",
+    "url": "/community-guidelines",
+    "data": "static",
+    "guard": "public",
+    "name": "community-guidelines"
+  },
+  {
+    "route": "/blog/admin",
+    "url": "/blog/admin",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin"
+  },
+  {
+    "route": "/blog/admin/posts",
+    "url": "/blog/admin/posts",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin_posts"
+  },
+  {
+    "route": "/blog/admin/posts/new",
+    "url": "/blog/admin/posts/new",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin_posts_new"
+  },
+  {
+    "route": "/blog/admin/posts/:id/edit",
+    "url": "/blog/admin/posts/00000000-0000-0000-0000-000000000000/edit",
+    "data": "synthetic",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin_posts_id_edit"
+  },
+  {
+    "route": "/blog/admin/categories",
+    "url": "/blog/admin/categories",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin_categories"
+  },
+  {
+    "route": "/blog/admin/tags",
+    "url": "/blog/admin/tags",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin_tags"
+  },
+  {
+    "route": "/blog/admin/media",
+    "url": "/blog/admin/media",
+    "data": "static",
+    "guard": "in-page-admin-check",
+    "name": "blog_admin_media"
+  },
+  {
+    "route": "/blog",
+    "url": "/blog",
+    "data": "static",
+    "guard": "public",
+    "name": "blog"
+  },
+  {
+    "route": "/blog/category/:slug",
+    "url": "/blog/category/baseline-no-category",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "blog_category_slug"
+  },
+  {
+    "route": "/blog/tag/:slug",
+    "url": "/blog/tag/baseline-no-tag",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "blog_tag_slug"
+  },
+  {
+    "route": "/blog/:slug",
+    "url": "/blog/baseline-no-published-post",
+    "data": "synthetic",
+    "guard": "public",
+    "name": "blog_slug"
+  },
+  {
+    "route": "*",
+    "url": "/this-route-does-not-exist",
+    "data": "synthetic",
+    "guard": "catch-all",
+    "name": "catch-all-404"
+  },
+  {
+    "route": "/__tokens",
+    "url": "/__tokens",
+    "data": "scaffolding",
+    "guard": "public",
+    "name": "__tokens"
+  }
+]

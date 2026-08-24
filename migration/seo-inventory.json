@@ -1,0 +1,956 @@
+[
+  {
+    "route": "*",
+    "url": "/this-route-does-not-exist",
+    "title": "Page Not Found | Querino",
+    "description": "Discover and share AI prompts, skills, and workflows.",
+    "canonical": "http://localhost:4173/this-route-does-not-exist",
+    "robots": "noindex, nofollow",
+    "ogTitle": "Page Not Found | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/",
+    "url": "/",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/__tokens",
+    "url": "/__tokens",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/activity",
+    "url": "/activity",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/admin",
+    "url": "/admin",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/auth",
+    "url": "/auth",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog",
+    "url": "/blog",
+    "title": "Blog | Querino",
+    "description": "Explore articles about AI prompts, workflows, and productivity tips.",
+    "canonical": "http://localhost:4173/blog",
+    "robots": null,
+    "ogTitle": "Blog | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": "http://localhost:4173/blog",
+    "twitterCard": "summary",
+    "rss": "http://localhost:4173/api/rss.xml",
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/:slug",
+    "url": "/blog/baseline-no-published-post",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin",
+    "url": "/blog/admin",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin/categories",
+    "url": "/blog/admin/categories",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin/media",
+    "url": "/blog/admin/media",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin/posts",
+    "url": "/blog/admin/posts",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin/posts/:id/edit",
+    "url": "/blog/admin/posts/00000000-0000-0000-0000-000000000000/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin/posts/new",
+    "url": "/blog/admin/posts/new",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/admin/tags",
+    "url": "/blog/admin/tags",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/category/:slug",
+    "url": "/blog/category/baseline-no-category",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/blog/tag/:slug",
+    "url": "/blog/tag/baseline-no-tag",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/collections",
+    "url": "/collections",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/collections/:id",
+    "url": "/collections/00000000-0000-0000-0000-000000000000",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/collections/:id/edit",
+    "url": "/collections/00000000-0000-0000-0000-000000000000/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/collections/new",
+    "url": "/collections/new",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/community-guidelines",
+    "url": "/community-guidelines",
+    "title": "Community Guidelines — Querino",
+    "description": "Querino's community guidelines for publishing AI artifacts. Learn what content is allowed and how we keep the platform safe.",
+    "canonical": "http://localhost:4173/community-guidelines",
+    "robots": null,
+    "ogTitle": "Community Guidelines — Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/cookies",
+    "url": "/cookies",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/create-from-menerio",
+    "url": "/create-from-menerio",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "url": "/dashboard",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/discover",
+    "url": "/discover",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/docs",
+    "url": "/docs",
+    "title": "Documentation — Querino",
+    "description": "Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino.",
+    "canonical": "http://localhost:4173/docs",
+    "robots": null,
+    "ogTitle": "Documentation — Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/impressum",
+    "url": "/impressum",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/library",
+    "url": "/library",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/library/:slug/edit",
+    "url": "/library/conduct-a-project-premortem-and-plan-revision/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/library/:slug/versions",
+    "url": "/library/conduct-a-project-premortem-and-plan-revision/versions",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/privacy",
+    "url": "/privacy",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/profile/edit",
+    "url": "/profile/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompt-kits/:slug",
+    "url": "/prompt-kits/baseline-no-public-kit",
+    "title": "Prompt Kit Not Found | Querino",
+    "description": "Discover and share AI prompts, skills, and workflows.",
+    "canonical": "http://localhost:4173/prompt-kits/baseline-no-public-kit",
+    "robots": "noindex, nofollow",
+    "ogTitle": "Prompt Kit Not Found | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompt-kits/:slug/edit",
+    "url": "/prompt-kits/baseline-no-public-kit/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompt-kits/new",
+    "url": "/prompt-kits/new",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompts/:slug",
+    "url": "/prompts/conduct-a-project-premortem-and-plan-revision",
+    "title": "Prompt Not Found | Querino",
+    "description": "Discover and share AI prompts, skills, and workflows.",
+    "canonical": "http://localhost:4173/prompts/conduct-a-project-premortem-and-plan-revision",
+    "robots": "noindex, nofollow",
+    "ogTitle": "Prompt Not Found | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompts/:slug/edit",
+    "url": "/prompts/conduct-a-project-premortem-and-plan-revision/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompts/new",
+    "url": "/prompts/new",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/prompts/wizard",
+    "url": "/prompts/wizard",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/settings",
+    "url": "/settings",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/skills/:slug",
+    "url": "/skills/anti-hallucination-reasoning-protocol",
+    "title": "Skill Not Found | Querino",
+    "description": "Discover and share AI prompts, skills, and workflows.",
+    "canonical": "http://localhost:4173/skills/anti-hallucination-reasoning-protocol",
+    "robots": "noindex, nofollow",
+    "ogTitle": "Skill Not Found | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/skills/:slug/edit",
+    "url": "/skills/anti-hallucination-reasoning-protocol/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/skills/new",
+    "url": "/skills/new",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/team/:id/activity",
+    "url": "/team/00000000-0000-0000-0000-000000000000/activity",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/team/:id/settings",
+    "url": "/team/00000000-0000-0000-0000-000000000000/settings",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/team/join",
+    "url": "/team/join",
+    "title": "Join Team | Querino",
+    "description": "Discover and share AI prompts, skills, and workflows.",
+    "canonical": "http://localhost:4173/team/join",
+    "robots": "noindex, nofollow",
+    "ogTitle": "Join Team | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/terms",
+    "url": "/terms",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/u/:username",
+    "url": "/u/baseline-no-public-profile",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/u/:username/activity",
+    "url": "/u/baseline-no-public-profile/activity",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/workflows/:slug",
+    "url": "/workflows/create-validation-workflow",
+    "title": "Workflow Not Found | Querino",
+    "description": "Discover and share AI prompts, skills, and workflows.",
+    "canonical": "http://localhost:4173/workflows/create-validation-workflow",
+    "robots": "noindex, nofollow",
+    "ogTitle": "Workflow Not Found | Querino",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/workflows/:slug/edit",
+    "url": "/workflows/create-validation-workflow/edit",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  },
+  {
+    "route": "/workflows/new",
+    "url": "/workflows/new",
+    "title": "Querino - AI Prompt Library for Creators",
+    "description": "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+    "canonical": null,
+    "robots": null,
+    "ogTitle": "Querino - AI Prompt Library for Creators",
+    "ogType": "website",
+    "ogImage": "https://lovable.dev/opengraph-image-p98pqg.png",
+    "ogUrl": null,
+    "twitterCard": "summary_large_image",
+    "rss": null,
+    "jsonLdTypes": [
+      "Organization",
+      "WebSite"
+    ]
+  }
+]

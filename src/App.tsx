@@ -54,6 +54,10 @@ const Docs = lazy(() => import("./pages/Docs"));
 const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const CreateFromMenerio = lazy(() => import("./pages/CreateFromMenerio"));
 
+// MIGRATION SCAFFOLDING - token gallery for the visual-regression baseline. Delete this
+// import and its route once the post-migration screenshot comparison is done.
+const TokenGallery = lazy(() => import("./pages/TokenGallery"));
+
 // Blog Admin (heavy editor — keep lazy)
 const BlogAdminDashboard = lazy(() => import("./pages/blog/admin/BlogAdminDashboard"));
 const BlogAdminPosts = lazy(() => import("./pages/blog/admin/BlogAdminPosts"));
@@ -152,6 +156,9 @@ const AppShell = () => (
                 <Route path="/blog/category/:slug" element={<BlogCategory />} />
                 <Route path="/blog/tag/:slug" element={<BlogTag />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
+
+                {/* MIGRATION SCAFFOLDING - remove together with TokenGallery.tsx */}
+                <Route path="/__tokens" element={<TokenGallery />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

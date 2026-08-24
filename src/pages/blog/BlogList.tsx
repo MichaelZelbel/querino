@@ -9,6 +9,7 @@ import { BlogSidebar } from "@/components/blog/BlogSidebar";
 import { usePublicPosts } from "@/hooks/usePublicBlog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText } from "lucide-react";
+import { siteOrigin } from "@/config/site";
 
 export default function BlogList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,7 +27,7 @@ export default function BlogList() {
       <SEOHead
         title="Blog"
         description="Explore articles about AI prompts, workflows, and productivity tips."
-        canonicalUrl={`${window.location.origin}/blog`}
+        canonicalUrl={`${siteOrigin()}/blog`}
         includeRssFeed
       />
       <div className="min-h-screen flex flex-col bg-background">

@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { siteOrigin } from "@/config/site";
 
 interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
@@ -241,7 +242,7 @@ export default function WorkflowDetail() {
     );
   }
 
-  const workflowCanonical = `${window.location.origin}/workflows/${workflow.slug || workflow.id}`;
+  const workflowCanonical = `${siteOrigin()}/workflows/${workflow.slug || workflow.id}`;
   const workflowDescription = workflow.description || `${workflow.title} — AI workflow on Querino`;
   const workflowJsonLd = {
     "@context": "https://schema.org",

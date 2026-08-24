@@ -175,7 +175,7 @@ export function useAddToCollection() {
         .order("sort_order", { ascending: false })
         .limit(1);
 
-      const sortOrder = items && items.length > 0 ? items[0].sort_order + 1 : 0;
+      const sortOrder = items && items.length > 0 ? (items[0].sort_order ?? 0) + 1 : 0;
 
       const { error } = await supabase
         .from("collection_items")

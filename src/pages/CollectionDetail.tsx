@@ -35,6 +35,12 @@ import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { CommentsSection } from "@/components/comments";
 
+
+// A collection holds prompts, skills, workflows and prompt kits. They are different
+// types, but this view reads only the fields all four share. Naming that shape stops
+// `data` being inferred as null-only, which is what made every read of it an error.
+type CollectionItemData = { id: string; title: string; description: string | null } | null | undefined;
+
 export default function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -57,7 +63,7 @@ export default function CollectionDetail() {
   // Get full item data
   const itemsWithData = useMemo(() => {
     return items?.map((item) => {
-      let data = null;
+      let data: CollectionItemData = null;
       if (item.item_type === "prompt") {
         data = prompts?.find((p) => p.id === item.item_id);
       } else if (item.item_type === "skill") {

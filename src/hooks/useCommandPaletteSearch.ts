@@ -34,7 +34,7 @@ export interface SearchResult {
   title: string;
   type: ArtefactType;
   description?: string | null;
-  isPublic?: boolean;
+  isPublic?: boolean | null;
   teamId?: string | null;
   teamName?: string | null;
 }

@@ -1,0 +1,993 @@
+{
+  "total": 141,
+  "unguardedRisky": 1,
+  "findings": [
+    {
+      "file": "src/components/collections/AddToCollectionModal.tsx",
+      "line": 87,
+      "global": "window",
+      "when": "event-handler",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CommandPalette.tsx",
+      "line": 73,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CommandPalette.tsx",
+      "line": 74,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 13,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 24,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 31,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 36,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 39,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 40,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 45,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/CookieBanner.tsx",
+      "line": 50,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/landing/HeroStage.tsx",
+      "line": 18,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/landing/HeroStage.tsx",
+      "line": 19,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/landing/TypingPrompt.tsx",
+      "line": 32,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": true
+    },
+    {
+      "file": "src/components/landing/TypingPrompt.tsx",
+      "line": 33,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": true
+    },
+    {
+      "file": "src/components/promptKits/PromptKitCard.tsx",
+      "line": 35,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/prompts/LegacyPromptCard.tsx",
+      "line": 18,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/prompts/PromptCard.tsx",
+      "line": 45,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/prompts/RefinePromptModal.tsx",
+      "line": 113,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/prompts/SendToLLMButtons.tsx",
+      "line": 53,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 37,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 42,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 44,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 46,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 88,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 88,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 89,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 91,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 93,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 98,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 101,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 105,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 113,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 119,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/seo/SEOHead.tsx",
+      "line": 123,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/components/settings/McpSetupSection.tsx",
+      "line": 78,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/settings/McpTokensSection.tsx",
+      "line": 199,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/skills/SkillCard.tsx",
+      "line": 40,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/studio/ArtifactCoachPanel.tsx",
+      "line": 110,
+      "global": "window",
+      "when": "render-path (useState initialiser)",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/ArtifactCoachPanel.tsx",
+      "line": 110,
+      "global": "localStorage",
+      "when": "render-path (useState initialiser)",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/ArtifactCoachPanel.tsx",
+      "line": 134,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/ArtifactCoachPanel.tsx",
+      "line": 143,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/PromptCoachPanel.tsx",
+      "line": 62,
+      "global": "window",
+      "when": "render-path (useState initialiser)",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/PromptCoachPanel.tsx",
+      "line": 62,
+      "global": "localStorage",
+      "when": "render-path (useState initialiser)",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/PromptCoachPanel.tsx",
+      "line": 79,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": true
+    },
+    {
+      "file": "src/components/studio/PromptCoachPanel.tsx",
+      "line": 89,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": true
+    },
+    {
+      "file": "src/components/ui/sidebar.tsx",
+      "line": 68,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/ui/sidebar.tsx",
+      "line": 87,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/ui/sidebar.tsx",
+      "line": 88,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/components/workflows/WorkflowCard.tsx",
+      "line": 52,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/config/site.ts",
+      "line": 21,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/config/site.ts",
+      "line": 21,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/config/site.ts",
+      "line": 22,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/config/stripe.ts",
+      "line": 9,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/config/stripe.ts",
+      "line": 10,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/config/stripe.ts",
+      "line": 17,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/contexts/WorkspaceContext.tsx",
+      "line": 28,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/contexts/WorkspaceContext.tsx",
+      "line": 40,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/contexts/WorkspaceContext.tsx",
+      "line": 49,
+      "global": "localStorage",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/contexts/WorkspaceContext.tsx",
+      "line": 55,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/use-mobile.tsx",
+      "line": 9,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/use-mobile.tsx",
+      "line": 11,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/use-mobile.tsx",
+      "line": 14,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useAuth.ts",
+      "line": 139,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useAuth.ts",
+      "line": 155,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useAuth.ts",
+      "line": 165,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useMarkdownImport.ts",
+      "line": 18,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useMarkdownImport.ts",
+      "line": 64,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useMarkdownImport.ts",
+      "line": 68,
+      "global": "document",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useSubscription.ts",
+      "line": 77,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useSubscription.ts",
+      "line": 80,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useSubscription.ts",
+      "line": 83,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useSuggestions.ts",
+      "line": 139,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/hooks/useSuggestions.ts",
+      "line": 140,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/hooks/useTeamInvites.ts",
+      "line": 18,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useUnsavedChanges.ts",
+      "line": 78,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useUnsavedChanges.ts",
+      "line": 79,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useUnsavedChanges.ts",
+      "line": 89,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useUnsavedChanges.ts",
+      "line": 90,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/hooks/useUnsavedChanges.ts",
+      "line": 106,
+      "global": "window",
+      "when": "effect-or-callback",
+      "guarded": false
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 6,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 17,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 17,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 17,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 18,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 26,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 26,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 49,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 57,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 61,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 80,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 83,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 86,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/integrations/supabase/previewAuthStorage.ts",
+      "line": 90,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": true
+    },
+    {
+      "file": "src/lib/authRedirect.ts",
+      "line": 9,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/authRedirect.ts",
+      "line": 16,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/authRedirect.ts",
+      "line": 17,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/markdown.ts",
+      "line": 139,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/markdown.ts",
+      "line": 142,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/markdown.ts",
+      "line": 144,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/openLLM.ts",
+      "line": 41,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/openLLM.ts",
+      "line": 49,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/openLLM.ts",
+      "line": 54,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/openLLM.ts",
+      "line": 55,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/openLLM.ts",
+      "line": 67,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/openLLM.ts",
+      "line": 75,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 68,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 71,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 88,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 94,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 96,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 97,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 105,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/lib/runCanvasAI.ts",
+      "line": 162,
+      "global": "localStorage",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/main.tsx",
+      "line": 6,
+      "global": "document",
+      "when": "MODULE SCOPE",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/blog/admin/BlogAdminMedia.tsx",
+      "line": 90,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/blog/BlogCategory.tsx",
+      "line": 25,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/blog/BlogList.tsx",
+      "line": 22,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/blog/BlogTag.tsx",
+      "line": 24,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/CommunityGuidelines.tsx",
+      "line": 10,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/CommunityGuidelines.tsx",
+      "line": 14,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Cookies.tsx",
+      "line": 9,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Cookies.tsx",
+      "line": 13,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Impressum.tsx",
+      "line": 9,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Library.tsx",
+      "line": 534,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/LibraryPromptEdit.tsx",
+      "line": 1006,
+      "global": "window",
+      "when": "event-handler",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Privacy.tsx",
+      "line": 9,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Privacy.tsx",
+      "line": 13,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/PromptDetail.tsx",
+      "line": 181,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/PromptKitDetail.tsx",
+      "line": 168,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/PromptKitDetail.tsx",
+      "line": 179,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/PromptKitEdit.tsx",
+      "line": 552,
+      "global": "window",
+      "when": "event-handler",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/PromptWizard.tsx",
+      "line": 125,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Settings.tsx",
+      "line": 202,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Settings.tsx",
+      "line": 337,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/SkillDetail.tsx",
+      "line": 142,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/TeamSettings.tsx",
+      "line": 119,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/TeamSettings.tsx",
+      "line": 129,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Terms.tsx",
+      "line": 9,
+      "global": "window",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/Terms.tsx",
+      "line": 13,
+      "global": "document",
+      "when": "helper-function",
+      "guarded": false
+    },
+    {
+      "file": "src/pages/WorkflowDetail.tsx",
+      "line": 157,
+      "global": "navigator",
+      "when": "helper-function",
+      "guarded": false
+    }
+  ]
+}
