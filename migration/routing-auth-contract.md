@@ -22,15 +22,28 @@ TanStack, and it is exactly where the behaviours below get lost.
 
 ## The contract, one line each, each of them checkable by hand
 
-1. **A guarded route renders sign-in in place; it does not redirect.** Visit `/settings`
-   logged out: the URL stays `/settings`, and the page shows the banner "Sign in to
-   access your settings." above the full sign-in form. It does **not** navigate to
-   `/auth`. Any migration that adds a server-side redirect to `/auth` changes the URL,
-   and every bookmark and shared link to a guarded page then lands somewhere else.
-   Verified: `migration/baseline/settings@desktop.png`.
+1. **A guarded route redirects to `/auth` and carries the destination in the query
+   string.** Visit `/settings` logged out and you land on `/auth?redirect=/settings`,
+   where `Auth.tsx` turns the parameter into the banner "Sign in to access your
+   settings." Each guarded page does this itself, in its own `useEffect`, with
+   `replace: true`, so the guarded URL does not stay in history.
 
-2. **The admin routes behave the same way.** `/admin` and the seven `/blog/admin/*`
-   routes render their gate in place, at their own URL.
+   **Correction, 2026-08-24:** this file first claimed the opposite, that the sign-in
+   form renders in place at the guarded URL. That was wrong. It was inferred from
+   `migration/baseline/settings@desktop.png` without recording the final URL, and the
+   banner text, which names the page you were heading for, made the screenshot look like
+   it had been taken at `/settings`. It was taken at `/auth`. The post-migration check
+   is what caught it: three "failures" turned out to be the behaviour working exactly as
+   it always had.
+
+   What must still hold: the destination survives the round trip. `?redirect=` for an
+   in-page sign-in, and `querino_redirect_path` in localStorage for an OAuth round trip
+   where the query string does not survive. Both fall back to `/library`.
+
+2. **`/admin` sends a non-admin to `/`, not to `/auth`.** `Admin.tsx` calls
+   `navigate("/")` when the visitor is not signed in and again when they are signed in
+   without the admin role. Different from every other guarded page, and deliberate: it
+   does not tell an anonymous visitor that an admin area exists.
 
 3. **`/dashboard` is a permanent redirect to `/library`.** It is the only `<Navigate>` in
    the router, `replace` is set, so it must not appear in history. It is a legacy URL
@@ -77,8 +90,8 @@ TanStack, and it is exactly where the behaviours below get lost.
 
 Sign out completely, then:
 
-    /settings          sign-in form, URL unchanged
-    /admin             gate in place, URL unchanged
+    /settings          lands on /auth?redirect=/settings, banner names "your settings"
+    /admin             lands on /, silently
     /dashboard         lands on /library, and Back does not return here
     /nonsense-url      404 page, URL unchanged, noindex present
     /prompts/<a uuid>  becomes /prompts/<slug>, and Back does not return to the uuid

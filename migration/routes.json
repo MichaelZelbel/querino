@@ -1,424 +1,42 @@
 {
-  "generatedFrom": "src/App.tsx",
+  "generatedFrom": "src/routeTree.gen.ts",
   "count": 52,
   "routes": [
     {
       "path": "/",
-      "element": "Index",
-      "module": "./pages/Index",
-      "loading": "eager",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/discover",
-      "element": "Discover",
-      "module": "./pages/Discover",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/auth",
-      "element": "Auth",
-      "module": "./pages/Auth",
-      "loading": "eager",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/library",
-      "element": "Library",
-      "module": "./pages/Library",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/dashboard",
-      "element": "Navigate",
+      "element": null,
       "module": null,
-      "loading": "redirect",
-      "redirectsTo": "/library",
-      "params": [],
-      "catchAll": false,
-      "guard": "redirect"
-    },
-    {
-      "path": "/settings",
-      "element": "Settings",
-      "module": "./pages/Settings",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/privacy",
-      "element": "Privacy",
-      "module": "./pages/Privacy",
-      "loading": "lazy",
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
       "guard": "public"
-    },
-    {
-      "path": "/terms",
-      "element": "Terms",
-      "module": "./pages/Terms",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/cookies",
-      "element": "Cookies",
-      "module": "./pages/Cookies",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/impressum",
-      "element": "Impressum",
-      "module": "./pages/Impressum",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/create-from-menerio",
-      "element": "CreateFromMenerio",
-      "module": "./pages/CreateFromMenerio",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/prompts/new",
-      "element": "PromptNew",
-      "module": "./pages/PromptNew",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/prompts/wizard",
-      "element": "PromptWizard",
-      "module": "./pages/PromptWizard",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/prompts/:slug",
-      "element": "PromptDetail",
-      "module": "./pages/PromptDetail",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/prompts/:slug/edit",
-      "element": "PromptEdit",
-      "module": "./pages/LibraryPromptEdit",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/library/:slug/edit",
-      "element": "PromptEdit",
-      "module": "./pages/LibraryPromptEdit",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/library/:slug/versions",
-      "element": "VersionHistory",
-      "module": "./pages/VersionHistory",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/skills/new",
-      "element": "SkillNew",
-      "module": "./pages/SkillNew",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/skills/:slug",
-      "element": "SkillDetail",
-      "module": "./pages/SkillDetail",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/skills/:slug/edit",
-      "element": "SkillEdit",
-      "module": "./pages/SkillEdit",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/workflows/new",
-      "element": "WorkflowNew",
-      "module": "./pages/WorkflowNew",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/workflows/:slug",
-      "element": "WorkflowDetail",
-      "module": "./pages/WorkflowDetail",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/workflows/:slug/edit",
-      "element": "WorkflowEdit",
-      "module": "./pages/WorkflowEdit",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/prompt-kits/new",
-      "element": "PromptKitNew",
-      "module": "./pages/PromptKitNew",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/prompt-kits/:slug",
-      "element": "PromptKitDetail",
-      "module": "./pages/PromptKitDetail",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/prompt-kits/:slug/edit",
-      "element": "PromptKitEdit",
-      "module": "./pages/PromptKitEdit",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "slug"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/u/:username",
-      "element": "UserProfile",
-      "module": "./pages/UserProfile",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "username"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/profile/edit",
-      "element": "EditProfile",
-      "module": "./pages/EditProfile",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/collections",
-      "element": "Collections",
-      "module": "./pages/Collections",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/collections/new",
-      "element": "CollectionNew",
-      "module": "./pages/CollectionNew",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/collections/:id",
-      "element": "CollectionDetail",
-      "module": "./pages/CollectionDetail",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "id"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
-      "path": "/collections/:id/edit",
-      "element": "CollectionEdit",
-      "module": "./pages/CollectionEdit",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "id"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/team/join",
-      "element": "TeamJoin",
-      "module": "./pages/TeamJoin",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/team/:id/settings",
-      "element": "TeamSettings",
-      "module": "./pages/TeamSettings",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "id"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
-    },
-    {
-      "path": "/team/:id/activity",
-      "element": "TeamActivity",
-      "module": "./pages/TeamActivity",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "id"
-      ],
-      "catchAll": false,
-      "guard": "in-page-auth-check"
     },
     {
       "path": "/activity",
-      "element": "Activity",
-      "module": "./pages/Activity",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
       "guard": "in-page-auth-check"
     },
     {
-      "path": "/u/:username/activity",
-      "element": "UserActivity",
-      "module": "./pages/UserActivity",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [
-        "username"
-      ],
-      "catchAll": false,
-      "guard": "public"
-    },
-    {
       "path": "/admin",
-      "element": "Admin",
-      "module": "./pages/Admin",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
       "guard": "in-page-admin-check"
     },
     {
-      "path": "/docs",
-      "element": "Docs",
-      "module": "./pages/Docs",
-      "loading": "lazy",
+      "path": "/auth",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
@@ -426,71 +44,241 @@
     },
     {
       "path": "/community-guidelines",
-      "element": "CommunityGuidelines",
-      "module": "./pages/CommunityGuidelines",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
       "guard": "public"
     },
     {
-      "path": "/blog/admin",
-      "element": "BlogAdminDashboard",
-      "module": "./pages/blog/admin/BlogAdminDashboard",
-      "loading": "lazy",
+      "path": "/cookies",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
-      "guard": "in-page-admin-check"
+      "guard": "public"
     },
     {
-      "path": "/blog/admin/posts",
-      "element": "BlogAdminPosts",
-      "module": "./pages/blog/admin/BlogAdminPosts",
-      "loading": "lazy",
+      "path": "/create-from-menerio",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
-      "guard": "in-page-admin-check"
+      "guard": "in-page-auth-check"
     },
     {
-      "path": "/blog/admin/posts/new",
-      "element": "BlogAdminPostEditor",
-      "module": "./pages/blog/admin/BlogAdminPostEditor",
-      "loading": "lazy",
+      "path": "/dashboard",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": "/library",
+      "params": [],
+      "catchAll": false,
+      "guard": "redirect"
+    },
+    {
+      "path": "/discover",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
-      "guard": "in-page-admin-check"
+      "guard": "public"
     },
     {
-      "path": "/blog/admin/posts/:id/edit",
-      "element": "BlogAdminPostEditor",
-      "module": "./pages/blog/admin/BlogAdminPostEditor",
-      "loading": "lazy",
+      "path": "/docs",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/impressum",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/privacy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/settings",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/terms",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/blog",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/blog/:slug",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [
-        "id"
+        "slug"
       ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/collections",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/collections/new",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/library",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/profile/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/prompt-kits/new",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/prompts/new",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/prompts/wizard",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/skills/new",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/team/join",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/workflows/new",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/blog/admin",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
       "catchAll": false,
       "guard": "in-page-admin-check"
     },
     {
       "path": "/blog/admin/categories",
-      "element": "BlogAdminCategories",
-      "module": "./pages/blog/admin/BlogAdminCategories",
-      "loading": "lazy",
-      "redirectsTo": null,
-      "params": [],
-      "catchAll": false,
-      "guard": "in-page-admin-check"
-    },
-    {
-      "path": "/blog/admin/tags",
-      "element": "BlogAdminTags",
-      "module": "./pages/blog/admin/BlogAdminTags",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
@@ -498,29 +286,29 @@
     },
     {
       "path": "/blog/admin/media",
-      "element": "BlogAdminMedia",
-      "module": "./pages/blog/admin/BlogAdminMedia",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
       "guard": "in-page-admin-check"
     },
     {
-      "path": "/blog",
-      "element": "BlogList",
-      "module": "./pages/blog/BlogList",
-      "loading": "lazy",
+      "path": "/blog/admin/tags",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": false,
-      "guard": "public"
+      "guard": "in-page-admin-check"
     },
     {
       "path": "/blog/category/:slug",
-      "element": "BlogCategory",
-      "module": "./pages/blog/BlogCategory",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [
         "slug"
@@ -530,9 +318,9 @@
     },
     {
       "path": "/blog/tag/:slug",
-      "element": "BlogTag",
-      "module": "./pages/blog/BlogTag",
-      "loading": "lazy",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [
         "slug"
@@ -541,22 +329,234 @@
       "guard": "public"
     },
     {
-      "path": "/blog/:slug",
-      "element": "BlogPost",
-      "module": "./pages/blog/BlogPost",
-      "loading": "lazy",
+      "path": "/collections/:id",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "id"
+      ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/collections/:id/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "id"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/library/:slug/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/library/:slug/versions",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/prompt-kits/:slug",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [
         "slug"
       ],
       "catchAll": false,
       "guard": "public"
+    },
+    {
+      "path": "/prompt-kits/:slug/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/prompts/:slug",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/prompts/:slug/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/skills/:slug",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/skills/:slug/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/team/:id/activity",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "id"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/team/:id/settings",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "id"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/u/:username",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "username"
+      ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/u/:username/activity",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "username"
+      ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/workflows/:slug",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "public"
+    },
+    {
+      "path": "/workflows/:slug/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "slug"
+      ],
+      "catchAll": false,
+      "guard": "in-page-auth-check"
+    },
+    {
+      "path": "/blog/admin/posts",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-admin-check"
+    },
+    {
+      "path": "/blog/admin/posts/new",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [],
+      "catchAll": false,
+      "guard": "in-page-admin-check"
+    },
+    {
+      "path": "/blog/admin/posts/:id/edit",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
+      "redirectsTo": null,
+      "params": [
+        "id"
+      ],
+      "catchAll": false,
+      "guard": "in-page-admin-check"
     },
     {
       "path": "*",
-      "element": "NotFound",
-      "module": "./pages/NotFound",
-      "loading": "eager",
+      "element": null,
+      "module": null,
+      "loading": "file-route",
       "redirectsTo": null,
       "params": [],
       "catchAll": true,

@@ -6,7 +6,7 @@ execute JavaScript sees none of it. That is the whole reason for the migration, 
 this file is the list of what has to survive it.
 
 Routes captured: 53. With their own title: 53.
-With a canonical URL: 9. With structured data: 53.
+With a canonical URL: 10. With structured data: 53.
 
 After the migration, re-run this spec and diff seo-inventory.json. Every field below
 must come back, and the canonical URLs must no longer depend on which host served
@@ -36,11 +36,12 @@ the page.
 ## `/__tokens`
 
 - captured at: `/__tokens`
-- title: `Querino - AI Prompt Library for Creators`
-- description: `Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.`
-- canonical: (none)
+- title: `Page Not Found | Querino`
+- description: `Discover and share AI prompts, skills, and workflows.`
+- canonical: `http://localhost:4173/__tokens`
+- robots: `noindex, nofollow`
 - og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
-- twitter card: `summary_large_image`
+- twitter card: `summary`
 - structured data: `Organization`, `WebSite`
 
 ## `/activity`
@@ -378,13 +379,12 @@ the page.
 ## `/prompts/:slug`
 
 - captured at: `/prompts/conduct-a-project-premortem-and-plan-revision`
-- title: `Prompt Not Found | Querino`
-- description: `Discover and share AI prompts, skills, and workflows.`
+- title: `Conduct a Project Premortem and Plan Revision | Querino`
+- description: `Perform a project premortem by identifying top failure modes and generating a revised, risk-mitigated version of a provided plan.`
 - canonical: `http://localhost:4173/prompts/conduct-a-project-premortem-and-plan-revision`
-- robots: `noindex, nofollow`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/prompts/conduct-a-project-premortem-and-plan-revision`
 - twitter card: `summary`
-- structured data: `Organization`, `WebSite`
+- structured data: `Organization`, `WebSite`, `CreativeWork`
 
 ## `/prompts/:slug/edit`
 
@@ -429,13 +429,12 @@ the page.
 ## `/skills/:slug`
 
 - captured at: `/skills/anti-hallucination-reasoning-protocol`
-- title: `Skill Not Found | Querino`
-- description: `Discover and share AI prompts, skills, and workflows.`
+- title: `Anti-Hallucination Reasoning Protocol | Querino`
+- description: `Guides AI to maximize factual accuracy and minimize hallucination through strict rules.`
 - canonical: `http://localhost:4173/skills/anti-hallucination-reasoning-protocol`
-- robots: `noindex, nofollow`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/skills/anti-hallucination-reasoning-protocol`
 - twitter card: `summary`
-- structured data: `Organization`, `WebSite`
+- structured data: `Organization`, `WebSite`, `CreativeWork`
 
 ## `/skills/:slug/edit`
 
@@ -521,13 +520,12 @@ the page.
 ## `/workflows/:slug`
 
 - captured at: `/workflows/create-validation-workflow`
-- title: `Workflow Not Found | Querino`
-- description: `Discover and share AI prompts, skills, and workflows.`
+- title: `Create Validation Workflow | Querino`
+- description: `Generates a comprehensive validation workflow for analyzing codebases and ensuring production readiness.`
 - canonical: `http://localhost:4173/workflows/create-validation-workflow`
-- robots: `noindex, nofollow`
-- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url (none)
+- og: type `website`, image `https://lovable.dev/opengraph-image-p98pqg.png`, url `http://localhost:4173/workflows/create-validation-workflow`
 - twitter card: `summary`
-- structured data: `Organization`, `WebSite`
+- structured data: `Organization`, `WebSite`, `CreativeWork`
 
 ## `/workflows/:slug/edit`
 
