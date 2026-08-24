@@ -1,7 +1,19 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@plugin "@tailwindcss/typography";
+/* @tailwindcss/typography is deliberately NOT registered.
+ *
+ * It is in package.json and has been for a long time, but tailwind.config.ts never
+ * listed it in plugins, so every `prose` class in the app was inert. Eleven components
+ * carry them. Turning the plugin on during the migration made all of those styles apply
+ * at once, which underlined every link on the site and grew the legal and docs pages by
+ * 5 to 15 percent: /docs gained 3851px of height on mobile.
+ *
+ * Leaving it off restores exactly what the screenshots in migration/baseline-v2 show.
+ * If the prose styling is wanted, that is a design decision worth making on purpose:
+ * uncomment the line below, then re-take the reference screenshots.
+ */
+/* @plugin "@tailwindcss/typography"; */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
