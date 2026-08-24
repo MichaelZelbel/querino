@@ -10,6 +10,13 @@
 // the site is serving right now and compares it with the map the worker uses.
 // The map itself lives in supabase/functions/_shared/artifactRoutes.ts, which
 // is the same module the deployed worker imports.
+//
+// The spelling of a path parameter is the router's, not ours: React Router
+// wrote `/prompts/:slug`, TanStack Router writes `/prompts/$slug`. The
+// migration changed it and this test kept looking for the old one, so it went
+// red on a site whose links all resolved. PARAM is that spelling in one place,
+// and the test below fails loudly if the bundle ever stops using it, because a
+// route table this test cannot recognise is a route table it cannot guard.
 
 import { test, expect } from "@playwright/test";
 import {
@@ -20,6 +27,9 @@ import {
 } from "../../supabase/functions/_shared/artifactRoutes";
 
 const SITE = process.env.QUERINO_SITE_URL ?? "https://querino.ai";
+
+/** How the router the site ships spells a path parameter. */
+const PARAM = "$slug";
 
 /** The main JS bundle querino.ai is serving right now. */
 async function publishedBundle(): Promise<string> {
@@ -55,17 +65,20 @@ test.describe("M7 — the link Menerio is given is a route the site declares", (
     const bundle = await publishedBundle();
 
     for (const type of ARTIFACT_TYPES) {
-      const declared = `/${routeFor(type)}/:slug`;
+      const declared = `/${routeFor(type)}/${PARAM}`;
       expect(
         bundle.includes(declared),
         `the published site does not declare a route ${declared}, so links to ${type} land on the not-found page`,
       ).toBe(true);
     }
 
-    // And the shape of the old bug specifically: the table name is not a route.
-    expect(
-      bundle.includes("/prompt_kits/:slug"),
-      "the site would have to declare /prompt_kits/:slug for the old link to have worked, and it does not",
-    ).toBe(false);
+    // And the shape of the old bug specifically: the table name is not a route,
+    // in either router's spelling, so a rollback cannot quietly resurrect it.
+    for (const spelling of [`/prompt_kits/${PARAM}`, "/prompt_kits/:slug"]) {
+      expect(
+        bundle.includes(spelling),
+        `the site would have to declare ${spelling} for the old link to have worked, and it does not`,
+      ).toBe(false);
+    }
   });
 });
