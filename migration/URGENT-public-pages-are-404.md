@@ -55,9 +55,23 @@ anonymous path to a profile that has published nothing. `role`, `plan_type`,
 The team-mate branch of the authenticated policy was deliberately **not** mirrored,
 because team membership is not public.
 
-**Still open, and it blocks nothing:** `prompt_kits` appears in neither policy, so a
-prompt kit author shows no byline unless they also have a public prompt, skill or
-workflow. That gap predates both.
+**Step three, prompt kits and a guard.** `prompt_kits` appeared in neither policy, so a
+prompt kit author had no byline for anyone, logged out or not. Both policies now carry
+the same fourth branch, applied with `ALTER POLICY` so `profiles` is never briefly
+unpoliced. It exposes nothing today: `prompt_kits` holds 0 rows and 0 people become
+newly visible. Recorded as
+`supabase/migrations/20260824030000_prompt_kit_authors_get_a_byline_too.sql` on `main`
+(`c87fd79`).
+
+**And the reason this could happen at all is now covered by a test.** Nothing in the
+security suite had ever asked a question as a logged-out visitor, which is why a
+`REVOKE` could take every public page down while the suite stayed green.
+`tests/security/22-the-public-pages-work-logged-out.spec.ts` adds six, paired on
+purpose: three hold the public surface open, three hold the private columns shut, and
+the last asserts that every profile an anonymous visitor can see belongs to someone who
+published something, so a policy widened past "authors of public content" fails there
+rather than in the wild. The first of them runs the exact query that answered `42501`
+last night, so it would have been red. The suite is **138 green**, up from 132.
 
 The account of what happened follows, unchanged.
 

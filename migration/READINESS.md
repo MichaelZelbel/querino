@@ -28,7 +28,7 @@ Every number below came from a command, so anyone can get it again.
 | Edge functions (untouched) | `ls supabase/functions \| wc -l` | 38 |
 | Build | `npm run build` | green, 5.9s |
 | Repo gates | `npm run check` | green: migrations, lint ratchet, deno types |
-| Security suite | `npm test` | 131 passed, 1 failed on an LLM provider rate limit, not code |
+| Security suite | `npm test` | 131 passed, 1 failed on an LLM provider rate limit, not code. Now 138 green after the outage work |
 
 ## 2. Where the earlier risk assessment was wrong
 
@@ -173,7 +173,7 @@ bylines are back for logged-out visitors, and both database changes are recorded
 `main`: `20260824013000_restore_anon_read_on_profiles.sql` and
 `20260824021500_public_authors_are_visible_again.sql`. The security suite is 132 green.
 
-One gap is noted and blocks nothing: prompt kit authors show no byline, because
-`prompt_kits` appears in neither the anonymous nor the authenticated profile policy.
+The prompt kit gap is closed too, and the suite now has six tests that ask as a
+logged-out visitor, which nothing in it did before. 138 green.
 
 Start the migration with the prompt in section 7.
