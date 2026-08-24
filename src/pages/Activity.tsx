@@ -9,13 +9,8 @@ import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 export default function Activity() {
   const { user } = useAuth();
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useOwnActivityFeed(user?.id);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useOwnActivityFeed(user?.id);
 
   const events = data?.pages.flat() || [];
 
@@ -30,9 +25,12 @@ export default function Activity() {
               <ActivityIcon className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Your activity</h1>
+              <h1 className="text-3xl font-bold text-foreground">
+                Your activity
+              </h1>
               <p className="text-muted-foreground">
-                Everything you have done across your prompts, skills and workflows
+                Everything you have done across your prompts, skills and
+                workflows
               </p>
             </div>
           </div>

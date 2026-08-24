@@ -1,11 +1,30 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,15 +40,33 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ShieldAlert, Plus, Trash2, RotateCcw, Ban, CheckCircle, Bot, Eye, RefreshCw } from "lucide-react";
+import {
+  ShieldAlert,
+  Plus,
+  Trash2,
+  RotateCcw,
+  Ban,
+  CheckCircle,
+  Bot,
+  Eye,
+  RefreshCw,
+} from "lucide-react";
 import { format } from "date-fns";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Shared hook to resolve user IDs → display names
 function useProfileNames(userIds: string[]) {
   const [names, setNames] = useState<Record<string, string>>({});
 
-  const uniqueIds = useMemo(() => [...new Set(userIds.filter(Boolean))], [JSON.stringify(userIds)]);
+  const uniqueIds = useMemo(
+    () => [...new Set(userIds.filter(Boolean))],
+    [JSON.stringify(userIds)],
+  );
 
   useEffect(() => {
     if (uniqueIds.length === 0) return;
@@ -52,7 +89,13 @@ function useProfileNames(userIds: string[]) {
   return names;
 }
 
-function UserCell({ userId, displayName }: { userId: string; displayName?: string }) {
+function UserCell({
+  userId,
+  displayName,
+}: {
+  userId: string;
+  displayName?: string;
+}) {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -61,7 +104,9 @@ function UserCell({ userId, displayName }: { userId: string; displayName?: strin
             {displayName ? (
               <span className="truncate block">{displayName}</span>
             ) : (
-              <span className="font-mono truncate block">{userId.slice(0, 8)}…</span>
+              <span className="font-mono truncate block">
+                {userId.slice(0, 8)}…
+              </span>
             )}
           </div>
         </TooltipTrigger>
@@ -129,7 +174,10 @@ export function ModerationPanel() {
           <ShieldAlert className="h-5 w-5 text-primary" />
           <div>
             <CardTitle>Content Moderation</CardTitle>
-            <CardDescription>Manage stopwords, review moderation logs, AI review queue, and handle user suspensions</CardDescription>
+            <CardDescription>
+              Manage stopwords, review moderation logs, AI review queue, and
+              handle user suspensions
+            </CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -141,10 +189,18 @@ export function ModerationPanel() {
             <TabsTrigger value="ai-queue">AI Review Queue</TabsTrigger>
             <TabsTrigger value="suspensions">Suspensions</TabsTrigger>
           </TabsList>
-          <TabsContent value="stopwords"><StopwordsTab /></TabsContent>
-          <TabsContent value="log"><ModerationLogTab /></TabsContent>
-          <TabsContent value="ai-queue"><AIReviewQueueTab /></TabsContent>
-          <TabsContent value="suspensions"><SuspensionsTab /></TabsContent>
+          <TabsContent value="stopwords">
+            <StopwordsTab />
+          </TabsContent>
+          <TabsContent value="log">
+            <ModerationLogTab />
+          </TabsContent>
+          <TabsContent value="ai-queue">
+            <AIReviewQueueTab />
+          </TabsContent>
+          <TabsContent value="suspensions">
+            <SuspensionsTab />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
@@ -165,23 +221,29 @@ function StopwordsTab() {
 
   const fetchStopwords = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data } = (await supabase
       .from("moderation_stopwords")
       .select("*")
-      .order("created_at", { ascending: false }) as any;
+      .order("created_at", { ascending: false })) as any;
     setStopwords(data || []);
     setLoading(false);
   };
 
   const addWord = async () => {
     if (!newWord.trim()) return;
-    const { error } = await (supabase.from("moderation_stopwords") as any).insert({
+    const { error } = await (
+      supabase.from("moderation_stopwords") as any
+    ).insert({
       word: newWord.trim().toLowerCase(),
       category: newCategory,
       severity: "block",
     });
     if (error) {
-      toast.error(error.message?.includes("duplicate") ? "Word already exists" : "Failed to add word");
+      toast.error(
+        error.message?.includes("duplicate")
+          ? "Word already exists"
+          : "Failed to add word",
+      );
       return;
     }
     setNewWord("");
@@ -202,7 +264,9 @@ function StopwordsTab() {
       severity: "block",
     }));
 
-    const { error } = await (supabase.from("moderation_stopwords") as any).insert(rows);
+    const { error } = await (
+      supabase.from("moderation_stopwords") as any
+    ).insert(rows);
     if (error) {
       toast.error("Some words may already exist. Added what we could.");
     } else {
@@ -247,7 +311,11 @@ function StopwordsTab() {
         <Button onClick={addWord} size="sm" className="gap-1">
           <Plus className="h-4 w-4" /> Add
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setShowBulk(!showBulk)}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowBulk(!showBulk)}
+        >
           Bulk Import
         </Button>
       </div>
@@ -260,11 +328,15 @@ function StopwordsTab() {
             onChange={(e) => setBulkInput(e.target.value)}
             rows={5}
           />
-          <Button onClick={bulkAdd} size="sm">Import All</Button>
+          <Button onClick={bulkAdd} size="sm">
+            Import All
+          </Button>
         </div>
       )}
 
-      <p className="text-sm text-muted-foreground">{stopwords.length} stopwords configured</p>
+      <p className="text-sm text-muted-foreground">
+        {stopwords.length} stopwords configured
+      </p>
 
       <div className="max-h-[400px] overflow-auto border rounded">
         <Table>
@@ -283,7 +355,12 @@ function StopwordsTab() {
                   <Badge variant="secondary">{sw.category}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => deleteWord(sw.id)} aria-label="Delete word">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteWord(sw.id)}
+                    aria-label="Delete word"
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
@@ -352,7 +429,9 @@ function ModerationLogTab() {
             <SelectItem value="cleared">Cleared</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-sm text-muted-foreground">{events.length} events</span>
+        <span className="text-sm text-muted-foreground">
+          {events.length} events
+        </span>
       </div>
 
       <div className="max-h-[500px] overflow-auto border rounded">
@@ -375,7 +454,10 @@ function ModerationLogTab() {
                   {format(new Date(ev.created_at), "MMM d, HH:mm")}
                 </TableCell>
                 <TableCell>
-                  <UserCell userId={ev.user_id} displayName={profileNames[ev.user_id]} />
+                  <UserCell
+                    userId={ev.user_id}
+                    displayName={profileNames[ev.user_id]}
+                  />
                 </TableCell>
                 <TableCell className="text-xs">{ev.action}</TableCell>
                 <TableCell className="text-xs">{ev.item_type}</TableCell>
@@ -383,7 +465,11 @@ function ModerationLogTab() {
                   <TierBadge tier={ev.tier} />
                 </TableCell>
                 <TableCell>
-                  <Badge variant={ev.result === "blocked" ? "destructive" : "secondary"}>
+                  <Badge
+                    variant={
+                      ev.result === "blocked" ? "destructive" : "secondary"
+                    }
+                  >
                     {ev.result}
                   </Badge>
                 </TableCell>
@@ -394,7 +480,10 @@ function ModerationLogTab() {
             ))}
             {events.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-muted-foreground py-8"
+                >
                   No moderation events yet
                 </TableCell>
               </TableRow>
@@ -436,9 +525,13 @@ function AIReviewQueueTab() {
   const triggerProcessing = async () => {
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-moderate-content");
+      const { data, error } = await supabase.functions.invoke(
+        "ai-moderate-content",
+      );
       if (error) throw error;
-      toast.success(`Processed: ${data?.processed || 0} items, ${data?.violations || 0} violations`);
+      toast.success(
+        `Processed: ${data?.processed || 0} items, ${data?.violations || 0} violations`,
+      );
       fetchItems();
     } catch (err) {
       toast.error("Failed to trigger AI review");
@@ -450,7 +543,14 @@ function AIReviewQueueTab() {
 
   const requeueItem = async (id: string) => {
     await (supabase.from("moderation_review_queue") as any)
-      .update({ status: "pending", retry_count: 0, ai_category: null, ai_confidence: null, ai_reason: null, reviewed_at: null })
+      .update({
+        status: "pending",
+        retry_count: 0,
+        ai_category: null,
+        ai_confidence: null,
+        ai_reason: null,
+        reviewed_at: null,
+      })
       .eq("id", id);
     toast.success("Re-queued for review");
     fetchItems();
@@ -513,7 +613,10 @@ function AIReviewQueueTab() {
                 </TableCell>
                 <TableCell className="text-xs">{item.item_type}</TableCell>
                 <TableCell>
-                  <UserCell userId={item.user_id} displayName={profileNames[item.user_id]} />
+                  <UserCell
+                    userId={item.user_id}
+                    displayName={profileNames[item.user_id]}
+                  />
                 </TableCell>
                 <TableCell>
                   <QueueStatusBadge status={item.status} />
@@ -522,14 +625,27 @@ function AIReviewQueueTab() {
                   {item.ai_category || "—"}
                 </TableCell>
                 <TableCell className="text-xs">
-                  {item.ai_confidence != null ? `${Math.round(item.ai_confidence * 100)}%` : "—"}
+                  {item.ai_confidence != null
+                    ? `${Math.round(item.ai_confidence * 100)}%`
+                    : "—"}
                 </TableCell>
-                <TableCell className="text-xs max-w-[200px] truncate" title={item.ai_reason || undefined}>
+                <TableCell
+                  className="text-xs max-w-[200px] truncate"
+                  title={item.ai_reason || undefined}
+                >
                   {item.ai_reason || "—"}
                 </TableCell>
                 <TableCell>
-                  {(item.status === "reviewed" || item.status === "violation" || item.status === "error" || item.status === "flagged") && (
-                    <Button variant="ghost" size="sm" onClick={() => requeueItem(item.id)} className="text-xs gap-1">
+                  {(item.status === "reviewed" ||
+                    item.status === "violation" ||
+                    item.status === "error" ||
+                    item.status === "flagged") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => requeueItem(item.id)}
+                      className="text-xs gap-1"
+                    >
                       <RefreshCw className="h-3 w-3" /> Re-review
                     </Button>
                   )}
@@ -538,7 +654,10 @@ function AIReviewQueueTab() {
             ))}
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={8}
+                  className="text-center text-muted-foreground py-8"
+                >
                   No items in the AI review queue
                 </TableCell>
               </TableRow>
@@ -555,13 +674,35 @@ function QueueStatusBadge({ status }: { status: string }) {
     case "pending":
       return <Badge variant="outline">Pending</Badge>;
     case "flagged":
-      return <Badge variant="outline" className="border-accent text-accent-foreground">Flagged</Badge>;
+      return (
+        <Badge
+          variant="outline"
+          className="border-accent text-accent-foreground"
+        >
+          Flagged
+        </Badge>
+      );
     case "reviewed":
-      return <Badge variant="secondary" className="gap-1"><CheckCircle className="h-3 w-3" /> Safe</Badge>;
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <CheckCircle className="h-3 w-3" /> Safe
+        </Badge>
+      );
     case "violation":
-      return <Badge variant="destructive" className="gap-1"><Ban className="h-3 w-3" /> Violation</Badge>;
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <Ban className="h-3 w-3" /> Violation
+        </Badge>
+      );
     case "error":
-      return <Badge variant="outline" className="text-destructive border-destructive">Error</Badge>;
+      return (
+        <Badge
+          variant="outline"
+          className="text-destructive border-destructive"
+        >
+          Error
+        </Badge>
+      );
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -600,7 +741,12 @@ function SuspensionsTab() {
 
   const clearStrikes = async (id: string) => {
     await (supabase.from("user_suspensions") as any)
-      .update({ strike_count: 0, suspended: false, suspended_at: null, suspension_reason: null })
+      .update({
+        strike_count: 0,
+        suspended: false,
+        suspended_at: null,
+        suspension_reason: null,
+      })
       .eq("id", id);
     toast.success("Strikes cleared");
     fetchSuspensions();
@@ -611,7 +757,8 @@ function SuspensionsTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        {suspensions.filter((s) => s.suspended).length} users currently suspended, {suspensions.length} users with strikes
+        {suspensions.filter((s) => s.suspended).length} users currently
+        suspended, {suspensions.length} users with strikes
       </p>
 
       <div className="max-h-[500px] overflow-auto border rounded">
@@ -629,10 +776,15 @@ function SuspensionsTab() {
             {suspensions.map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
-                  <UserCell userId={s.user_id} displayName={profileNames[s.user_id]} />
+                  <UserCell
+                    userId={s.user_id}
+                    displayName={profileNames[s.user_id]}
+                  />
                 </TableCell>
                 <TableCell>
-                  <Badge variant={s.strike_count >= 5 ? "destructive" : "secondary"}>
+                  <Badge
+                    variant={s.strike_count >= 5 ? "destructive" : "secondary"}
+                  >
                     {s.strike_count}
                   </Badge>
                 </TableCell>
@@ -662,15 +814,22 @@ function SuspensionsTab() {
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-xs gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs gap-1"
+                        >
                           <RotateCcw className="h-3 w-3" /> Clear
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Clear all strikes?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            Clear all strikes?
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will reset the strike counter to 0 and unsuspend the user if they were suspended.
+                            This will reset the strike counter to 0 and
+                            unsuspend the user if they were suspended.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -687,7 +846,10 @@ function SuspensionsTab() {
             ))}
             {suspensions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={5}
+                  className="text-center text-muted-foreground py-8"
+                >
                   No users with strikes
                 </TableCell>
               </TableRow>

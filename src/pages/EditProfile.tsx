@@ -8,10 +8,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Save, Globe, Twitter, Github, User, Upload, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Globe,
+  Twitter,
+  Github,
+  User,
+  Upload,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/lib/router-compat";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
@@ -24,7 +39,7 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
@@ -78,7 +93,7 @@ export default function EditProfile() {
 
   async function handleSave() {
     if (!user) return;
-    
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -98,7 +113,7 @@ export default function EditProfile() {
 
       markSaved();
       toast.success("Profile updated successfully!");
-      
+
       // Navigate to public profile
       if (displayName.trim()) {
         navigate(`/u/${encodeURIComponent(displayName.trim())}`);
@@ -125,12 +140,14 @@ export default function EditProfile() {
     return "U";
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Please upload a valid image file (JPEG, PNG, GIF, or WebP)");
       return;
@@ -145,20 +162,20 @@ export default function EditProfile() {
     setUploading(true);
     try {
       // Create a unique filename
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
       // Upload the file
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from("avatars")
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(fileName);
 
       // Add cache-busting parameter
       const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
@@ -192,8 +209,8 @@ export default function EditProfile() {
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-2xl px-4">
-          <Link 
-            to="/settings" 
+          <Link
+            to="/settings"
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -207,7 +224,8 @@ export default function EditProfile() {
                 Edit Profile
               </CardTitle>
               <CardDescription>
-                Customize your public profile. This information will be visible to everyone.
+                Customize your public profile. This information will be visible
+                to everyone.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -261,7 +279,8 @@ export default function EditProfile() {
                   onChange={(e) => setDisplayName(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  This is how others will see you. Your profile URL will be /u/{displayName || "your-name"}
+                  This is how others will see you. Your profile URL will be /u/
+                  {displayName || "your-name"}
                 </p>
               </div>
 
@@ -284,7 +303,7 @@ export default function EditProfile() {
               {/* Social Links */}
               <div className="space-y-4">
                 <Label>Social Links</Label>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Globe className="h-5 w-5 text-muted-foreground" />
@@ -294,7 +313,7 @@ export default function EditProfile() {
                       onChange={(e) => setWebsite(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     <Twitter className="h-5 w-5 text-muted-foreground" />
                     <Input
@@ -303,7 +322,7 @@ export default function EditProfile() {
                       onChange={(e) => setTwitter(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     <Github className="h-5 w-5 text-muted-foreground" />
                     <Input
@@ -317,11 +336,21 @@ export default function EditProfile() {
 
               {/* Save Button */}
               <div className="flex justify-end items-center gap-3 pt-4">
-                <SaveStateBadge isDirty={isDirty} isSaving={saving} savedAt={savedAt} className="mr-auto" />
+                <SaveStateBadge
+                  isDirty={isDirty}
+                  isSaving={saving}
+                  savedAt={savedAt}
+                  className="mr-auto"
+                />
                 <Button variant="outline" onClick={() => navigate("/settings")}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={saving} className="gap-2" title="Save (⌘S / Ctrl+S)">
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="gap-2"
+                  title="Save (⌘S / Ctrl+S)"
+                >
                   <Save className="h-4 w-4" />
                   {saving ? "Saving..." : "Save Profile"}
                 </Button>

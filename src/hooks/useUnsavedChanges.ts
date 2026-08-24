@@ -41,7 +41,8 @@ export function useUnsavedChanges<T>({
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
   const current = snapshot(data);
-  const isDirty = baselineRef.current !== null && baselineRef.current !== current;
+  const isDirty =
+    baselineRef.current !== null && baselineRef.current !== current;
 
   const markSaved = useCallback(() => {
     baselineRef.current = snapshot(data);
@@ -104,7 +105,7 @@ export function useUnsavedChanges<T>({
   useEffect(() => {
     if (blocker.status !== "blocked") return;
     const leave = window.confirm(
-      "You have unsaved changes. Leave without saving?"
+      "You have unsaved changes. Leave without saving?",
     );
     if (leave) {
       blocker.proceed?.();

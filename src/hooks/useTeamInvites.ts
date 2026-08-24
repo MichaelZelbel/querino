@@ -23,7 +23,8 @@ export function useTeamInvites(teamId: string | undefined) {
     queryKey: ["team_invites", teamId],
     enabled: !!teamId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("team_invites")
+      const { data, error } = await supabase
+        .from("team_invites")
         .select("*")
         // enabled: !!teamId above is what guarantees this is set.
         .eq("team_id", teamId!)
@@ -46,7 +47,8 @@ export function useCreateTeamInvite() {
       userId: string;
       role?: "member" | "admin";
     }): Promise<TeamInvite> => {
-      const { data, error } = await supabase.from("team_invites")
+      const { data, error } = await supabase
+        .from("team_invites")
         .insert({ team_id: teamId, created_by: userId, role })
         .select("*")
         .single();
@@ -63,7 +65,8 @@ export function useRevokeTeamInvite() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string; teamId: string }) => {
-      const { error } = await supabase.from("team_invites")
+      const { error } = await supabase
+        .from("team_invites")
         .delete()
         .eq("id", inviteId);
       if (error) throw error;
@@ -75,7 +78,7 @@ export function useRevokeTeamInvite() {
 }
 
 export async function redeemTeamInvite(
-  token: string
+  token: string,
 ): Promise<{ team_id: string; team_name: string }> {
   const { data, error } = await supabase.rpc("redeem_team_invite", {
     p_token: token,

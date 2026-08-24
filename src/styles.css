@@ -105,32 +105,69 @@
   --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
 
   @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
   @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
   @keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
   @keyframes slide-in-right {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
   @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 }
 
@@ -197,19 +234,39 @@
   --warning-foreground: 0 0% 100%;
 
   /* Querino brand: indigo primary + coral warm accent */
-  --accent-warm: 16 100% 74%;       /* #FF9B7A */
+  --accent-warm: 16 100% 74%; /* #FF9B7A */
   --accent-warm-foreground: 18 78% 27%;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(239 67% 59%) 0%, hsl(259 67% 65%) 100%);
-  --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 14% 97%) 100%);
-  --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 14% 98%) 100%);
-  --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
+  --gradient-primary: linear-gradient(
+    135deg,
+    hsl(239 67% 59%) 0%,
+    hsl(259 67% 65%) 100%
+  );
+  --gradient-subtle: linear-gradient(
+    180deg,
+    hsl(0 0% 100%) 0%,
+    hsl(210 14% 97%) 100%
+  );
+  --gradient-card: linear-gradient(
+    145deg,
+    hsl(0 0% 100%) 0%,
+    hsl(210 14% 98%) 100%
+  );
+  --grad-primary: linear-gradient(
+    135deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--accent-warm)) 100%
+  );
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 hsl(210 11% 14% / 0.05);
-  --shadow-md: 0 4px 6px -1px hsl(210 11% 14% / 0.07), 0 2px 4px -2px hsl(210 11% 14% / 0.05);
-  --shadow-lg: 0 10px 15px -3px hsl(210 11% 14% / 0.08), 0 4px 6px -4px hsl(210 11% 14% / 0.05);
+  --shadow-md:
+    0 4px 6px -1px hsl(210 11% 14% / 0.07),
+    0 2px 4px -2px hsl(210 11% 14% / 0.05);
+  --shadow-lg:
+    0 10px 15px -3px hsl(210 11% 14% / 0.08),
+    0 4px 6px -4px hsl(210 11% 14% / 0.05);
   --shadow-glow: 0 0 20px hsl(239 67% 59% / 0.15);
 
   --sidebar-background: 0 0% 100%;
@@ -257,9 +314,13 @@
   --shadow-glow: 0 0 20px hsl(239 67% 65% / 0.25);
 
   /* Querino brand (dark variants) */
-  --accent-warm: 18 100% 79%;       /* #FFB597 */
+  --accent-warm: 18 100% 79%; /* #FFB597 */
   --accent-warm-foreground: 12 78% 12%;
-  --grad-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-warm)) 100%);
+  --grad-primary: linear-gradient(
+    135deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--accent-warm)) 100%
+  );
 
   --sidebar-background: 220 20% 10%;
   --sidebar-foreground: 210 14% 97%;
@@ -284,23 +345,48 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     letter-spacing: -0.025em;
   }
 
-  code, pre {
+  code,
+  pre {
     font-family: var(--font-mono);
   }
 }
 
 /* Tiptap editor (Prompt Kit) — explicit heading + block styles so they
    survive Tailwind preflight regardless of `prose` specificity. */
-.ProseMirror { outline: none; }
-.ProseMirror h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 0.8em 0 0.4em; }
-.ProseMirror h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin: 0.7em 0 0.35em; }
-.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; margin: 0.6em 0 0.3em; }
-.ProseMirror p  { margin: 0.4em 0; }
+.ProseMirror {
+  outline: none;
+}
+.ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.8em 0 0.4em;
+}
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0.7em 0 0.35em;
+}
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.6em 0 0.3em;
+}
+.ProseMirror p {
+  margin: 0.4em 0;
+}
 .ProseMirror blockquote {
   border-left: 3px solid hsl(var(--border));
   padding-left: 1em;
@@ -320,16 +406,48 @@
   overflow-x: auto;
   margin: 0.6em 0;
 }
-.ProseMirror pre code { background: transparent; padding: 0; }
-.ProseMirror ul, .ProseMirror ol { padding-left: 1.5em; margin: 0.4em 0; }
-.ProseMirror ul { list-style: disc; }
-.ProseMirror ol { list-style: decimal; }
-.ProseMirror hr { border: 0; border-top: 1px solid hsl(var(--border)); margin: 1em 0; }
-.ProseMirror a { color: hsl(var(--primary)); text-decoration: underline; }
-.ProseMirror mark { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); padding: 0 0.15em; border-radius: 2px; }
-.ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.25em; }
-.ProseMirror ul[data-type="taskList"] li { display: flex; gap: 0.5em; align-items: flex-start; }
-.ProseMirror ul[data-type="taskList"] li > label { user-select: none; }
+.ProseMirror pre code {
+  background: transparent;
+  padding: 0;
+}
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+.ProseMirror ul {
+  list-style: disc;
+}
+.ProseMirror ol {
+  list-style: decimal;
+}
+.ProseMirror hr {
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+  margin: 1em 0;
+}
+.ProseMirror a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+.ProseMirror mark {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  padding: 0 0.15em;
+  border-radius: 2px;
+}
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25em;
+}
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-start;
+}
+.ProseMirror ul[data-type="taskList"] li > label {
+  user-select: none;
+}
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: hsl(var(--muted-foreground));
@@ -375,7 +493,7 @@
 .dark .stage-bg {
   background: linear-gradient(
     145deg,
-    hsl(var(--primary) / 0.10) 0%,
+    hsl(var(--primary) / 0.1) 0%,
     hsl(var(--accent-warm) / 0.06) 100%
   );
   border-color: hsl(var(--primary) / 0.2);
@@ -385,11 +503,23 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, hsl(var(--foreground) / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      hsl(var(--foreground) / 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--foreground) / 0.05) 1px,
+      transparent 1px
+    );
   background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
-          mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    #000 30%,
+    transparent 75%
+  );
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
   pointer-events: none;
 }
 
@@ -428,39 +558,93 @@
 }
 
 /* ===== Keyframes for Quentin + floating cards + typing prompt ===== */
-@keyframes querioBob   { 50% { transform: translateY(-8px); } }
-@keyframes querioBlink { 96%, 100% { transform: scaleY(.1); } }
+@keyframes querioBob {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes querioBlink {
+  96%,
+  100% {
+    transform: scaleY(0.1);
+  }
+}
 @keyframes querioSparkle {
-  0%, 100% { transform: scale(.6); opacity: .3; }
-  50%      { transform: scale(1.2); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 @keyframes bubblePop {
-  from { opacity: 0; transform: translateX(40px) scale(0.8) translateY(-8px); }
-  to   { opacity: 1; transform: translateX(40px) scale(1)   translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.8) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(40px) scale(1) translateY(0);
+  }
 }
 @keyframes blinkCaret {
-  0%, 50%   { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 @keyframes floatCard0 {
-  0%,100% { transform: translate(calc(-50% + -180px), calc(-50% + -110px)) rotate(-12deg); }
-  50%     { transform: translate(calc(-50% + -180px), calc(-50% + -120px)) rotate(-9deg); }
+  0%,
+  100% {
+    transform: translate(calc(-50% + -180px), calc(-50% + -110px))
+      rotate(-12deg);
+  }
+  50% {
+    transform: translate(calc(-50% + -180px), calc(-50% + -120px)) rotate(-9deg);
+  }
 }
 @keyframes floatCard1 {
-  0%,100% { transform: translate(calc(-50% +  180px), calc(-50% +  -90px)) rotate(9deg); }
-  50%     { transform: translate(calc(-50% +  180px), calc(-50% + -100px)) rotate(12deg); }
+  0%,
+  100% {
+    transform: translate(calc(-50% + 180px), calc(-50% + -90px)) rotate(9deg);
+  }
+  50% {
+    transform: translate(calc(-50% + 180px), calc(-50% + -100px)) rotate(12deg);
+  }
 }
 @keyframes floatCard2 {
-  0%,100% { transform: translate(calc(-50% + -200px), calc(-50% +   90px)) rotate(7deg); }
-  50%     { transform: translate(calc(-50% + -200px), calc(-50% +   80px)) rotate(4deg); }
+  0%,
+  100% {
+    transform: translate(calc(-50% + -200px), calc(-50% + 90px)) rotate(7deg);
+  }
+  50% {
+    transform: translate(calc(-50% + -200px), calc(-50% + 80px)) rotate(4deg);
+  }
 }
 @keyframes floatCard3 {
-  0%,100% { transform: translate(calc(-50% +  190px), calc(-50% +  110px)) rotate(-10deg); }
-  50%     { transform: translate(calc(-50% +  190px), calc(-50% +  100px)) rotate(-7deg); }
+  0%,
+  100% {
+    transform: translate(calc(-50% + 190px), calc(-50% + 110px)) rotate(-10deg);
+  }
+  50% {
+    transform: translate(calc(-50% + 190px), calc(-50% + 100px)) rotate(-7deg);
+  }
 }
 @keyframes floatCard4 {
-  0%,100% { transform: translate(calc(-50% +    0px), calc(-50% + -200px)) rotate(0deg); }
-  50%     { transform: translate(calc(-50% +    0px), calc(-50% + -210px)) rotate(3deg); }
+  0%,
+  100% {
+    transform: translate(calc(-50% + 0px), calc(-50% + -200px)) rotate(0deg);
+  }
+  50% {
+    transform: translate(calc(-50% + 0px), calc(-50% + -210px)) rotate(3deg);
+  }
 }
 
 /* Reduced motion: kill ambient animation, but keep typing caret + slow type loop */

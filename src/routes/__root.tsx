@@ -43,51 +43,67 @@ const WEBSITE_JSONLD = JSON.stringify({
   },
 });
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      { title: "Querino - AI Prompt Library for Creators" },
-      {
-        name: "description",
-        content:
-          "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
-      },
-      { name: "author", content: "Querino" },
-      {
-        name: "keywords",
-        content: "AI prompts, prompt engineering, ChatGPT, Claude, AI tools, prompt library",
-      },
-      { property: "og:title", content: "Querino - AI Prompt Library for Creators" },
-      {
-        property: "og:description",
-        content:
-          "Discover, create, and master AI prompts with Querino's curated library and intelligent refinement tools.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://lovable.dev/opengraph-image-p98pqg.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Querino" },
-      { name: "twitter:image", content: "https://lovable.dev/opengraph-image-p98pqg.png" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: FONTS_HREF },
-    ],
-    scripts: [
-      { type: "application/ld+json", children: ORGANIZATION_JSONLD },
-      { type: "application/ld+json", children: WEBSITE_JSONLD },
-    ],
-  }),
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: () => <NotFound />,
-  errorComponent: RootErrorComponent,
-});
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+        { title: "Querino - AI Prompt Library for Creators" },
+        {
+          name: "description",
+          content:
+            "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+        },
+        { name: "author", content: "Querino" },
+        {
+          name: "keywords",
+          content:
+            "AI prompts, prompt engineering, ChatGPT, Claude, AI tools, prompt library",
+        },
+        {
+          property: "og:title",
+          content: "Querino - AI Prompt Library for Creators",
+        },
+        {
+          property: "og:description",
+          content:
+            "Discover, create, and master AI prompts with Querino's curated library and intelligent refinement tools.",
+        },
+        { property: "og:type", content: "website" },
+        {
+          property: "og:image",
+          content: "https://lovable.dev/opengraph-image-p98pqg.png",
+        },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:site", content: "@Querino" },
+        {
+          name: "twitter:image",
+          content: "https://lovable.dev/opengraph-image-p98pqg.png",
+        },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: "/favicon.png", type: "image/png" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossOrigin: "anonymous",
+        },
+        { rel: "stylesheet", href: FONTS_HREF },
+      ],
+      scripts: [
+        { type: "application/ld+json", children: ORGANIZATION_JSONLD },
+        { type: "application/ld+json", children: WEBSITE_JSONLD },
+      ],
+    }),
+    shellComponent: RootShell,
+    component: RootComponent,
+    notFoundComponent: () => <NotFound />,
+    errorComponent: RootErrorComponent,
+  },
+);
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
@@ -128,7 +144,13 @@ function RootComponent() {
   );
 }
 
-function RootErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function RootErrorComponent({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
   const router = useRouter();
 
   useEffect(() => {
@@ -139,9 +161,12 @@ function RootErrorComponent({ error, reset }: { error: Error; reset: () => void 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center shadow-md">
-        <h1 className="mb-2 font-display text-xl font-semibold">This page didn't load</h1>
+        <h1 className="mb-2 font-display text-xl font-semibold">
+          This page didn't load
+        </h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Something went wrong on our end. You can try refreshing or head back
+          home.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           <button

@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Star } from "lucide-react";
@@ -50,7 +55,11 @@ export function LegacyPromptCard({ prompt }: LegacyPromptCardProps) {
         {prompt.tags && prompt.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {prompt.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs font-normal">
+              <Badge
+                key={tag}
+                variant="outline"
+                className="text-xs font-normal"
+              >
                 {tag}
               </Badge>
             ))}

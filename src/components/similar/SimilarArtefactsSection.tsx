@@ -3,9 +3,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, Sparkles, BookOpen, Workflow as WorkflowIcon, Lock, Crown } from "lucide-react";
+import {
+  Star,
+  Sparkles,
+  BookOpen,
+  Workflow as WorkflowIcon,
+  Lock,
+  Crown,
+} from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
-import type { SimilarPrompt, SimilarSkill, SimilarWorkflow } from "@/hooks/useSimilarArtefacts";
+import type {
+  SimilarPrompt,
+  SimilarSkill,
+  SimilarWorkflow,
+} from "@/hooks/useSimilarArtefacts";
 
 interface SimilarPromptsSectionProps {
   items: SimilarPrompt[];
@@ -44,13 +55,22 @@ function LoadingSkeletons() {
   );
 }
 
-function PremiumLockedSection({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
+function PremiumLockedSection({
+  title,
+  icon: Icon,
+}: {
+  title: string;
+  icon: React.ElementType;
+}) {
   return (
     <div className="mt-8">
       <h2 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
         <Icon className="h-5 w-5 text-primary" />
         {title}
-        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-0.5 bg-primary/10 text-primary border-0">
+        <Badge
+          variant="secondary"
+          className="h-5 px-1.5 text-[10px] gap-0.5 bg-primary/10 text-primary border-0"
+        >
           <Crown className="h-2.5 w-2.5" />
           Premium
         </Badge>
@@ -61,7 +81,8 @@ function PremiumLockedSection({ title, icon: Icon }: { title: string; icon: Reac
             <Lock className="h-6 w-6 text-primary" />
           </div>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-            Similar artefact recommendations are a Premium feature. Contact support to learn more.
+            Similar artefact recommendations are a Premium feature. Contact
+            support to learn more.
           </p>
           <a href="mailto:support@querino.ai">
             <Button size="sm" variant="outline" className="gap-2">
@@ -74,9 +95,12 @@ function PremiumLockedSection({ title, icon: Icon }: { title: string; icon: Reac
   );
 }
 
-export function SimilarPromptsSection({ items, loading }: SimilarPromptsSectionProps) {
+export function SimilarPromptsSection({
+  items,
+  loading,
+}: SimilarPromptsSectionProps) {
   const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === 'premium';
+  const isPremium = profile?.plan_type === "premium";
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
@@ -140,9 +164,12 @@ export function SimilarPromptsSection({ items, loading }: SimilarPromptsSectionP
   );
 }
 
-export function SimilarSkillsSection({ items, loading }: SimilarSkillsSectionProps) {
+export function SimilarSkillsSection({
+  items,
+  loading,
+}: SimilarSkillsSectionProps) {
   const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === 'premium';
+  const isPremium = profile?.plan_type === "premium";
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
@@ -203,13 +230,18 @@ export function SimilarSkillsSection({ items, loading }: SimilarSkillsSectionPro
   );
 }
 
-export function SimilarWorkflowsSection({ items, loading }: SimilarWorkflowsSectionProps) {
+export function SimilarWorkflowsSection({
+  items,
+  loading,
+}: SimilarWorkflowsSectionProps) {
   const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === 'premium';
+  const isPremium = profile?.plan_type === "premium";
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
-    return <PremiumLockedSection title="Similar Workflows" icon={WorkflowIcon} />;
+    return (
+      <PremiumLockedSection title="Similar Workflows" icon={WorkflowIcon} />
+    );
   }
 
   if (!user) {

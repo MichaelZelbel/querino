@@ -25,7 +25,11 @@ export function parsePromptKitItems(markdown: string): PromptKitItem[] {
   if (!markdown) return [];
   const lines = markdown.split("\n");
   const items: PromptKitItem[] = [];
-  let current: { title: string; bodyLines: string[]; headingLine: number } | null = null;
+  let current: {
+    title: string;
+    bodyLines: string[];
+    headingLine: number;
+  } | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

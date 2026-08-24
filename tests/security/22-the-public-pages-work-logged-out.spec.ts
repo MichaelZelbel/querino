@@ -45,7 +45,10 @@ test.describe("a logged-out visitor can read the public surface", () => {
 
     const rows = res.data ?? [];
     test.skip(rows.length === 0, "no public prompts to read");
-    expect(rows[0].title.length, "the prompt came back without a title").toBeGreaterThan(0);
+    expect(
+      rows[0].title.length,
+      "the prompt came back without a title",
+    ).toBeGreaterThan(0);
   });
 
   test("published skills and workflows load with their authors too", async () => {
@@ -64,7 +67,9 @@ test.describe("a logged-out visitor can read the public surface", () => {
     const res = await restAsAnon<ArtefactWithAuthor[]>(
       `prompts?select=id,${AUTHOR_EMBED}&is_public=eq.true&limit=20`,
     );
-    expect(res.ok, `anonymous read failed: ${JSON.stringify(res.error)}`).toBe(true);
+    expect(res.ok, `anonymous read failed: ${JSON.stringify(res.error)}`).toBe(
+      true,
+    );
 
     const rows = res.data ?? [];
     test.skip(rows.length === 0, "no public prompts to read");
@@ -84,19 +89,27 @@ test.describe("and cannot read anything else about those people", () => {
     for (const column of ["role", "plan_type", "plan_source"]) {
       const res = await restAsAnon(`profiles?select=${column}&limit=1`);
       expect(res.ok, `anon could read profiles.${column}`).toBe(false);
-      expect(res.error?.code, `profiles.${column} was refused for the wrong reason`).toBe("42501");
+      expect(
+        res.error?.code,
+        `profiles.${column} was refused for the wrong reason`,
+      ).toBe("42501");
     }
   });
 
   test("the github sync settings stay refused", async () => {
-    const res = await restAsAnon("profiles?select=github_repo,github_sync_enabled&limit=1");
+    const res = await restAsAnon(
+      "profiles?select=github_repo,github_sync_enabled&limit=1",
+    );
     expect(res.ok, "anon could read the github sync settings").toBe(false);
     expect(res.error?.code).toBe("42501");
   });
 
   test("only people who published something are visible at all", async () => {
     const seen = await restAsAnon<Array<{ id: string }>>("profiles?select=id");
-    expect(seen.ok, `anonymous profile read failed: ${JSON.stringify(seen.error)}`).toBe(true);
+    expect(
+      seen.ok,
+      `anonymous profile read failed: ${JSON.stringify(seen.error)}`,
+    ).toBe(true);
     const visible = (seen.data ?? []).map((r) => r.id);
 
     // Anyone anon can see must have published something. If this ever fails, a policy
@@ -111,8 +124,12 @@ test.describe("and cannot read anything else about those people", () => {
       const res = await restAsService<Array<{ author_id: string | null }>>(
         `${table}?select=author_id&${flag}=eq.true`,
       );
-      expect(res.ok, `service read of ${table} failed: ${JSON.stringify(res.error)}`).toBe(true);
-      for (const row of res.data ?? []) if (row.author_id) publishers.add(row.author_id);
+      expect(
+        res.ok,
+        `service read of ${table} failed: ${JSON.stringify(res.error)}`,
+      ).toBe(true);
+      for (const row of res.data ?? [])
+        if (row.author_id) publishers.add(row.author_id);
     }
 
     const leaked = visible.filter((id) => !publishers.has(id));

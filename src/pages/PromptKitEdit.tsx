@@ -13,17 +13,42 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
-  AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
-import { Loader2, X, ArrowLeft, Trash2, Save, Plus, ListTree, History, Sparkles, Bot } from "lucide-react";
+import {
+  Loader2,
+  X,
+  ArrowLeft,
+  Trash2,
+  Save,
+  Plus,
+  ListTree,
+  History,
+  Sparkles,
+  Bot,
+} from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import type { PromptKit } from "@/types/promptKit";
@@ -92,9 +117,10 @@ export default function PromptKitEdit() {
   });
 
   const workspaceScope = currentWorkspace ?? "personal";
-  const coachSessionId = kitId && user
-    ? deterministicSessionId(workspaceScope, user.id, kitId)
-    : "draft";
+  const coachSessionId =
+    kitId && user
+      ? deterministicSessionId(workspaceScope, user.id, kitId)
+      : "draft";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -145,7 +171,11 @@ export default function PromptKitEdit() {
   }, [slug, user, navigate]);
 
   const normalizeTag = (tag: string) =>
-    tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    tag
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
@@ -190,13 +220,17 @@ export default function PromptKitEdit() {
     setIsGeneratingMetadata(true);
     setMetadataError(null);
     try {
-      const { data: result, error } = await supabase.functions.invoke("suggest-promptkit-metadata", {
-        body: { kit_content: formData.content.trim(), user_id: user?.id },
-      });
+      const { data: result, error } = await supabase.functions.invoke(
+        "suggest-promptkit-metadata",
+        {
+          body: { kit_content: formData.content.trim(), user_id: user?.id },
+        },
+      );
       if (error) throw new Error("Failed to generate suggestions");
       const data = (result as any)?.output || result;
       if (data?.title) setFormData((prev) => ({ ...prev, title: data.title }));
-      if (data?.description) setFormData((prev) => ({ ...prev, description: data.description }));
+      if (data?.description)
+        setFormData((prev) => ({ ...prev, description: data.description }));
       if (data?.category) {
         const matched = categoryOptions.find(
           (c) => c.id.toLowerCase() === String(data.category).toLowerCase(),
@@ -204,7 +238,10 @@ export default function PromptKitEdit() {
         if (matched) setFormData((prev) => ({ ...prev, category: matched.id }));
       }
       if (data?.tags && Array.isArray(data.tags)) {
-        const newTags = data.tags.map((t: string) => normalizeTag(t)).filter(Boolean).slice(0, 10);
+        const newTags = data.tags
+          .map((t: string) => normalizeTag(t))
+          .filter(Boolean)
+          .slice(0, 10);
         setFormData((prev) => ({ ...prev, tags: newTags }));
       }
     } catch {
@@ -216,8 +253,14 @@ export default function PromptKitEdit() {
 
   const handleSave = async () => {
     if (!user || !kitId || !kit) return;
-    if (!formData.title.trim()) { toast.error("Title is required"); return; }
-    if (!formData.content.trim()) { toast.error("Content is required"); return; }
+    if (!formData.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (!formData.content.trim()) {
+      toast.error("Content is required");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -229,7 +272,9 @@ export default function PromptKitEdit() {
         JSON.stringify(kit.tags || []) !== JSON.stringify(formData.tags);
 
       if (contentChanged) {
-        const { data: latest } = await (supabase.from("prompt_kit_versions") as any)
+        const { data: latest } = await (
+          supabase.from("prompt_kit_versions") as any
+        )
           .select("version_number")
           .eq("prompt_kit_id", kitId)
           .order("version_number", { ascending: false })
@@ -258,7 +303,10 @@ export default function PromptKitEdit() {
           language: formData.language,
         })
         .eq("id", kitId);
-      if (error) { toast.error("Failed to save prompt kit"); return; }
+      if (error) {
+        toast.error("Failed to save prompt kit");
+        return;
+      }
 
       setKit({
         ...kit,
@@ -284,7 +332,9 @@ export default function PromptKitEdit() {
     if (!kitId) return;
     setIsDeleting(true);
     try {
-      const { error } = await (supabase.from("prompt_kits") as any).delete().eq("id", kitId);
+      const { error } = await (supabase.from("prompt_kits") as any)
+        .delete()
+        .eq("id", kitId);
       if (error) throw error;
       toast.success("Prompt kit deleted");
       navigate("/library");
@@ -324,7 +374,10 @@ export default function PromptKitEdit() {
       <main className="flex-1 py-8">
         <div className="container mx-auto max-w-[1600px] px-4">
           <div className="mb-6 flex items-center justify-between">
-            <Link to="/library" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              to="/library"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ArrowLeft className="h-4 w-4" />
               Back to Library
             </Link>
@@ -345,19 +398,46 @@ export default function PromptKitEdit() {
                   </SheetContent>
                 </Sheet>
               )}
-              <Button variant="outline" onClick={() => setVersionHistoryOpen(true)} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setVersionHistoryOpen(true)}
+                className="gap-2"
+              >
                 <History className="h-4 w-4" />
                 History
               </Button>
-              <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
-              <Button onClick={handleSave} disabled={isSubmitting} className="gap-2" title="Save (⌘S / Ctrl+S)">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <SaveStateBadge
+                isDirty={isDirty}
+                isSaving={isSubmitting}
+                savedAt={savedAt}
+                className="mr-1"
+              />
+              <Button
+                onClick={handleSave}
+                disabled={isSubmitting}
+                className="gap-2"
+                title="Save (⌘S / Ctrl+S)"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Save Changes
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon" disabled={isDeleting} aria-label="Delete prompt kit">
-                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    disabled={isDeleting}
+                    aria-label="Delete prompt kit"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -365,13 +445,19 @@ export default function PromptKitEdit() {
                     <AlertDialogTitle>Delete this prompt kit?</AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-2">
-                        <p>This action cannot be undone. Deleting this prompt kit will also remove:</p>
+                        <p>
+                          This action cannot be undone. Deleting this prompt kit
+                          will also remove:
+                        </p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                           <li>All saved versions and version history</li>
                           <li>All comments, reviews and ratings</li>
                           <li>Any edit suggestions submitted by others</li>
                           <li>References from collections it belongs to</li>
-                          <li>Synced copies in connected GitHub repositories and Menerio</li>
+                          <li>
+                            Synced copies in connected GitHub repositories and
+                            Menerio
+                          </li>
                         </ul>
                       </div>
                     </AlertDialogDescription>
@@ -393,19 +479,25 @@ export default function PromptKitEdit() {
           <div className="flex gap-6">
             <div className="flex-1 min-w-0">
               <div className="rounded-xl border border-border bg-card p-6">
-                <h1 className="mb-6 text-xl font-semibold text-foreground">Edit Prompt Kit</h1>
+                <h1 className="mb-6 text-xl font-semibold text-foreground">
+                  Edit Prompt Kit
+                </h1>
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="content">Kit Content *</Label>
                       <span className="text-xs text-muted-foreground">
-                        {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
+                        {items.length}{" "}
+                        {items.length === 1 ? "prompt" : "prompts"} detected
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Use the <span className="font-medium text-foreground">Insert prompt</span> button
-                      to add copyable prompt blocks. Free text between blocks becomes intro and
-                      between-prompt commentary.
+                      Use the{" "}
+                      <span className="font-medium text-foreground">
+                        Insert prompt
+                      </span>{" "}
+                      button to add copyable prompt blocks. Free text between
+                      blocks becomes intro and between-prompt commentary.
                     </p>
                     <PromptKitRichEditor
                       value={formData.content}
@@ -420,37 +512,72 @@ export default function PromptKitEdit() {
                       variant="outline"
                       size="sm"
                       onClick={handleSuggestMetadata}
-                      disabled={isGeneratingMetadata || !formData.content.trim()}
+                      disabled={
+                        isGeneratingMetadata || !formData.content.trim()
+                      }
                       className="gap-1.5"
                     >
                       {isGeneratingMetadata ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating…</>
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Generating…
+                        </>
                       ) : (
-                        <><Sparkles className="h-3.5 w-3.5" />Suggest title, description, category & tags</>
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Suggest title, description, category & tags
+                        </>
                       )}
                     </Button>
-                    {metadataError && <p className="text-sm text-destructive">{metadataError}</p>}
+                    {metadataError && (
+                      <p className="text-sm text-destructive">
+                        {metadataError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="title">Title *</Label>
-                    <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} />
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, category: v })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categoryOptions.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -458,13 +585,23 @@ export default function PromptKitEdit() {
 
                   <div className="space-y-2">
                     <Label htmlFor="tags">Tags</Label>
-                    <Input id="tags" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleAddTag} placeholder="Press Enter to add tags…" />
+                    <Input
+                      id="tags"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleAddTag}
+                      placeholder="Press Enter to add tags…"
+                    />
                     {formData.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {formData.tags.map((t) => (
                           <Badge key={t} variant="secondary" className="gap-1">
                             {t}
-                            <button type="button" onClick={() => handleRemoveTag(t)} className="ml-1 hover:text-destructive">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(t)}
+                              className="ml-1 hover:text-destructive"
+                            >
                               <X className="h-3 w-3" />
                             </button>
                           </Badge>
@@ -473,7 +610,10 @@ export default function PromptKitEdit() {
                     )}
                   </div>
 
-                  <LanguageSelect value={formData.language} onChange={(v) => setFormData({ ...formData, language: v })} />
+                  <LanguageSelect
+                    value={formData.language}
+                    onChange={(v) => setFormData({ ...formData, language: v })}
+                  />
 
                   {currentSlug && user && (
                     <PromptKitSlugEditor
@@ -489,15 +629,21 @@ export default function PromptKitEdit() {
 
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>
-                      <Label htmlFor="visibility" className="text-base">Make this kit public</Label>
+                      <Label htmlFor="visibility" className="text-base">
+                        Make this kit public
+                      </Label>
                       <p className="text-sm text-muted-foreground">
-                        {formData.isPublic ? "Anyone can discover and use this kit" : "Only you can see this kit"}
+                        {formData.isPublic
+                          ? "Anyone can discover and use this kit"
+                          : "Only you can see this kit"}
                       </p>
                     </div>
                     <Switch
                       id="visibility"
                       checked={formData.isPublic}
-                      onCheckedChange={(v) => setFormData({ ...formData, isPublic: v })}
+                      onCheckedChange={(v) =>
+                        setFormData({ ...formData, isPublic: v })
+                      }
                     />
                   </div>
                 </div>
@@ -506,7 +652,10 @@ export default function PromptKitEdit() {
 
             {/* Right column: Outline + AI Coach (desktop only) */}
             {!isMobile && (
-              <div className="w-[380px] shrink-0 flex flex-col gap-4 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+              <div
+                className="w-[380px] shrink-0 flex flex-col gap-4 sticky top-24 self-start"
+                style={{ height: "calc(100vh - 12rem)" }}
+              >
                 <div className="rounded-xl border border-border bg-card p-4 shrink-0">
                   <div className="mb-3 flex items-center gap-2 text-sm font-medium">
                     <ListTree className="h-4 w-4 text-primary" />
@@ -520,16 +669,18 @@ export default function PromptKitEdit() {
                     <ol className="space-y-1.5 max-h-40 overflow-y-auto">
                       {items.map((item) => (
                         <li key={item.index} className="text-sm">
-                          <span className="text-muted-foreground mr-1.5">{item.index}.</span>
-                          <span className="text-foreground">{item.title || "Untitled"}</span>
+                          <span className="text-muted-foreground mr-1.5">
+                            {item.index}.
+                          </span>
+                          <span className="text-foreground">
+                            {item.title || "Untitled"}
+                          </span>
                         </li>
                       ))}
                     </ol>
                   )}
                 </div>
-                <div className="flex-1 min-h-0">
-                  {coachPanel}
-                </div>
+                <div className="flex-1 min-h-0">{coachPanel}</div>
               </div>
             )}
           </div>

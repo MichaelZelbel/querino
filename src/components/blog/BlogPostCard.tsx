@@ -11,7 +11,7 @@ interface BlogPostCardProps {
 export function BlogPostCard({ post }: BlogPostCardProps) {
   const authorName = post.author?.display_name || "Anonymous";
   const authorInitial = authorName.charAt(0).toUpperCase();
-  const publishedDate = post.published_at 
+  const publishedDate = post.published_at
     ? formatDistanceToNow(new Date(post.published_at), { addSuffix: true })
     : null;
 
@@ -39,13 +39,22 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
           )}
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={post.author?.avatar_url || undefined} alt={authorName} />
-              <AvatarFallback className="text-xs">{authorInitial}</AvatarFallback>
+              <AvatarImage
+                src={post.author?.avatar_url || undefined}
+                alt={authorName}
+              />
+              <AvatarFallback className="text-xs">
+                {authorInitial}
+              </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">{authorName}</span>
+              <span className="text-sm font-medium text-foreground">
+                {authorName}
+              </span>
               {publishedDate && (
-                <span className="text-xs text-muted-foreground">{publishedDate}</span>
+                <span className="text-xs text-muted-foreground">
+                  {publishedDate}
+                </span>
               )}
             </div>
           </div>

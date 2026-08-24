@@ -27,7 +27,11 @@ export interface LoadedArtefact {
   created_at?: string | null;
   updated_at?: string | null;
   published_at?: string | null;
-  author?: { id: string; display_name: string | null; avatar_url: string | null } | null;
+  author?: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
   [key: string]: unknown;
 }
 
@@ -36,7 +40,10 @@ export interface LoadedArtefact {
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-async function loadBySlug(table: string, slug: string): Promise<LoadedArtefact | null> {
+async function loadBySlug(
+  table: string,
+  slug: string,
+): Promise<LoadedArtefact | null> {
   if (!slug || isUuid(slug)) return null;
   const { data, error } = await supabase
     .from(table as never)
@@ -45,7 +52,10 @@ async function loadBySlug(table: string, slug: string): Promise<LoadedArtefact |
     .maybeSingle();
   if (error || !data) return null;
   const row = data as Record<string, unknown>;
-  return { ...row, author: (row.profiles as LoadedArtefact["author"]) ?? null } as LoadedArtefact;
+  return {
+    ...row,
+    author: (row.profiles as LoadedArtefact["author"]) ?? null,
+  } as LoadedArtefact;
 }
 
 export const loadPrompt = (slug: string) => loadBySlug("prompts", slug);
@@ -60,7 +70,9 @@ export interface LoadedBlogPost extends LoadedArtefact {
   og_image_url: string | null;
 }
 
-export async function loadBlogPost(slug: string): Promise<LoadedBlogPost | null> {
+export async function loadBlogPost(
+  slug: string,
+): Promise<LoadedBlogPost | null> {
   if (!slug) return null;
   const { data, error } = await supabase
     .from("blog_posts")

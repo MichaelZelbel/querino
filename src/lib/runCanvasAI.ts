@@ -36,12 +36,21 @@ const EDGE_FUNCTION_BY_TYPE: Record<ArtifactType, string> = {
 // ---------------------------------------------------------------------------
 
 /** Key for storing a draft session id in localStorage (new artifact, not yet saved). */
-export function draftSessionKey(artifactType: ArtifactType, workspaceScope: string, userId: string): string {
+export function draftSessionKey(
+  artifactType: ArtifactType,
+  workspaceScope: string,
+  userId: string,
+): string {
   return `prompt_coach_session:new:${artifactType}:${workspaceScope}:${userId}`;
 }
 
 /** Key for storing a saved-artifact session id in localStorage. */
-export function artifactSessionKey(artifactType: ArtifactType, workspaceScope: string, userId: string, artifactId: string): string {
+export function artifactSessionKey(
+  artifactType: ArtifactType,
+  workspaceScope: string,
+  userId: string,
+  artifactId: string,
+): string {
   return `prompt_coach_session:${artifactType}:${workspaceScope}:${userId}:${artifactId}`;
 }
 
@@ -55,7 +64,11 @@ export function deterministicSessionId(
 }
 
 // Legacy aliases for backward compatibility with PromptCoachPanel and LibraryPromptEdit
-export function promptSessionKey(workspaceScope: string, userId: string, promptId: string): string {
+export function promptSessionKey(
+  workspaceScope: string,
+  userId: string,
+  promptId: string,
+): string {
   return artifactSessionKey("prompt", workspaceScope, userId, promptId);
 }
 
@@ -63,7 +76,11 @@ export function promptSessionKey(workspaceScope: string, userId: string, promptI
  * Get or create a draft session id for a new artifact page.
  * Persisted in localStorage so it survives refreshes.
  */
-export function getOrCreateDraftSessionId(workspaceScope: string, userId: string, artifactType: ArtifactType = "prompt"): string {
+export function getOrCreateDraftSessionId(
+  workspaceScope: string,
+  userId: string,
+  artifactType: ArtifactType = "prompt",
+): string {
   const key = draftSessionKey(artifactType, workspaceScope, userId);
   const existing = localStorage.getItem(key);
   if (existing) return existing;
@@ -82,9 +99,22 @@ export function promoteDraftSession(
   newArtifactId: string,
   artifactType: ArtifactType = "prompt",
 ): string {
-  const draftId = getOrCreateDraftSessionId(workspaceScope, userId, artifactType);
-  const finalSessionId = deterministicSessionId(workspaceScope, userId, newArtifactId);
-  const finalKey = artifactSessionKey(artifactType, workspaceScope, userId, newArtifactId);
+  const draftId = getOrCreateDraftSessionId(
+    workspaceScope,
+    userId,
+    artifactType,
+  );
+  const finalSessionId = deterministicSessionId(
+    workspaceScope,
+    userId,
+    newArtifactId,
+  );
+  const finalKey = artifactSessionKey(
+    artifactType,
+    workspaceScope,
+    userId,
+    newArtifactId,
+  );
   localStorage.setItem(finalKey, finalSessionId);
 
   // Migrate chat messages from draft session key to final session key
@@ -115,7 +145,9 @@ export function promoteDraftSession(
  * Provider abstraction for canvas AI.
  * Routes to the appropriate Supabase Edge Function based on artifact type.
  */
-export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIResult> {
+export async function runCanvasAI(
+  args: RunCanvasAIArgs,
+): Promise<RunCanvasAIResult> {
   const {
     artifactType,
     artifactId,
@@ -158,7 +190,12 @@ export async function runCanvasAI(args: RunCanvasAIArgs): Promise<RunCanvasAIRes
   if (data?.session?.id) {
     const workspaceScope = workspaceId ?? "personal";
     if (artifactId && artifactId !== "draft") {
-      const key = artifactSessionKey(artifactType, workspaceScope, userId, artifactId);
+      const key = artifactSessionKey(
+        artifactType,
+        workspaceScope,
+        userId,
+        artifactId,
+      );
       localStorage.setItem(key, data.session.id);
     }
   }

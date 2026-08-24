@@ -1,8 +1,8 @@
-import { Crown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
-import { cn } from '@/lib/utils';
+import { Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
+import { cn } from "@/lib/utils";
 
 interface PremiumBadgeProps {
   className?: string;
@@ -13,7 +13,10 @@ interface PremiumBadgeProps {
  * Shows a "Premium" badge for free users only (unless showForPremiumUsers is true).
  * Used to indicate premium features in tabs, buttons, etc.
  */
-export function PremiumBadge({ className, showForPremiumUsers = false }: PremiumBadgeProps) {
+export function PremiumBadge({
+  className,
+  showForPremiumUsers = false,
+}: PremiumBadgeProps) {
   const { user } = useAuthContext();
   const { isPremium } = useUserRole();
 
@@ -24,11 +27,11 @@ export function PremiumBadge({ className, showForPremiumUsers = false }: Premium
   if (isPremium && !showForPremiumUsers) return null;
 
   return (
-    <Badge 
-      variant="secondary" 
+    <Badge
+      variant="secondary"
       className={cn(
         "h-5 px-1.5 text-[10px] font-medium gap-0.5 bg-primary/10 text-primary border-0",
-        className
+        className,
       )}
     >
       <Crown className="h-2.5 w-2.5" />

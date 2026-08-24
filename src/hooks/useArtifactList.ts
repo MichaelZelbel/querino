@@ -34,7 +34,7 @@ interface ArtifactListConfig {
  * so pagination or query changes happen once, not once per type.
  */
 export function createArtifactListHook<T extends { id: string }>(
-  config: ArtifactListConfig
+  config: ArtifactListConfig,
 ) {
   const fetchByIds = async (ids: string[]): Promise<T[]> => {
     if (ids.length === 0) return [];
@@ -42,17 +42,36 @@ export function createArtifactListHook<T extends { id: string }>(
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
       .in("id", ids);
     if (error || !data) return [];
-    return (data as any[]).map((item) => ({ ...item, author: item.profiles || null }));
+    return (data as any[]).map((item) => ({
+      ...item,
+      author: item.profiles || null,
+    }));
   };
 
   return function useArtifactList(options: ArtifactListOptions = {}) {
-    const { searchQuery = "", published, authorId, teamId, category, sortBy = "newest", limit } = options;
+    const {
+      searchQuery = "",
+      published,
+      authorId,
+      teamId,
+      category,
+      sortBy = "newest",
+      limit,
+    } = options;
 
     return useQuery<T[]>({
-      queryKey: [config.queryKey, searchQuery, published, authorId, teamId, category, sortBy, limit],
+      queryKey: [
+        config.queryKey,
+        searchQuery,
+        published,
+        authorId,
+        teamId,
+        category,
+        sortBy,
+        limit,
+      ],
       queryFn: async () => {
-        let query = (supabase.from(config.table as any) as any)
-          .select(`
+        let query = (supabase.from(config.table as any) as any).select(`
             *,
             profiles:author_id (
               id,
@@ -88,7 +107,7 @@ export function createArtifactListHook<T extends { id: string }>(
           query = query.textSearch(
             "title,description,content",
             searchQuery.trim(),
-            { type: "websearch", config: "simple" }
+            { type: "websearch", config: "simple" },
           );
         }
 
@@ -110,7 +129,7 @@ export function createArtifactListHook<T extends { id: string }>(
             config.semanticType,
             searchQuery.trim(),
             ftsResults,
-            fetchByIds
+            fetchByIds,
           );
         }
 

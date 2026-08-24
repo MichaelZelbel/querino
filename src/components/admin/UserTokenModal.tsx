@@ -46,7 +46,7 @@ export function UserTokenModal({
   const [saving, setSaving] = useState(false);
   const [allowance, setAllowance] = useState<AllowancePeriodFull | null>(null);
   const [tokensPerCredit, setTokensPerCredit] = useState(200);
-  
+
   // Editable fields
   const [tokensGranted, setTokensGranted] = useState<number>(0);
   const [tokensUsed, setTokensUsed] = useState<number>(0);
@@ -208,11 +208,15 @@ export function UserTokenModal({
             {/* User Info */}
             <div className="space-y-2">
               <div>
-                <Label className="text-xs text-muted-foreground">User Name</Label>
+                <Label className="text-xs text-muted-foreground">
+                  User Name
+                </Label>
                 <p className="font-medium">{displayName || "Unnamed User"}</p>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Full User ID</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Full User ID
+                </Label>
                 <p className="font-mono text-sm break-all">{userId}</p>
               </div>
             </div>
@@ -224,7 +228,10 @@ export function UserTokenModal({
                   Subscription Period Start
                 </Label>
                 <p className="font-medium">
-                  {format(new Date(allowance.period_start), "MMM d, yyyy HH:mm")}
+                  {format(
+                    new Date(allowance.period_start),
+                    "MMM d, yyyy HH:mm",
+                  )}
                 </p>
               </div>
               <div>
@@ -248,7 +255,9 @@ export function UserTokenModal({
                     type="number"
                     min={0}
                     value={tokensGranted}
-                    onChange={(e) => setTokensGranted(parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setTokensGranted(parseInt(e.target.value) || 0)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -258,12 +267,16 @@ export function UserTokenModal({
                     type="number"
                     min={0}
                     value={tokensUsed}
-                    onChange={(e) => setTokensUsed(parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setTokensUsed(parseInt(e.target.value) || 0)
+                    }
                   />
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Remaining Tokens</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Remaining Tokens
+                </Label>
                 <p className="text-2xl font-bold text-primary">
                   {remainingTokens.toLocaleString()}
                 </p>
@@ -280,15 +293,23 @@ export function UserTokenModal({
               </h4>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Granted</Label>
-                  <p className="text-lg font-medium">{Math.round(creditsGranted).toLocaleString()}</p>
+                  <Label className="text-xs text-muted-foreground">
+                    Granted
+                  </Label>
+                  <p className="text-lg font-medium">
+                    {Math.round(creditsGranted).toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Used</Label>
-                  <p className="text-lg font-medium">{Math.round(creditsUsed).toLocaleString()}</p>
+                  <p className="text-lg font-medium">
+                    {Math.round(creditsUsed).toLocaleString()}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Remaining</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Remaining
+                  </Label>
                   <p className="text-lg font-medium text-primary">
                     {Math.round(creditsRemaining).toLocaleString()}
                   </p>
@@ -302,7 +323,10 @@ export function UserTokenModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button onClick={handleSave} disabled={saving || loading || !allowance}>
+          <Button
+            onClick={handleSave}
+            disabled={saving || loading || !allowance}
+          >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save
           </Button>

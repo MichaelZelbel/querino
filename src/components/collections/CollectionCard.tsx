@@ -10,7 +10,10 @@ interface CollectionCardProps {
   showOwner?: boolean;
 }
 
-export function CollectionCard({ collection, showOwner = true }: CollectionCardProps) {
+export function CollectionCard({
+  collection,
+  showOwner = true,
+}: CollectionCardProps) {
   const ownerName = collection.owner?.display_name || "Anonymous";
   const ownerInitial = ownerName.charAt(0).toUpperCase();
 
@@ -21,7 +24,9 @@ export function CollectionCard({ collection, showOwner = true }: CollectionCardP
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
               <Folder className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-lg line-clamp-1">{collection.title}</h3>
+              <h3 className="font-semibold text-lg line-clamp-1">
+                {collection.title}
+              </h3>
             </div>
             {collection.is_public ? (
               <Globe className="h-4 w-4 text-muted-foreground" />
@@ -36,19 +41,23 @@ export function CollectionCard({ collection, showOwner = true }: CollectionCardP
               {collection.description}
             </p>
           )}
-          
+
           <div className="flex items-center justify-between">
             <Badge variant="secondary">
               {collection.item_count || 0} items
             </Badge>
-            
+
             {showOwner && collection.owner && (
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6">
                   <AvatarImage src={collection.owner.avatar_url || undefined} />
-                  <AvatarFallback className="text-xs">{ownerInitial}</AvatarFallback>
+                  <AvatarFallback className="text-xs">
+                    {ownerInitial}
+                  </AvatarFallback>
                 </Avatar>
-                <span className="text-xs text-muted-foreground">{ownerName}</span>
+                <span className="text-xs text-muted-foreground">
+                  {ownerName}
+                </span>
               </div>
             )}
           </div>

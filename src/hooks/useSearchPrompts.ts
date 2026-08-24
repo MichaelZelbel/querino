@@ -57,7 +57,18 @@ export function useSearchPrompts({
   const isSearching = trimmed.length > 0;
 
   const query = useInfiniteQuery({
-    queryKey: ["prompts", "search", "hybrid", trimmed, isPublic, userId, category, tag, sortBy, pageSize],
+    queryKey: [
+      "prompts",
+      "search",
+      "hybrid",
+      trimmed,
+      isPublic,
+      userId,
+      category,
+      tag,
+      sortBy,
+      pageSize,
+    ],
     initialPageParam: 0,
     getNextPageParam: (lastPage: PromptWithAuthor[], allPages) => {
       if (isSearching) return undefined; // search is single-shot
@@ -124,7 +135,12 @@ export function useSearchPrompts({
 
       // Hybrid: append semantic-only matches for public searches
       if (isSearching && isPublic && trimmed.length >= 3) {
-        return await mergeWithSemantic("prompt", trimmed, ftsResults, fetchPromptsByIds);
+        return await mergeWithSemantic(
+          "prompt",
+          trimmed,
+          ftsResults,
+          fetchPromptsByIds,
+        );
       }
 
       return ftsResults;

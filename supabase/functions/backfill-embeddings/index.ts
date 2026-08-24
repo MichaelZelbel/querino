@@ -28,8 +28,15 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getServiceClient } from "../_shared/llm.ts";
-import { isMachineCaller, requireMachineOrAdmin } from "../_shared/internalAuth.ts";
-import { createEmbedding, embeddableText, embeddingProviders } from "../_shared/embeddings.ts";
+import {
+  isMachineCaller,
+  requireMachineOrAdmin,
+} from "../_shared/internalAuth.ts";
+import {
+  createEmbedding,
+  embeddableText,
+  embeddingProviders,
+} from "../_shared/embeddings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,10 +56,30 @@ interface TableConfig {
 }
 
 const TABLES: TableConfig[] = [
-  { table: "prompts", itemType: "prompt", textFields: ["title", "description", "content"], publishedColumn: "is_public" },
-  { table: "skills", itemType: "skill", textFields: ["title", "description", "content"], publishedColumn: "published" },
-  { table: "workflows", itemType: "workflow", textFields: ["title", "description", "content"], publishedColumn: "published" },
-  { table: "prompt_kits", itemType: "prompt_kit", textFields: ["title", "description", "content"], publishedColumn: "published" },
+  {
+    table: "prompts",
+    itemType: "prompt",
+    textFields: ["title", "description", "content"],
+    publishedColumn: "is_public",
+  },
+  {
+    table: "skills",
+    itemType: "skill",
+    textFields: ["title", "description", "content"],
+    publishedColumn: "published",
+  },
+  {
+    table: "workflows",
+    itemType: "workflow",
+    textFields: ["title", "description", "content"],
+    publishedColumn: "published",
+  },
+  {
+    table: "prompt_kits",
+    itemType: "prompt_kit",
+    textFields: ["title", "description", "content"],
+    publishedColumn: "published",
+  },
 ];
 
 Deno.serve(async (req) => {
@@ -87,7 +114,9 @@ Deno.serve(async (req) => {
     const maxItems = Math.min(Number(body?.maxItems) || 200, 500);
     const onlyType = body?.itemType as ItemType | undefined;
 
-    const tablesToRun = onlyType ? TABLES.filter((t) => t.itemType === onlyType) : TABLES;
+    const tablesToRun = onlyType
+      ? TABLES.filter((t) => t.itemType === onlyType)
+      : TABLES;
 
     // 4. Count missing per table
     const counts: Record<string, { missing: number }> = {};
@@ -107,11 +136,20 @@ Deno.serve(async (req) => {
     //    Named in the 500 so an empty balance on one account cannot read the
     //    same as a missing key; see _shared/embeddings.ts.
     if (embeddingProviders().length === 0) {
-      return json({ error: "No embedding provider configured (OPENAI_API_KEY or OPENROUTER_API_KEY)" }, 500);
+      return json(
+        {
+          error:
+            "No embedding provider configured (OPENAI_API_KEY or OPENROUTER_API_KEY)",
+        },
+        500,
+      );
     }
 
     // 6. Process
-    const results: Record<string, { processed: number; succeeded: number; failed: number; errors: string[] }> = {};
+    const results: Record<
+      string,
+      { processed: number; succeeded: number; failed: number; errors: string[] }
+    > = {};
     // Which providers actually answered. Reported so a failover to the backup
     // account shows up here rather than only on the bill.
     const providersUsed = new Set<string>();
@@ -119,7 +157,12 @@ Deno.serve(async (req) => {
     const errorsCap = 5;
 
     for (const cfg of tablesToRun) {
-      const r = { processed: 0, succeeded: 0, failed: 0, errors: [] as string[] };
+      const r = {
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
       results[cfg.itemType] = r;
 
       const remaining = maxItems - totalProcessed;
@@ -151,7 +194,8 @@ Deno.serve(async (req) => {
 
         if (!text.trim()) {
           r.failed++;
-          if (r.errors.length < errorsCap) r.errors.push(`${row.id}: empty text`);
+          if (r.errors.length < errorsCap)
+            r.errors.push(`${row.id}: empty text`);
           continue;
         }
 
@@ -168,7 +212,8 @@ Deno.serve(async (req) => {
           });
           if (updErr) {
             r.failed++;
-            if (r.errors.length < errorsCap) r.errors.push(`${row.id}: update_embedding ${updErr.message}`);
+            if (r.errors.length < errorsCap)
+              r.errors.push(`${row.id}: update_embedding ${updErr.message}`);
             continue;
           }
 
@@ -186,14 +231,21 @@ Deno.serve(async (req) => {
               p_prompt_tokens: promptTokens,
               p_completion_tokens: 0,
               p_total_tokens: totalTokens,
-              p_metadata: { itemType: cfg.itemType, itemId: row.id, backfill: true },
+              p_metadata: {
+                itemType: cfg.itemType,
+                itemId: row.id,
+                backfill: true,
+              },
             });
-          } catch (_) { /* ignore */ }
+          } catch (_) {
+            /* ignore */
+          }
 
           r.succeeded++;
         } catch (e) {
           r.failed++;
-          if (r.errors.length < errorsCap) r.errors.push(`${row.id}: ${String(e).slice(0, 120)}`);
+          if (r.errors.length < errorsCap)
+            r.errors.push(`${row.id}: ${String(e).slice(0, 120)}`);
         }
       }
     }
@@ -208,14 +260,17 @@ Deno.serve(async (req) => {
       remainingCounts[cfg.itemType] = count ?? 0;
     }
 
-    return json({
-      success: true,
-      processed: totalProcessed,
-      maxItems,
-      providers: [...providersUsed],
-      results,
-      remaining: remainingCounts,
-    }, 200);
+    return json(
+      {
+        success: true,
+        processed: totalProcessed,
+        maxItems,
+        providers: [...providersUsed],
+        results,
+        remaining: remainingCounts,
+      },
+      200,
+    );
   } catch (e) {
     console.error("[backfill-embeddings] unhandled:", e);
     return json({ error: "Internal error", details: String(e) }, 500);
@@ -230,7 +285,11 @@ Deno.serve(async (req) => {
  * to charge", never "let them in".
  */
 async function adminUserId(req: Request): Promise<string | null> {
-  const token = (req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "")
+  const token = (
+    req.headers.get("Authorization") ??
+    req.headers.get("authorization") ??
+    ""
+  )
     .replace(/^Bearer\s+/i, "")
     .trim();
   if (!token) return null;

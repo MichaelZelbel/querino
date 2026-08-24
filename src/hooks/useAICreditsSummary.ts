@@ -38,7 +38,8 @@ export function useAICreditsSummary() {
       const tokensPerCredit = settingsResult.data?.value_int || 200;
       return {
         remainingCredits:
-          (Number(allowanceResult.data.remaining_tokens) || 0) / tokensPerCredit,
+          (Number(allowanceResult.data.remaining_tokens) || 0) /
+          tokensPerCredit,
         periodEnd: allowanceResult.data.period_end || null,
       };
     },

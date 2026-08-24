@@ -34,7 +34,7 @@ function esc(value: unknown): string {
 }
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[NOTIFY-ADMIN] ${step}${detailsStr}`);
 };
 
@@ -60,7 +60,10 @@ function getEmailBody(event: NotifyRequest): string {
   const timestamp = new Date().toISOString();
   const name = displayName || "Unknown";
 
-  const sections: Record<EventType, { action: string; label: string; extra: string }> = {
+  const sections: Record<
+    EventType,
+    { action: string; label: string; extra: string }
+  > = {
     signup: {
       action: "A new user has signed up for Querino!",
       label: "User Details",
@@ -174,10 +177,13 @@ serve(async (req) => {
 
     logStep("Email sent successfully", { messageId: data?.id });
 
-    return new Response(JSON.stringify({ success: true, messageId: data?.id }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ success: true, messageId: data?.id }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });

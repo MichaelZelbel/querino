@@ -1,0 +1,1 @@
+import{t as e}from"./useCloneArtifact-DeRbVHQj.js";var t=e({table:`workflows`,label:`workflow`,buildInsert:e=>({description:e.description,json:e.json,tags:e.tags,published:!1}),editPath:e=>`/workflows/${e.id}/edit`});function n(){let{clone:e,cloning:n}=t();return{cloneWorkflow:e,cloning:n}}export{n as t};

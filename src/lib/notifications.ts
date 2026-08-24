@@ -1,5 +1,6 @@
 // Simple event emitter for notifications (future-proofing)
-type NotificationType = 'new-comment' | 'comment-reply' | 'comment-edit' | 'comment-delete';
+type NotificationType =
+  "new-comment" | "comment-reply" | "comment-edit" | "comment-delete";
 
 interface NotificationPayload {
   itemType: string;
@@ -8,15 +9,21 @@ interface NotificationPayload {
   parentId?: string;
 }
 
-type NotificationListener = (type: NotificationType, payload: NotificationPayload) => void;
+type NotificationListener = (
+  type: NotificationType,
+  payload: NotificationPayload,
+) => void;
 
 const listeners: NotificationListener[] = [];
 
-export const triggerNotification = (type: NotificationType, payload: NotificationPayload) => {
-  listeners.forEach(listener => listener(type, payload));
+export const triggerNotification = (
+  type: NotificationType,
+  payload: NotificationPayload,
+) => {
+  listeners.forEach((listener) => listener(type, payload));
   // Log for debugging in development
   if (import.meta.env.DEV) {
-    console.log('[Notification]', type, payload);
+    console.log("[Notification]", type, payload);
   }
 };
 

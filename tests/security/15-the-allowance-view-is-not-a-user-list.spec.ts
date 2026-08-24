@@ -29,8 +29,13 @@ interface AllowanceRow {
 
 test.describe("The allowance view answers each caller with their own row", () => {
   test("there is more than one account, so the checks below can fail", async () => {
-    const res = await restAsService<AllowanceRow[]>("v_ai_allowance_current?select=user_id");
-    expect(res.ok, `the service role cannot read the view: ${JSON.stringify(res.error)}`).toBe(true);
+    const res = await restAsService<AllowanceRow[]>(
+      "v_ai_allowance_current?select=user_id",
+    );
+    expect(
+      res.ok,
+      `the service role cannot read the view: ${JSON.stringify(res.error)}`,
+    ).toBe(true);
     const users = new Set((res.data ?? []).map((r) => r.user_id));
     expect(
       users.size,
@@ -58,27 +63,38 @@ test.describe("The allowance view answers each caller with their own row", () =>
     const res = await restAsUser<AllowanceRow[]>(
       "v_ai_allowance_current?select=user_id,tokens_granted,remaining_tokens",
     );
-    expect(res.ok, `reading the view failed: ${JSON.stringify(res.error)}`).toBe(true);
+    expect(
+      res.ok,
+      `reading the view failed: ${JSON.stringify(res.error)}`,
+    ).toBe(true);
 
     const others = (res.data ?? []).filter((r) => r.user_id !== userId);
     expect(
       others.map((r) => r.user_id),
       "a logged-in user is reading other people's credit balances",
     ).toEqual([]);
-    expect((res.data ?? []).length, "the caller cannot see their own balance either").toBe(1);
+    expect(
+      (res.data ?? []).length,
+      "the caller cannot see their own balance either",
+    ).toBe(1);
   });
 
   test("the service role still sees everyone, because llm.ts depends on it", async () => {
     // The credit gate reads this view with the service role for whichever user
     // it is about. Locking the view down must not lock that out.
-    const res = await restAsService<AllowanceRow[]>("v_ai_allowance_current?select=user_id");
+    const res = await restAsService<AllowanceRow[]>(
+      "v_ai_allowance_current?select=user_id",
+    );
     expect((res.data ?? []).length).toBeGreaterThan(1);
   });
 
   test("the base table is not readable either, by either route", async () => {
-    const direct = await fetch(`${REST_URL}/ai_allowance_periods?select=user_id,tokens_granted`, {
-      headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
-    });
+    const direct = await fetch(
+      `${REST_URL}/ai_allowance_periods?select=user_id,tokens_granted`,
+      {
+        headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+      },
+    );
     const rows = await direct.json();
     expect(
       Array.isArray(rows) ? rows.length : 0,

@@ -13,7 +13,9 @@ export const Route = createFileRoute("/workflows/$slug/")({
     if (!loaderData) return privateHead("Not Found");
     const url = `/workflows/${loaderData.slug ?? loaderData.id}`;
     const description =
-      loaderData.summary || loaderData.description || `${loaderData.title} — AI workflow on Querino`;
+      loaderData.summary ||
+      loaderData.description ||
+      `${loaderData.title} — AI workflow on Querino`;
     return pageHead({
       title: loaderData.title,
       description,

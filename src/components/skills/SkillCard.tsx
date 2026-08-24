@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -104,7 +109,11 @@ export function SkillCard({
         {skill.tags && skill.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {skill.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs font-normal">
+              <Badge
+                key={tag}
+                variant="outline"
+                className="text-xs font-normal"
+              >
                 {tag}
               </Badge>
             ))}
@@ -116,7 +125,7 @@ export function SkillCard({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {showAuthorInfo && skill.author && (
-              <Link 
+              <Link
                 to={`/u/${encodeURIComponent(skill.author.display_name || "")}`}
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 onClick={(e) => e.stopPropagation()}
@@ -132,16 +141,22 @@ export function SkillCard({
                 </span>
               </Link>
             )}
-            
+
             {/* Rating */}
             {skill.rating_count && skill.rating_count > 0 ? (
               <div className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                <span className="font-medium">{Number(skill.rating_avg || 0).toFixed(1)}</span>
-                <span className="text-muted-foreground">({skill.rating_count})</span>
+                <span className="font-medium">
+                  {Number(skill.rating_avg || 0).toFixed(1)}
+                </span>
+                <span className="text-muted-foreground">
+                  ({skill.rating_count})
+                </span>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">No ratings yet</span>
+              <span className="text-xs text-muted-foreground">
+                No ratings yet
+              </span>
             )}
           </div>
 

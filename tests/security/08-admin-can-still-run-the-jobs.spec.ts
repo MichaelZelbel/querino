@@ -19,7 +19,12 @@
 // outright. The account is a throwaway that owns nothing.
 
 import { test, expect } from "@playwright/test";
-import { asUser, callFunction, restAsService, signInTestUser } from "./helpers/api";
+import {
+  asUser,
+  callFunction,
+  restAsService,
+  signInTestUser,
+} from "./helpers/api";
 
 async function setRole(role: "free" | "admin"): Promise<void> {
   const { userId } = await signInTestUser();
@@ -28,7 +33,10 @@ async function setRole(role: "free" | "admin"): Promise<void> {
     body: { role },
     headers: { Prefer: "return=minimal" },
   });
-  if (!res.ok) throw new Error(`Could not set role to ${role}: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(
+      `Could not set role to ${role}: ${JSON.stringify(res.error)}`,
+    );
 }
 
 async function currentRole(): Promise<string | null> {
@@ -54,7 +62,11 @@ test.describe("An admin can still drive the jobs by hand", () => {
     await setRole("free");
     const session = await signInTestUser();
 
-    const moderate = await callFunction("ai-moderate-content", {}, asUser(session.accessToken));
+    const moderate = await callFunction(
+      "ai-moderate-content",
+      {},
+      asUser(session.accessToken),
+    );
     expect(moderate.status).toBe(401);
 
     const batch = await callFunction(
@@ -72,7 +84,11 @@ test.describe("An admin can still drive the jobs by hand", () => {
 
     const session = await signInTestUser();
 
-    const moderate = await callFunction("ai-moderate-content", {}, asUser(session.accessToken));
+    const moderate = await callFunction(
+      "ai-moderate-content",
+      {},
+      asUser(session.accessToken),
+    );
     expect(moderate.status, "the ModerationPanel button must work").toBe(200);
 
     const batch = await callFunction(

@@ -32,13 +32,8 @@ export default function UserActivity() {
 
   const isOwnProfile = user?.id === profile?.id;
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useUserActivityFeed(profile?.id || "", isOwnProfile);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useUserActivityFeed(profile?.id || "", isOwnProfile);
 
   const events = data?.pages.flat() || [];
 
@@ -56,7 +51,9 @@ export default function UserActivity() {
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8">
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-foreground mb-2">User not found</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              User not found
+            </h1>
             <p className="text-muted-foreground">
               The user "{username}" doesn't exist.
             </p>
@@ -73,7 +70,7 @@ export default function UserActivity() {
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           {/* Back Link */}
-          <Link 
+          <Link
             to={`/u/${username}`}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
@@ -84,7 +81,10 @@ export default function UserActivity() {
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name || "User"} />
+              <AvatarImage
+                src={profile.avatar_url || undefined}
+                alt={profile.display_name || "User"}
+              />
               <AvatarFallback className="bg-primary/10 text-primary text-xl">
                 {(profile.display_name || "U").charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -121,8 +121,9 @@ export default function UserActivity() {
             // private. Saying it plainly beats implying the person does nothing.
             <div className="border border-border rounded-lg bg-card p-8 text-center">
               <p className="text-muted-foreground">
-                {profile.display_name} keeps their activity to themselves, as everyone here does.
-                Their published prompts, skills and workflows are on their profile.
+                {profile.display_name} keeps their activity to themselves, as
+                everyone here does. Their published prompts, skills and
+                workflows are on their profile.
               </p>
             </div>
           )}

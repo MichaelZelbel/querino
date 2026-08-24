@@ -1,14 +1,14 @@
 export interface AIQuality {
   strengths: string[];
   weaknesses: string[];
-  readability: 'A' | 'B' | 'C' | 'D';
-  complexity: 'Beginner' | 'Intermediate' | 'Expert';
-  llmComplexity?: 'Low' | 'Medium' | 'High';
+  readability: "A" | "B" | "C" | "D";
+  complexity: "Beginner" | "Intermediate" | "Expert";
+  llmComplexity?: "Low" | "Medium" | "High";
 }
 
 export interface AIInsights {
   id: string;
-  item_type: 'prompt' | 'skill' | 'workflow' | 'prompt_kit';
+  item_type: "prompt" | "skill" | "workflow" | "prompt_kit";
   item_id: string;
   summary: string | null;
   tags: string[];

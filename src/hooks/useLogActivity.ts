@@ -16,23 +16,25 @@ export function useLogActivity() {
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
 
-  const logActivity = useCallback(async ({
-    itemType,
-    itemId,
-    action,
-    metadata = {},
-    teamId,
-  }: LogActivityParams) => {
-    if (!user) return;
+  const logActivity = useCallback(
+    async ({
+      itemType,
+      itemId,
+      action,
+      metadata = {},
+      teamId,
+    }: LogActivityParams) => {
+      if (!user) return;
 
-    const effectiveTeamId = teamId !== undefined 
-      ? teamId 
-      : (currentWorkspace !== "personal" ? currentWorkspace : null);
+      const effectiveTeamId =
+        teamId !== undefined
+          ? teamId
+          : currentWorkspace !== "personal"
+            ? currentWorkspace
+            : null;
 
-    try {
-      const { error } = await supabase
-        .from("activity_events")
-        .insert({
+      try {
+        const { error } = await supabase.from("activity_events").insert({
           actor_id: user.id,
           team_id: effectiveTeamId,
           item_type: itemType,
@@ -41,13 +43,15 @@ export function useLogActivity() {
           metadata,
         });
 
-      if (error) {
-        console.error("Failed to log activity:", error);
+        if (error) {
+          console.error("Failed to log activity:", error);
+        }
+      } catch (err) {
+        console.error("Error logging activity:", err);
       }
-    } catch (err) {
-      console.error("Error logging activity:", err);
-    }
-  }, [user, currentWorkspace]);
+    },
+    [user, currentWorkspace],
+  );
 
   return { logActivity };
 }

@@ -31,7 +31,10 @@ export type CallerBucket = "free" | "premium" | "admin" | "machine";
 /** Fixed render order, so the badges do not reshuffle between loads. */
 const CALLER_ORDER: CallerBucket[] = ["free", "premium", "admin", "machine"];
 
-export function classifyCaller(role: string | null, isMachine: boolean): CallerBucket {
+export function classifyCaller(
+  role: string | null,
+  isMachine: boolean,
+): CallerBucket {
   if (isMachine) return "machine";
   if (role === "admin") return "admin";
   if (role === "premium" || role === "premium_gift") return "premium";
@@ -138,7 +141,8 @@ export interface UsageSummary {
  */
 export function freeShareOfTokens(summary: UsageSummary): number {
   if (summary.totals.total_tokens === 0) return 0;
-  const free = summary.by_caller.find((c) => c.caller === "free")?.total_tokens ?? 0;
+  const free =
+    summary.by_caller.find((c) => c.caller === "free")?.total_tokens ?? 0;
   return free / summary.totals.total_tokens;
 }
 
@@ -179,9 +183,14 @@ export function summarizeUsage(
     bySite.set(g.call_site, site);
 
     const bucket = classifyCaller(g.caller_role, g.is_machine);
-    const forSite = callers.get(g.call_site) ?? new Map<CallerBucket, CallerUsage>();
-    const entry = forSite.get(bucket) ??
-      { caller: bucket, calls: 0, total_tokens: 0, users: 0 };
+    const forSite =
+      callers.get(g.call_site) ?? new Map<CallerBucket, CallerUsage>();
+    const entry = forSite.get(bucket) ?? {
+      caller: bucket,
+      calls: 0,
+      total_tokens: 0,
+      users: 0,
+    };
     entry.calls += g.calls;
     entry.total_tokens += tokens;
     entry.users += g.users;
@@ -198,17 +207,19 @@ export function summarizeUsage(
 
   for (const site of bySite.values()) {
     const forSite = callers.get(site.call_site);
-    site.by_caller = CALLER_ORDER
-      .map((c) => forSite?.get(c))
-      .filter((e): e is CallerUsage => e !== undefined);
-    site.by_source = [...(sources.get(site.call_site)?.values() ?? [])]
-      .sort((a, b) => b.calls - a.calls);
+    site.by_caller = CALLER_ORDER.map((c) => forSite?.get(c)).filter(
+      (e): e is CallerUsage => e !== undefined,
+    );
+    site.by_source = [...(sources.get(site.call_site)?.values() ?? [])].sort(
+      (a, b) => b.calls - a.calls,
+    );
   }
 
   // Dearest first, because the reason to open this panel is to find what costs
   // money. Ties break by name so the order never depends on map insertion.
-  const call_sites = [...bySite.values()].sort((a, b) =>
-    b.total_tokens - a.total_tokens || a.call_site.localeCompare(b.call_site)
+  const call_sites = [...bySite.values()].sort(
+    (a, b) =>
+      b.total_tokens - a.total_tokens || a.call_site.localeCompare(b.call_site),
   );
 
   const totals: UsageTotals = {
@@ -227,8 +238,12 @@ export function summarizeUsage(
     totals.credits += g.credits;
 
     const bucket = classifyCaller(g.caller_role, g.is_machine);
-    const entry = overall.get(bucket) ??
-      { caller: bucket, calls: 0, total_tokens: 0, users: 0 };
+    const entry = overall.get(bucket) ?? {
+      caller: bucket,
+      calls: 0,
+      total_tokens: 0,
+      users: 0,
+    };
     entry.calls += g.calls;
     entry.total_tokens += g.prompt_tokens + g.completion_tokens;
     entry.users += g.users;
@@ -236,9 +251,9 @@ export function summarizeUsage(
   }
   totals.total_tokens = totals.prompt_tokens + totals.completion_tokens;
 
-  const by_caller = CALLER_ORDER
-    .map((c) => overall.get(c))
-    .filter((e): e is CallerUsage => e !== undefined);
+  const by_caller = CALLER_ORDER.map((c) => overall.get(c)).filter(
+    (e): e is CallerUsage => e !== undefined,
+  );
 
   return { call_sites, totals, by_caller };
 }

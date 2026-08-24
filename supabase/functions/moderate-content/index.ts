@@ -12,16 +12,23 @@ const STRIKE_THRESHOLD = 5;
 
 // Leet-speak and unicode normalization map
 const LEET_MAP: Record<string, string> = {
-  "@": "a", "4": "a", "^": "a",
+  "@": "a",
+  "4": "a",
+  "^": "a",
   "8": "b",
-  "(": "c", "<": "c",
+  "(": "c",
+  "<": "c",
   "3": "e",
   "6": "g",
   "#": "h",
-  "!": "i", "1": "i", "|": "i",
+  "!": "i",
+  "1": "i",
+  "|": "i",
   "0": "o",
-  "5": "s", "$": "s",
-  "7": "t", "+": "t",
+  "5": "s",
+  $: "s",
+  "7": "t",
+  "+": "t",
   "9": "g",
 };
 
@@ -43,12 +50,28 @@ function normalizeText(text: string): string {
 
 // PII detection patterns
 const PII_PATTERNS = [
-  { pattern: /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, category: "pii", label: "email address" },
-  { pattern: /\b\d{3}[-.]?\d{2}[-.]?\d{4}\b/g, category: "pii", label: "SSN-like number" },
-  { pattern: /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, category: "pii", label: "phone number" },
+  {
+    pattern: /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi,
+    category: "pii",
+    label: "email address",
+  },
+  {
+    pattern: /\b\d{3}[-.]?\d{2}[-.]?\d{4}\b/g,
+    category: "pii",
+    label: "SSN-like number",
+  },
+  {
+    pattern: /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+    category: "pii",
+    label: "phone number",
+  },
 ];
 
-function detectPII(text: string): { found: boolean; category: string; matches: string[] } {
+function detectPII(text: string): {
+  found: boolean;
+  category: string;
+  matches: string[];
+} {
   const matches: string[] = [];
   for (const { pattern, label } of PII_PATTERNS) {
     const found = text.match(pattern);
@@ -74,10 +97,17 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const supabaseUser = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    const supabaseUser = createClient(
+      SUPABASE_URL,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: { headers: { Authorization: authHeader } },
+      },
+    );
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseUser.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
@@ -89,10 +119,13 @@ Deno.serve(async (req: Request) => {
     const { content_fields, action, item_type, item_id } = body;
 
     if (!content_fields || !action || !item_type) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -106,21 +139,32 @@ Deno.serve(async (req: Request) => {
 
     if (suspension?.suspended) {
       // Check if suspension has expired
-      if (suspension.suspended_until && new Date(suspension.suspended_until) < new Date()) {
+      if (
+        suspension.suspended_until &&
+        new Date(suspension.suspended_until) < new Date()
+      ) {
         await serviceClient
           .from("user_suspensions")
-          .update({ suspended: false, suspended_at: null, suspended_until: null })
+          .update({
+            suspended: false,
+            suspended_at: null,
+            suspended_until: null,
+          })
           .eq("user_id", user.id);
       } else {
-        return new Response(JSON.stringify({
-          approved: false,
-          reason: "Your account has been suspended due to repeated guideline violations.",
-          category: "suspended",
-          support_hint: "Contact support@querino.ai for assistance.",
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            approved: false,
+            reason:
+              "Your account has been suspended due to repeated guideline violations.",
+            category: "suspended",
+            support_hint: "Contact support@querino.ai for assistance.",
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
@@ -206,15 +250,20 @@ Deno.serve(async (req: Request) => {
         general: "Content policy violation",
       };
 
-      return new Response(JSON.stringify({
-        approved: false,
-        reason: "This content appears to violate our Community Guidelines.",
-        category: categoryLabels[matchedCategory] || "Content policy violation",
-        support_hint: "If you believe this is a mistake, please contact support@querino.ai",
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          approved: false,
+          reason: "This content appears to violate our Community Guidelines.",
+          category:
+            categoryLabels[matchedCategory] || "Content policy violation",
+          support_hint:
+            "If you believe this is a mistake, please contact support@querino.ai",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // 8. Queue for async AI review (Tier 2) if content passed Tier 1
@@ -239,9 +288,12 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err) {
     console.error("Moderation error:", err);
-    return new Response(JSON.stringify({ error: "Internal moderation error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Internal moderation error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useComments } from '@/hooks/useComments';
-import { useAuth } from '@/hooks/useAuth';
-import { CommentItem } from './CommentItem';
-import { ItemType } from '@/types/comment';
-import { toast } from 'sonner';
-import { Link, useLocation } from '@/lib/router-compat';
-import { moderateContent } from '@/lib/moderateContent';
+import { useState } from "react";
+import { MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useComments } from "@/hooks/useComments";
+import { useAuth } from "@/hooks/useAuth";
+import { CommentItem } from "./CommentItem";
+import { ItemType } from "@/types/comment";
+import { toast } from "sonner";
+import { Link, useLocation } from "@/lib/router-compat";
+import { moderateContent } from "@/lib/moderateContent";
 
 interface CommentsSectionProps {
   itemType: ItemType;
@@ -17,13 +17,25 @@ interface CommentsSectionProps {
   teamId?: string | null;
 }
 
-export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionProps) => {
+export const CommentsSection = ({
+  itemType,
+  itemId,
+  teamId,
+}: CommentsSectionProps) => {
   // The router knows the path without a browser, so the sign-in redirect keeps
   // working when this component renders on a server.
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const { comments, loading, error, totalCount, createComment, editComment, deleteComment } = useComments(itemType, itemId);
-  const [newComment, setNewComment] = useState('');
+  const {
+    comments,
+    loading,
+    error,
+    totalCount,
+    createComment,
+    editComment,
+    deleteComment,
+  } = useComments(itemType, itemId);
+  const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // If team item and user not logged in, hide entirely
@@ -39,17 +51,20 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
         { content: newComment },
         "comment",
         "comment",
-        itemId
+        itemId,
       );
       if (!modResult.approved) {
-        toast.error(modResult.reason || "Your comment could not be posted. It appears to violate our Community Guidelines.");
+        toast.error(
+          modResult.reason ||
+            "Your comment could not be posted. It appears to violate our Community Guidelines.",
+        );
         return;
       }
       await createComment(newComment);
-      setNewComment('');
-      toast.success('Comment posted');
+      setNewComment("");
+      toast.success("Comment posted");
     } catch (err: any) {
-      toast.error(err.message || 'Failed to post comment');
+      toast.error(err.message || "Failed to post comment");
     } finally {
       setSubmitting(false);
     }
@@ -61,34 +76,37 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
         { content },
         "comment",
         "comment",
-        itemId
+        itemId,
       );
       if (!modResult.approved) {
-        toast.error(modResult.reason || "Your reply could not be posted. It appears to violate our Community Guidelines.");
+        toast.error(
+          modResult.reason ||
+            "Your reply could not be posted. It appears to violate our Community Guidelines.",
+        );
         return;
       }
       await createComment(content, parentId);
-      toast.success('Reply posted');
+      toast.success("Reply posted");
     } catch (err: any) {
-      toast.error(err.message || 'Failed to post reply');
+      toast.error(err.message || "Failed to post reply");
     }
   };
 
   const handleEdit = async (commentId: string, content: string) => {
     try {
       await editComment(commentId, content);
-      toast.success('Comment updated');
+      toast.success("Comment updated");
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update comment');
+      toast.error(err.message || "Failed to update comment");
     }
   };
 
   const handleDelete = async (commentId: string) => {
     try {
       await deleteComment(commentId);
-      toast.success('Comment deleted');
+      toast.success("Comment deleted");
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete comment');
+      toast.error(err.message || "Failed to delete comment");
     }
   };
 
@@ -115,20 +133,23 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
             onChange={(e) => setNewComment(e.target.value)}
             className="min-h-[100px]"
           />
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             disabled={submitting || !newComment.trim()}
           >
-            {submitting ? 'Posting...' : 'Post Comment'}
+            {submitting ? "Posting..." : "Post Comment"}
           </Button>
         </div>
       ) : (
         <div className="mb-6 p-4 bg-muted/50 rounded-lg text-center">
           <p className="text-muted-foreground">
-            <Link to={`/auth?redirect=${encodeURIComponent(pathname)}`} className="text-primary hover:underline">
+            <Link
+              to={`/auth?redirect=${encodeURIComponent(pathname)}`}
+              className="text-primary hover:underline"
+            >
               Sign in
-            </Link>
-            {' '}to join the discussion
+            </Link>{" "}
+            to join the discussion
           </p>
         </div>
       )}
@@ -157,7 +178,7 @@ export const CommentsSection = ({ itemType, itemId, teamId }: CommentsSectionPro
 
       {!loading && comments.length > 0 && (
         <div className="divide-y">
-          {comments.map(comment => (
+          {comments.map((comment) => (
             <CommentItem
               key={comment.id}
               comment={comment}

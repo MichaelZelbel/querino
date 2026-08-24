@@ -41,7 +41,7 @@ export function useSavedPrompts() {
   // Check if a specific prompt is saved
   const isPromptSaved = useCallback(
     (promptId: string) => savedPromptIds.has(promptId),
-    [savedPromptIds]
+    [savedPromptIds],
   );
 
   // Save a prompt (with ownership check)
@@ -79,7 +79,7 @@ export function useSavedPrompts() {
         return { error: err as Error };
       }
     },
-    [user]
+    [user],
   );
 
   // Unsave a prompt
@@ -108,7 +108,7 @@ export function useSavedPrompts() {
         return { error: err as Error };
       }
     },
-    [user]
+    [user],
   );
 
   // Toggle save state
@@ -120,7 +120,7 @@ export function useSavedPrompts() {
         return savePrompt(promptId);
       }
     },
-    [isPromptSaved, savePrompt, unsavePrompt]
+    [isPromptSaved, savePrompt, unsavePrompt],
   );
 
   return {

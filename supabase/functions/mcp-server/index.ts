@@ -1,7 +1,11 @@
 import { Hono } from "hono";
 import { McpServer, StreamableHttpTransport } from "mcp-lite";
 import { createClient } from "@supabase/supabase-js";
-import { allTermsFilters, anyTermFilter, tokenizeSearchQuery } from "../_shared/postgrestFilter.ts";
+import {
+  allTermsFilters,
+  anyTermFilter,
+  tokenizeSearchQuery,
+} from "../_shared/postgrestFilter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,7 +53,7 @@ async function authenticate(req: Request): Promise<Auth> {
   if (!isMcpToken) {
     throw new Error(
       "Invalid token. Expected a long-lived Querino MCP token (qrn_mcp_… or mnr_mcp_…). " +
-      "Generate one in Settings → MCP Server.",
+        "Generate one in Settings → MCP Server.",
     );
   }
 
@@ -59,7 +63,9 @@ async function authenticate(req: Request): Promise<Auth> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data, error } = await sb.rpc("lookup_mcp_token", { p_token_hash: tokenHash });
+  const { data, error } = await sb.rpc("lookup_mcp_token", {
+    p_token_hash: tokenHash,
+  });
   if (error) throw new Error("Token lookup failed");
 
   const userId = data as string | null;
@@ -98,8 +104,12 @@ function buildMcpServer(auth: Auth) {
    */
   const runSearch = async (table: string, columns: string, query: string) => {
     const select = () =>
-      sb.from(table).select(columns).eq("author_id", auth.userId)
-        .order("updated_at", { ascending: false }).limit(30);
+      sb
+        .from(table)
+        .select(columns)
+        .eq("author_id", auth.userId)
+        .order("updated_at", { ascending: false })
+        .limit(30);
 
     let strict = select();
     for (const filter of allTermsFilters(SEARCH_COLUMNS, query)) {
@@ -107,29 +117,39 @@ function buildMcpServer(auth: Auth) {
     }
 
     const { data, error } = await strict;
-    if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+    if (error)
+      return { content: [{ type: "text", text: `Error: ${error.message}` }] };
     if (data && data.length > 0) {
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     }
 
     const loose = anyTermFilter(SEARCH_COLUMNS, query);
     // One term is already its own loose pass, and a blank query has no terms
     // at all; sending `or=()` in either case would be a parse error.
     if (!loose || tokenizeSearchQuery(query).length < 2) {
-      return { content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      };
     }
 
     const { data: partial, error: partialError } = await select().or(loose);
     if (partialError) {
-      return { content: [{ type: "text", text: `Error: ${partialError.message}` }] };
+      return {
+        content: [{ type: "text", text: `Error: ${partialError.message}` }],
+      };
     }
-    return { content: [{ type: "text", text: JSON.stringify(partial ?? [], null, 2) }] };
+    return {
+      content: [{ type: "text", text: JSON.stringify(partial ?? [], null, 2) }],
+    };
   };
 
   // ── PROMPTS ───────────────────────────────────────────────────────
 
   mcpServer.tool("list_prompts", {
-    description: "List your prompts (most recent first). Optional limit (default 20, max 100).",
+    description:
+      "List your prompts (most recent first). Optional limit (default 20, max 100).",
     inputSchema: {
       type: "object",
       properties: {
@@ -142,19 +162,24 @@ function buildMcpServer(auth: Auth) {
       const o = offset ?? 0;
       const { data, error } = await sb
         .from("prompts")
-        .select("id, title, category, tags, is_public, rating_avg, rating_count, language, created_at, updated_at")
+        .select(
+          "id, title, category, tags, is_public, rating_avg, rating_count, language, created_at, updated_at",
+        )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
         .range(o, o + l - 1);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
   mcpServer.tool("search_prompts", {
     description:
       "Search your prompts by keyword in title, description or content. " +
-      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      'Multiple words are matched as separate keywords; "quote a phrase" to keep it together. ' +
       "Searches everything you own, drafts and private items included.",
     inputSchema: {
       type: "object",
@@ -184,8 +209,11 @@ function buildMcpServer(auth: Auth) {
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
@@ -219,13 +247,19 @@ function buildMcpServer(auth: Auth) {
         })
         .select("id, title, slug")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Created prompt: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Created prompt: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
   mcpServer.tool("update_prompt", {
-    description: "Update an existing prompt by ID. Only supply fields you want to change.",
+    description:
+      "Update an existing prompt by ID. Only supply fields you want to change.",
     inputSchema: {
       type: "object",
       properties: {
@@ -249,8 +283,11 @@ function buildMcpServer(auth: Auth) {
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
+      };
     },
   });
 
@@ -267,7 +304,8 @@ function buildMcpServer(auth: Auth) {
         .delete()
         .eq("id", id)
         .eq("author_id", auth.userId);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return { content: [{ type: "text", text: `Deleted prompt ${id}` }] };
     },
   });
@@ -288,19 +326,24 @@ function buildMcpServer(auth: Auth) {
       const o = offset ?? 0;
       const { data, error } = await sb
         .from("skills")
-        .select("id, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at")
+        .select(
+          "id, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at",
+        )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
         .range(o, o + l - 1);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
   mcpServer.tool("search_skills", {
     description:
       "Search your skills by keyword in title, description or content. " +
-      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      'Multiple words are matched as separate keywords; "quote a phrase" to keep it together. ' +
       "Searches everything you own, drafts and unpublished skills included.",
     inputSchema: {
       type: "object",
@@ -330,8 +373,11 @@ function buildMcpServer(auth: Auth) {
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
@@ -365,8 +411,13 @@ function buildMcpServer(auth: Auth) {
         })
         .select("id, title, slug")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Created skill: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Created skill: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
@@ -395,8 +446,11 @@ function buildMcpServer(auth: Auth) {
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
+      };
     },
   });
 
@@ -413,7 +467,8 @@ function buildMcpServer(auth: Auth) {
         .delete()
         .eq("id", id)
         .eq("author_id", auth.userId);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return { content: [{ type: "text", text: `Deleted skill ${id}` }] };
     },
   });
@@ -434,19 +489,24 @@ function buildMcpServer(auth: Auth) {
       const o = offset ?? 0;
       const { data, error } = await sb
         .from("workflows")
-        .select("id, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at")
+        .select(
+          "id, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at",
+        )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
         .range(o, o + l - 1);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
   mcpServer.tool("search_workflows", {
     description:
       "Search your workflows by keyword in title, description or content. " +
-      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      'Multiple words are matched as separate keywords; "quote a phrase" to keep it together. ' +
       "Searches everything you own, drafts and unpublished workflows included.",
     inputSchema: {
       type: "object",
@@ -476,8 +536,11 @@ function buildMcpServer(auth: Auth) {
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
@@ -489,7 +552,10 @@ function buildMcpServer(auth: Auth) {
         title: { type: "string" },
         description: { type: "string" },
         content: { type: "string" },
-        json: { type: "object", description: "Structured workflow data (JSON)" },
+        json: {
+          type: "object",
+          description: "Structured workflow data (JSON)",
+        },
         category: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
         published: { type: "boolean" },
@@ -513,8 +579,13 @@ function buildMcpServer(auth: Auth) {
         })
         .select("id, title, slug")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Created workflow: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Created workflow: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
@@ -544,8 +615,11 @@ function buildMcpServer(auth: Auth) {
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
+      };
     },
   });
 
@@ -562,7 +636,8 @@ function buildMcpServer(auth: Auth) {
         .delete()
         .eq("id", id)
         .eq("author_id", auth.userId);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return { content: [{ type: "text", text: `Deleted workflow ${id}` }] };
     },
   });
@@ -583,19 +658,24 @@ function buildMcpServer(auth: Auth) {
       const o = offset ?? 0;
       const { data, error } = await sb
         .from("claws")
-        .select("id, title, category, tags, published, source, language, rating_avg, rating_count, created_at, updated_at")
+        .select(
+          "id, title, category, tags, published, source, language, rating_avg, rating_count, created_at, updated_at",
+        )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
         .range(o, o + l - 1);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
   mcpServer.tool("search_claws", {
     description:
       "Search your claws by keyword in title, description or content. " +
-      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      'Multiple words are matched as separate keywords; "quote a phrase" to keep it together. ' +
       "Searches everything you own, drafts and unpublished claws included.",
     inputSchema: {
       type: "object",
@@ -625,8 +705,11 @@ function buildMcpServer(auth: Auth) {
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
@@ -641,7 +724,10 @@ function buildMcpServer(auth: Auth) {
         skill_md_content: { type: "string", description: "SKILL.md content" },
         category: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
-        source: { type: "string", description: "clawbot, antigravity, or generic" },
+        source: {
+          type: "string",
+          description: "clawbot, antigravity, or generic",
+        },
         published: { type: "boolean" },
         language: { type: "string" },
       },
@@ -664,8 +750,13 @@ function buildMcpServer(auth: Auth) {
         })
         .select("id, title, slug")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Created claw: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Created claw: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
@@ -696,8 +787,11 @@ function buildMcpServer(auth: Auth) {
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
+      };
     },
   });
 
@@ -714,7 +808,8 @@ function buildMcpServer(auth: Auth) {
         .delete()
         .eq("id", id)
         .eq("author_id", auth.userId);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return { content: [{ type: "text", text: `Deleted claw ${id}` }] };
     },
   });
@@ -734,8 +829,11 @@ function buildMcpServer(auth: Auth) {
         .eq("owner_id", auth.userId)
         .order("updated_at", { ascending: false })
         .limit(limit ?? 20);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
@@ -753,7 +851,10 @@ function buildMcpServer(auth: Auth) {
         .eq("id", id)
         .eq("owner_id", auth.userId)
         .single();
-      if (colErr) return { content: [{ type: "text", text: `Error: ${colErr.message}` }] };
+      if (colErr)
+        return {
+          content: [{ type: "text", text: `Error: ${colErr.message}` }],
+        };
 
       const { data: items } = await sb
         .from("collection_items")
@@ -761,7 +862,11 @@ function buildMcpServer(auth: Auth) {
         .eq("collection_id", id)
         .order("sort_order");
 
-      return { content: [{ type: "text", text: JSON.stringify({ ...col, items }, null, 2) }] };
+      return {
+        content: [
+          { type: "text", text: JSON.stringify({ ...col, items }, null, 2) },
+        ],
+      };
     },
   });
 
@@ -787,8 +892,13 @@ function buildMcpServer(auth: Auth) {
         })
         .select("id, title")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Created collection: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Created collection: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
@@ -805,7 +915,8 @@ function buildMcpServer(auth: Auth) {
         .delete()
         .eq("id", id)
         .eq("owner_id", auth.userId);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return { content: [{ type: "text", text: `Deleted collection ${id}` }] };
     },
   });
@@ -818,11 +929,16 @@ function buildMcpServer(auth: Auth) {
     handler: async () => {
       const { data, error } = await sb
         .from("profiles")
-        .select("id, display_name, bio, website, twitter, github, avatar_url, plan_type, created_at")
+        .select(
+          "id, display_name, bio, website, twitter, github, avatar_url, plan_type, created_at",
+        )
         .eq("id", auth.userId)
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
@@ -845,15 +961,21 @@ function buildMcpServer(auth: Auth) {
         .eq("id", auth.userId)
         .select("id, display_name")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Updated profile: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Updated profile: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
   // ── PROMPT KITS ───────────────────────────────────────────────────
 
   mcpServer.tool("list_prompt_kits", {
-    description: "List your prompt kits (most recent first). A prompt kit is a Markdown bundle of related prompts separated by '## Prompt:' headings.",
+    description:
+      "List your prompt kits (most recent first). A prompt kit is a Markdown bundle of related prompts separated by '## Prompt:' headings.",
     inputSchema: {
       type: "object",
       properties: {
@@ -866,19 +988,24 @@ function buildMcpServer(auth: Auth) {
       const o = offset ?? 0;
       const { data, error } = await sb
         .from("prompt_kits")
-        .select("id, slug, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at")
+        .select(
+          "id, slug, title, category, tags, published, language, rating_avg, rating_count, created_at, updated_at",
+        )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
         .range(o, o + l - 1);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
   mcpServer.tool("search_prompt_kits", {
     description:
       "Search your prompt kits by keyword in title, description or content. " +
-      "Multiple words are matched as separate keywords; \"quote a phrase\" to keep it together. " +
+      'Multiple words are matched as separate keywords; "quote a phrase" to keep it together. ' +
       "Searches everything you own, drafts and unpublished kits included.",
     inputSchema: {
       type: "object",
@@ -895,7 +1022,8 @@ function buildMcpServer(auth: Auth) {
   });
 
   mcpServer.tool("get_prompt_kit", {
-    description: "Get full details of a prompt kit by ID (Markdown content with all '## Prompt:' items).",
+    description:
+      "Get full details of a prompt kit by ID (Markdown content with all '## Prompt:' items).",
     inputSchema: {
       type: "object",
       properties: { id: { type: "string" } },
@@ -908,19 +1036,27 @@ function buildMcpServer(auth: Auth) {
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
     },
   });
 
   mcpServer.tool("create_prompt_kit", {
-    description: "Create a new prompt kit. The 'content' field must be Markdown using '## Prompt: <title>' headings to separate items.",
+    description:
+      "Create a new prompt kit. The 'content' field must be Markdown using '## Prompt: <title>' headings to separate items.",
     inputSchema: {
       type: "object",
       properties: {
         title: { type: "string" },
         description: { type: "string" },
-        content: { type: "string", description: "Markdown bundle, e.g. '## Prompt: Outreach\\n\\nBody…\\n\\n## Prompt: Follow-up\\n\\nBody…'" },
+        content: {
+          type: "string",
+          description:
+            "Markdown bundle, e.g. '## Prompt: Outreach\\n\\nBody…\\n\\n## Prompt: Follow-up\\n\\nBody…'",
+        },
         category: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
         published: { type: "boolean" },
@@ -943,13 +1079,19 @@ function buildMcpServer(auth: Auth) {
         })
         .select("id, title, slug")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Created prompt kit: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [
+          { type: "text", text: `Created prompt kit: ${JSON.stringify(data)}` },
+        ],
+      };
     },
   });
 
   mcpServer.tool("update_prompt_kit", {
-    description: "Update an existing prompt kit by ID. Only supply fields you want to change.",
+    description:
+      "Update an existing prompt kit by ID. Only supply fields you want to change.",
     inputSchema: {
       type: "object",
       properties: {
@@ -973,8 +1115,11 @@ function buildMcpServer(auth: Auth) {
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      return {
+        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
+      };
     },
   });
 
@@ -991,7 +1136,8 @@ function buildMcpServer(auth: Auth) {
         .delete()
         .eq("id", id)
         .eq("author_id", auth.userId);
-      if (error) return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (error)
+        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return { content: [{ type: "text", text: `Deleted prompt kit ${id}` }] };
     },
   });
@@ -1015,11 +1161,10 @@ app.get("/mcp-server/health", (c) => {
 
 // robots.txt — block search engines from crawling the MCP endpoint
 app.get("/robots.txt", (c) => {
-  return c.newResponse(
-    "User-agent: *\nDisallow: /\n",
-    200,
-    { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
-  );
+  return c.newResponse("User-agent: *\nDisallow: /\n", 200, {
+    ...corsHeaders,
+    "Content-Type": "text/plain; charset=utf-8",
+  });
 });
 
 // Friendly landing page for browsers / crawlers hitting GET without auth.

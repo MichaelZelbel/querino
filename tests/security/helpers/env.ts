@@ -18,14 +18,19 @@ function loadDotEnvTest(): void {
     const eq = line.indexOf("=");
     if (eq === -1) continue;
     const key = line.slice(0, eq).trim();
-    const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+    const value = line
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
     if (!(key in process.env)) process.env[key] = value;
   }
 }
 loadDotEnvTest();
 
-export const PROJECT_REF = process.env.QUERINO_PROJECT_REF ?? "zvuwkffneqxqsihlnfsd";
-export const SUPABASE_URL = process.env.SUPABASE_URL ?? `https://${PROJECT_REF}.supabase.co`;
+export const PROJECT_REF =
+  process.env.QUERINO_PROJECT_REF ?? "zvuwkffneqxqsihlnfsd";
+export const SUPABASE_URL =
+  process.env.SUPABASE_URL ?? `https://${PROJECT_REF}.supabase.co`;
 export const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 export const REST_URL = `${SUPABASE_URL}/rest/v1`;
 
@@ -80,9 +85,13 @@ export function serviceRoleKey(): Promise<string> {
           `Could not read project API keys from the Management API (${res.status}). ${MISSING_CREDS}`,
         );
       }
-      const keys = (await res.json()) as Array<{ name: string; api_key: string }>;
+      const keys = (await res.json()) as Array<{
+        name: string;
+        api_key: string;
+      }>;
       const key = keys.find((k) => k.name === "service_role")?.api_key;
-      if (!key) throw new Error(`No service_role key on project ${PROJECT_REF}.`);
+      if (!key)
+        throw new Error(`No service_role key on project ${PROJECT_REF}.`);
       return key;
     })();
   }

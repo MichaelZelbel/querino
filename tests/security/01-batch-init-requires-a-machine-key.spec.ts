@@ -16,12 +16,20 @@ import { INTERNAL_JOB_SECRET } from "./helpers/env";
 
 test.describe("C1 — batch_init is a machine-only endpoint", () => {
   test("refuses a caller with no key at all", async () => {
-    const res = await callFunction("ensure-token-allowance", { batch_init: true }, asAnonymous);
+    const res = await callFunction(
+      "ensure-token-allowance",
+      { batch_init: true },
+      asAnonymous,
+    );
     expect(res.status).toBe(401);
   });
 
   test("refuses the anon key, which is printed in the browser bundle", async () => {
-    const res = await callFunction("ensure-token-allowance", { batch_init: true }, asAnonKey);
+    const res = await callFunction(
+      "ensure-token-allowance",
+      { batch_init: true },
+      asAnonKey,
+    );
     expect(res.status).toBe(401);
   });
 
@@ -38,8 +46,14 @@ test.describe("C1 — batch_init is a machine-only endpoint", () => {
   test("never describes an account in a refusal", async () => {
     // The leak was the response body, not only the missing check.
     for (const caller of [asAnonymous, asAnonKey]) {
-      const res = await callFunction("ensure-token-allowance", { batch_init: true }, caller);
-      expect(res.text).not.toMatch(/"allowance"|"tokens_granted"|"user_id"|"userId"/);
+      const res = await callFunction(
+        "ensure-token-allowance",
+        { batch_init: true },
+        caller,
+      );
+      expect(res.text).not.toMatch(
+        /"allowance"|"tokens_granted"|"user_id"|"userId"/,
+      );
     }
   });
 
@@ -47,7 +61,11 @@ test.describe("C1 — batch_init is a machine-only endpoint", () => {
   // function were dead and refusing everyone.
   test("the ordinary single-user path still works for a logged-in user", async () => {
     const session = await signInTestUser();
-    const res = await callFunction("ensure-token-allowance", {}, asUser(session.accessToken));
+    const res = await callFunction(
+      "ensure-token-allowance",
+      {},
+      asUser(session.accessToken),
+    );
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ success: true });
   });

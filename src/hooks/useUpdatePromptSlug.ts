@@ -13,7 +13,7 @@ export function useUpdatePromptSlug() {
   const updateSlug = async (
     promptId: string,
     newSlug: string,
-    userId: string
+    userId: string,
   ): Promise<UpdateSlugResult> => {
     setUpdating(true);
     try {

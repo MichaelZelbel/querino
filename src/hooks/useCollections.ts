@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Collection, CollectionItem, CollectionWithOwner } from "@/types/collection";
+import type {
+  Collection,
+  CollectionItem,
+  CollectionWithOwner,
+} from "@/types/collection";
 
 export function useCollections(userId?: string) {
   return useQuery({
@@ -9,10 +13,12 @@ export function useCollections(userId?: string) {
     queryFn: async () => {
       let query = supabase
         .from("collections")
-        .select(`
+        .select(
+          `
           *,
           profiles:owner_id (id, display_name, avatar_url)
-        `)
+        `,
+        )
         .order("created_at", { ascending: false });
 
       if (userId) {
@@ -23,7 +29,7 @@ export function useCollections(userId?: string) {
 
       const { data, error } = await query;
       if (error) throw error;
-      
+
       // Get item counts for each collection
       const collectionsWithCounts = await Promise.all(
         (data || []).map(async (collection) => {
@@ -31,15 +37,15 @@ export function useCollections(userId?: string) {
             .from("collection_items")
             .select("*", { count: "exact", head: true })
             .eq("collection_id", collection.id);
-          
+
           return {
             ...collection,
             owner: collection.profiles,
             item_count: count || 0,
           } as CollectionWithOwner;
-        })
+        }),
       );
-      
+
       return collectionsWithCounts;
     },
   });
@@ -51,16 +57,18 @@ export function useCollection(id: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select(`
+        .select(
+          `
           *,
           profiles:owner_id (id, display_name, avatar_url)
-        `)
+        `,
+        )
         .eq("id", id)
         .maybeSingle();
 
       if (error) throw error;
       if (!data) return null;
-      
+
       return {
         ...data,
         owner: data.profiles,
@@ -91,7 +99,12 @@ export function useCreateCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { title: string; description?: string; is_public: boolean; owner_id: string }) => {
+    mutationFn: async (data: {
+      title: string;
+      description?: string;
+      is_public: boolean;
+      owner_id: string;
+    }) => {
       const { data: collection, error } = await supabase
         .from("collections")
         .insert(data)
@@ -116,7 +129,15 @@ export function useUpdateCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; title?: string; description?: string; is_public?: boolean }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: {
+      id: string;
+      title?: string;
+      description?: string;
+      is_public?: boolean;
+    }) => {
       const { data: collection, error } = await supabase
         .from("collections")
         .update(data)
@@ -166,7 +187,11 @@ export function useAddToCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { collection_id: string; item_type: 'prompt' | 'skill' | 'workflow' | 'prompt_kit' | 'claw'; item_id: string }) => {
+    mutationFn: async (data: {
+      collection_id: string;
+      item_type: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
+      item_id: string;
+    }) => {
       // Get current max sort_order
       const { data: items } = await supabase
         .from("collection_items")
@@ -175,7 +200,8 @@ export function useAddToCollection() {
         .order("sort_order", { ascending: false })
         .limit(1);
 
-      const sortOrder = items && items.length > 0 ? (items[0].sort_order ?? 0) + 1 : 0;
+      const sortOrder =
+        items && items.length > 0 ? (items[0].sort_order ?? 0) + 1 : 0;
 
       const { error } = await supabase
         .from("collection_items")
@@ -184,7 +210,9 @@ export function useAddToCollection() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["collection-items", variables.collection_id] });
+      queryClient.invalidateQueries({
+        queryKey: ["collection-items", variables.collection_id],
+      });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       toast.success("Added to collection!");
     },
@@ -203,7 +231,13 @@ export function useRemoveFromCollection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ collectionId, itemId }: { collectionId: string; itemId: string }) => {
+    mutationFn: async ({
+      collectionId,
+      itemId,
+    }: {
+      collectionId: string;
+      itemId: string;
+    }) => {
       const { error } = await supabase
         .from("collection_items")
         .delete()
@@ -213,7 +247,9 @@ export function useRemoveFromCollection() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["collection-items", variables.collectionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["collection-items", variables.collectionId],
+      });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       toast.success("Removed from collection!");
     },
@@ -228,7 +264,13 @@ export function useUpdateItemOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ collectionId, items }: { collectionId: string; items: { id: string; sort_order: number }[] }) => {
+    mutationFn: async ({
+      collectionId,
+      items,
+    }: {
+      collectionId: string;
+      items: { id: string; sort_order: number }[];
+    }) => {
       for (const item of items) {
         const { error } = await supabase
           .from("collection_items")
@@ -239,7 +281,9 @@ export function useUpdateItemOrder() {
       }
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["collection-items", variables.collectionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["collection-items", variables.collectionId],
+      });
     },
     onError: (error) => {
       console.error("Error updating order:", error);

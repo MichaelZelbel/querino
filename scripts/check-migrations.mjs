@@ -89,8 +89,13 @@ function stripComments(sql) {
       out += sql[i++];
       while (i < sql.length) {
         out += sql[i];
-        if (sql[i] === "'" && sql[i + 1] !== "'") { i++; break; }
-        if (sql[i] === "'" && sql[i + 1] === "'") { out += sql[++i]; }
+        if (sql[i] === "'" && sql[i + 1] !== "'") {
+          i++;
+          break;
+        }
+        if (sql[i] === "'" && sql[i + 1] === "'") {
+          out += sql[++i];
+        }
         i++;
       }
       continue;
@@ -115,10 +120,19 @@ function functionHeaders(sql) {
     // The body begins at AS $tag$ or AS '...'; also stop at the next CREATE so
     // a function with no body at all cannot swallow the file.
     const bodyAt = rest.search(/\bAS\s+(?:\$[A-Za-z_]*\$|')/i);
-    const nextCreate = rest.slice(1).search(/\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b/i);
-    const ends = [bodyAt, nextCreate === -1 ? -1 : nextCreate + 1, rest.length]
-      .filter((n) => n > 0);
-    headers.push({ name: m[1], text: rest.slice(0, Math.min(...ends)), index: m.index });
+    const nextCreate = rest
+      .slice(1)
+      .search(/\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b/i);
+    const ends = [
+      bodyAt,
+      nextCreate === -1 ? -1 : nextCreate + 1,
+      rest.length,
+    ].filter((n) => n > 0);
+    headers.push({
+      name: m[1],
+      text: rest.slice(0, Math.min(...ends)),
+      index: m.index,
+    });
   }
   return headers;
 }
@@ -133,7 +147,8 @@ function lineOf(sql, index) {
  */
 function createdViews(sql) {
   const views = [];
-  const re = /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([A-Za-z0-9_]+)"?/gi;
+  const re =
+    /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([A-Za-z0-9_]+)"?/gi;
   let m;
   while ((m = re.exec(sql)) !== null) {
     const qualified = /VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\./i.exec(
@@ -154,16 +169,18 @@ function createdViews(sql) {
 
 function createdTables(sql) {
   const tables = [];
-  const re = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([A-Za-z0-9_]+)"?/gi;
+  const re =
+    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([A-Za-z0-9_]+)"?/gi;
   let m;
   while ((m = re.exec(sql)) !== null) {
     const before = sql.slice(Math.max(0, m.index - 30), m.index);
     // Temporary tables live for one transaction and have no RLS story.
     if (/\b(TEMP|TEMPORARY|UNLOGGED)\s*$/i.test(before)) continue;
     // Only `public` is exposed through PostgREST.
-    const qualified = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\./i.exec(
-      sql.slice(m.index, m.index + 120),
-    );
+    const qualified =
+      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_]+)\./i.exec(
+        sql.slice(m.index, m.index + 120),
+      );
     if (qualified && qualified[1].toLowerCase() !== "public") continue;
     tables.push({ name: m[1], index: m.index });
   }
@@ -173,7 +190,10 @@ function createdTables(sql) {
 const files = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const targets = files.length
   ? files
-  : readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort().map((f) => join(MIGRATIONS, f));
+  : readdirSync(MIGRATIONS)
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => join(MIGRATIONS, f));
 
 // RLS may be switched on by a later migration than the one that made the
 // table, so every file is read before anything is judged. Files named on the
@@ -181,7 +201,9 @@ const targets = files.length
 // its own ALTER TABLE.
 const allSql = [
   ...new Set([
-    ...readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).map((f) => join(MIGRATIONS, f)),
+    ...readdirSync(MIGRATIONS)
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => join(MIGRATIONS, f)),
     ...targets,
   ]),
 ]
@@ -200,10 +222,15 @@ function rlsIsEnabledFor(table) {
 // definition of each one is judged. That way an old migration carrying an old
 // mistake is not reported for ever after a later migration fixed it.
 const latestViewDefinition = new Map();
-for (const path of [...new Set([
-  ...readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort().map((f) => join(MIGRATIONS, f)),
-  ...targets,
-])]) {
+for (const path of [
+  ...new Set([
+    ...readdirSync(MIGRATIONS)
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => join(MIGRATIONS, f)),
+    ...targets,
+  ]),
+]) {
   const sql = stripComments(readFileSync(path, "utf8"));
   for (const view of createdViews(sql)) {
     latestViewDefinition.set(view.name, { ...view, path, sql });
@@ -262,7 +289,9 @@ for (const path of targets) {
 }
 
 if (problems.length > 0) {
-  console.error(`Migration check failed, ${problems.length} problem${problems.length === 1 ? "" : "s"}:\n`);
+  console.error(
+    `Migration check failed, ${problems.length} problem${problems.length === 1 ? "" : "s"}:\n`,
+  );
   for (const p of problems) console.error(`  ${p}\n`);
   process.exit(1);
 }

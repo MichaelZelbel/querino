@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function BlogSidebar() {
-  const { data: categories, isLoading: loadingCategories } = usePublicCategories();
+  const { data: categories, isLoading: loadingCategories } =
+    usePublicCategories();
   const { data: tags, isLoading: loadingTags } = usePublicTags();
 
   return (
@@ -53,7 +54,10 @@ export function BlogSidebar() {
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <Link key={tag.id} to={`/blog/tag/${tag.slug}`}>
-                <Badge variant="secondary" className="hover:bg-primary/10 cursor-pointer">
+                <Badge
+                  variant="secondary"
+                  className="hover:bg-primary/10 cursor-pointer"
+                >
                   {tag.name}
                 </Badge>
               </Link>

@@ -33,11 +33,18 @@ export interface EnsureAllowanceResult {
 }
 
 /** The current calendar month in UTC, the same boundaries the SQL uses. */
-export function getCurrentMonthPeriod(): { periodStart: Date; periodEnd: Date } {
+export function getCurrentMonthPeriod(): {
+  periodStart: Date;
+  periodEnd: Date;
+} {
   const now = new Date();
   return {
-    periodStart: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)),
-    periodEnd: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0)),
+    periodStart: new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0),
+    ),
+    periodEnd: new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0),
+    ),
   };
 }
 
@@ -54,7 +61,8 @@ export async function getActiveAllowance(
     .lte("period_start", now)
     .gt("period_end", now)
     .maybeSingle();
-  if (error) throw new Error(`Failed to check active allowance: ${error.message}`);
+  if (error)
+    throw new Error(`Failed to check active allowance: ${error.message}`);
   return data as AllowanceRow | null;
 }
 
@@ -96,8 +104,7 @@ export async function ensureAllowance(
 
   // The function returns a table, so supabase-js hands back an array of one.
   const row = (Array.isArray(data) ? data[0] : data) as
-    | (AllowanceRow & { created: boolean })
-    | undefined;
+    (AllowanceRow & { created: boolean }) | undefined;
 
   if (!row) throw new Error("ensure_ai_allowance returned no row");
 

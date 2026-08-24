@@ -43,7 +43,12 @@ export function BulkActionBar({
         {count} selected
       </span>
       <div className="h-5 w-px bg-border" />
-      <Button size="sm" variant="ghost" onClick={onAddToCollection} className="gap-2">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onAddToCollection}
+        className="gap-2"
+      >
         <FolderPlus className="h-4 w-4" />
         Add to Collection
       </Button>
@@ -81,9 +86,12 @@ export function BulkActionBar({
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {count} item{count === 1 ? "" : "s"}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete {count} item{count === 1 ? "" : "s"}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The selected artifacts and their versions will be permanently deleted.
+              This action cannot be undone. The selected artifacts and their
+              versions will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

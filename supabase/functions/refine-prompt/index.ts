@@ -12,18 +12,19 @@ import {
 } from "../_shared/llm.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/refine-prompt.ts";
 
-
 const REFINE_TOOL: ToolDefinition = {
   type: "function",
   function: {
     name: "return_refined_prompt",
-    description: "Return the rewritten production-grade prompt and a short explanation of the changes.",
+    description:
+      "Return the rewritten production-grade prompt and a short explanation of the changes.",
     parameters: {
       type: "object",
       properties: {
         refinedPrompt: {
           type: "string",
-          description: "The rewritten, production-grade prompt. No commentary, no markdown fences.",
+          description:
+            "The rewritten, production-grade prompt. No commentary, no markdown fences.",
         },
         explanation: {
           type: "string",
@@ -91,8 +92,15 @@ serve(async (req) => {
         { role: "user", content: userMsg },
       ],
       tools: [REFINE_TOOL],
-      tool_choice: { type: "function", function: { name: "return_refined_prompt" } },
-      metadata: { framework, goal_length: goal.length, prompt_length: prompt.length },
+      tool_choice: {
+        type: "function",
+        function: { name: "return_refined_prompt" },
+      },
+      metadata: {
+        framework,
+        goal_length: goal.length,
+        prompt_length: prompt.length,
+      },
     });
 
     // 6. Extract structured output (tool call) with sane fallback
@@ -116,10 +124,13 @@ serve(async (req) => {
       refinedPrompt = result.content.trim();
     }
     if (!refinedPrompt) {
-      return new Response(JSON.stringify({ error: "Model returned no content" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Model returned no content" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response(
@@ -138,20 +149,34 @@ serve(async (req) => {
       });
     }
     if (error instanceof RateLimitedError) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     if (error instanceof GatewayError) {
-      console.error("[refine-prompt] Gateway error:", error.status, error.message);
-      return new Response(JSON.stringify({ error: "Upstream AI gateway error" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error(
+        "[refine-prompt] Gateway error:",
+        error.status,
+        error.message,
+      );
+      return new Response(
+        JSON.stringify({ error: "Upstream AI gateway error" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "Missing Authorization bearer token" || message === "Invalid auth token" || message === "Empty bearer token") {
+    if (
+      message === "Missing Authorization bearer token" ||
+      message === "Invalid auth token" ||
+      message === "Empty bearer token"
+    ) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

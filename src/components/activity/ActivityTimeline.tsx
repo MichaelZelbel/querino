@@ -51,9 +51,9 @@ export function ActivityTimeline({
   return (
     <div className="divide-y divide-border">
       {events.map((event) => (
-        <ActivityEventCard 
-          key={event.id} 
-          event={event} 
+        <ActivityEventCard
+          key={event.id}
+          event={event}
           showItemLink={showItemLink}
         />
       ))}

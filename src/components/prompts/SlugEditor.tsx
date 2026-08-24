@@ -3,7 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Pencil, Check, X, Loader2, Link as LinkIcon, AlertTriangle } from "lucide-react";
+import {
+  Pencil,
+  Check,
+  X,
+  Loader2,
+  Link as LinkIcon,
+  AlertTriangle,
+} from "lucide-react";
 import { useUpdatePromptSlug } from "@/hooks/useUpdatePromptSlug";
 import { toast } from "sonner";
 import { generateSlug } from "@/hooks/useGenerateSlug";
@@ -15,7 +22,12 @@ interface SlugEditorProps {
   onSlugChanged: (newSlug: string) => void;
 }
 
-export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: SlugEditorProps) {
+export function SlugEditor({
+  promptId,
+  currentSlug,
+  userId,
+  onSlugChanged,
+}: SlugEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [slugInput, setSlugInput] = useState(currentSlug);
   const [error, setError] = useState<string | null>(null);
@@ -124,19 +136,20 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
           <Alert variant="default" className="border-warning/50 bg-warning/10">
             <AlertTriangle className="h-4 w-4 text-warning" />
             <AlertDescription className="text-sm text-muted-foreground">
-              Changing this slug will update the public URL. Old links will redirect automatically.
+              Changing this slug will update the public URL. Old links will
+              redirect automatically.
             </AlertDescription>
           </Alert>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
       ) : (
         <div className="flex items-center gap-2">
           <div className="flex-1 rounded-md border border-input bg-muted/30 px-3 py-2">
             <span className="text-sm text-muted-foreground">/prompts/</span>
-            <span className="text-sm font-medium text-foreground">{currentSlug}</span>
+            <span className="text-sm font-medium text-foreground">
+              {currentSlug}
+            </span>
           </div>
           <Button
             size="icon"
@@ -151,7 +164,8 @@ export function SlugEditor({ promptId, currentSlug, userId, onSlugChanged }: Slu
       )}
 
       <p className="text-xs text-muted-foreground">
-        The slug is the URL-friendly identifier for this prompt. It won't change when you edit the title.
+        The slug is the URL-friendly identifier for this prompt. It won't change
+        when you edit the title.
       </p>
     </div>
   );

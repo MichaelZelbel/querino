@@ -57,18 +57,21 @@ export default function VersionHistory() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
-  
+
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [notAuthorized, setNotAuthorized] = useState(false);
-  
+
   // View modal state
-  const [viewingVersion, setViewingVersion] = useState<PromptVersion | null>(null);
-  
+  const [viewingVersion, setViewingVersion] = useState<PromptVersion | null>(
+    null,
+  );
+
   // Restore dialog state
-  const [restoringVersion, setRestoringVersion] = useState<PromptVersion | null>(null);
+  const [restoringVersion, setRestoringVersion] =
+    useState<PromptVersion | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
   // Redirect to auth if not logged in
@@ -141,24 +144,29 @@ export default function VersionHistory() {
     try {
       // Fetch the live prompt content and the latest version fresh, so we can
       // preserve unsaved-into-history content and avoid version-number collisions.
-      const [{ data: livePrompt, error: liveError }, { data: latest, error: latestError }] =
-        await Promise.all([
-          supabase
-            .from("prompts")
-            .select("title, description, content, tags")
-            .eq("id", id)
-            .maybeSingle(),
-          supabase
-            .from("prompt_versions")
-            .select("version_number, title, description, content")
-            .eq("prompt_id", id)
-            .order("version_number", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+      const [
+        { data: livePrompt, error: liveError },
+        { data: latest, error: latestError },
+      ] = await Promise.all([
+        supabase
+          .from("prompts")
+          .select("title, description, content, tags")
+          .eq("id", id)
+          .maybeSingle(),
+        supabase
+          .from("prompt_versions")
+          .select("version_number, title, description, content")
+          .eq("prompt_id", id)
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
       if (liveError || latestError || !livePrompt) {
-        console.error("Error fetching current state:", liveError || latestError);
+        console.error(
+          "Error fetching current state:",
+          liveError || latestError,
+        );
         toast.error("Failed to restore version. Please try again.");
         return;
       }
@@ -349,7 +357,8 @@ export default function VersionHistory() {
                 No versions yet
               </h2>
               <p className="mb-6 text-muted-foreground">
-                Use "Save as New Version" on the edit page to create version snapshots.
+                Use "Save as New Version" on the edit page to create version
+                snapshots.
               </p>
               <Link to={`/library/${id}/edit`}>
                 <Button>Go to Edit Page</Button>
@@ -377,18 +386,21 @@ export default function VersionHistory() {
                           </Badge>
                         )}
                       </div>
-                      
+
                       <h3 className="text-lg font-medium text-foreground mb-1 truncate">
                         {version.title}
                       </h3>
-                      
+
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <Clock className="h-4 w-4" />
                         <span>
-                          {format(new Date(version.created_at), "MMM d, yyyy 'at' h:mm a")}
+                          {format(
+                            new Date(version.created_at),
+                            "MMM d, yyyy 'at' h:mm a",
+                          )}
                         </span>
                       </div>
-                      
+
                       {version.change_notes && (
                         <p className="text-sm text-muted-foreground italic">
                           "{version.change_notes}"
@@ -427,15 +439,20 @@ export default function VersionHistory() {
       <Footer />
 
       {/* View Version Modal */}
-      <Dialog open={!!viewingVersion} onOpenChange={() => setViewingVersion(null)}>
+      <Dialog
+        open={!!viewingVersion}
+        onOpenChange={() => setViewingVersion(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Badge variant="secondary">v{viewingVersion?.version_number}</Badge>
+              <Badge variant="secondary">
+                v{viewingVersion?.version_number}
+              </Badge>
               <span className="truncate">{viewingVersion?.title}</span>
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="flex-1 overflow-auto space-y-4">
             {viewingVersion?.change_notes && (
               <div className="rounded-lg bg-muted/50 p-3">
@@ -448,8 +465,12 @@ export default function VersionHistory() {
 
             {viewingVersion?.description && (
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-foreground">Description</h4>
-                <p className="text-sm text-muted-foreground">{viewingVersion.description}</p>
+                <h4 className="text-sm font-medium text-foreground">
+                  Description
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {viewingVersion.description}
+                </p>
               </div>
             )}
 
@@ -469,7 +490,9 @@ export default function VersionHistory() {
                 <h4 className="text-sm font-medium text-foreground">Tags</h4>
                 <div className="flex flex-wrap gap-2">
                   {viewingVersion.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -479,7 +502,10 @@ export default function VersionHistory() {
               <Clock className="inline-block h-4 w-4 mr-1" />
               Created on{" "}
               {viewingVersion &&
-                format(new Date(viewingVersion.created_at), "MMMM d, yyyy 'at' h:mm a")}
+                format(
+                  new Date(viewingVersion.created_at),
+                  "MMMM d, yyyy 'at' h:mm a",
+                )}
             </div>
           </div>
 
@@ -502,13 +528,20 @@ export default function VersionHistory() {
       </Dialog>
 
       {/* Restore Confirmation Dialog */}
-      <AlertDialog open={!!restoringVersion} onOpenChange={() => setRestoringVersion(null)}>
+      <AlertDialog
+        open={!!restoringVersion}
+        onOpenChange={() => setRestoringVersion(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore version v{restoringVersion?.version_number}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Restore version v{restoringVersion?.version_number}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will update your prompt with the content from version v{restoringVersion?.version_number} 
-              and create a new version entry. Your current changes will be preserved in the version history.
+              This will update your prompt with the content from version v
+              {restoringVersion?.version_number}
+              and create a new version entry. Your current changes will be
+              preserved in the version history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

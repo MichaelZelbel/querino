@@ -55,24 +55,39 @@ test.describe("a call site uses its configured model", () => {
     if (!original) return;
     await restAsService(ROW, {
       method: "PATCH",
-      body: { provider: original.provider, model: original.model, enabled: original.enabled },
+      body: {
+        provider: original.provider,
+        model: original.model,
+        enabled: original.enabled,
+      },
     });
   });
 
   test("the ledger records the configured model, not the code default", async () => {
-    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
+    test.skip(
+      !hasManagementToken(),
+      "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
+    );
     test.setTimeout(CACHE_TTL_MS + 90_000);
 
-    const current = await restAsService<ConfigRow[]>(`${ROW}&select=provider,model,enabled`);
+    const current = await restAsService<ConfigRow[]>(
+      `${ROW}&select=provider,model,enabled`,
+    );
     original = current.data[0];
-    expect(original, "no default-tier row for this call site; is the migration applied?").toBeTruthy();
+    expect(
+      original,
+      "no default-tier row for this call site; is the migration applied?",
+    ).toBeTruthy();
 
     const overrideModel = OVERRIDE_BY_PROVIDER[original.provider];
     expect(
       overrideModel,
       `no override model known for provider "${original.provider}"; add one to OVERRIDE_BY_PROVIDER`,
     ).toBeTruthy();
-    expect(overrideModel, "the override must differ from the configured model").not.toBe(original.model);
+    expect(
+      overrideModel,
+      "the override must differ from the configured model",
+    ).not.toBe(original.model);
 
     await restAsService(ROW, {
       method: "PATCH",
@@ -85,7 +100,10 @@ test.describe("a call site uses its configured model", () => {
     const session = await signInTestUser();
     const res = await callFunction(
       "suggest-metadata",
-      { prompt_content: "Write a haiku about a cat sitting on a warm windowsill." },
+      {
+        prompt_content:
+          "Write a haiku about a cat sitting on a warm windowsill.",
+      },
       asUser(session.accessToken),
     );
 
@@ -101,7 +119,10 @@ test.describe("a call site uses its configured model", () => {
           `configuration. Body: ${JSON.stringify(res.body)}`,
       );
     }
-    expect(res.status, `suggest-metadata failed: ${JSON.stringify(res.body)}`).toBe(200);
+    expect(
+      res.status,
+      `suggest-metadata failed: ${JSON.stringify(res.body)}`,
+    ).toBe(200);
 
     const rows = await sqlQuery<UsageRow>(
       `SELECT model, provider, metadata FROM llm_usage_events

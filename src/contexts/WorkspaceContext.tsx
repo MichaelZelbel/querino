@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useUserTeams } from "@/hooks/useTeams";
 import type { TeamWithRole } from "@/types/team";
@@ -14,14 +20,18 @@ interface WorkspaceContextType {
   canPublish: boolean; // owner or admin only
 }
 
-const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
+const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
+  undefined,
+);
 
 const WORKSPACE_STORAGE_KEY = "querino_current_workspace";
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthContext();
   const { data: teams = [], isLoading } = useUserTeams();
-  const [currentWorkspace, setCurrentWorkspace] = useState<"personal" | string>("personal");
+  const [currentWorkspace, setCurrentWorkspace] = useState<"personal" | string>(
+    "personal",
+  );
 
   // Load saved workspace on mount
   useEffect(() => {
@@ -55,13 +65,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceId);
   };
 
-  const currentTeam = currentWorkspace === "personal" 
-    ? null 
-    : teams.find((t) => t.id === currentWorkspace) || null;
+  const currentTeam =
+    currentWorkspace === "personal"
+      ? null
+      : teams.find((t) => t.id === currentWorkspace) || null;
 
   const isTeamWorkspace = currentWorkspace !== "personal";
-  const canManageTeam = currentTeam?.role === "owner" || currentTeam?.role === "admin";
-  const canPublish = currentTeam?.role === "owner" || currentTeam?.role === "admin";
+  const canManageTeam =
+    currentTeam?.role === "owner" || currentTeam?.role === "admin";
+  const canPublish =
+    currentTeam?.role === "owner" || currentTeam?.role === "admin";
 
   return (
     <WorkspaceContext.Provider

@@ -10,7 +10,6 @@ import {
 } from "../_shared/llm.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/prompt-wizard.ts";
 
-
 serve(async (req) => {
   const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
@@ -21,21 +20,27 @@ serve(async (req) => {
     const user_id = await getCallerUserId(req);
     const body = await req.json().catch(() => ({}));
 
-    const structuredInput: string = (body?.structured_input ?? "").toString().trim();
+    const structuredInput: string = (body?.structured_input ?? "")
+      .toString()
+      .trim();
     if (!structuredInput) {
-      return new Response(JSON.stringify({ error: "structured_input is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "structured_input is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     await assertCredits(user_id);
 
     // Cap input to avoid runaway prompts.
     const MAX_INPUT = 8000;
-    const safeInput = structuredInput.length > MAX_INPUT
-      ? structuredInput.slice(0, MAX_INPUT) + "\n[...truncated]"
-      : structuredInput;
+    const safeInput =
+      structuredInput.length > MAX_INPUT
+        ? structuredInput.slice(0, MAX_INPUT) + "\n[...truncated]"
+        : structuredInput;
 
     const result = await callLovableAI({
       user_id,
@@ -53,10 +58,13 @@ serve(async (req) => {
 
     const promptText = (result.content ?? "").trim();
     if (!promptText) {
-      return new Response(JSON.stringify({ error: "Empty response from model" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Empty response from model" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response(JSON.stringify({ prompt: promptText }), {
@@ -64,16 +72,22 @@ serve(async (req) => {
     });
   } catch (error) {
     if (error instanceof CreditsExhaustedError) {
-      return new Response(JSON.stringify({ error: error.message, code: "credits_exhausted" }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: error.message, code: "credits_exhausted" }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     if (error instanceof RateLimitedError) {
-      return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Rate limited, please try again shortly." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     if (error instanceof GatewayError) {
       return new Response(JSON.stringify({ error: error.message }), {

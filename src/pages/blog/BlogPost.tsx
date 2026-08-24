@@ -43,7 +43,9 @@ export default function BlogPost() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Post not found</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-4">
+              Post not found
+            </h1>
             <p className="text-muted-foreground mb-6">
               The post you're looking for doesn't exist or has been unpublished.
             </p>
@@ -113,32 +115,46 @@ export default function BlogPost() {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={post.author?.avatar_url || undefined} alt={authorName} />
+                        <AvatarImage
+                          src={post.author?.avatar_url || undefined}
+                          alt={authorName}
+                        />
                         <AvatarFallback>{authorInitial}</AvatarFallback>
                       </Avatar>
-                      <span className="font-medium text-foreground">{authorName}</span>
+                      <span className="font-medium text-foreground">
+                        {authorName}
+                      </span>
                     </div>
                     {publishedDate && (
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <time dateTime={post.published_at || undefined}>{publishedDate}</time>
+                        <time dateTime={post.published_at || undefined}>
+                          {publishedDate}
+                        </time>
                       </div>
                     )}
                   </div>
 
                   {/* Categories and tags */}
-                  {((post.categories && post.categories.length > 0) || (post.tags && post.tags.length > 0)) && (
+                  {((post.categories && post.categories.length > 0) ||
+                    (post.tags && post.tags.length > 0)) && (
                     <div className="flex flex-wrap gap-2">
                       {post.categories?.map((cat) => (
                         <Link key={cat.id} to={`/blog/category/${cat.slug}`}>
-                          <Badge variant="outline" className="hover:bg-primary/10">
+                          <Badge
+                            variant="outline"
+                            className="hover:bg-primary/10"
+                          >
                             {cat.name}
                           </Badge>
                         </Link>
                       ))}
                       {post.tags?.map((tag) => (
                         <Link key={tag.id} to={`/blog/tag/${tag.slug}`}>
-                          <Badge variant="secondary" className="hover:bg-primary/10">
+                          <Badge
+                            variant="secondary"
+                            className="hover:bg-primary/10"
+                          >
                             {tag.name}
                           </Badge>
                         </Link>

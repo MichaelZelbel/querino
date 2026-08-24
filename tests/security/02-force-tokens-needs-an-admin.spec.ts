@@ -12,7 +12,11 @@ const HUGE = 999_999_999;
 
 async function postAsTestUser(body: Record<string, unknown>) {
   const session = await signInTestUser();
-  return callFunction("ensure-token-allowance", body, asUser(session.accessToken));
+  return callFunction(
+    "ensure-token-allowance",
+    body,
+    asUser(session.accessToken),
+  );
 }
 
 test.describe("C2 — administrative overrides need an admin", () => {
@@ -21,7 +25,9 @@ test.describe("C2 — administrative overrides need an admin", () => {
 
     const res = await postAsTestUser({ force_tokens: HUGE });
 
-    expect(res.status, "the request must be refused").toBeGreaterThanOrEqual(400);
+    expect(res.status, "the request must be refused").toBeGreaterThanOrEqual(
+      400,
+    );
     expect(res.body).toMatchObject({ success: false });
     expect(JSON.stringify(res.body)).toMatch(/admin/i);
 
@@ -36,7 +42,10 @@ test.describe("C2 — administrative overrides need an admin", () => {
     const session = await signInTestUser();
     const before = await activeAllowance();
 
-    const res = await postAsTestUser({ user_id: session.userId, force_tokens: HUGE });
+    const res = await postAsTestUser({
+      user_id: session.userId,
+      force_tokens: HUGE,
+    });
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     const after = await activeAllowance();

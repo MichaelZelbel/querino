@@ -4,7 +4,10 @@
 // user_id. Token accounting goes into `llm_usage_events` and the user's
 // current `ai_allowance_periods` row atomically via the `record_llm_usage` RPC.
 
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { ensureAllowance } from "./allowance.ts";
 import {
   resolveConfig,
@@ -56,7 +59,8 @@ export interface CallOptions {
   messages: ChatMessage[];
   model?: string;
   tools?: ToolDefinition[];
-  tool_choice?: "auto" | "required" | { type: "function"; function: { name: string } };
+  tool_choice?:
+    "auto" | "required" | { type: "function"; function: { name: string } };
   temperature?: number;
   // Optional metadata stored alongside the usage event (e.g. framework, goal).
   metadata?: Record<string, unknown>;
@@ -126,7 +130,8 @@ export function getServiceClient(): SupabaseClient {
  * Throws if the token is missing or invalid.
  */
 export async function getCallerUserId(req: Request): Promise<string> {
-  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+  const authHeader =
+    req.headers.get("Authorization") || req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     throw new Error("Missing Authorization bearer token");
   }
@@ -149,7 +154,10 @@ export async function getCallerUserId(req: Request): Promise<string> {
 /**
  * Verify the user has remaining credits. Throws CreditsExhaustedError if not.
  */
-export async function assertCredits(user_id: string, supabase?: SupabaseClient): Promise<void> {
+export async function assertCredits(
+  user_id: string,
+  supabase?: SupabaseClient,
+): Promise<void> {
   const sb = supabase ?? getServiceClient();
 
   const read = async () =>
@@ -184,7 +192,10 @@ export async function assertCredits(user_id: string, supabase?: SupabaseClient):
     const retry = await read();
     data = retry.data;
     if (retry.error) {
-      console.error("[llm.assertCredits] view error after provisioning:", retry.error);
+      console.error(
+        "[llm.assertCredits] view error after provisioning:",
+        retry.error,
+      );
     }
   }
 
@@ -286,7 +297,8 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
       p_total_tokens: result.usage.total_tokens,
       p_metadata: { ...(opts.metadata ?? {}), config_source: source },
     });
-    if (error) console.error("[llm.callLovableAI] record_llm_usage error:", error);
+    if (error)
+      console.error("[llm.callLovableAI] record_llm_usage error:", error);
   } catch (e) {
     console.error("[llm.callLovableAI] usage logging threw:", e);
   }

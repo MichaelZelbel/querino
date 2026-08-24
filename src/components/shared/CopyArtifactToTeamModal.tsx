@@ -24,7 +24,9 @@ import { toast } from "sonner";
 import { Users, Info, ExternalLink } from "lucide-react";
 import type { CopyOptions, CopyResult } from "@/hooks/useCopyArtifactToTeam";
 
-interface CopyArtifactToTeamModalProps<S extends { id: string; title: string }> {
+interface CopyArtifactToTeamModalProps<
+  S extends { id: string; title: string },
+> {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   source: S;
@@ -37,7 +39,7 @@ interface CopyArtifactToTeamModalProps<S extends { id: string; title: string }> 
     teamId: string,
     teamName: string,
     userId: string,
-    options: CopyOptions
+    options: CopyOptions,
   ) => Promise<CopyResult | null>;
   copying: boolean;
 }
@@ -46,7 +48,9 @@ interface CopyArtifactToTeamModalProps<S extends { id: string; title: string }> 
  * Shared copy-to-team dialog. The four per-type modals were ~97% identical
  * copies; the per-type wrappers now just bind their hook + labels.
  */
-export function CopyArtifactToTeamModal<S extends { id: string; title: string }>({
+export function CopyArtifactToTeamModal<
+  S extends { id: string; title: string },
+>({
   open,
   onOpenChange,
   source,
@@ -59,18 +63,30 @@ export function CopyArtifactToTeamModal<S extends { id: string; title: string }>
   const { user } = useAuthContext();
   const { teams, switchWorkspace } = useWorkspace();
 
-  const [selectedTeamId, setSelectedTeamId] = useState<string>(teams[0]?.id || "");
+  const [selectedTeamId, setSelectedTeamId] = useState<string>(
+    teams[0]?.id || "",
+  );
   const [includeMetadata, setIncludeMetadata] = useState(true);
-  const [copiedResult, setCopiedResult] = useState<{ slug: string; teamName: string; teamId: string } | null>(null);
+  const [copiedResult, setCopiedResult] = useState<{
+    slug: string;
+    teamName: string;
+    teamId: string;
+  } | null>(null);
 
   const selectedTeam = teams.find((t) => t.id === selectedTeamId);
 
   const handleCopy = async () => {
     if (!user || !selectedTeamId || !selectedTeam) return;
 
-    const result = await copyToTeam(source, selectedTeamId, selectedTeam.name, user.id, {
-      includeMetadata,
-    });
+    const result = await copyToTeam(
+      source,
+      selectedTeamId,
+      selectedTeam.name,
+      user.id,
+      {
+        includeMetadata,
+      },
+    );
 
     if (result) {
       setCopiedResult({
@@ -106,7 +122,8 @@ export function CopyArtifactToTeamModal<S extends { id: string; title: string }>
               Copied Successfully
             </DialogTitle>
             <DialogDescription>
-              Your {label} has been copied to <strong>{copiedResult.teamName}</strong>.
+              Your {label} has been copied to{" "}
+              <strong>{copiedResult.teamName}</strong>.
             </DialogDescription>
           </DialogHeader>
 
@@ -158,7 +175,9 @@ export function CopyArtifactToTeamModal<S extends { id: string; title: string }>
             <Checkbox
               id="include-metadata"
               checked={includeMetadata}
-              onCheckedChange={(checked) => setIncludeMetadata(checked === true)}
+              onCheckedChange={(checked) =>
+                setIncludeMetadata(checked === true)
+              }
             />
             <Label htmlFor="include-metadata" className="text-sm font-normal">
               Include current tags, category, and description
@@ -168,7 +187,8 @@ export function CopyArtifactToTeamModal<S extends { id: string; title: string }>
           <div className="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              This creates a copy. Future edits won't sync automatically between the original and the team copy.
+              This creates a copy. Future edits won't sync automatically between
+              the original and the team copy.
             </span>
           </div>
         </div>

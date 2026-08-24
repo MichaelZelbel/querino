@@ -1,13 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  ArrowLeft,
-  RotateCcw,
-  Check,
-  X,
-  Minus,
-} from "lucide-react";
+import { ArrowLeft, RotateCcw, Check, X, Minus } from "lucide-react";
 import type { PromptVersion } from "./VersionHistoryPanel";
 
 interface CurrentPromptData {
@@ -34,13 +28,13 @@ function computeLineDiff(original: string, current: string): DiffLine[] {
   const originalLines = original.split("\n");
   const currentLines = current.split("\n");
   const result: DiffLine[] = [];
-  
+
   const maxLength = Math.max(originalLines.length, currentLines.length);
-  
+
   for (let i = 0; i < maxLength; i++) {
     const origLine = originalLines[i];
     const currLine = currentLines[i];
-    
+
     if (origLine === undefined && currLine !== undefined) {
       result.push({ type: "added", content: currLine });
     } else if (currLine === undefined && origLine !== undefined) {
@@ -52,7 +46,7 @@ function computeLineDiff(original: string, current: string): DiffLine[] {
       result.push({ type: "added", content: currLine });
     }
   }
-  
+
   return result;
 }
 
@@ -66,7 +60,7 @@ function MetadataCompare({
   currentValue: string | null;
 }) {
   const changed = versionValue !== currentValue;
-  
+
   return (
     <div className="flex items-start gap-3 py-2">
       <div className="w-24 shrink-0">
@@ -114,8 +108,9 @@ function TagsCompare({
 }) {
   const vTags = versionTags || [];
   const cTags = currentTags || [];
-  const changed = JSON.stringify(vTags.sort()) !== JSON.stringify([...cTags].sort());
-  
+  const changed =
+    JSON.stringify(vTags.sort()) !== JSON.stringify([...cTags].sort());
+
   return (
     <div className="flex items-start gap-3 py-2">
       <div className="w-24 shrink-0">
@@ -127,7 +122,9 @@ function TagsCompare({
         {changed ? (
           <div className="space-y-2">
             <div>
-              <Badge variant="outline" className="text-xs bg-muted mb-1">Version</Badge>
+              <Badge variant="outline" className="text-xs bg-muted mb-1">
+                Version
+              </Badge>
               <div className="flex flex-wrap gap-1 mt-1">
                 {vTags.length > 0 ? (
                   vTags.map((tag) => (
@@ -141,7 +138,9 @@ function TagsCompare({
               </div>
             </div>
             <div>
-              <Badge variant="outline" className="text-xs mb-1">Current</Badge>
+              <Badge variant="outline" className="text-xs mb-1">
+                Current
+              </Badge>
               <div className="flex flex-wrap gap-1 mt-1">
                 {cTags.length > 0 ? (
                   cTags.map((tag) => (
@@ -179,7 +178,13 @@ export function VersionCompareView({
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Header with back button */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0" aria-label="Back">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="shrink-0"
+          aria-label="Back"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-2 min-w-0">
@@ -226,11 +231,13 @@ export function VersionCompareView({
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Content Changes
             </h4>
-            
+
             {!hasContentChanges ? (
               <div className="rounded-lg border border-border p-4 flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-muted-foreground">Content is identical</span>
+                <span className="text-sm text-muted-foreground">
+                  Content is identical
+                </span>
               </div>
             ) : (
               <div className="rounded-lg border border-border overflow-hidden">
@@ -251,20 +258,24 @@ export function VersionCompareView({
                           line.type === "added"
                             ? "bg-green-100 dark:bg-green-950/50"
                             : line.type === "removed"
-                            ? "bg-red-100 dark:bg-red-950/50"
-                            : ""
+                              ? "bg-red-100 dark:bg-red-950/50"
+                              : ""
                         }`}
                       >
                         <span className="w-6 px-1 text-center text-muted-foreground select-none border-r border-border flex-shrink-0">
-                          {line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
+                          {line.type === "added"
+                            ? "+"
+                            : line.type === "removed"
+                              ? "-"
+                              : " "}
                         </span>
                         <span
                           className={`flex-1 px-2 whitespace-pre-wrap break-all ${
                             line.type === "added"
                               ? "text-green-700 dark:text-green-300"
                               : line.type === "removed"
-                              ? "text-red-700 dark:text-red-300"
-                              : "text-foreground"
+                                ? "text-red-700 dark:text-red-300"
+                                : "text-foreground"
                           }`}
                         >
                           {line.content}
@@ -281,17 +292,10 @@ export function VersionCompareView({
 
       {/* Action Footer */}
       <div className="flex items-center gap-2 p-4 border-t border-border">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="flex-1"
-        >
+        <Button variant="outline" onClick={onBack} className="flex-1">
           Back to List
         </Button>
-        <Button
-          onClick={onRestore}
-          className="gap-2 flex-1"
-        >
+        <Button onClick={onRestore} className="gap-2 flex-1">
           <RotateCcw className="h-4 w-4" />
           Restore v{version.version_number}
         </Button>

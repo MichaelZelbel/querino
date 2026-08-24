@@ -12,12 +12,29 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
-import { ArrowLeft, Loader2, X, Save, Plus, ListTree, Sparkles, Bot } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  X,
+  Save,
+  Plus,
+  ListTree,
+  Sparkles,
+  Bot,
+} from "lucide-react";
 import { toast } from "sonner";
 import { categoryOptions } from "@/types/prompt";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
@@ -27,7 +44,10 @@ import { generateSlug } from "@/hooks/useGenerateSlug";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
 import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
+import {
+  getOrCreateDraftSessionId,
+  promoteDraftSession,
+} from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
 const DEFAULT_TEMPLATE = `# My Prompt Kit
@@ -54,14 +74,22 @@ export default function PromptKitNew() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
 
-  const [content, setContent] = useState(searchParams.get("content") || DEFAULT_TEMPLATE);
+  const [content, setContent] = useState(
+    searchParams.get("content") || DEFAULT_TEMPLATE,
+  );
   const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [description, setDescription] = useState(searchParams.get("description") || "");
+  const [description, setDescription] = useState(
+    searchParams.get("description") || "",
+  );
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>(searchParams.get("tags")?.split(",").filter(Boolean) || []);
+  const [tags, setTags] = useState<string[]>(
+    searchParams.get("tags")?.split(",").filter(Boolean) || [],
+  );
   const [isPublic, setIsPublic] = useState(false);
-  const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(
+    searchParams.get("language") || DEFAULT_LANGUAGE,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // AI undo
@@ -84,7 +112,11 @@ export default function PromptKitNew() {
   const items = parsePromptKitItems(content);
 
   const normalizeTag = (tag: string) =>
-    tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    tag
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
@@ -125,9 +157,12 @@ export default function PromptKitNew() {
     setIsGeneratingMetadata(true);
     setMetadataError(null);
     try {
-      const { data: result, error } = await supabase.functions.invoke("suggest-promptkit-metadata", {
-        body: { kit_content: content.trim(), user_id: user?.id },
-      });
+      const { data: result, error } = await supabase.functions.invoke(
+        "suggest-promptkit-metadata",
+        {
+          body: { kit_content: content.trim(), user_id: user?.id },
+        },
+      );
       if (error) throw new Error("Failed to generate suggestions");
       const data = (result as any)?.output || result;
       if (data?.title) setTitle(data.title);
@@ -166,7 +201,9 @@ export default function PromptKitNew() {
     setIsSubmitting(true);
     try {
       const slug = await generateSlug(title.trim());
-      const { data: newKit, error } = await (supabase.from("prompt_kits") as any)
+      const { data: newKit, error } = await (
+        supabase.from("prompt_kits") as any
+      )
         .insert({
           title: title.trim(),
           description: description.trim() || null,
@@ -190,8 +227,11 @@ export default function PromptKitNew() {
       toast.success("Prompt Kit created!");
       // Promote draft coach session to deterministic id keyed on the new kit
       try {
-        if (user) promoteDraftSession(workspaceScope, user.id, newKit.id, "prompt_kit");
-      } catch {/* ignore */}
+        if (user)
+          promoteDraftSession(workspaceScope, user.id, newKit.id, "prompt_kit");
+      } catch {
+        /* ignore */
+      }
       navigate(`/prompt-kits/${newKit.slug}`);
     } catch (err) {
       console.error(err);
@@ -231,7 +271,10 @@ export default function PromptKitNew() {
       <main className="flex-1 py-8">
         <div className="container mx-auto max-w-[1600px] px-4">
           <div className="mb-6 flex items-center justify-between">
-            <Link to="/library" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              to="/library"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ArrowLeft className="h-4 w-4" />
               Back to Library
             </Link>
@@ -252,8 +295,16 @@ export default function PromptKitNew() {
                   </SheetContent>
                 </Sheet>
               )}
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Create Prompt Kit
               </Button>
             </div>
@@ -262,28 +313,38 @@ export default function PromptKitNew() {
           <div className="flex gap-6">
             <div className="flex-1 min-w-0">
               <div className="rounded-xl border border-border bg-card p-6">
-                <h1 className="mb-6 text-xl font-semibold text-foreground">Create New Prompt Kit</h1>
+                <h1 className="mb-6 text-xl font-semibold text-foreground">
+                  Create New Prompt Kit
+                </h1>
 
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="content">Kit Content *</Label>
                       <span className="text-xs text-muted-foreground">
-                        {items.length} {items.length === 1 ? "prompt" : "prompts"} detected
+                        {items.length}{" "}
+                        {items.length === 1 ? "prompt" : "prompts"} detected
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Write an intro and any commentary as normal text. Use the{" "}
-                      <span className="font-medium text-foreground">Insert prompt</span> button to add a
-                      copyable prompt block. Each block becomes a{" "}
-                      <code className="font-mono">## Prompt: …</code> heading on save.
+                      <span className="font-medium text-foreground">
+                        Insert prompt
+                      </span>{" "}
+                      button to add a copyable prompt block. Each block becomes
+                      a <code className="font-mono">## Prompt: …</code> heading
+                      on save.
                     </p>
                     <PromptKitRichEditor
                       value={content}
                       onChange={setContent}
                       error={!!errors.content}
                     />
-                    {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
+                    {errors.content && (
+                      <p className="text-sm text-destructive">
+                        {errors.content}
+                      </p>
+                    )}
                   </div>
 
                   {/* AI Metadata Suggestion */}
@@ -297,49 +358,91 @@ export default function PromptKitNew() {
                       className="gap-1.5"
                     >
                       {isGeneratingMetadata ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating…</>
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Generating…
+                        </>
                       ) : (
-                        <><Sparkles className="h-3.5 w-3.5" />Suggest title, description, category & tags</>
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Suggest title, description, category & tags
+                        </>
                       )}
                     </Button>
-                    {metadataError && <p className="text-sm text-destructive">{metadataError}</p>}
+                    {metadataError && (
+                      <p className="text-sm text-destructive">
+                        {metadataError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="title">Title *</Label>
-                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Cold Outreach Pack" className={errors.title ? "border-destructive" : ""} />
-                    {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g., Cold Outreach Pack"
+                      className={errors.title ? "border-destructive" : ""}
+                    />
+                    {errors.title && (
+                      <p className="text-sm text-destructive">{errors.title}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Briefly describe what this kit is for…" rows={2} />
+                    <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Briefly describe what this kit is for…"
+                      rows={2}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                      <SelectTrigger
+                        className={errors.category ? "border-destructive" : ""}
+                      >
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categoryOptions.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
+                    {errors.category && (
+                      <p className="text-sm text-destructive">
+                        {errors.category}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="tags">Tags</Label>
-                    <Input id="tags" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleAddTag} placeholder="Press Enter to add tags…" />
+                    <Input
+                      id="tags"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleAddTag}
+                      placeholder="Press Enter to add tags…"
+                    />
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {tags.map((t) => (
                           <Badge key={t} variant="secondary" className="gap-1">
                             {t}
-                            <button type="button" onClick={() => handleRemoveTag(t)} className="ml-1 hover:text-destructive">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(t)}
+                              className="ml-1 hover:text-destructive"
+                            >
                               <X className="h-3 w-3" />
                             </button>
                           </Badge>
@@ -352,16 +455,33 @@ export default function PromptKitNew() {
 
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>
-                      <Label htmlFor="visibility" className="text-base">Make this kit public</Label>
+                      <Label htmlFor="visibility" className="text-base">
+                        Make this kit public
+                      </Label>
                       <p className="text-sm text-muted-foreground">
-                        {isPublic ? "Anyone can discover and use this kit" : "Only you can see this kit"}
+                        {isPublic
+                          ? "Anyone can discover and use this kit"
+                          : "Only you can see this kit"}
                       </p>
                     </div>
-                    <Switch id="visibility" checked={isPublic} onCheckedChange={setIsPublic} />
+                    <Switch
+                      id="visibility"
+                      checked={isPublic}
+                      onCheckedChange={setIsPublic}
+                    />
                   </div>
 
-                  <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full gap-2" size="lg">
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="w-full gap-2"
+                    size="lg"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     Create Prompt Kit
                   </Button>
                 </div>
@@ -370,7 +490,10 @@ export default function PromptKitNew() {
 
             {/* Right column: Outline + AI Coach (desktop only) */}
             {!isMobile && (
-              <div className="w-[380px] shrink-0 flex flex-col gap-4 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+              <div
+                className="w-[380px] shrink-0 flex flex-col gap-4 sticky top-24 self-start"
+                style={{ height: "calc(100vh - 12rem)" }}
+              >
                 <div className="rounded-xl border border-border bg-card p-4 shrink-0">
                   <div className="mb-3 flex items-center gap-2 text-sm font-medium">
                     <ListTree className="h-4 w-4 text-primary" />
@@ -378,14 +501,19 @@ export default function PromptKitNew() {
                   </div>
                   {items.length === 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      No prompts detected yet. Use a <code className="font-mono">## Prompt:</code> heading.
+                      No prompts detected yet. Use a{" "}
+                      <code className="font-mono">## Prompt:</code> heading.
                     </p>
                   ) : (
                     <ol className="space-y-1.5 max-h-40 overflow-y-auto">
                       {items.map((item) => (
                         <li key={item.index} className="text-sm">
-                          <span className="text-muted-foreground mr-1.5">{item.index}.</span>
-                          <span className="text-foreground">{item.title || "Untitled"}</span>
+                          <span className="text-muted-foreground mr-1.5">
+                            {item.index}.
+                          </span>
+                          <span className="text-foreground">
+                            {item.title || "Untitled"}
+                          </span>
                         </li>
                       ))}
                     </ol>

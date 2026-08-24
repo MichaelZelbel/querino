@@ -4,17 +4,13 @@ import { ActivityTimeline } from "./ActivityTimeline";
 
 interface ActivitySidebarProps {
   itemId: string;
-  itemType: "prompt" | "skill" | "workflow" | "collection" | "prompt_kit" | "claw";
+  itemType:
+    "prompt" | "skill" | "workflow" | "collection" | "prompt_kit" | "claw";
 }
 
 export function ActivitySidebar({ itemId, itemType }: ActivitySidebarProps) {
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useActivityEvents({ itemId, itemType, limit: 10 });
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useActivityEvents({ itemId, itemType, limit: 10 });
 
   const events = data?.pages.flat() || [];
 
@@ -24,7 +20,7 @@ export function ActivitySidebar({ itemId, itemType }: ActivitySidebarProps) {
         <Activity className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-foreground">Activity</h3>
       </div>
-      
+
       <div className="max-h-[400px] overflow-y-auto">
         <ActivityTimeline
           events={events}

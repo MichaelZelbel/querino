@@ -27,7 +27,8 @@ export const mockPrompts: LegacyPrompt[] = [
   {
     id: "1",
     title: "Expert Code Reviewer",
-    description: "Transform your code review process with detailed, constructive feedback that improves code quality and team learning.",
+    description:
+      "Transform your code review process with detailed, constructive feedback that improves code quality and team learning.",
     content: `You are an expert code reviewer with 15+ years of experience. When reviewing code:
 
 1. First, understand the context and purpose
@@ -48,7 +49,8 @@ Format your review with clear sections and code examples where helpful.`,
   {
     id: "2",
     title: "Compelling Story Writer",
-    description: "Create engaging narratives with rich characters, vivid settings, and compelling plot structures.",
+    description:
+      "Create engaging narratives with rich characters, vivid settings, and compelling plot structures.",
     content: `You are a master storyteller. When writing stories:
 
 - Develop three-dimensional characters with clear motivations
@@ -70,7 +72,8 @@ Ask clarifying questions about genre, tone, and themes before beginning.`,
   {
     id: "3",
     title: "Strategic Business Analyst",
-    description: "Analyze business challenges with frameworks used by top consulting firms.",
+    description:
+      "Analyze business challenges with frameworks used by top consulting firms.",
     content: `You are a strategic business analyst from a top-tier consulting firm. When analyzing business problems:
 
 1. Use structured frameworks (Porter's Five Forces, SWOT, etc.)
@@ -91,7 +94,8 @@ Always ask clarifying questions to understand the full context before analysis.`
   {
     id: "4",
     title: "Visual Design Critic",
-    description: "Get professional feedback on your designs with actionable improvement suggestions.",
+    description:
+      "Get professional feedback on your designs with actionable improvement suggestions.",
     content: `You are an experienced visual design critic and mentor. When reviewing designs:
 
 - Evaluate hierarchy and visual flow
@@ -113,7 +117,8 @@ Reference design principles and provide examples from well-known designs when he
   {
     id: "5",
     title: "Research Paper Synthesizer",
-    description: "Synthesize complex research papers into clear, actionable insights.",
+    description:
+      "Synthesize complex research papers into clear, actionable insights.",
     content: `You are a research synthesis expert. When summarizing papers:
 
 1. Identify the key research question and methodology
@@ -135,7 +140,8 @@ Present information at the requested depth - from executive summary to detailed 
   {
     id: "6",
     title: "Patient Concept Explainer",
-    description: "Break down complex topics into easy-to-understand explanations for any audience.",
+    description:
+      "Break down complex topics into easy-to-understand explanations for any audience.",
     content: `You are a patient, skilled educator who excels at explaining complex concepts. When teaching:
 
 - Start with what the learner already knows
@@ -157,7 +163,8 @@ Always ask about prior knowledge and learning goals before beginning.`,
   {
     id: "7",
     title: "API Documentation Writer",
-    description: "Create clear, developer-friendly API documentation that accelerates integration.",
+    description:
+      "Create clear, developer-friendly API documentation that accelerates integration.",
     content: `You are an expert technical writer specializing in API documentation. When documenting APIs:
 
 1. Start with a clear overview and use cases
@@ -179,7 +186,8 @@ Make documentation scannable yet comprehensive.`,
   {
     id: "8",
     title: "Marketing Copy Generator",
-    description: "Create persuasive marketing copy that converts visitors into customers.",
+    description:
+      "Create persuasive marketing copy that converts visitors into customers.",
     content: `You are an expert copywriter who creates high-converting marketing content. When writing copy:
 
 - Focus on benefits, not features

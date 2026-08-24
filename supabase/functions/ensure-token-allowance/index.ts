@@ -1,7 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isAdminCaller, isMachineCaller } from "../_shared/internalAuth.ts";
-import { ensureAllowance, type EnsureAllowanceResult } from "../_shared/allowance.ts";
+import {
+  ensureAllowance,
+  type EnsureAllowanceResult,
+} from "../_shared/allowance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +13,7 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[ENSURE-TOKEN-ALLOWANCE] ${step}${detailsStr}`);
 };
 
@@ -31,7 +34,7 @@ serve(async (req) => {
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
@@ -70,7 +73,10 @@ serve(async (req) => {
         logStep("Rejected unauthorized batch_init");
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
       logStep("Batch initialization requested");
@@ -108,13 +114,16 @@ serve(async (req) => {
 
       logStep("Batch initialization complete", { created, skipped, errors });
 
-      return new Response(JSON.stringify({
-        success: true,
-        summary: { created, skipped, errors },
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          summary: { created, skipped, errors },
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     }
 
     // Single user mode.
@@ -123,10 +132,13 @@ serve(async (req) => {
       throw new Error("No authorization header provided");
     }
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(bearer);
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.getUser(bearer);
 
     if (userError || !userData.user) {
-      throw new Error(`Authentication error: ${userError?.message ?? "User not found"}`);
+      throw new Error(
+        `Authentication error: ${userError?.message ?? "User not found"}`,
+      );
     }
 
     const authenticatedUserId = userData.user.id;
@@ -142,15 +154,21 @@ serve(async (req) => {
       body.period_end !== undefined ||
       body.source !== undefined;
 
-    const wantsOtherUser = !!body.user_id && body.user_id !== authenticatedUserId;
+    const wantsOtherUser =
+      !!body.user_id && body.user_id !== authenticatedUserId;
 
     if (wantsPrivilegedOptions || wantsOtherUser) {
-      logStep("Checking admin privileges", { wantsPrivilegedOptions, wantsOtherUser });
+      logStep("Checking admin privileges", {
+        wantsPrivilegedOptions,
+        wantsOtherUser,
+      });
 
       // user_roles (via is_admin RPC) is the authoritative role source —
       // profiles.role can drift and is not used for authorization.
-      const { data: isAdminData, error: adminError } = await supabaseAdmin
-        .rpc('is_admin', { _user_id: authenticatedUserId });
+      const { data: isAdminData, error: adminError } = await supabaseAdmin.rpc(
+        "is_admin",
+        { _user_id: authenticatedUserId },
+      );
 
       if (adminError || !isAdminData) {
         logStep("Admin check failed", { error: adminError?.message });
@@ -164,7 +182,10 @@ serve(async (req) => {
 
     const userId = wantsOtherUser ? body.user_id! : authenticatedUserId;
     if (wantsOtherUser) {
-      logStep("Admin override: using provided user_id", { userId, adminId: authenticatedUserId });
+      logStep("Admin override: using provided user_id", {
+        userId,
+        adminId: authenticatedUserId,
+      });
     }
 
     // Build options. Only reachable with admin rights (checked above); an
@@ -191,29 +212,38 @@ serve(async (req) => {
       }
     }
 
-    const result: EnsureAllowanceResult = await ensureAllowance(supabaseAdmin, userId, {
-      ...options,
-      createdBy: "ensure-token-allowance",
-    });
+    const result: EnsureAllowanceResult = await ensureAllowance(
+      supabaseAdmin,
+      userId,
+      {
+        ...options,
+        createdBy: "ensure-token-allowance",
+      },
+    );
 
-    return new Response(JSON.stringify({
-      success: true,
-      ...result,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        ...result,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: errorMessage 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: errorMessage,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      },
+    );
   }
 });

@@ -126,17 +126,22 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
         continue;
       }
 
-      const json = await resp.json() as {
+      const json = (await resp.json()) as {
         data?: Array<{ embedding?: number[] }>;
         usage?: { prompt_tokens?: number; total_tokens?: number };
         model?: string;
       };
 
       const embedding = json.data?.[0]?.embedding;
-      if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS) {
+      if (
+        !Array.isArray(embedding) ||
+        embedding.length !== EMBEDDING_DIMENSIONS
+      ) {
         // A wrong length is a different model, and storing it would poison
         // every comparison against it. Refuse rather than write.
-        failures.push(`${provider.name}: expected ${EMBEDDING_DIMENSIONS} dims, got ${embedding?.length}`);
+        failures.push(
+          `${provider.name}: expected ${EMBEDDING_DIMENSIONS} dims, got ${embedding?.length}`,
+        );
         continue;
       }
 
@@ -153,12 +158,17 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
     }
   }
 
-  throw new NoEmbeddingProviderError(`every embedding provider failed — ${failures.join(" | ")}`);
+  throw new NoEmbeddingProviderError(
+    `every embedding provider failed — ${failures.join(" | ")}`,
+  );
 }
 
 /** The text an artifact is embedded from. One definition, so the backfill and
  *  any future caller cannot drift apart and re-embed the same row forever. */
-export function embeddableText(row: Record<string, unknown>, fields: readonly string[]): string {
+export function embeddableText(
+  row: Record<string, unknown>,
+  fields: readonly string[],
+): string {
   return fields
     .map((f) => (row[f] ? String(row[f]) : ""))
     .filter(Boolean)

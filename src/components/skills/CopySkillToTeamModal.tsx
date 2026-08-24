@@ -14,7 +14,11 @@ interface CopySkillToTeamModalProps {
   };
 }
 
-export function CopySkillToTeamModal({ open, onOpenChange, skill }: CopySkillToTeamModalProps) {
+export function CopySkillToTeamModal({
+  open,
+  onOpenChange,
+  skill,
+}: CopySkillToTeamModalProps) {
   const { copySkillToTeam, copying } = useCopySkillToTeam();
 
   return (

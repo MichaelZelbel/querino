@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Info, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
-const MENERIO_BASE_URL = "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1";
+const MENERIO_BASE_URL =
+  "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1";
 
 const ARTIFACT_TYPES = [
   { value: "prompt", label: "Prompts" },
@@ -27,14 +34,21 @@ export function MenerioIntegrationSection() {
 
   // Connection state
   const [connectionKey, setConnectionKey] = useState("");
-  const [connectedDisplayName, setConnectedDisplayName] = useState<string | null>(null);
+  const [connectedDisplayName, setConnectedDisplayName] = useState<
+    string | null
+  >(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
   // Settings state (only relevant when connected)
   const [autoSync, setAutoSync] = useState(true);
-  const [syncTypes, setSyncTypes] = useState<string[]>(["prompt", "skill", "claw", "workflow"]);
+  const [syncTypes, setSyncTypes] = useState<string[]>([
+    "prompt",
+    "skill",
+    "claw",
+    "workflow",
+  ]);
   const [isActive, setIsActive] = useState(true);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [existingId, setExistingId] = useState<string | null>(null);
@@ -56,7 +70,9 @@ export function MenerioIntegrationSection() {
         const d = data as any;
         setExistingId(d.id);
         setAutoSync(d.auto_sync ?? true);
-        setSyncTypes(d.sync_artifact_types || ["prompt", "skill", "claw", "workflow"]);
+        setSyncTypes(
+          d.sync_artifact_types || ["prompt", "skill", "claw", "workflow"],
+        );
         setIsActive(d.is_active ?? true);
         setLastSyncAt(d.last_sync_at || null);
         setIsConnected(true);
@@ -134,7 +150,7 @@ export function MenerioIntegrationSection() {
       toast.success(
         json.already_connected
           ? "Already connected to Menerio!"
-          : "Successfully connected to Menerio!"
+          : "Successfully connected to Menerio!",
       );
     } catch (error) {
       console.error("Menerio connect error:", error);
@@ -191,7 +207,7 @@ export function MenerioIntegrationSection() {
 
   const toggleSyncType = (type: string) => {
     setSyncTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     );
   };
 
@@ -206,9 +222,13 @@ export function MenerioIntegrationSection() {
             Menerio
           </CardTitle>
           {isConnected && (
-            <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400 gap-1.5">
+            <Badge
+              variant="outline"
+              className="border-green-500/40 text-green-600 dark:text-green-400 gap-1.5"
+            >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              Connected{connectedDisplayName ? ` as ${connectedDisplayName}` : ""}
+              Connected
+              {connectedDisplayName ? ` as ${connectedDisplayName}` : ""}
             </Badge>
           )}
         </div>
@@ -234,10 +254,14 @@ export function MenerioIntegrationSection() {
                 onChange={(e) => setConnectionKey(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Generate a connection key in your Menerio app under Settings → Integrations → Querino.
+                Generate a connection key in your Menerio app under Settings →
+                Integrations → Querino.
               </p>
             </div>
-            <Button onClick={handleConnect} disabled={connecting || !connectionKey.trim()}>
+            <Button
+              onClick={handleConnect}
+              disabled={connecting || !connectionKey.trim()}
+            >
               {connecting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -278,7 +302,10 @@ export function MenerioIntegrationSection() {
               <Label>Artifact types to sync</Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {ARTIFACT_TYPES.map((type) => (
-                  <label key={type.value} className="flex items-center gap-2 cursor-pointer">
+                  <label
+                    key={type.value}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
                     <Checkbox
                       checked={syncTypes.includes(type.value)}
                       onCheckedChange={() => toggleSyncType(type.value)}

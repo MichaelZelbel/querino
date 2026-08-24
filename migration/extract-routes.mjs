@@ -48,17 +48,24 @@ function parseAppTsx() {
   // Which page component each lazy()/import binding points at, so the inventory
   // survives the component being renamed during the migration.
   const modules = new Map();
-  for (const m of src.matchAll(/const\s+(\w+)\s*=\s*lazy\(\(\)\s*=>\s*import\("([^"]+)"\)\)/g)) {
+  for (const m of src.matchAll(
+    /const\s+(\w+)\s*=\s*lazy\(\(\)\s*=>\s*import\("([^"]+)"\)\)/g,
+  )) {
     modules.set(m[1], { module: m[2], loading: "lazy" });
   }
-  for (const m of src.matchAll(/^import\s+(\w+)\s+from\s+"(\.\/pages\/[^"]+)"/gm)) {
+  for (const m of src.matchAll(
+    /^import\s+(\w+)\s+from\s+"(\.\/pages\/[^"]+)"/gm,
+  )) {
     modules.set(m[1], { module: m[2], loading: "eager" });
   }
 
   const routes = [];
-  for (const m of src.matchAll(/<Route\s+path="([^"]*)"\s+element=\{<(\w+)([^>]*)\/>\}/g)) {
+  for (const m of src.matchAll(
+    /<Route\s+path="([^"]*)"\s+element=\{<(\w+)([^>]*)\/>\}/g,
+  )) {
     const [, path, element, rest] = m;
-    const redirect = element === "Navigate" ? /to="([^"]+)"/.exec(rest)?.[1] ?? null : null;
+    const redirect =
+      element === "Navigate" ? (/to="([^"]+)"/.exec(rest)?.[1] ?? null) : null;
     const mod = modules.get(element);
     routes.push({
       path,
@@ -81,13 +88,26 @@ function classifyGuard(route) {
   if (route.catchAll) return "catch-all";
   if (route.redirectsTo) return "redirect";
   const p = route.path;
-  if (p.startsWith("/admin") || p.startsWith("/blog/admin")) return "in-page-admin-check";
+  if (p.startsWith("/admin") || p.startsWith("/blog/admin"))
+    return "in-page-admin-check";
   const authed = [
-    "/settings", "/profile/edit", "/activity", "/collections/new", "/team/",
-    "/prompts/new", "/prompts/wizard", "/skills/new", "/workflows/new", "/prompt-kits/new",
+    "/settings",
+    "/profile/edit",
+    "/activity",
+    "/collections/new",
+    "/team/",
+    "/prompts/new",
+    "/prompts/wizard",
+    "/skills/new",
+    "/workflows/new",
+    "/prompt-kits/new",
     "/create-from-menerio",
   ];
-  if (authed.some((a) => p.startsWith(a)) || p.endsWith("/edit") || p.endsWith("/versions")) {
+  if (
+    authed.some((a) => p.startsWith(a)) ||
+    p.endsWith("/edit") ||
+    p.endsWith("/versions")
+  ) {
     return "in-page-auth-check";
   }
   return "public";
@@ -95,7 +115,9 @@ function classifyGuard(route) {
 
 const generated = existsSync(ROUTE_TREE);
 if (!generated && !existsSync(APP_TSX)) {
-  console.error("Neither src/routeTree.gen.ts nor src/App.tsx exists. Nothing to read.");
+  console.error(
+    "Neither src/routeTree.gen.ts nor src/App.tsx exists. Nothing to read.",
+  );
   process.exit(2);
 }
 
@@ -120,13 +142,22 @@ writeFileSync(
 );
 writeFileSync(
   resolve(here, "routes.txt"),
-  routes.map((r) => r.path).sort().join("\n") + "\n",
+  routes
+    .map((r) => r.path)
+    .sort()
+    .join("\n") + "\n",
 );
 
-const byGuard = routes.reduce((acc, r) => ((acc[r.guard] = (acc[r.guard] ?? 0) + 1), acc), {});
+const byGuard = routes.reduce(
+  (acc, r) => ((acc[r.guard] = (acc[r.guard] ?? 0) + 1), acc),
+  {},
+);
 console.log(`source: ${generated ? "src/routeTree.gen.ts" : "src/App.tsx"}`);
 console.log(`routes: ${routes.length}`);
 console.log(`parameterised: ${routes.filter((r) => r.params.length).length}`);
 console.log(`by guard: ${JSON.stringify(byGuard)}`);
 const unknown = routes.filter((r) => r.loading === "unknown");
-if (unknown.length) console.log(`UNRESOLVED elements: ${unknown.map((r) => r.element).join(", ")}`);
+if (unknown.length)
+  console.log(
+    `UNRESOLVED elements: ${unknown.map((r) => r.element).join(", ")}`,
+  );

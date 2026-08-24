@@ -31,7 +31,9 @@ export async function callFunction(
   body: unknown,
   caller: Caller,
 ): Promise<FnResponse> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
   switch (caller.kind) {
     case "anonymous":
@@ -76,8 +78,14 @@ export async function callFunction(
 export const asAnonymous: Caller = { kind: "anonymous" };
 export const asAnonKey: Caller = { kind: "anon-key" };
 export const asServiceRole: Caller = { kind: "service-role" };
-export const asUser = (accessToken: string): Caller => ({ kind: "user", accessToken });
-export const asInternalKey = (secret: string): Caller => ({ kind: "internal-key", secret });
+export const asUser = (accessToken: string): Caller => ({
+  kind: "user",
+  accessToken,
+});
+export const asInternalKey = (secret: string): Caller => ({
+  kind: "internal-key",
+  secret,
+});
 
 // ── Auth ──────────────────────────────────────────────────────────────
 
@@ -236,7 +244,10 @@ export async function callMcpTool(
       result?: { content?: Array<{ type: string; text?: string }> };
       error?: { message?: string };
     };
-    text = json.result?.content?.map((c) => c.text ?? "").join("\n") ?? json.error?.message ?? raw;
+    text =
+      json.result?.content?.map((c) => c.text ?? "").join("\n") ??
+      json.error?.message ??
+      raw;
   } catch {
     /* leave the raw body */
   }
@@ -293,7 +304,10 @@ export async function sqlProbe(sql: string): Promise<string> {
     `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ query: `BEGIN;\n${body}\nROLLBACK;` }),
     },
   );
@@ -322,7 +336,9 @@ export async function sqlProbe(sql: string): Promise<string> {
 export async function sqlQuery<T = unknown>(sql: string): Promise<T[]> {
   const token = process.env.SUPABASE_ACCESS_TOKEN;
   if (!token) {
-    throw new Error("SUPABASE_ACCESS_TOKEN is needed for catalogue queries. Run: . scripts/secrets.sh");
+    throw new Error(
+      "SUPABASE_ACCESS_TOKEN is needed for catalogue queries. Run: . scripts/secrets.sh",
+    );
   }
 
   const body = sql
@@ -334,12 +350,18 @@ export async function sqlQuery<T = unknown>(sql: string): Promise<T[]> {
     `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ query: body }),
     },
   );
 
   const text = await res.text();
-  if (!res.ok) throw new Error(`Catalogue query failed (${res.status}): ${text.slice(0, 400)}`);
+  if (!res.ok)
+    throw new Error(
+      `Catalogue query failed (${res.status}): ${text.slice(0, 400)}`,
+    );
   return JSON.parse(text) as T[];
 }

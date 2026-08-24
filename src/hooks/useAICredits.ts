@@ -11,7 +11,6 @@ interface MyPlanRow {
   plan_source: string | null;
 }
 
-
 interface AICreditsData {
   id: string;
   tokensGranted: number;
@@ -54,18 +53,23 @@ export function useAICredits() {
       await supabase.functions.invoke("ensure-token-allowance");
 
       // Fetch allowance data and settings in parallel
-      const [allowanceResult, profileResult, settingsResult] = await Promise.all([
-        supabase
-          .from("v_ai_allowance_current")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase.rpc("get_my_plan"),
-        supabase
-          .from("ai_credit_settings")
-          .select("key, value_int")
-          .in("key", ["credits_free_per_month", "credits_premium_per_month", "tokens_per_credit"]),
-      ]);
+      const [allowanceResult, profileResult, settingsResult] =
+        await Promise.all([
+          supabase
+            .from("v_ai_allowance_current")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase.rpc("get_my_plan"),
+          supabase
+            .from("ai_credit_settings")
+            .select("key, value_int")
+            .in("key", [
+              "credits_free_per_month",
+              "credits_premium_per_month",
+              "tokens_per_credit",
+            ]),
+        ]);
 
       if (allowanceResult.error) {
         console.error("[AICredits] Fetch error:", allowanceResult.error);
@@ -75,12 +79,14 @@ export function useAICredits() {
 
       // Build settings map
       const settingsMap = Object.fromEntries(
-        (settingsResult.data || []).map((s) => [s.key, s.value_int])
+        (settingsResult.data || []).map((s) => [s.key, s.value_int]),
       );
       const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
-      
+
       // Determine plan base credits
-      const isPremium = (profileResult.data as MyPlanRow[] | null)?.[0]?.plan_type === "premium";
+      const isPremium =
+        (profileResult.data as MyPlanRow[] | null)?.[0]?.plan_type ===
+        "premium";
       const planBaseCredits = isPremium
         ? settingsMap["credits_premium_per_month"] || 1500
         : settingsMap["credits_free_per_month"] || 0;
@@ -88,8 +94,8 @@ export function useAICredits() {
       const data = allowanceResult.data;
       if (data) {
         // Parse metadata for rollover info
-        const metadata = data.metadata as { 
-          rollover_tokens?: number; 
+        const metadata = data.metadata as {
+          rollover_tokens?: number;
           base_tokens?: number;
         } | null;
 
@@ -137,13 +143,22 @@ export function useAICredits() {
   // Check for low credits and show warning toast (once per session)
   useEffect(() => {
     if (!credits || lowCreditWarningShownRef.current) return;
-    
-    const { remainingCredits, planBaseCredits, rolloverTokens, tokensPerCredit } = credits;
+
+    const {
+      remainingCredits,
+      planBaseCredits,
+      rolloverTokens,
+      tokensPerCredit,
+    } = credits;
     const rolloverCredits = rolloverTokens / tokensPerCredit;
     const totalCredits = (planBaseCredits ?? 1500) + rolloverCredits;
-    
+
     // Show warning if less than 15% remaining and user has some credits to begin with
-    if (totalCredits > 0 && remainingCredits > 0 && (remainingCredits / totalCredits) < 0.15) {
+    if (
+      totalCredits > 0 &&
+      remainingCredits > 0 &&
+      remainingCredits / totalCredits < 0.15
+    ) {
       lowCreditWarningShownRef.current = true;
       toast.warning("Low AI Credits", {
         description: `You have ${Math.round(remainingCredits)} credits remaining. They will reset at the start of your next billing period.`,

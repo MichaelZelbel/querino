@@ -1,43 +1,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Library, 
-  Wand2, 
-  Share2, 
-  Shield, 
-  Zap, 
-  Users 
-} from "lucide-react";
+import { Library, Wand2, Share2, Shield, Zap, Users } from "lucide-react";
 
 const features = [
   {
     icon: Library,
     title: "Organized Library",
-    description: "Keep all your prompts in one place with smart tagging, categories, and powerful search.",
+    description:
+      "Keep all your prompts in one place with smart tagging, categories, and powerful search.",
   },
   {
     icon: Wand2,
     title: "AI Refinement",
-    description: "Use intelligent tools to improve, expand, and debug your prompts for better results.",
+    description:
+      "Use intelligent tools to improve, expand, and debug your prompts for better results.",
   },
   {
     icon: Share2,
     title: "Community Sharing",
-    description: "Publish your best prompts and discover high-quality prompts from other creators.",
+    description:
+      "Publish your best prompts and discover high-quality prompts from other creators.",
   },
   {
     icon: Shield,
     title: "Version Control",
-    description: "Track changes, compare versions, and optionally sync with GitHub for backup.",
+    description:
+      "Track changes, compare versions, and optionally sync with GitHub for backup.",
   },
   {
     icon: Zap,
     title: "Instant Copy",
-    description: "One-click copy for any prompt. Start using it immediately in your AI workflow.",
+    description:
+      "One-click copy for any prompt. Start using it immediately in your AI workflow.",
   },
   {
     icon: Users,
     title: "Team Collaboration",
-    description: "Share prompt libraries with your team and maintain consistent AI outputs.",
+    description:
+      "Share prompt libraries with your team and maintain consistent AI outputs.",
   },
 ];
 
@@ -50,14 +49,15 @@ export function FeaturesSection() {
             Everything You Need
           </h2>
           <p className="text-lg text-muted-foreground">
-            From prompt discovery to advanced refinement, Querino has you covered.
+            From prompt discovery to advanced refinement, Querino has you
+            covered.
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
-            <Card 
-              key={feature.title} 
+            <Card
+              key={feature.title}
               variant="elevated"
               className="animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}

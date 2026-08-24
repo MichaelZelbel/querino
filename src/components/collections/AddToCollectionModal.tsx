@@ -11,13 +11,17 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Folder, Plus, Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCollections, useAddToCollection, useCreateCollection } from "@/hooks/useCollections";
+import {
+  useCollections,
+  useAddToCollection,
+  useCreateCollection,
+} from "@/hooks/useCollections";
 import { toast } from "sonner";
 
 interface AddToCollectionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  itemType: 'prompt' | 'skill' | 'workflow' | 'prompt_kit' | 'claw';
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
   itemId: string;
 }
 
@@ -32,7 +36,7 @@ export function AddToCollectionModal({
   const { data: collections, isLoading } = useCollections(user?.id);
   const addToCollection = useAddToCollection();
   const createCollection = useCreateCollection();
-  
+
   const [showNewForm, setShowNewForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [addingTo, setAddingTo] = useState<string | null>(null);
@@ -53,20 +57,20 @@ export function AddToCollectionModal({
 
   const handleCreateAndAdd = async () => {
     if (!newTitle.trim() || !user) return;
-    
+
     try {
       const collection = await createCollection.mutateAsync({
         title: newTitle.trim(),
         is_public: false,
         owner_id: user.id,
       });
-      
+
       await addToCollection.mutateAsync({
         collection_id: collection.id,
         item_type: itemType,
         item_id: itemId,
       });
-      
+
       onOpenChange(false);
       setNewTitle("");
       setShowNewForm(false);
@@ -83,8 +87,14 @@ export function AddToCollectionModal({
             <DialogTitle>Add to Collection</DialogTitle>
           </DialogHeader>
           <div className="text-center py-6">
-            <p className="text-muted-foreground mb-4">Sign in to create collections</p>
-            <Button onClick={() => navigate(`/auth?redirect=${window.location.pathname}`)}>
+            <p className="text-muted-foreground mb-4">
+              Sign in to create collections
+            </p>
+            <Button
+              onClick={() =>
+                navigate(`/auth?redirect=${window.location.pathname}`)
+              }
+            >
               Sign In
             </Button>
           </div>
@@ -165,7 +175,9 @@ export function AddToCollectionModal({
                       ) : (
                         <Folder className="h-4 w-4" />
                       )}
-                      <span className="flex-1 text-left truncate">{collection.title}</span>
+                      <span className="flex-1 text-left truncate">
+                        {collection.title}
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {collection.item_count || 0} items
                       </span>

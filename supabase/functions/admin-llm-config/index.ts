@@ -4,7 +4,10 @@
 // is the repo's non-negotiable rule and the reason this file does not accept a
 // user_id at all.
 
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  createClient,
+  type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { isAdminCaller } from "../_shared/internalAuth.ts";
 import {
   CALL_SITES,
@@ -18,30 +21,45 @@ import {
   getDefaultSystemPrompt,
   normalizeSystemPrompt,
 } from "../_shared/llm-default-prompts.ts";
-import { callProvider, providerAvailability } from "../_shared/llm-providers.ts";
+import {
+  callProvider,
+  providerAvailability,
+} from "../_shared/llm-providers.ts";
 import {
   resolveConfig,
   interpolatePrompt,
   __clearConfigCache,
   type DbLike,
 } from "../_shared/llm-config.ts";
-import { normalizeUsageRow, summarizeUsage } from "../_shared/llm-usage-summary.ts";
+import {
+  normalizeUsageRow,
+  summarizeUsage,
+} from "../_shared/llm-usage-summary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-const PROVIDERS = Object.keys(PROVIDER_SECRETS) as (keyof typeof PROVIDER_SECRETS)[];
+const PROVIDERS = Object.keys(
+  PROVIDER_SECRETS,
+) as (keyof typeof PROVIDER_SECRETS)[];
 
 /**
  * The caller's own user id, read from the JWT. Only used to stamp updated_by;
  * authorisation has already happened in isAdminCaller. Never from the body.
  */
-async function callerUserId(req: Request, admin: SupabaseClient): Promise<string | null> {
-  const header = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+async function callerUserId(
+  req: Request,
+  admin: SupabaseClient,
+): Promise<string | null> {
+  const header =
+    req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
   if (!header.startsWith("Bearer ")) return null;
-  const { data } = await admin.auth.getUser(header.slice("Bearer ".length).trim());
+  const { data } = await admin.auth.getUser(
+    header.slice("Bearer ".length).trim(),
+  );
   return data?.user?.id ?? null;
 }
 
@@ -59,7 +77,10 @@ function json(body: unknown, status = 200): Response {
  * `force` overwrites every column from the registry. Destructive, and only used
  * deliberately.
  */
-async function syncDefaults(admin: SupabaseClient, force: boolean): Promise<void> {
+async function syncDefaults(
+  admin: SupabaseClient,
+  force: boolean,
+): Promise<void> {
   const rows = CALL_SITES.map((c) => ({
     call_site: c.call_site,
     tier: "default",
@@ -85,8 +106,9 @@ async function syncDefaults(admin: SupabaseClient, force: boolean): Promise<void
   if (readErr) throw readErr;
 
   const seen = new Map<string, string | null>(
-    (existing ?? []).map((r: { call_site: string; description: string | null }) =>
-      [r.call_site, r.description] as [string, string | null]
+    (existing ?? []).map(
+      (r: { call_site: string; description: string | null }) =>
+        [r.call_site, r.description] as [string, string | null],
     ),
   );
 
@@ -110,7 +132,8 @@ async function syncDefaults(admin: SupabaseClient, force: boolean): Promise<void
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: corsHeaders });
 
   try {
     if (!(await isAdminCaller(req))) {
@@ -123,7 +146,7 @@ Deno.serve(async (req: Request) => {
       { auth: { persistSession: false } },
     );
 
-    const body = await req.json().catch(() => ({})) as {
+    const body = (await req.json().catch(() => ({}))) as {
       action?: string;
       call_site?: string;
       tier?: string;
@@ -139,7 +162,8 @@ Deno.serve(async (req: Request) => {
         enabled?: boolean;
       };
     };
-    const tier = body.tier === "free" || body.tier === "premium" ? body.tier : "default";
+    const tier =
+      body.tier === "free" || body.tier === "premium" ? body.tier : "default";
 
     if (body.action === "list") {
       await syncDefaults(admin, false);
@@ -166,25 +190,38 @@ Deno.serve(async (req: Request) => {
         };
       });
 
-      return json({ configs, availability: providerAvailability(), providers: PROVIDER_PRESETS });
+      return json({
+        configs,
+        availability: providerAvailability(),
+        providers: PROVIDER_PRESETS,
+      });
     }
 
     if (body.action === "save") {
       const callSite = String(body.call_site ?? "");
       if (!callSite) return json({ error: "call_site required" }, 400);
-      if (!getCallSiteMeta(callSite)) return json({ error: "Unknown call_site" }, 400);
+      if (!getCallSiteMeta(callSite))
+        return json({ error: "Unknown call_site" }, 400);
 
       const patch = body.patch ?? {};
-      if (patch.provider !== undefined && !PROVIDERS.includes(patch.provider as never)) {
+      if (
+        patch.provider !== undefined &&
+        !PROVIDERS.includes(patch.provider as never)
+      ) {
         return json({ error: `Unknown provider "${patch.provider}"` }, 400);
       }
-      if (patch.model !== undefined && String(patch.model).trim().length === 0) {
+      if (
+        patch.model !== undefined &&
+        String(patch.model).trim().length === 0
+      ) {
         return json({ error: "model cannot be empty" }, 400);
       }
 
       // Only these columns are writable. call_site and tier identify the row and
       // are never patched, so a save can never rename or retier an entry.
-      const update: Record<string, unknown> = { updated_by: await callerUserId(req, admin) };
+      const update: Record<string, unknown> = {
+        updated_by: await callerUserId(req, admin),
+      };
       if (patch.provider !== undefined) update.provider = patch.provider;
       if (patch.model !== undefined) update.model = String(patch.model).trim();
       // An empty box means "use the code default", and so does a box still
@@ -194,9 +231,13 @@ Deno.serve(async (req: Request) => {
       // later change to the code and the table's "Code default" column would
       // start lying. Enforced here so no client can do it by accident.
       if (patch.system_prompt !== undefined) {
-        update.system_prompt = normalizeSystemPrompt(callSite, patch.system_prompt);
+        update.system_prompt = normalizeSystemPrompt(
+          callSite,
+          patch.system_prompt,
+        );
       }
-      if (patch.temperature !== undefined) update.temperature = patch.temperature;
+      if (patch.temperature !== undefined)
+        update.temperature = patch.temperature;
       if (patch.max_tokens !== undefined) update.max_tokens = patch.max_tokens;
       if (patch.enabled !== undefined) update.enabled = patch.enabled;
 
@@ -215,17 +256,25 @@ Deno.serve(async (req: Request) => {
       // Zero or absent means all time. The ledger is small enough that reading
       // all of it is the useful default when someone first opens the panel.
       const days = Number(body.days ?? 30);
-      const since = Number.isFinite(days) && days > 0
-        ? new Date(Date.now() - days * 86_400_000).toISOString()
-        : null;
+      const since =
+        Number.isFinite(days) && days > 0
+          ? new Date(Date.now() - days * 86_400_000).toISOString()
+          : null;
 
-      const { data, error } = await admin.rpc("admin_llm_usage_summary", { p_since: since });
+      const { data, error } = await admin.rpc("admin_llm_usage_summary", {
+        p_since: since,
+      });
       if (error) throw error;
 
-      const rows = (data ?? []).map((r: Record<string, unknown>) => normalizeUsageRow(r));
+      const rows = (data ?? []).map((r: Record<string, unknown>) =>
+        normalizeUsageRow(r),
+      );
       // Every configured call site is passed in so the ones nobody has called
       // still appear, at zero, instead of looking like they do not exist.
-      const summary = summarizeUsage(rows, CALL_SITES.map((c) => c.call_site));
+      const summary = summarizeUsage(
+        rows,
+        CALL_SITES.map((c) => c.call_site),
+      );
 
       return json({ ...summary, since, days: since ? days : null });
     }
@@ -246,7 +295,8 @@ Deno.serve(async (req: Request) => {
 
       const meta = getCallSiteMeta(callSite);
       const userPrompt = String(
-        body.prompt || "Say 'Hello' and tell me which model and provider you are using.",
+        body.prompt ||
+          "Say 'Hello' and tell me which model and provider you are using.",
       );
 
       // The panel saves before it tests, so this reads the persisted row.
@@ -276,7 +326,10 @@ Deno.serve(async (req: Request) => {
       for (const ph of meta?.placeholders ?? []) {
         templateVars[ph] = `[test value for {{${ph}}}]`;
       }
-      const systemPrompt = interpolatePrompt(effective.system_prompt, templateVars);
+      const systemPrompt = interpolatePrompt(
+        effective.system_prompt,
+        templateVars,
+      );
 
       const startedAt = Date.now();
       try {
@@ -288,9 +341,9 @@ Deno.serve(async (req: Request) => {
           maxTokens: effective.max_tokens,
           messages: systemPrompt
             ? [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ]
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+              ]
             : [{ role: "user", content: userPrompt }],
         });
         return json({
@@ -314,6 +367,9 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Unknown action" }, 400);
   } catch (err) {
     console.error("admin-llm-config error:", err);
-    return json({ error: err instanceof Error ? err.message : String(err) }, 500);
+    return json(
+      { error: err instanceof Error ? err.message : String(err) },
+      500,
+    );
   }
 });

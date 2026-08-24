@@ -17,8 +17,14 @@ export function ReviewSection({
   ratingAvg,
   ratingCount,
 }: ReviewSectionProps) {
-  const { reviews, userReview, loading, submitting, submitReview, deleteReview } =
-    usePromptReviews(promptId, userId);
+  const {
+    reviews,
+    userReview,
+    loading,
+    submitting,
+    submitReview,
+    deleteReview,
+  } = usePromptReviews(promptId, userId);
 
   return (
     <GenericReviewSection

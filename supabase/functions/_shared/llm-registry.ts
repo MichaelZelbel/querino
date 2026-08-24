@@ -5,7 +5,8 @@
 // files that own them and are passed to the resolver as a fallback, so this
 // file stays a table of contents.
 
-export type Provider = "lovable" | "openrouter" | "openai" | "anthropic" | "gemini";
+export type Provider =
+  "lovable" | "openrouter" | "openai" | "anthropic" | "gemini";
 export type Tier = "default" | "free" | "premium";
 
 // The code defaults, used when the config table has no row for a call site or
@@ -34,23 +35,125 @@ export interface CallSiteMeta {
 }
 
 export const CALL_SITES: CallSiteMeta[] = [
-  { call_site: "prompt-coach", description: "Chat coach that helps a user write a prompt.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "prompt-kit-coach", description: "Chat coach that helps a user write a prompt kit.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "skill-coach", description: "Chat coach that helps a user write a skill.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "workflow-coach", description: "Chat coach that helps a user write a workflow.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "suggest-metadata", description: "Suggests title, description and tags for a prompt.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "suggest-promptkit-metadata", description: "Suggests title, description and tags for a prompt kit.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "suggest-skill-metadata", description: "Suggests title, description and tags for a skill.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "suggest-workflow-metadata", description: "Suggests title, description and tags for a workflow.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "ai-insights-prompt", description: "Generates the AI insights shown on a prompt page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "ai-insights-skill", description: "Generates the AI insights shown on a skill page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "ai-insights-workflow", description: "Generates the AI insights shown on a workflow page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "ai-insights-prompt_kit", description: "Generates the AI insights shown on a prompt kit page.", provider: DEFAULT_PROVIDER, model: BACKGROUND_MODEL, placeholders: [] },
-  { call_site: "prompt-wizard", description: "The guided wizard that builds a prompt from answers.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "prompt-refinement", description: "Refines an existing prompt on request.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
-  { call_site: "translate-artifact", description: "Translates an artifact into another language.", provider: DEFAULT_PROVIDER, model: TRANSLATION_MODEL, placeholders: ["artifactType", "sourceLanguage", "targetLanguage"] },
-  { call_site: "canvas-ai", description: "The canvas assistant that edits an artifact in place.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: ["mode", "artifactType", "canvasContent", "modeInstructions"] },
-  { call_site: "ai-moderate-content", description: "Classifies queued user content against the content policies.", provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL, placeholders: [] },
+  {
+    call_site: "prompt-coach",
+    description: "Chat coach that helps a user write a prompt.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "prompt-kit-coach",
+    description: "Chat coach that helps a user write a prompt kit.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "skill-coach",
+    description: "Chat coach that helps a user write a skill.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "workflow-coach",
+    description: "Chat coach that helps a user write a workflow.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "suggest-metadata",
+    description: "Suggests title, description and tags for a prompt.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "suggest-promptkit-metadata",
+    description: "Suggests title, description and tags for a prompt kit.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "suggest-skill-metadata",
+    description: "Suggests title, description and tags for a skill.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "suggest-workflow-metadata",
+    description: "Suggests title, description and tags for a workflow.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "ai-insights-prompt",
+    description: "Generates the AI insights shown on a prompt page.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "ai-insights-skill",
+    description: "Generates the AI insights shown on a skill page.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "ai-insights-workflow",
+    description: "Generates the AI insights shown on a workflow page.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "ai-insights-prompt_kit",
+    description: "Generates the AI insights shown on a prompt kit page.",
+    provider: DEFAULT_PROVIDER,
+    model: BACKGROUND_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "prompt-wizard",
+    description: "The guided wizard that builds a prompt from answers.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "prompt-refinement",
+    description: "Refines an existing prompt on request.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
+  {
+    call_site: "translate-artifact",
+    description: "Translates an artifact into another language.",
+    provider: DEFAULT_PROVIDER,
+    model: TRANSLATION_MODEL,
+    placeholders: ["artifactType", "sourceLanguage", "targetLanguage"],
+  },
+  {
+    call_site: "canvas-ai",
+    description: "The canvas assistant that edits an artifact in place.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: ["mode", "artifactType", "canvasContent", "modeInstructions"],
+  },
+  {
+    call_site: "ai-moderate-content",
+    description: "Classifies queued user content against the content policies.",
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    placeholders: [],
+  },
 ];
 
 const BY_CALL_SITE = new Map(CALL_SITES.map((c) => [c.call_site, c]));
@@ -82,9 +185,15 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     provider: "lovable",
     label: "Lovable AI Gateway",
     models: [
-      { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview (default)" },
+      {
+        value: "google/gemini-3-flash-preview",
+        label: "Gemini 3 Flash Preview (default)",
+      },
       { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-      { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite (cheapest)" },
+      {
+        value: "google/gemini-2.5-flash-lite",
+        label: "Gemini 2.5 Flash Lite (cheapest)",
+      },
       { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (strongest)" },
       { value: "openai/gpt-5", label: "GPT-5" },
       { value: "openai/gpt-5-mini", label: "GPT-5 Mini" },
@@ -100,15 +209,36 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     provider: "openrouter",
     label: "OpenRouter",
     models: [
-      { value: "google/gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite ($0.25/$1.50) — chat default" },
-      { value: "google/gemini-3.7-flash", label: "Gemini 3.7 Flash ($0.38/$1.88) — stronger, translation" },
-      { value: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash ($0.05/$0.10) — background default" },
-      { value: "qwen/qwen3.7-flash", label: "Qwen3.7 Flash ($0.03/$0.13) — cheapest sensible" },
-      { value: "mistralai/mistral-small-3.2-24b-instruct", label: "Mistral Small 3.2 24B ($0.08/$0.20)" },
+      {
+        value: "google/gemini-3.1-flash-lite",
+        label: "Gemini 3.1 Flash Lite ($0.25/$1.50) — chat default",
+      },
+      {
+        value: "google/gemini-3.7-flash",
+        label: "Gemini 3.7 Flash ($0.38/$1.88) — stronger, translation",
+      },
+      {
+        value: "deepseek/deepseek-v4-flash",
+        label: "DeepSeek V4 Flash ($0.05/$0.10) — background default",
+      },
+      {
+        value: "qwen/qwen3.7-flash",
+        label: "Qwen3.7 Flash ($0.03/$0.13) — cheapest sensible",
+      },
+      {
+        value: "mistralai/mistral-small-3.2-24b-instruct",
+        label: "Mistral Small 3.2 24B ($0.08/$0.20)",
+      },
       { value: "z-ai/glm-4.7-flash", label: "GLM 4.7 Flash ($0.06/$0.40)" },
-      { value: "meta-llama/llama-4-scout", label: "Llama 4 Scout ($0.10/$0.30)" },
+      {
+        value: "meta-llama/llama-4-scout",
+        label: "Llama 4 Scout ($0.10/$0.30)",
+      },
       { value: "openai/gpt-5-mini", label: "GPT-5 Mini ($0.25/$2.00)" },
-      { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview ($0.50/$3.00) — dearest here" },
+      {
+        value: "google/gemini-3-flash-preview",
+        label: "Gemini 3 Flash Preview ($0.50/$3.00) — dearest here",
+      },
       { value: "openrouter/auto", label: "Auto (OpenRouter chooses)" },
     ],
   },

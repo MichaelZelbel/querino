@@ -1,17 +1,24 @@
-import { useState } from 'react';
-import { Link } from '@/lib/router-compat';
-import ReactMarkdown from 'react-markdown';
-import { ChevronRight, ChevronLeft, RefreshCw, Sparkles, Lock, Crown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { useAIInsights } from '@/hooks/useAIInsights';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { useAICreditsGate } from '@/hooks/useAICreditsGate';
+import { useState } from "react";
+import { Link } from "@/lib/router-compat";
+import ReactMarkdown from "react-markdown";
+import {
+  ChevronRight,
+  ChevronLeft,
+  RefreshCw,
+  Sparkles,
+  Lock,
+  Crown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useAIInsights } from "@/hooks/useAIInsights";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 
-type ItemType = 'prompt' | 'skill' | 'workflow' | 'prompt_kit';
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 interface AIInsightsPanelProps {
   itemType: ItemType;
@@ -19,14 +26,26 @@ interface AIInsightsPanelProps {
   teamId?: string | null;
 }
 
-export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelProps) {
+export function AIInsightsPanel({
+  itemType,
+  itemId,
+  teamId,
+}: AIInsightsPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const { user, profile } = useAuthContext();
-  const { insights, loading, generating, error, generateInsights, refreshInsights, hasInsights } = useAIInsights(itemType, itemId);
+  const {
+    insights,
+    loading,
+    generating,
+    error,
+    generateInsights,
+    refreshInsights,
+    hasInsights,
+  } = useAIInsights(itemType, itemId);
   const { checkCredits } = useAICreditsGate();
 
   // Check if user has premium access
-  const isPremium = profile?.plan_type === 'premium';
+  const isPremium = profile?.plan_type === "premium";
 
   // Gated generate/refresh functions
   const handleGenerate = () => {
@@ -93,7 +112,9 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Lock className="h-8 w-8 text-primary" />
           </div>
-          <h4 className="font-semibold text-foreground mb-2">Premium Feature</h4>
+          <h4 className="font-semibold text-foreground mb-2">
+            Premium Feature
+          </h4>
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
             AI Insights is a Premium feature. Contact support to learn more.
           </p>
@@ -125,7 +146,9 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
             disabled={generating}
             aria-label={hasInsights ? "Refresh insights" : "Generate insights"}
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", generating && "animate-spin")} />
+            <RefreshCw
+              className={cn("h-3.5 w-3.5", generating && "animate-spin")}
+            />
           </Button>
           <Button
             variant="ghost"
@@ -166,9 +189,7 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
                 </>
               )}
             </Button>
-            {error && (
-              <p className="text-xs text-destructive mt-3">{error}</p>
-            )}
+            {error && <p className="text-xs text-destructive mt-3">{error}</p>}
           </div>
         ) : (
           <ScrollArea className="h-full">
@@ -178,7 +199,9 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
                   <ReactMarkdown>{insights.summary}</ReactMarkdown>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground italic">No insights available</p>
+                <p className="text-sm text-muted-foreground italic">
+                  No insights available
+                </p>
               )}
             </div>
           </ScrollArea>
@@ -187,7 +210,9 @@ export function AIInsightsPanel({ itemType, itemId, teamId }: AIInsightsPanelPro
         {generating && hasInsights && (
           <div className="p-4 text-center">
             <RefreshCw className="h-6 w-6 mx-auto animate-spin text-primary mb-2" />
-            <p className="text-xs text-muted-foreground">Refreshing insights...</p>
+            <p className="text-xs text-muted-foreground">
+              Refreshing insights...
+            </p>
           </div>
         )}
       </div>

@@ -8,10 +8,18 @@
 // Phase 2 rewrites the credit path. This test is the reason to write it first.
 
 import { test, expect } from "@playwright/test";
-import { asAnonymous, asUser, callFunction, signInTestUser } from "./helpers/api";
+import {
+  asAnonymous,
+  asUser,
+  callFunction,
+  signInTestUser,
+} from "./helpers/api";
 import { activeAllowance, withExhaustedCredits } from "./helpers/fixtures";
 
-const REFINE_BODY = { prompt: "write a haiku about idempotency", framework: "auto" };
+const REFINE_BODY = {
+  prompt: "write a haiku about idempotency",
+  framework: "auto",
+};
 
 test.describe("The credit gate", () => {
   test("an account with credits left is served", async () => {
@@ -24,15 +32,26 @@ test.describe("The credit gate", () => {
 
     // Only the gate is under test here, so stop at "not 402" rather than
     // spending gateway money on a full round trip.
-    const res = await callFunction("refine-prompt", { prompt: "" }, asUser(session.accessToken));
-    expect(res.status, "an empty prompt is a 400, which proves the gate let us past auth").toBe(400);
+    const res = await callFunction(
+      "refine-prompt",
+      { prompt: "" },
+      asUser(session.accessToken),
+    );
+    expect(
+      res.status,
+      "an empty prompt is a 400, which proves the gate let us past auth",
+    ).toBe(400);
   });
 
   test("an account with nothing left gets 402, not a paid call", async () => {
     const session = await signInTestUser();
 
     await withExhaustedCredits(async () => {
-      const res = await callFunction("refine-prompt", REFINE_BODY, asUser(session.accessToken));
+      const res = await callFunction(
+        "refine-prompt",
+        REFINE_BODY,
+        asUser(session.accessToken),
+      );
 
       expect(res.status).toBe(402);
       expect(JSON.stringify(res.body)).toMatch(/credit/i);

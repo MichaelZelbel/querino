@@ -1,4 +1,4 @@
-export { SuggestEditModal } from './SuggestEditModal';
-export { SuggestionReviewModal } from './SuggestionReviewModal';
-export { SuggestionsTab } from './SuggestionsTab';
-export { UpdateSuggestionModal } from './UpdateSuggestionModal';
+export { SuggestEditModal } from "./SuggestEditModal";
+export { SuggestionReviewModal } from "./SuggestionReviewModal";
+export { SuggestionsTab } from "./SuggestionsTab";
+export { UpdateSuggestionModal } from "./UpdateSuggestionModal";

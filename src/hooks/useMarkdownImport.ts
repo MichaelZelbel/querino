@@ -68,7 +68,7 @@ export function useMarkdownImport(type: ArtefactType) {
       document.body.appendChild(input);
       fileInputRef.current = input;
     }
-    
+
     fileInputRef.current.click();
   }, [navigate, type]);
 

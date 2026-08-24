@@ -1,13 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  ArrowLeft,
-  Clock,
-  RotateCcw,
-  GitCompare,
-  Tag,
-} from "lucide-react";
+import { ArrowLeft, Clock, RotateCcw, GitCompare, Tag } from "lucide-react";
 import { format } from "date-fns";
 import type { PromptVersion } from "./VersionHistoryPanel";
 
@@ -28,7 +22,13 @@ export function VersionDetailView({
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Header with back button */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0" aria-label="Back">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="shrink-0"
+          aria-label="Back"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-2 min-w-0">
@@ -101,18 +101,11 @@ export function VersionDetailView({
 
       {/* Action Footer */}
       <div className="flex items-center gap-2 p-4 border-t border-border">
-        <Button
-          variant="outline"
-          onClick={onCompare}
-          className="gap-2 flex-1"
-        >
+        <Button variant="outline" onClick={onCompare} className="gap-2 flex-1">
           <GitCompare className="h-4 w-4" />
           Compare with Current
         </Button>
-        <Button
-          onClick={onRestore}
-          className="gap-2 flex-1"
-        >
+        <Button onClick={onRestore} className="gap-2 flex-1">
           <RotateCcw className="h-4 w-4" />
           Restore
         </Button>

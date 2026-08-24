@@ -17,7 +17,12 @@
 
 import { test, expect } from "@playwright/test";
 import { callMcpTool } from "./helpers/api";
-import { createSearchablePrompt, mintMcpToken, type PromptFixture, type MintedMcpToken } from "./helpers/fixtures";
+import {
+  createSearchablePrompt,
+  mintMcpToken,
+  type PromptFixture,
+  type MintedMcpToken,
+} from "./helpers/fixtures";
 
 let mcp: MintedMcpToken;
 let prompt: PromptFixture;
@@ -34,19 +39,28 @@ test.afterAll(async () => {
 
 test.describe("M2 — punctuation in a search box does not silently return nothing", () => {
   test("a plain search finds the fixture (the control)", async () => {
-    const res = await callMcpTool(mcp.token, "search_prompts", { query: prompt.plainTerm });
+    const res = await callMcpTool(mcp.token, "search_prompts", {
+      query: prompt.plainTerm,
+    });
     expect(res.isError, `search errored: ${res.text}`).toBe(false);
     expect(res.text).toContain(prompt.title);
   });
 
   test("a search containing a comma finds the same fixture", async () => {
-    const res = await callMcpTool(mcp.token, "search_prompts", { query: prompt.commaTerm });
-    expect(res.isError, `search errored instead of returning results: ${res.text}`).toBe(false);
+    const res = await callMcpTool(mcp.token, "search_prompts", {
+      query: prompt.commaTerm,
+    });
+    expect(
+      res.isError,
+      `search errored instead of returning results: ${res.text}`,
+    ).toBe(false);
     expect(res.text).toContain(prompt.title);
   });
 
   test("a comma that matches nothing returns an empty list, not an error", async () => {
-    const res = await callMcpTool(mcp.token, "search_prompts", { query: "prompts, skills" });
+    const res = await callMcpTool(mcp.token, "search_prompts", {
+      query: "prompts, skills",
+    });
     expect(res.isError, `search errored: ${res.text}`).toBe(false);
     expect(res.text).not.toMatch(/failed to parse logic tree/i);
   });
@@ -54,7 +68,10 @@ test.describe("M2 — punctuation in a search box does not silently return nothi
   test("brackets, dots and quotes do not break the parser either", async () => {
     for (const query of ["a(b", "a)b", "a.b", 'a"b', "a\\b"]) {
       const res = await callMcpTool(mcp.token, "search_prompts", { query });
-      expect(res.isError, `searching for ${JSON.stringify(query)} errored: ${res.text}`).toBe(false);
+      expect(
+        res.isError,
+        `searching for ${JSON.stringify(query)} errored: ${res.text}`,
+      ).toBe(false);
     }
   });
 
@@ -69,7 +86,9 @@ test.describe("M2 — punctuation in a search box does not silently return nothi
     // The escaping fix must not disturb the ownership filter that is ANDed on.
     const res = await callMcpTool(mcp.token, "search_prompts", { query: "e" });
     expect(res.isError, `search errored: ${res.text}`).toBe(false);
-    const ids = [...res.text.matchAll(/"id":\s*"([0-9a-f-]{36})"/g)].map((m) => m[1]);
+    const ids = [...res.text.matchAll(/"id":\s*"([0-9a-f-]{36})"/g)].map(
+      (m) => m[1],
+    );
     for (const id of ids) {
       expect([prompt.id]).toContain(id);
     }

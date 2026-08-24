@@ -26,14 +26,18 @@ for (const url of urls) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text().replace(/\s+/g, " ").slice(0, 200));
+    if (m.type() === "error")
+      errors.push(m.text().replace(/\s+/g, " ").slice(0, 200));
   });
   try {
     await page.goto(url, { waitUntil: "networkidle", timeout: 45_000 });
     await page.waitForTimeout(1500);
     const { h1, robots, title } = await page.evaluate(() => ({
       h1: document.querySelector("h1")?.textContent?.trim() ?? "(no h1)",
-      robots: document.querySelector('meta[name="robots"]')?.getAttribute("content") ?? null,
+      robots:
+        document
+          .querySelector('meta[name="robots"]')
+          ?.getAttribute("content") ?? null,
       title: document.title,
     }));
     const notFound = /not found/i.test(h1) || /noindex/i.test(robots ?? "");
@@ -51,5 +55,7 @@ for (const url of urls) {
 }
 
 await browser.close();
-console.log(`\n${urls.length - broken}/${urls.length} pages render their content to a logged-out visitor.`);
+console.log(
+  `\n${urls.length - broken}/${urls.length} pages render their content to a logged-out visitor.`,
+);
 process.exitCode = broken ? 1 : 0;

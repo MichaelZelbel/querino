@@ -18,10 +18,12 @@ export function useActivityEvents(options: UseActivityEventsOptions = {}) {
     queryFn: async ({ pageParam = 0 }) => {
       let query = supabase
         .from("activity_events")
-        .select(`
+        .select(
+          `
           *,
           actor:profiles!activity_events_actor_id_fkey(id, display_name, avatar_url)
-        `)
+        `,
+        )
         .order("created_at", { ascending: false })
         .range(pageParam, pageParam + limit - 1);
 
@@ -76,10 +78,12 @@ export function useOwnActivityFeed(userId: string | undefined, limit = 20) {
     queryFn: async ({ pageParam = 0 }) => {
       const { data, error } = await supabase
         .from("activity_events")
-        .select(`
+        .select(
+          `
           *,
           actor:profiles!activity_events_actor_id_fkey(id, display_name, avatar_url)
-        `)
+        `,
+        )
         .eq("actor_id", userId!)
         .order("created_at", { ascending: false })
         .range(pageParam, pageParam + limit - 1);
@@ -108,16 +112,22 @@ export function useOwnActivityFeed(userId: string | undefined, limit = 20) {
  * The query is not sent for a visitor now, so the page can say the true thing
  * instead: this is private.
  */
-export function useUserActivityFeed(userId: string, isOwnProfile: boolean, limit = 20) {
+export function useUserActivityFeed(
+  userId: string,
+  isOwnProfile: boolean,
+  limit = 20,
+) {
   return useInfiniteQuery({
     queryKey: ["user-activity-feed", userId],
     queryFn: async ({ pageParam = 0 }) => {
       const { data, error } = await supabase
         .from("activity_events")
-        .select(`
+        .select(
+          `
           *,
           actor:profiles!activity_events_actor_id_fkey(id, display_name, avatar_url)
-        `)
+        `,
+        )
         .eq("actor_id", userId)
         .order("created_at", { ascending: false })
         .range(pageParam, pageParam + limit - 1);

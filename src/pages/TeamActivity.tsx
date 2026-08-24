@@ -13,14 +13,9 @@ export default function TeamActivity() {
   const { user, loading: authLoading } = useAuth();
   const { data: team, isLoading: teamLoading } = useTeam(id);
   const { data: userRole, isLoading: roleLoading } = useCurrentUserTeamRole(id);
-  
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useActivityEvents({ teamId: id });
+
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useActivityEvents({ teamId: id });
 
   const events = data?.pages.flat() || [];
 
@@ -46,7 +41,7 @@ export default function TeamActivity() {
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           {/* Back Link */}
-          <Link 
+          <Link
             to={`/team/${id}/settings`}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >

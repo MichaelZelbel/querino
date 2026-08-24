@@ -11,7 +11,12 @@
 // Both maps are explicit and exhaustive on purpose: a fifth artifact type
 // should fail loudly here rather than be guessed at.
 
-export const ARTIFACT_TYPES = ["prompt", "skill", "workflow", "prompt_kit"] as const;
+export const ARTIFACT_TYPES = [
+  "prompt",
+  "skill",
+  "workflow",
+  "prompt_kit",
+] as const;
 
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 

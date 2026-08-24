@@ -30,7 +30,7 @@ export function CreditsPill({ className }: { className?: string }) {
             isEmpty
               ? "border-destructive/40 text-destructive hover:bg-destructive/10"
               : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
-            className
+            className,
           )}
           aria-label={`${remaining} AI credits remaining`}
         >

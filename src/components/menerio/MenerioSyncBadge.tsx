@@ -1,5 +1,10 @@
 import { CloudUpload } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 
 interface MenerioSyncBadgeProps {
@@ -7,7 +12,10 @@ interface MenerioSyncBadgeProps {
   menerioSyncedAt?: string | null;
 }
 
-export function MenerioSyncBadge({ menerioSynced, menerioSyncedAt }: MenerioSyncBadgeProps) {
+export function MenerioSyncBadge({
+  menerioSynced,
+  menerioSyncedAt,
+}: MenerioSyncBadgeProps) {
   if (!menerioSynced) return null;
 
   const timeAgo = menerioSyncedAt

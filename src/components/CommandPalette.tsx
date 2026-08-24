@@ -33,14 +33,20 @@ import {
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { useCommandPaletteSearch, ArtefactType } from "@/hooks/useCommandPaletteSearch";
+import {
+  useCommandPaletteSearch,
+  ArtefactType,
+} from "@/hooks/useCommandPaletteSearch";
 
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const artefactIcons: Record<ArtefactType, React.ComponentType<{ className?: string }>> = {
+const artefactIcons: Record<
+  ArtefactType,
+  React.ComponentType<{ className?: string }>
+> = {
   prompt: Sparkles,
   skill: FileText,
   workflow: Workflow,
@@ -52,7 +58,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { teams, switchWorkspace } = useWorkspace();
-  const { artefacts, publicPrompts, isLoading, hasQuery } = useCommandPaletteSearch(query);
+  const { artefacts, publicPrompts, isLoading, hasQuery } =
+    useCommandPaletteSearch(query);
 
   // Reset query when closing
   useEffect(() => {
@@ -79,31 +86,106 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       onOpenChange(false);
       command();
     },
-    [onOpenChange]
+    [onOpenChange],
   );
 
   // Quick actions
   const quickActions = [
-    { label: "New Prompt", icon: Plus, action: () => navigate("/prompts/new"), requiresAuth: true },
-    { label: "New Prompt Kit", icon: Plus, action: () => navigate("/prompt-kits/new"), requiresAuth: true },
-    { label: "New Skill", icon: Plus, action: () => navigate("/skills/new"), requiresAuth: true },
-    { label: "New Workflow", icon: Plus, action: () => navigate("/workflows/new"), requiresAuth: true },
-    { label: "Open My Library", icon: Library, action: () => navigate("/library"), requiresAuth: true },
-    { label: "Open My Collections", icon: FolderOpen, action: () => navigate("/collections"), requiresAuth: true },
-    { label: "Open My Profile", icon: User, action: () => navigate("/profile/edit"), requiresAuth: true },
-    { label: "Open Settings", icon: Settings, action: () => navigate("/settings"), requiresAuth: true },
-    { label: "GitHub Sync Settings", icon: Github, action: () => navigate("/settings"), requiresAuth: true },
+    {
+      label: "New Prompt",
+      icon: Plus,
+      action: () => navigate("/prompts/new"),
+      requiresAuth: true,
+    },
+    {
+      label: "New Prompt Kit",
+      icon: Plus,
+      action: () => navigate("/prompt-kits/new"),
+      requiresAuth: true,
+    },
+    {
+      label: "New Skill",
+      icon: Plus,
+      action: () => navigate("/skills/new"),
+      requiresAuth: true,
+    },
+    {
+      label: "New Workflow",
+      icon: Plus,
+      action: () => navigate("/workflows/new"),
+      requiresAuth: true,
+    },
+    {
+      label: "Open My Library",
+      icon: Library,
+      action: () => navigate("/library"),
+      requiresAuth: true,
+    },
+    {
+      label: "Open My Collections",
+      icon: FolderOpen,
+      action: () => navigate("/collections"),
+      requiresAuth: true,
+    },
+    {
+      label: "Open My Profile",
+      icon: User,
+      action: () => navigate("/profile/edit"),
+      requiresAuth: true,
+    },
+    {
+      label: "Open Settings",
+      icon: Settings,
+      action: () => navigate("/settings"),
+      requiresAuth: true,
+    },
+    {
+      label: "GitHub Sync Settings",
+      icon: Github,
+      action: () => navigate("/settings"),
+      requiresAuth: true,
+    },
   ];
 
   // Navigation commands
   const navigationCommands = [
-    { label: "Go to Discover", icon: Compass, action: () => navigate("/discover"), requiresAuth: false },
-    { label: "Go to Activity Feed", icon: Activity, action: () => navigate("/activity"), requiresAuth: false },
-    { label: "Go to Docs", icon: BookOpen, action: () => navigate("/docs"), requiresAuth: false },
-    { label: "Go to Blog", icon: Newspaper, action: () => navigate("/blog"), requiresAuth: false },
-    
-    { label: "Open Settings", icon: Settings, action: () => navigate("/settings"), requiresAuth: true },
-    { label: "MCP Tokens", icon: KeyRound, action: () => navigate("/settings#mcp"), requiresAuth: true },
+    {
+      label: "Go to Discover",
+      icon: Compass,
+      action: () => navigate("/discover"),
+      requiresAuth: false,
+    },
+    {
+      label: "Go to Activity Feed",
+      icon: Activity,
+      action: () => navigate("/activity"),
+      requiresAuth: false,
+    },
+    {
+      label: "Go to Docs",
+      icon: BookOpen,
+      action: () => navigate("/docs"),
+      requiresAuth: false,
+    },
+    {
+      label: "Go to Blog",
+      icon: Newspaper,
+      action: () => navigate("/blog"),
+      requiresAuth: false,
+    },
+
+    {
+      label: "Open Settings",
+      icon: Settings,
+      action: () => navigate("/settings"),
+      requiresAuth: true,
+    },
+    {
+      label: "MCP Tokens",
+      icon: KeyRound,
+      action: () => navigate("/settings#mcp"),
+      requiresAuth: true,
+    },
   ];
 
   // Filter quick actions based on query
@@ -123,8 +205,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const teamCommands = teams
     .filter((team) => {
       if (!query.trim()) return true;
-      return team.name.toLowerCase().includes(query.toLowerCase()) || 
-             "switch workspace".includes(query.toLowerCase());
+      return (
+        team.name.toLowerCase().includes(query.toLowerCase()) ||
+        "switch workspace".includes(query.toLowerCase())
+      );
     })
     .map((team) => ({
       label: `Switch to ${team.name}`,
@@ -136,7 +220,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     }));
 
   // Should we show public prompts?
-  const showPublicPrompts = hasQuery && artefacts.length === 0 && publicPrompts.length > 0;
+  const showPublicPrompts =
+    hasQuery && artefacts.length === 0 && publicPrompts.length > 0;
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -173,10 +258,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CommandSeparator />
               <CommandGroup heading="Workspaces">
                 <CommandItem
-                  onSelect={() => runCommand(() => {
-                    switchWorkspace("personal");
-                    navigate("/library");
-                  })}
+                  onSelect={() =>
+                    runCommand(() => {
+                      switchWorkspace("personal");
+                      navigate("/library");
+                    })
+                  }
                   className="flex items-center gap-2"
                 >
                   <User className="h-4 w-4 text-muted-foreground" />
@@ -203,13 +290,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CommandGroup heading="Your Artefacts">
                 {artefacts.map((artefact) => {
                   const Icon = artefactIcons[artefact.type];
-                  const route = artefact.type === "prompt"
-                    ? `/prompts/${artefact.id}`
-                    : artefact.type === "skill"
-                    ? `/skills/${artefact.id}`
-                    : artefact.type === "prompt_kit"
-                    ? `/prompt-kits/${artefact.id}`
-                    : `/workflows/${artefact.id}`;
+                  const route =
+                    artefact.type === "prompt"
+                      ? `/prompts/${artefact.id}`
+                      : artefact.type === "skill"
+                        ? `/skills/${artefact.id}`
+                        : artefact.type === "prompt_kit"
+                          ? `/prompt-kits/${artefact.id}`
+                          : `/workflows/${artefact.id}`;
 
                   return (
                     <CommandItem
@@ -246,7 +334,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 {publicPrompts.map((prompt) => (
                   <CommandItem
                     key={prompt.id}
-                    onSelect={() => runCommand(() => navigate(`/prompts/${prompt.id}`))}
+                    onSelect={() =>
+                      runCommand(() => navigate(`/prompts/${prompt.id}`))
+                    }
                     className="flex items-center gap-2"
                   >
                     <Globe className="h-4 w-4 text-muted-foreground" />

@@ -2,7 +2,12 @@ import { Link } from "@/lib/router-compat";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ActivityIcon, ItemTypeIcon, getActionLabel, getActionColor } from "./ActivityIcon";
+import {
+  ActivityIcon,
+  ItemTypeIcon,
+  getActionLabel,
+  getActionColor,
+} from "./ActivityIcon";
 import type { ActivityEventWithActor } from "@/types/activity";
 
 interface ActivityEventCardProps {
@@ -10,7 +15,10 @@ interface ActivityEventCardProps {
   showItemLink?: boolean;
 }
 
-export function ActivityEventCard({ event, showItemLink = true }: ActivityEventCardProps) {
+export function ActivityEventCard({
+  event,
+  showItemLink = true,
+}: ActivityEventCardProps) {
   const actorName = event.actor?.display_name || "Unknown user";
   const actorInitial = actorName.charAt(0).toUpperCase();
   const actionLabel = getActionLabel(event.action, event.item_type);
@@ -18,7 +26,7 @@ export function ActivityEventCard({ event, showItemLink = true }: ActivityEventC
 
   const getItemLink = () => {
     if (!event.item_type || !event.item_id) return null;
-    
+
     const routes: Record<string, string> = {
       prompt: `/prompts/${event.item_id}`,
       skill: `/skills/${event.item_id}`,
@@ -38,9 +46,16 @@ export function ActivityEventCard({ event, showItemLink = true }: ActivityEventC
   return (
     <div className="flex gap-3 p-4 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
       {/* Actor Avatar */}
-      <Link to={event.actor ? `/u/${event.actor.display_name || event.actor_id}` : "#"}>
+      <Link
+        to={
+          event.actor ? `/u/${event.actor.display_name || event.actor_id}` : "#"
+        }
+      >
         <Avatar className="h-10 w-10 shrink-0">
-          <AvatarImage src={event.actor?.avatar_url || undefined} alt={actorName} />
+          <AvatarImage
+            src={event.actor?.avatar_url || undefined}
+            alt={actorName}
+          />
           <AvatarFallback className="bg-primary/10 text-primary">
             {actorInitial}
           </AvatarFallback>
@@ -51,8 +66,12 @@ export function ActivityEventCard({ event, showItemLink = true }: ActivityEventC
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 flex-wrap">
           {/* Actor Name */}
-          <Link 
-            to={event.actor ? `/u/${event.actor.display_name || event.actor_id}` : "#"}
+          <Link
+            to={
+              event.actor
+                ? `/u/${event.actor.display_name || event.actor_id}`
+                : "#"
+            }
             className="font-medium text-foreground hover:text-primary transition-colors"
           >
             {actorName}
@@ -60,7 +79,10 @@ export function ActivityEventCard({ event, showItemLink = true }: ActivityEventC
 
           {/* Action with Icon */}
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <ActivityIcon action={event.action} className={`h-3.5 w-3.5 ${actionColor}`} />
+            <ActivityIcon
+              action={event.action}
+              className={`h-3.5 w-3.5 ${actionColor}`}
+            />
             <span>{actionLabel}</span>
           </span>
         </div>
@@ -68,8 +90,11 @@ export function ActivityEventCard({ event, showItemLink = true }: ActivityEventC
         {/* Item Title/Link */}
         {showItemLink && itemLink && event.item_type && (
           <div className="flex items-center gap-2 mt-1">
-            <ItemTypeIcon itemType={event.item_type} className="h-4 w-4 text-muted-foreground" />
-            <Link 
+            <ItemTypeIcon
+              itemType={event.item_type}
+              className="h-4 w-4 text-muted-foreground"
+            />
+            <Link
               to={itemLink}
               className="text-primary hover:underline font-medium truncate"
             >
@@ -82,10 +107,11 @@ export function ActivityEventCard({ event, showItemLink = true }: ActivityEventC
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           {changedFields && changedFields.length > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {changedFields.length} field{changedFields.length > 1 ? "s" : ""} changed
+              {changedFields.length} field{changedFields.length > 1 ? "s" : ""}{" "}
+              changed
             </Badge>
           )}
-          
+
           {event.metadata?.versionNumber && (
             <Badge variant="outline" className="text-xs">
               v{event.metadata.versionNumber}

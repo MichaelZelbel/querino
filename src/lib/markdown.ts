@@ -22,12 +22,14 @@ export function slugify(title: string): string {
   if (!title || !title.trim()) {
     return "querino-export";
   }
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "") || "querino-export";
+  return (
+    title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "querino-export"
+  );
 }
 
 export function unslugify(slug: string): string {
@@ -66,7 +68,7 @@ export function buildMarkdownContent(data: {
 
 export function parseMarkdownContent(
   markdown: string,
-  filename?: string
+  filename?: string,
 ): ParsedMarkdown {
   const trimmed = markdown.trim();
   if (trimmed.startsWith("---")) {
@@ -104,8 +106,10 @@ function parseFrontmatter(str: string): Record<string, any> {
     if (colonIndex === -1) continue;
     const key = line.slice(0, colonIndex).trim();
     let value = line.slice(colonIndex + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
     if (value.startsWith("[") && value.endsWith("]")) {

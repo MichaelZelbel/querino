@@ -20,7 +20,12 @@
 
 import { test, expect } from "@playwright/test";
 import { callMcpTool } from "./helpers/api";
-import { createSearchableSkill, mintMcpToken, type SkillFixture, type MintedMcpToken } from "./helpers/fixtures";
+import {
+  createSearchableSkill,
+  mintMcpToken,
+  type SkillFixture,
+  type MintedMcpToken,
+} from "./helpers/fixtures";
 
 let mcp: MintedMcpToken;
 let skill: SkillFixture;
@@ -37,7 +42,10 @@ test.afterAll(async () => {
 
 async function search(query: string) {
   const res = await callMcpTool(mcp.token, "search_skills", { query });
-  expect(res.isError, `searching for ${JSON.stringify(query)} errored: ${res.text}`).toBe(false);
+  expect(
+    res.isError,
+    `searching for ${JSON.stringify(query)} errored: ${res.text}`,
+  ).toBe(false);
   return res.text;
 }
 
@@ -55,12 +63,16 @@ test.describe("search finds a record when the words are spread across it", () =>
   });
 
   test("two words from the title, given out of order, still find it", async () => {
-    expect(await search(`${skill.lastTitleWord} ${skill.firstTitleWord}`)).toContain(skill.title);
+    expect(
+      await search(`${skill.lastTitleWord} ${skill.firstTitleWord}`),
+    ).toContain(skill.title);
   });
 
   test("a word from the title plus a word from the description finds it", async () => {
     // These two can never be adjacent: they are in different columns.
-    expect(await search(`${skill.firstTitleWord} ${skill.descriptionWord}`)).toContain(skill.title);
+    expect(
+      await search(`${skill.firstTitleWord} ${skill.descriptionWord}`),
+    ).toContain(skill.title);
   });
 
   test("a word that only appears in the body finds it", async () => {
@@ -78,7 +90,9 @@ test.describe("search finds a record when the words are spread across it", () =>
   test("a quoted phrase still has to be adjacent", async () => {
     // Quoting is how a caller asks for the old behaviour deliberately.
     expect(await search(`"${skill.adjacentPhrase}"`)).toContain(skill.title);
-    expect(await search(`"${skill.reversedPhrase}"`)).not.toContain(skill.title);
+    expect(await search(`"${skill.reversedPhrase}"`)).not.toContain(
+      skill.title,
+    );
   });
 
   test("one impossible word does not erase the rest of the answer", async () => {
@@ -91,13 +105,17 @@ test.describe("search finds a record when the words are spread across it", () =>
 
   test("a query where nothing matches is still empty", async () => {
     // The loose pass must not turn into 'return everything'.
-    const text = await search(`zzz${skill.marker}nope zzz${skill.marker}alsonope`);
+    const text = await search(
+      `zzz${skill.marker}nope zzz${skill.marker}alsonope`,
+    );
     expect(text).not.toContain(skill.title);
   });
 
   test("the search is still scoped to the caller", async () => {
     const text = await search(skill.marker);
-    const ids = [...text.matchAll(/"id":\s*"([0-9a-f-]{36})"/g)].map((m) => m[1]);
+    const ids = [...text.matchAll(/"id":\s*"([0-9a-f-]{36})"/g)].map(
+      (m) => m[1],
+    );
     for (const id of ids) {
       expect([skill.id]).toContain(id);
     }

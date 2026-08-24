@@ -42,7 +42,10 @@ test.describe("Charging the same work twice", () => {
 
     try {
       const first = await recordUsage(userId, key);
-      expect(first.ok, `first charge failed: ${JSON.stringify(first.error)}`).toBe(true);
+      expect(
+        first.ok,
+        `first charge failed: ${JSON.stringify(first.error)}`,
+      ).toBe(true);
 
       const afterFirst = await activeAllowance();
       expect(afterFirst.tokens_used - before.tokens_used).toBe(CHARGE_TOKENS);
@@ -50,7 +53,10 @@ test.describe("Charging the same work twice", () => {
       // The retry. Three more times, because "twice" is the cheap case.
       for (let i = 0; i < 3; i++) {
         const repeat = await recordUsage(userId, key);
-        expect(repeat.ok, `retry ${i + 1} errored: ${JSON.stringify(repeat.error)}`).toBe(true);
+        expect(
+          repeat.ok,
+          `retry ${i + 1} errored: ${JSON.stringify(repeat.error)}`,
+        ).toBe(true);
       }
 
       const afterRetries = await activeAllowance();
@@ -62,11 +68,16 @@ test.describe("Charging the same work twice", () => {
       const events = await restAsService<UsageEvent[]>(
         `llm_usage_events?user_id=eq.${userId}&idempotency_key=eq.${key}&select=id,total_tokens`,
       );
-      expect(events.data?.length, "exactly one usage event is on record").toBe(1);
+      expect(events.data?.length, "exactly one usage event is on record").toBe(
+        1,
+      );
     } finally {
-      await restAsService(`llm_usage_events?user_id=eq.${userId}&idempotency_key=eq.${key}`, {
-        method: "DELETE",
-      });
+      await restAsService(
+        `llm_usage_events?user_id=eq.${userId}&idempotency_key=eq.${key}`,
+        {
+          method: "DELETE",
+        },
+      );
       await restAsService(`ai_allowance_periods?id=eq.${before.id}`, {
         method: "PATCH",
         body: { tokens_used: before.tokens_used },
@@ -86,16 +97,22 @@ test.describe("Charging the same work twice", () => {
     try {
       for (const key of keys) {
         const res = await recordUsage(userId, key);
-        expect(res.ok, `charge ${key} failed: ${JSON.stringify(res.error)}`).toBe(true);
+        expect(
+          res.ok,
+          `charge ${key} failed: ${JSON.stringify(res.error)}`,
+        ).toBe(true);
       }
 
       const after = await activeAllowance();
       expect(after.tokens_used - before.tokens_used).toBe(CHARGE_TOKENS * 2);
     } finally {
       for (const key of keys) {
-        await restAsService(`llm_usage_events?user_id=eq.${userId}&idempotency_key=eq.${key}`, {
-          method: "DELETE",
-        });
+        await restAsService(
+          `llm_usage_events?user_id=eq.${userId}&idempotency_key=eq.${key}`,
+          {
+            method: "DELETE",
+          },
+        );
       }
       await restAsService(`ai_allowance_periods?id=eq.${before.id}`, {
         method: "PATCH",
@@ -124,6 +141,8 @@ test.describe("Charging the same work twice", () => {
         p_metadata: {},
       },
     });
-    expect(res.ok, "an ordinary user must not be able to write the meter").toBe(false);
+    expect(res.ok, "an ordinary user must not be able to write the meter").toBe(
+      false,
+    );
   });
 });

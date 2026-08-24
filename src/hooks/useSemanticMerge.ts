@@ -15,7 +15,13 @@ const DEFAULT_COUNT = 30;
 
 type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
-const RPC_BY_TYPE: Record<ItemType, "search_prompts_semantic" | "search_skills_semantic" | "search_workflows_semantic" | "search_prompt_kits_semantic"> = {
+const RPC_BY_TYPE: Record<
+  ItemType,
+  | "search_prompts_semantic"
+  | "search_skills_semantic"
+  | "search_workflows_semantic"
+  | "search_prompt_kits_semantic"
+> = {
   prompt: "search_prompts_semantic",
   skill: "search_skills_semantic",
   workflow: "search_workflows_semantic",
@@ -33,9 +39,12 @@ async function getQueryEmbedding(query: string): Promise<number[] | null> {
   if (cached) return cached;
 
   try {
-    const { data, error } = await supabase.functions.invoke("generate-embedding", {
-      body: { text: trimmed },
-    });
+    const { data, error } = await supabase.functions.invoke(
+      "generate-embedding",
+      {
+        body: { text: trimmed },
+      },
+    );
     if (error) {
       console.warn("[semantic-merge] embedding error:", error);
       return null;
@@ -58,7 +67,7 @@ async function getQueryEmbedding(query: string): Promise<number[] | null> {
 export async function fetchSemanticMatches(
   itemType: ItemType,
   query: string,
-  opts: { threshold?: number; count?: number } = {}
+  opts: { threshold?: number; count?: number } = {},
 ): Promise<Array<{ id: string; similarity: number; row: any }>> {
   const trimmed = query.trim();
   if (trimmed.length < MIN_QUERY_LEN) return [];
@@ -102,7 +111,7 @@ export async function mergeWithSemantic<T extends { id: string }>(
   query: string,
   existing: T[],
   fetchByIds: (ids: string[]) => Promise<T[]>,
-  opts: { threshold?: number; count?: number } = {}
+  opts: { threshold?: number; count?: number } = {},
 ): Promise<T[]> {
   const semantic = await fetchSemanticMatches(itemType, query, opts);
   if (semantic.length === 0) return existing;
@@ -114,7 +123,9 @@ export async function mergeWithSemantic<T extends { id: string }>(
   const hydrated = await fetchByIds(newOnes.map((n) => n.id));
   // Preserve similarity ordering from semantic search
   const orderById = new Map(newOnes.map((n, idx) => [n.id, idx]));
-  hydrated.sort((a, b) => (orderById.get(a.id) ?? 0) - (orderById.get(b.id) ?? 0));
+  hydrated.sort(
+    (a, b) => (orderById.get(a.id) ?? 0) - (orderById.get(b.id) ?? 0),
+  );
 
   return [...existing, ...hydrated];
 }

@@ -29,7 +29,11 @@ interface BlogAdminLayoutProps {
   actions?: ReactNode;
 }
 
-export function BlogAdminLayout({ children, title, actions }: BlogAdminLayoutProps) {
+export function BlogAdminLayout({
+  children,
+  title,
+  actions,
+}: BlogAdminLayoutProps) {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const { role, isLoading: roleLoading } = useUserRole();
@@ -46,12 +50,14 @@ export function BlogAdminLayout({ children, title, actions }: BlogAdminLayoutPro
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (role !== 'admin') {
+  if (role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">You need admin privileges to access this area.</p>
+          <p className="text-muted-foreground">
+            You need admin privileges to access this area.
+          </p>
           <Button asChild>
             <a href="/">Go Home</a>
           </Button>
@@ -86,7 +92,7 @@ export function BlogAdminLayout({ children, title, actions }: BlogAdminLayoutPro
                 end={item.href === "/blog/admin"}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  "text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
                 activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
               >
@@ -117,15 +123,15 @@ export function BlogAdminLayout({ children, title, actions }: BlogAdminLayoutPro
           <header className="bg-card border-b border-border px-6 py-4">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-semibold">{title}</h1>
-              {actions && <div className="flex items-center gap-2">{actions}</div>}
+              {actions && (
+                <div className="flex items-center gap-2">{actions}</div>
+              )}
             </div>
           </header>
         )}
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-auto">
-          {children}
-        </div>
+        <div className="flex-1 p-6 overflow-auto">{children}</div>
       </main>
     </div>
   );

@@ -66,8 +66,10 @@ import { categoryOptions } from "@/types/prompt";
 import { format } from "date-fns";
 import { PublishPromptModal } from "@/components/prompts/PublishPromptModal";
 
-
-import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import {
+  DownloadMarkdownButton,
+  ImportMarkdownButton,
+} from "@/components/markdown";
 import type { ParsedMarkdown } from "@/lib/markdown";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
@@ -108,7 +110,7 @@ export default function LibraryPromptEdit() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
-  
+
   const [showVersionDrawer, setShowVersionDrawer] = useState(false);
 
   // Form state
@@ -122,7 +124,7 @@ export default function LibraryPromptEdit() {
   const [changeNotes, setChangeNotes] = useState("");
   const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
@@ -133,13 +135,22 @@ export default function LibraryPromptEdit() {
   // AI coach panel state (mobile sheet)
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [showVersionPanel, setShowVersionPanel] = useState(false);
-  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
+  const [moderationBlock, setModerationBlock] =
+    useState<ModerationResult | null>(null);
 
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
 
   const { isDirty, savedAt, markSaved } = useUnsavedChanges({
-    data: { title, shortDescription, content, category, tags, isPublic, language },
+    data: {
+      title,
+      shortDescription,
+      content,
+      category,
+      tags,
+      isPublic,
+      language,
+    },
     isSaving,
     onSave: () => handleSaveChanges(),
   });
@@ -250,10 +261,10 @@ export default function LibraryPromptEdit() {
     return tag
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9\-\s]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/[^a-z0-9\-\s]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
   };
 
   const handleAddTag = () => {
@@ -297,14 +308,14 @@ export default function LibraryPromptEdit() {
 
       if (result.title) setTitle(result.title);
       if (result.description) setShortDescription(result.description);
-      
+
       if (result.category) {
-        const matchedCategory = categoryOptions.find(cat => 
-          cat.id.toLowerCase() === result.category.toLowerCase()
+        const matchedCategory = categoryOptions.find(
+          (cat) => cat.id.toLowerCase() === result.category.toLowerCase(),
         );
         if (matchedCategory) setCategory(matchedCategory.id);
       }
-      
+
       if (result.tags && Array.isArray(result.tags)) {
         const newTags = result.tags
           .map((tag: string) => normalizeTag(tag))
@@ -332,7 +343,8 @@ export default function LibraryPromptEdit() {
     if (!shortDescription.trim()) {
       newErrors.shortDescription = "Short description is required";
     } else if (shortDescription.length > 2000) {
-      newErrors.shortDescription = "Description must be less than 2000 characters";
+      newErrors.shortDescription =
+        "Description must be less than 2000 characters";
     }
 
     if (!content.trim()) {
@@ -355,7 +367,7 @@ export default function LibraryPromptEdit() {
         { title, description: shortDescription, content },
         "edit_public",
         "prompt",
-        promptId
+        promptId,
       );
       if (!result.approved) {
         setModerationBlock(result);
@@ -400,7 +412,8 @@ export default function LibraryPromptEdit() {
 
     setIsSavingVersion(true);
     try {
-      const nextVersionNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
+      const nextVersionNumber =
+        versions.length > 0 ? versions[0].version_number + 1 : 1;
 
       const { error: versionError } = await supabase
         .from("prompt_versions")
@@ -486,7 +499,10 @@ export default function LibraryPromptEdit() {
     }
   };
 
-  const handlePublish = async (data: { summary: string; exampleOutput: string }) => {
+  const handlePublish = async (data: {
+    summary: string;
+    exampleOutput: string;
+  }) => {
     if (!promptId || !user) return;
 
     setIsPublishing(true);
@@ -508,13 +524,17 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      setPrompt((prev) => prev ? {
-        ...prev,
-        is_public: true,
-        published_at: new Date().toISOString(),
-        summary: data.summary,
-        example_output: data.exampleOutput || null,
-      } : null);
+      setPrompt((prev) =>
+        prev
+          ? {
+              ...prev,
+              is_public: true,
+              published_at: new Date().toISOString(),
+              summary: data.summary,
+              example_output: data.exampleOutput || null,
+            }
+          : null,
+      );
       setIsPublic(true);
       setShowPublishModal(false);
       toast.success("Prompt published successfully!");
@@ -546,7 +566,7 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      setPrompt((prev) => prev ? { ...prev, is_public: false } : null);
+      setPrompt((prev) => (prev ? { ...prev, is_public: false } : null));
       setIsPublic(false);
       toast.success("Prompt unpublished. It's now private.");
     } catch (err) {
@@ -574,12 +594,12 @@ export default function LibraryPromptEdit() {
     }
   };
 
-
   // Coach panel element (reused for desktop + mobile sheet)
   const workspaceScope = currentWorkspace ?? "personal";
-  const coachSessionId = promptId && user
-    ? deterministicSessionId(workspaceScope, user.id, promptId)
-    : "draft";
+  const coachSessionId =
+    promptId && user
+      ? deterministicSessionId(workspaceScope, user.id, promptId)
+      : "draft";
 
   const coachPanel = promptId ? (
     <PromptCoachPanel
@@ -686,7 +706,9 @@ export default function LibraryPromptEdit() {
                 isEditorMode
                 onImport={(parsed: ParsedMarkdown) => {
                   setTitle(parsed.frontmatter.title || title);
-                  setShortDescription(parsed.frontmatter.description || shortDescription);
+                  setShortDescription(
+                    parsed.frontmatter.description || shortDescription,
+                  );
                   setContent(parsed.content);
                   if (parsed.frontmatter.tags) {
                     setTags(parsed.frontmatter.tags);
@@ -711,8 +733,8 @@ export default function LibraryPromptEdit() {
                       View Public Page
                     </Button>
                   </Link>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleUnpublish}
                     disabled={isSaving}
                     className="gap-2"
@@ -722,8 +744,8 @@ export default function LibraryPromptEdit() {
                   </Button>
                 </>
               ) : (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowPublishModal(true)}
                   className="gap-2"
                 >
@@ -732,7 +754,11 @@ export default function LibraryPromptEdit() {
                 </Button>
               )}
 
-              <Button variant="outline" className="gap-2" onClick={() => setShowVersionPanel(true)}>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setShowVersionPanel(true)}
+              >
                 <History className="h-4 w-4" />
                 Version History
               </Button>
@@ -765,7 +791,12 @@ export default function LibraryPromptEdit() {
                 </Sheet>
               )}
 
-              <SaveStateBadge isDirty={isDirty} isSaving={isSaving} savedAt={savedAt} className="mr-1" />
+              <SaveStateBadge
+                isDirty={isDirty}
+                isSaving={isSaving}
+                savedAt={savedAt}
+                className="mr-1"
+              />
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSaving || isSavingVersion}
@@ -814,13 +845,19 @@ export default function LibraryPromptEdit() {
                     <AlertDialogTitle>Delete this prompt?</AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-2">
-                        <p>This action cannot be undone. Deleting this prompt will also remove:</p>
+                        <p>
+                          This action cannot be undone. Deleting this prompt
+                          will also remove:
+                        </p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                           <li>All saved versions and version history</li>
                           <li>All comments, reviews and ratings</li>
                           <li>Any edit suggestions submitted by others</li>
                           <li>References from collections it belongs to</li>
-                          <li>Synced copies in connected GitHub repositories and Menerio</li>
+                          <li>
+                            Synced copies in connected GitHub repositories and
+                            Menerio
+                          </li>
                         </ul>
                       </div>
                     </AlertDialogDescription>
@@ -863,7 +900,9 @@ export default function LibraryPromptEdit() {
                           error={!!errors.content}
                         />
                         {errors.content && (
-                          <p className="text-sm text-destructive">{errors.content}</p>
+                          <p className="text-sm text-destructive">
+                            {errors.content}
+                          </p>
                         )}
                       </div>
 
@@ -889,9 +928,11 @@ export default function LibraryPromptEdit() {
                             </>
                           )}
                         </Button>
-                        
+
                         {metadataError && (
-                          <p className="text-sm text-destructive">{metadataError}</p>
+                          <p className="text-sm text-destructive">
+                            {metadataError}
+                          </p>
                         )}
                       </div>
 
@@ -906,7 +947,9 @@ export default function LibraryPromptEdit() {
                           className={errors.title ? "border-destructive" : ""}
                         />
                         {errors.title && (
-                          <p className="text-sm text-destructive">{errors.title}</p>
+                          <p className="text-sm text-destructive">
+                            {errors.title}
+                          </p>
                         )}
                       </div>
 
@@ -919,10 +962,14 @@ export default function LibraryPromptEdit() {
                           onChange={(e) => setShortDescription(e.target.value)}
                           placeholder="Briefly describe what this prompt does"
                           rows={2}
-                          className={errors.shortDescription ? "border-destructive" : ""}
+                          className={
+                            errors.shortDescription ? "border-destructive" : ""
+                          }
                         />
                         {errors.shortDescription && (
-                          <p className="text-sm text-destructive">{errors.shortDescription}</p>
+                          <p className="text-sm text-destructive">
+                            {errors.shortDescription}
+                          </p>
                         )}
                         <p className="text-xs text-muted-foreground">
                           {shortDescription.length}/2000 characters
@@ -933,7 +980,11 @@ export default function LibraryPromptEdit() {
                       <div className="space-y-2">
                         <Label htmlFor="category">Category *</Label>
                         <Select value={category} onValueChange={setCategory}>
-                          <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                          <SelectTrigger
+                            className={
+                              errors.category ? "border-destructive" : ""
+                            }
+                          >
                             <SelectValue placeholder="Select a category" />
                           </SelectTrigger>
                           <SelectContent>
@@ -945,7 +996,9 @@ export default function LibraryPromptEdit() {
                           </SelectContent>
                         </Select>
                         {errors.category && (
-                          <p className="text-sm text-destructive">{errors.category}</p>
+                          <p className="text-sm text-destructive">
+                            {errors.category}
+                          </p>
                         )}
                       </div>
 
@@ -976,7 +1029,11 @@ export default function LibraryPromptEdit() {
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {tags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="gap-1 pr-1"
+                              >
                                 {tag}
                                 <button
                                   type="button"
@@ -995,18 +1052,26 @@ export default function LibraryPromptEdit() {
                       </div>
 
                       {/* Slug Editor */}
-                      {prompt && user && (prompt.author_id === user.id || isAdmin) && (
-                        <SlugEditor
-                          promptId={prompt.id}
-                          currentSlug={prompt.slug}
-                          userId={user.id}
-                          onSlugChanged={(newSlug) => {
-                            setPrompt(prev => prev ? { ...prev, slug: newSlug } : null);
-                            // Update URL without full reload
-                            window.history.replaceState(null, "", `/library/${newSlug}/edit`);
-                          }}
-                        />
-                      )}
+                      {prompt &&
+                        user &&
+                        (prompt.author_id === user.id || isAdmin) && (
+                          <SlugEditor
+                            promptId={prompt.id}
+                            currentSlug={prompt.slug}
+                            userId={user.id}
+                            onSlugChanged={(newSlug) => {
+                              setPrompt((prev) =>
+                                prev ? { ...prev, slug: newSlug } : null,
+                              );
+                              // Update URL without full reload
+                              window.history.replaceState(
+                                null,
+                                "",
+                                `/library/${newSlug}/edit`,
+                              );
+                            }}
+                          />
+                        )}
 
                       {/* Visibility Toggle */}
                       <div className="flex items-center justify-between rounded-lg border border-border p-4">
@@ -1029,7 +1094,9 @@ export default function LibraryPromptEdit() {
 
                       {/* Change Notes */}
                       <div className="space-y-2">
-                        <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
+                        <Label htmlFor="changeNotes">
+                          Change Notes (for new version)
+                        </Label>
                         <Textarea
                           id="changeNotes"
                           value={changeNotes}
@@ -1038,19 +1105,22 @@ export default function LibraryPromptEdit() {
                           rows={2}
                         />
                         <p className="text-xs text-muted-foreground">
-                          These notes will be saved when you click "Save as New Version"
+                          These notes will be saved when you click "Save as New
+                          Version"
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
 
             {/* Right: AI Coach Panel (desktop only) */}
             {!isMobile && (
-              <div className="w-[380px] shrink-0 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+              <div
+                className="w-[380px] shrink-0 sticky top-24 self-start"
+                style={{ height: "calc(100vh - 12rem)" }}
+              >
                 {coachPanel}
               </div>
             )}
@@ -1100,10 +1170,15 @@ export default function LibraryPromptEdit() {
                 <div className="flex items-start gap-3">
                   <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Created</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Created
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {prompt?.created_at
-                        ? format(new Date(prompt.created_at), "MMM d, yyyy 'at' h:mm a")
+                        ? format(
+                            new Date(prompt.created_at),
+                            "MMM d, yyyy 'at' h:mm a",
+                          )
                         : "—"}
                     </p>
                   </div>
@@ -1111,10 +1186,15 @@ export default function LibraryPromptEdit() {
                 <div className="flex items-start gap-3">
                   <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Last Updated</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Last Updated
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {prompt?.updated_at
-                        ? format(new Date(prompt.updated_at), "MMM d, yyyy 'at' h:mm a")
+                        ? format(
+                            new Date(prompt.updated_at),
+                            "MMM d, yyyy 'at' h:mm a",
+                          )
                         : "—"}
                     </p>
                   </div>
@@ -1122,16 +1202,21 @@ export default function LibraryPromptEdit() {
                 <div className="flex items-start gap-3">
                   <Layers className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Version Count</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Version Count
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      {versions.length} version{versions.length !== 1 ? "s" : ""}
+                      {versions.length} version
+                      {versions.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Visibility</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Visibility
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {isPublic ? "Public" : "Private"}
                     </p>

@@ -33,11 +33,26 @@ interface PromptCoachPanelProps {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Make clearer", message: "Make this prompt clearer and more specific." },
-  { label: "Make stricter", message: "Make this prompt stricter with fewer ambiguities." },
-  { label: "Add output format", message: "Add a clear output format specification to this prompt." },
-  { label: "Shorten", message: "Shorten this prompt while preserving its intent." },
-  { label: "Add examples", message: "Add concrete examples to illustrate the expected behavior." },
+  {
+    label: "Make clearer",
+    message: "Make this prompt clearer and more specific.",
+  },
+  {
+    label: "Make stricter",
+    message: "Make this prompt stricter with fewer ambiguities.",
+  },
+  {
+    label: "Add output format",
+    message: "Add a clear output format specification to this prompt.",
+  },
+  {
+    label: "Shorten",
+    message: "Shorten this prompt while preserving its intent.",
+  },
+  {
+    label: "Add examples",
+    message: "Add concrete examples to illustrate the expected behavior.",
+  },
 ];
 
 export function PromptCoachPanel({
@@ -59,7 +74,8 @@ export function PromptCoachPanel({
       // This initialiser runs during render, where a server has no localStorage.
       // Guard the read alone: the default greeting below must still be reached,
       // or the server and the client would render different first messages.
-      const stored = typeof window === "undefined" ? null : localStorage.getItem(storageKey);
+      const stored =
+        typeof window === "undefined" ? null : localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored) as ChatMessage[];
     } catch {
       // ignore parse errors
@@ -170,7 +186,9 @@ export function PromptCoachPanel({
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">Prompt Coach</span>
+          <span className="text-sm font-semibold text-foreground">
+            Prompt Coach
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <Button

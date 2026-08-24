@@ -14,7 +14,11 @@ interface CopyPromptKitToTeamModalProps {
   };
 }
 
-export function CopyPromptKitToTeamModal({ open, onOpenChange, promptKit }: CopyPromptKitToTeamModalProps) {
+export function CopyPromptKitToTeamModal({
+  open,
+  onOpenChange,
+  promptKit,
+}: CopyPromptKitToTeamModalProps) {
   const { copyKitToTeam, copying } = useCopyPromptKitToTeam();
 
   return (

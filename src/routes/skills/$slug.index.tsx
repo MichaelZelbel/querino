@@ -13,7 +13,9 @@ export const Route = createFileRoute("/skills/$slug/")({
     if (!loaderData) return privateHead("Not Found");
     const url = `/skills/${loaderData.slug ?? loaderData.id}`;
     const description =
-      loaderData.summary || loaderData.description || `${loaderData.title} — AI skill on Querino`;
+      loaderData.summary ||
+      loaderData.description ||
+      `${loaderData.title} — AI skill on Querino`;
     return pageHead({
       title: loaderData.title,
       description,

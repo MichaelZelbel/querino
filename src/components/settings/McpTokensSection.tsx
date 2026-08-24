@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +38,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Key, Plus, Trash2, Copy, Check, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  Key,
+  Plus,
+  Trash2,
+  Copy,
+  Check,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface TokenRow {
@@ -81,7 +95,10 @@ function formatDate(iso: string | null): string {
   });
 }
 
-function tokenStatus(t: TokenRow): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+function tokenStatus(t: TokenRow): {
+  label: string;
+  variant: "default" | "secondary" | "destructive" | "outline";
+} {
   if (t.revoked_at) return { label: "Revoked", variant: "destructive" };
   if (t.expires_at && new Date(t.expires_at) < new Date()) {
     return { label: "Expired", variant: "destructive" };
@@ -113,7 +130,9 @@ export function McpTokensSection() {
     setLoading(true);
     const { data, error } = await supabase
       .from("mcp_api_tokens")
-      .select("id, name, token_prefix, created_at, last_used_at, expires_at, revoked_at")
+      .select(
+        "id, name, token_prefix, created_at, last_used_at, expires_at, revoked_at",
+      )
       .order("created_at", { ascending: false });
     if (error) {
       toast.error("Failed to load tokens");
@@ -212,11 +231,15 @@ export function McpTokensSection() {
               <CardTitle className="text-lg">Personal MCP Tokens</CardTitle>
             </div>
             <CardDescription className="mt-1">
-              Long-lived tokens for connecting external MCP clients (OpenClaw, Claude Desktop, Cursor, Manus…).
-              They survive browser sessions and don't expire after 1 hour like the Supabase session token.
+              Long-lived tokens for connecting external MCP clients (OpenClaw,
+              Claude Desktop, Cursor, Manus…). They survive browser sessions and
+              don't expire after 1 hour like the Supabase session token.
             </CardDescription>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="gap-1.5 shrink-0">
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="gap-1.5 shrink-0"
+          >
             <Plus className="h-4 w-4" />
             New token
           </Button>
@@ -242,16 +265,23 @@ export function McpTokensSection() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-foreground truncate">{t.name}</span>
+                      <span className="font-medium text-foreground truncate">
+                        {t.name}
+                      </span>
                       <Badge variant={status.variant} className="text-xs">
                         {status.label}
                       </Badge>
                     </div>
-                    <code className="text-xs text-muted-foreground font-mono">{t.token_prefix}…</code>
+                    <code className="text-xs text-muted-foreground font-mono">
+                      {t.token_prefix}…
+                    </code>
                     <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
                       <span>Created: {formatDate(t.created_at)}</span>
                       <span>Last used: {formatDate(t.last_used_at)}</span>
-                      <span>Expires: {t.expires_at ? formatDate(t.expires_at) : "Never"}</span>
+                      <span>
+                        Expires:{" "}
+                        {t.expires_at ? formatDate(t.expires_at) : "Never"}
+                      </span>
                     </div>
                   </div>
                   {!t.revoked_at && (
@@ -278,8 +308,8 @@ export function McpTokensSection() {
           <DialogHeader>
             <DialogTitle>Create new MCP token</DialogTitle>
             <DialogDescription>
-              Give it a recognisable name (usually the client it will be used in).
-              The raw token will be shown only once.
+              Give it a recognisable name (usually the client it will be used
+              in). The raw token will be shown only once.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -310,10 +340,17 @@ export function McpTokensSection() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
+              disabled={creating}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={creating || !newName.trim()}>
+            <Button
+              onClick={handleCreate}
+              disabled={creating || !newName.trim()}
+            >
               {creating && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
               Create token
             </Button>
@@ -322,44 +359,66 @@ export function McpTokensSection() {
       </Dialog>
 
       {/* One-time reveal dialog */}
-      <Dialog open={!!revealedToken} onOpenChange={(open) => !open && setRevealedToken(null)}>
+      <Dialog
+        open={!!revealedToken}
+        onOpenChange={(open) => !open && setRevealedToken(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Copy your new token</DialogTitle>
             <DialogDescription>
-              This is the only time the full token will be shown. Store it somewhere safe now —
-              if you lose it, you'll need to revoke it and create a new one.
+              This is the only time the full token will be shown. Store it
+              somewhere safe now — if you lose it, you'll need to revoke it and
+              create a new one.
             </DialogDescription>
           </DialogHeader>
-          <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+          <Alert
+            variant="destructive"
+            className="border-destructive/30 bg-destructive/5"
+          >
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              Treat this token like a password. Anyone with it has full access to your Querino data.
+              Treat this token like a password. Anyone with it has full access
+              to your Querino data.
             </AlertDescription>
           </Alert>
           <div className="flex items-center gap-2 mt-2">
             <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono text-foreground break-all">
               {revealedToken}
             </code>
-            <Button variant="outline" size="sm" onClick={copyRevealed} className="gap-1.5 shrink-0">
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyRevealed}
+              className="gap-1.5 shrink-0"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
           <DialogFooter>
-            <Button onClick={() => setRevealedToken(null)}>I've saved it</Button>
+            <Button onClick={() => setRevealedToken(null)}>
+              I've saved it
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Revoke confirm */}
-      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+      <AlertDialog
+        open={!!revokeTarget}
+        onOpenChange={(open) => !open && setRevokeTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Revoke "{revokeTarget?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              The token will stop working immediately. Any MCP client using it will need to be
-              reconfigured with a new token.
+              The token will stop working immediately. Any MCP client using it
+              will need to be reconfigured with a new token.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -6,7 +6,8 @@ export const Route = createFileRoute("/blog/")({
   head: () =>
     pageHead({
       title: "Blog",
-      description: "Explore articles about AI prompts, workflows, and productivity tips.",
+      description:
+        "Explore articles about AI prompts, workflows, and productivity tips.",
       canonical: "/blog",
       rss: true,
     }),

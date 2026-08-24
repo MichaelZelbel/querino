@@ -64,7 +64,10 @@ export function getDefaultSystemPrompt(callSite: string): string | null {
  * A call site with no default can never match, because "the same as nothing"
  * would be true of every string and would silently discard a real override.
  */
-export function isDefaultSystemPrompt(callSite: string, text: string | null | undefined): boolean {
+export function isDefaultSystemPrompt(
+  callSite: string,
+  text: string | null | undefined,
+): boolean {
   const fallback = getDefaultSystemPrompt(callSite);
   if (fallback === null) return false;
   if (typeof text !== "string") return false;

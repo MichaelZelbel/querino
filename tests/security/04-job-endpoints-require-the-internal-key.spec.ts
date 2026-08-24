@@ -9,11 +9,20 @@
 // fail, and that is the correct reading: the endpoints really are open.
 
 import { test, expect } from "@playwright/test";
-import { asAnonKey, asAnonymous, asInternalKey, callFunction } from "./helpers/api";
+import {
+  asAnonKey,
+  asAnonymous,
+  asInternalKey,
+  callFunction,
+} from "./helpers/api";
 import { INTERNAL_JOB_SECRET } from "./helpers/env";
 
 /** Every endpoint whose only legitimate caller is one of our own jobs. */
-const JOB_ENDPOINTS: Array<{ name: string; body: Record<string, unknown>; does: string }> = [
+const JOB_ENDPOINTS: Array<{
+  name: string;
+  body: Record<string, unknown>;
+  does: string;
+}> = [
   {
     name: "github-sync-worker",
     body: {},
@@ -74,9 +83,16 @@ test.describe("H1 — machine endpoints are not open to the world", () => {
   // Without this, "return 401 to everyone" would pass every test above.
   for (const endpoint of JOB_ENDPOINTS) {
     test(`${endpoint.name} still admits the job that owns it`, async () => {
-      test.skip(!INTERNAL_JOB_SECRET, "INTERNAL_JOB_SECRET is not set: Phase 1 has not shipped.");
+      test.skip(
+        !INTERNAL_JOB_SECRET,
+        "INTERNAL_JOB_SECRET is not set: Phase 1 has not shipped.",
+      );
       test.slow();
-      const res = await callFunction(endpoint.name, endpoint.body, asInternalKey(INTERNAL_JOB_SECRET));
+      const res = await callFunction(
+        endpoint.name,
+        endpoint.body,
+        asInternalKey(INTERNAL_JOB_SECRET),
+      );
       expect(res.status).toBe(200);
     });
   }

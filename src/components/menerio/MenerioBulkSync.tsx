@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -23,7 +29,10 @@ interface ArtifactStats {
   synced: number;
 }
 
-type StatsMap = Record<"prompt" | "skill" | "workflow" | "prompt_kit", ArtifactStats>;
+type StatsMap = Record<
+  "prompt" | "skill" | "workflow" | "prompt_kit",
+  ArtifactStats
+>;
 
 const ARTIFACT_LABELS: Record<string, string> = {
   prompt: "Prompts",
@@ -54,7 +63,7 @@ export function MenerioBulkSync() {
         .then(({ data, count }: any) => {
           const synced = data?.filter((r: any) => r.menerio_synced).length ?? 0;
           results[TYPES[i]] = { total: count ?? 0, synced };
-        })
+        }),
     );
 
     await Promise.all(queries);
@@ -125,24 +134,29 @@ export function MenerioBulkSync() {
           .eq("user_id", user.id)
           .in(
             "artifact_id",
-            toSync.map((t) => t.id)
+            toSync.map((t) => t.id),
           );
 
         if (queueData) {
           const done = queueData.filter(
-            (q: any) => q.status === "completed" || q.status === "failed"
+            (q: any) => q.status === "completed" || q.status === "failed",
           ).length;
           // Anything not finished is still outstanding. Naming the in-flight
           // states here meant the counter silently stalled when the worker
           // gained delete_processing (finding M4).
           const outstanding = queueData.filter(
-            (q: any) => q.status !== "completed" && q.status !== "failed"
+            (q: any) => q.status !== "completed" && q.status !== "failed",
           ).length;
           completed = Math.max(done, toSync.length - outstanding);
           setProgress({ current: completed, total: toSync.length });
         }
 
-        if (queueData && queueData.every((q: any) => q.status === "completed" || q.status === "failed")) {
+        if (
+          queueData &&
+          queueData.every(
+            (q: any) => q.status === "completed" || q.status === "failed",
+          )
+        ) {
           break;
         }
       }
@@ -173,8 +187,8 @@ export function MenerioBulkSync() {
         TABLES.map((table) =>
           (supabase.from(table) as any)
             .update(resetPayload)
-            .eq("author_id", user.id)
-        )
+            .eq("author_id", user.id),
+        ),
       );
 
       await fetchStats();
@@ -204,7 +218,8 @@ export function MenerioBulkSync() {
           Sync all artifacts
         </CardTitle>
         <CardDescription>
-          Sync all your artifacts at once with Menerio. Already synced artifacts will be updated.
+          Sync all your artifacts at once with Menerio. Already synced artifacts
+          will be updated.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

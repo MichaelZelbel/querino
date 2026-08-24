@@ -38,7 +38,9 @@ function isAllowedOrigin(origin: string): boolean {
   try {
     const host = new URL(origin).hostname;
     // Lovable preview/sandbox origins
-    return host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com");
+    return (
+      host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com")
+    );
   } catch {
     return false;
   }
@@ -52,8 +54,10 @@ function isAllowedOrigin(origin: string): boolean {
 export function corsHeadersFor(req: Request): Record<string, string> {
   const origin = req.headers.get("Origin") ?? "";
   return {
-    "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin : "https://querino.ai",
-    "Vary": "Origin",
+    "Access-Control-Allow-Origin": isAllowedOrigin(origin)
+      ? origin
+      : "https://querino.ai",
+    Vary: "Origin",
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
     "Access-Control-Allow-Methods": "POST, OPTIONS",

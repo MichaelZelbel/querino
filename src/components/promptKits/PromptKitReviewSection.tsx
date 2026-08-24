@@ -16,8 +16,14 @@ export function PromptKitReviewSection({
   ratingAvg,
   ratingCount,
 }: PromptKitReviewSectionProps) {
-  const { reviews, userReview, loading, submitting, submitReview, deleteReview } =
-    usePromptKitReviews(kitId, userId);
+  const {
+    reviews,
+    userReview,
+    loading,
+    submitting,
+    submitReview,
+    deleteReview,
+  } = usePromptKitReviews(kitId, userId);
 
   return (
     <GenericReviewSection

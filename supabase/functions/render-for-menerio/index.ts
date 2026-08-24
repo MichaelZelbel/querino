@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
         createClient(supabaseUrl, serviceKey),
         userId,
         body.artifact_type,
-        body.artifact_id
+        body.artifact_id,
       );
     } else {
       const { data: claimsData, error: claimsErr } =
@@ -59,14 +59,14 @@ Deno.serve(async (req) => {
         userId,
         body.artifact_type,
         body.artifact_id,
-        true
+        true,
       );
     }
   } catch (err) {
     console.error("render-for-menerio error:", err);
     return json(
       { error: err instanceof Error ? err.message : "Unknown error" },
-      500
+      500,
     );
   }
 });
@@ -76,13 +76,15 @@ async function handleSync(
   userId: string,
   artifactType: string,
   artifactId: string,
-  checkOwnership = false
+  checkOwnership = false,
 ) {
   // Validate input
   if (!artifactType || !VALID_TYPES.includes(artifactType as ArtifactType)) {
     return json(
-      { error: `Invalid artifact_type. Must be one of: ${VALID_TYPES.join(", ")}` },
-      400
+      {
+        error: `Invalid artifact_type. Must be one of: ${VALID_TYPES.join(", ")}`,
+      },
+      400,
     );
   }
   if (!artifactId) {
@@ -103,9 +105,11 @@ async function handleSync(
 
   // 2. Load artifact
   const tableName =
-    artifactType === "prompt" ? "prompts" :
-    artifactType === "prompt_kit" ? "prompt_kits" :
-    `${artifactType}s`;
+    artifactType === "prompt"
+      ? "prompts"
+      : artifactType === "prompt_kit"
+        ? "prompt_kits"
+        : `${artifactType}s`;
   const { data: artifact, error: artErr } = await adminClient
     .from(tableName)
     .select("*")
@@ -118,7 +122,10 @@ async function handleSync(
 
   // Check ownership
   if (checkOwnership && artifact.author_id !== userId) {
-    return json({ error: "Du kannst nur eigene Artefakte synchronisieren" }, 403);
+    return json(
+      { error: "Du kannst nur eigene Artefakte synchronisieren" },
+      403,
+    );
   }
 
   // 3. Build Menerio note object
@@ -179,7 +186,7 @@ async function handleSync(
   } catch (_netErr) {
     return json(
       { error: "Menerio ist nicht erreichbar. Bitte versuche es später." },
-      502
+      502,
     );
   }
 
@@ -190,7 +197,7 @@ async function handleSync(
         error:
           "Menerio API-Key ungültig. Bitte prüfe deine Einstellungen unter /settings/menerio.",
       },
-      401
+      401,
     );
   }
 
@@ -227,8 +234,7 @@ async function handleSync(
 function buildBody(type: ArtifactType, a: Record<string, unknown>): string {
   const tagsStr = (a.tags as string[] | null)?.join(", ") || "—";
   const ratingStr = `${a.rating_avg || 0}/5 (${a.rating_count || 0} Bewertungen)`;
-  const isPublic =
-    type === "prompt" ? a.is_public : a.published;
+  const isPublic = type === "prompt" ? a.is_public : a.published;
   const publicLabel = isPublic ? "Ja" : "Nein";
 
   const lines: string[] = [`# ${a.title}`];
@@ -243,7 +249,7 @@ function buildBody(type: ArtifactType, a: Record<string, unknown>): string {
         `**Bewertung:** ${ratingStr}`,
         `**Kopien:** ${a.copies_count || 0}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Prompt-Text\n\n${a.content || "—"}`
+        `\n## Prompt-Text\n\n${a.content || "—"}`,
       );
       break;
 
@@ -255,7 +261,7 @@ function buildBody(type: ArtifactType, a: Record<string, unknown>): string {
         `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Skill-Inhalt\n\n${a.content || "—"}`
+        `\n## Skill-Inhalt\n\n${a.content || "—"}`,
       );
       break;
 
@@ -267,7 +273,7 @@ function buildBody(type: ArtifactType, a: Record<string, unknown>): string {
         `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Prompt-Kit-Inhalt\n\n${a.content || "—"}`
+        `\n## Prompt-Kit-Inhalt\n\n${a.content || "—"}`,
       );
       break;
 
@@ -279,7 +285,7 @@ function buildBody(type: ArtifactType, a: Record<string, unknown>): string {
         `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Workflow-Inhalt\n\n${a.content || "—"}`
+        `\n## Workflow-Inhalt\n\n${a.content || "—"}`,
       );
       break;
   }

@@ -38,7 +38,7 @@ export function SendToLLMButtons({
   variant = "full",
 }: SendToLLMButtonsProps) {
   const [preferredLLM, setPreferred] = useState<LLMTarget | null>(
-    getPreferredLLM
+    getPreferredLLM,
   );
   const [clipboardDialog, setClipboardDialog] = useState<{
     open: boolean;
@@ -89,13 +89,16 @@ export function SendToLLMButtons({
             Prompt copied to clipboard
           </DialogTitle>
           <DialogDescription>
-            This prompt is too long for a direct URL transfer. It has been copied
-            to your clipboard. Click the button below to open {llmName}, then
-            paste it into the prompt box.
+            This prompt is too long for a direct URL transfer. It has been
+            copied to your clipboard. Click the button below to open {llmName},
+            then paste it into the prompt box.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setClipboardDialog({ open: false, llm: null })}>
+          <Button
+            variant="outline"
+            onClick={() => setClipboardDialog({ open: false, llm: null })}
+          >
             Cancel
           </Button>
           <Button onClick={handleOpenLLM} className="gap-2">

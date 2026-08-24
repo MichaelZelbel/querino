@@ -27,7 +27,8 @@ export default function CreateFromMenerio() {
     if (title) promptNewParams.set("title", title);
     if (body) promptNewParams.set("content", body);
     if (menerioNoteId) promptNewParams.set("menerio_note_id", menerioNoteId);
-    if (menerioCallback) promptNewParams.set("menerio_callback", menerioCallback);
+    if (menerioCallback)
+      promptNewParams.set("menerio_callback", menerioCallback);
     if (entityType) promptNewParams.set("entity_type", entityType);
 
     const targetUrl = `/prompts/new?${promptNewParams.toString()}`;
@@ -35,7 +36,9 @@ export default function CreateFromMenerio() {
     if (!user) {
       // Redirect to auth, preserving the full create-from-menerio URL as return path
       const returnUrl = `/create-from-menerio?${searchParams.toString()}`;
-      navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`, { replace: true });
+      navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`, {
+        replace: true,
+      });
       return;
     }
 

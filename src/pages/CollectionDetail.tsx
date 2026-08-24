@@ -35,25 +35,27 @@ import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { CommentsSection } from "@/components/comments";
 
-
 // A collection holds prompts, skills, workflows and prompt kits. They are different
 // types, but this view reads only the fields all four share. Naming that shape stops
 // `data` being inferred as null-only, which is what made every read of it an error.
-type CollectionItemData = { id: string; title: string; description: string | null } | null | undefined;
+type CollectionItemData =
+  { id: string; title: string; description: string | null } | null | undefined;
 
 export default function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<string>("all");
-  
-  const { data: collection, isLoading: loadingCollection } = useCollection(id || "");
+
+  const { data: collection, isLoading: loadingCollection } = useCollection(
+    id || "",
+  );
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
   const { data: prompts } = usePrompts();
   const { data: skills } = useSkills();
   const { data: workflows } = useWorkflows();
   const { data: promptKits } = usePromptKits({});
-  
+
   const createCollection = useCreateCollection();
   const addToCollection = useAddToCollection();
   const removeFromCollection = useRemoveFromCollection();
@@ -62,19 +64,21 @@ export default function CollectionDetail() {
 
   // Get full item data
   const itemsWithData = useMemo(() => {
-    return items?.map((item) => {
-      let data: CollectionItemData = null;
-      if (item.item_type === "prompt") {
-        data = prompts?.find((p) => p.id === item.item_id);
-      } else if (item.item_type === "skill") {
-        data = skills?.find((s) => s.id === item.item_id);
-      } else if (item.item_type === "workflow") {
-        data = workflows?.find((w) => w.id === item.item_id);
-      } else if (item.item_type === "prompt_kit") {
-        data = promptKits?.find((k: any) => k.id === item.item_id);
-      }
-      return { ...item, data };
-    }) || [];
+    return (
+      items?.map((item) => {
+        let data: CollectionItemData = null;
+        if (item.item_type === "prompt") {
+          data = prompts?.find((p) => p.id === item.item_id);
+        } else if (item.item_type === "skill") {
+          data = skills?.find((s) => s.id === item.item_id);
+        } else if (item.item_type === "workflow") {
+          data = workflows?.find((w) => w.id === item.item_id);
+        } else if (item.item_type === "prompt_kit") {
+          data = promptKits?.find((k: any) => k.id === item.item_id);
+        }
+        return { ...item, data };
+      }) || []
+    );
   }, [items, prompts, skills, workflows, promptKits]);
 
   // Filter items by type
@@ -127,7 +131,7 @@ export default function CollectionDetail() {
 
   const handleRemoveItem = async (itemId: string) => {
     if (!id) return;
-    
+
     try {
       await removeFromCollection.mutateAsync({
         collectionId: id,
@@ -156,9 +160,7 @@ export default function CollectionDetail() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Collection not found</h1>
-          <Button onClick={() => navigate("/library")}>
-            Back to Library
-          </Button>
+          <Button onClick={() => navigate("/library")}>Back to Library</Button>
         </main>
         <Footer />
       </div>
@@ -201,7 +203,7 @@ export default function CollectionDetail() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <Button
           variant="ghost"
@@ -224,9 +226,11 @@ export default function CollectionDetail() {
                   <Lock className="h-5 w-5 text-muted-foreground" />
                 )}
               </div>
-              
+
               {collection.description && (
-                <p className="text-muted-foreground">{collection.description}</p>
+                <p className="text-muted-foreground">
+                  {collection.description}
+                </p>
               )}
             </div>
 
@@ -264,12 +268,18 @@ export default function CollectionDetail() {
               <AvatarImage src={collection.owner?.avatar_url || undefined} />
               <AvatarFallback>{ownerInitial}</AvatarFallback>
             </Avatar>
-            <span className="text-sm text-muted-foreground">by {ownerName}</span>
+            <span className="text-sm text-muted-foreground">
+              by {ownerName}
+            </span>
           </Link>
         </div>
 
         {/* Filter Tabs */}
-        <Tabs value={activeFilter} onValueChange={setActiveFilter} className="mb-6">
+        <Tabs
+          value={activeFilter}
+          onValueChange={setActiveFilter}
+          className="mb-6"
+        >
           <TabsList>
             <TabsTrigger value="all" className="gap-2">
               All
@@ -319,16 +329,25 @@ export default function CollectionDetail() {
         {/* Items */}
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">
-            {activeFilter === "all" ? "All Items" : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`} ({filteredItems.length})
+            {activeFilter === "all"
+              ? "All Items"
+              : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`}{" "}
+            ({filteredItems.length})
           </h2>
-          
+
           {filteredItems.length > 0 ? (
             <div className="space-y-2">
               {filteredItems.map((item) => (
-                <Card key={item.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={item.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
-                      <Link to={getItemLink(item)} className="flex items-center gap-3 flex-1 min-w-0">
+                      <Link
+                        to={getItemLink(item)}
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
                         <div className="p-2 bg-muted rounded">
                           {getItemIcon(item.item_type)}
                         </div>
@@ -337,7 +356,10 @@ export default function CollectionDetail() {
                             <span className="font-medium truncate">
                               {item.data?.title || "Unknown item"}
                             </span>
-                            <Badge variant="outline" className="text-xs capitalize">
+                            <Badge
+                              variant="outline"
+                              className="text-xs capitalize"
+                            >
                               {item.item_type}
                             </Badge>
                           </div>
@@ -368,7 +390,7 @@ export default function CollectionDetail() {
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-muted-foreground">
-                  {activeFilter === "all" 
+                  {activeFilter === "all"
                     ? "This collection is empty"
                     : `No ${activeFilter}s in this collection`}
                 </p>
@@ -379,7 +401,11 @@ export default function CollectionDetail() {
 
         {/* Comments & Discussion */}
         <div className="mt-8">
-          <CommentsSection itemType="collection" itemId={collection.id} teamId={(collection as any).team_id} />
+          <CommentsSection
+            itemType="collection"
+            itemId={collection.id}
+            teamId={(collection as any).team_id}
+          />
         </div>
       </main>
 

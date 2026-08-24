@@ -10,22 +10,26 @@ export const FRAMEWORK_OPTIONS: FrameworkOption[] = [
   {
     value: "auto",
     label: "Auto (Let Querino choose)",
-    description: "Querino will pick a suitable framework based on your goal and inputs.",
+    description:
+      "Querino will pick a suitable framework based on your goal and inputs.",
   },
   {
     value: "crispe",
     label: "CRISPE",
-    description: "Highly structured prompts with clear role, intent, style, and examples. Great for complex tasks.",
+    description:
+      "Highly structured prompts with clear role, intent, style, and examples. Great for complex tasks.",
   },
   {
     value: "race",
     label: "RACE",
-    description: "Compact but powerful structure ideal for task-oriented instructions.",
+    description:
+      "Compact but powerful structure ideal for task-oriented instructions.",
   },
   {
     value: "oracle",
     label: "ORACLE",
-    description: "Strict, rule-heavy prompts where constraints and examples matter.",
+    description:
+      "Strict, rule-heavy prompts where constraints and examples matter.",
   },
   {
     value: "simple",
@@ -53,7 +57,10 @@ export function getFrameworkDisplayName(framework: PromptFramework): string {
 }
 
 function generateCRISPEPrompt(data: WizardFormData): string {
-  const llm = data.targetLlm === "other" ? data.customLlm || "General LLM" : data.targetLlm;
+  const llm =
+    data.targetLlm === "other"
+      ? data.customLlm || "General LLM"
+      : data.targetLlm;
   const sections: string[] = [];
 
   // Context
@@ -86,7 +93,9 @@ function generateCRISPEPrompt(data: WizardFormData): string {
 
   // Persona
   sections.push("## Persona");
-  sections.push("Respond as a knowledgeable professional who is helpful and precise.");
+  sections.push(
+    "Respond as a knowledgeable professional who is helpful and precise.",
+  );
   sections.push("");
 
   // Examples / Output
@@ -111,11 +120,20 @@ function generateCRISPEPrompt(data: WizardFormData): string {
 }
 
 function generateRACEPrompt(data: WizardFormData): string {
-  const llm = data.targetLlm === "other" ? data.customLlm || "General LLM" : data.targetLlm;
+  const llm =
+    data.targetLlm === "other"
+      ? data.customLlm || "General LLM"
+      : data.targetLlm;
   const sections: string[] = [];
 
   // Role
-  sections.push("**Role:** You are an expert assistant" + (data.toneStyle?.trim() ? ` with a ${data.toneStyle.trim()} approach` : "") + ".");
+  sections.push(
+    "**Role:** You are an expert assistant" +
+      (data.toneStyle?.trim()
+        ? ` with a ${data.toneStyle.trim()} approach`
+        : "") +
+      ".",
+  );
   sections.push("");
 
   // Action
@@ -152,7 +170,10 @@ function generateRACEPrompt(data: WizardFormData): string {
 }
 
 function generateORACLEPrompt(data: WizardFormData): string {
-  const llm = data.targetLlm === "other" ? data.customLlm || "General LLM" : data.targetLlm;
+  const llm =
+    data.targetLlm === "other"
+      ? data.customLlm || "General LLM"
+      : data.targetLlm;
   const sections: string[] = [];
 
   // Objective
@@ -191,7 +212,9 @@ function generateORACLEPrompt(data: WizardFormData): string {
 
   // Language
   sections.push("# Language");
-  sections.push("Use clear, professional language appropriate for the target audience.");
+  sections.push(
+    "Use clear, professional language appropriate for the target audience.",
+  );
   sections.push("");
 
   // Examples
@@ -232,12 +255,12 @@ function generateSimplePrompt(data: WizardFormData): string {
 }
 
 function generateDefaultPrompt(data: WizardFormData): string {
-  const llm = data.targetLlm === "other" ? data.customLlm || "General LLM" : data.targetLlm;
-  
-  const sections: string[] = [
-    "You are an expert assistant.",
-    "",
-  ];
+  const llm =
+    data.targetLlm === "other"
+      ? data.customLlm || "General LLM"
+      : data.targetLlm;
+
+  const sections: string[] = ["You are an expert assistant.", ""];
 
   sections.push("Goal:");
   sections.push(`- ${data.goal}`);
@@ -300,7 +323,13 @@ function autoSelectFramework(data: WizardFormData): PromptFramework {
   const hasOutputFormat = !!data.outputFormat?.trim();
 
   // Count complexity indicators
-  const complexity = [hasConstraints, hasExamples, hasAudience, hasToneStyle, hasOutputFormat].filter(Boolean).length;
+  const complexity = [
+    hasConstraints,
+    hasExamples,
+    hasAudience,
+    hasToneStyle,
+    hasOutputFormat,
+  ].filter(Boolean).length;
 
   // Simple goal with few fields -> simple
   if (complexity <= 1) {
@@ -326,45 +355,53 @@ function autoSelectFramework(data: WizardFormData): PromptFramework {
  * Only includes non-empty fields.
  */
 export function formatWizardInputForApi(data: WizardFormData): string {
-  const llm = data.targetLlm === "other" ? data.customLlm || "General LLM" : data.targetLlm;
+  const llm =
+    data.targetLlm === "other"
+      ? data.customLlm || "General LLM"
+      : data.targetLlm;
   const frameworkLabel = getFrameworkDisplayName(data.framework);
-  
+
   const lines: string[] = [];
-  
+
   lines.push(`GOAL: ${data.goal}`);
-  lines.push(`FRAMEWORK: ${frameworkLabel}${data.framework === "auto" ? " (choose the most suitable)" : ""}`);
+  lines.push(
+    `FRAMEWORK: ${frameworkLabel}${data.framework === "auto" ? " (choose the most suitable)" : ""}`,
+  );
   lines.push(`TARGET LLM: ${llm}`);
-  
+
   if (data.audience?.trim()) {
     lines.push(`AUDIENCE: ${data.audience.trim()}`);
   }
-  
+
   if (data.toneStyle?.trim()) {
     lines.push(`TONE & STYLE: ${data.toneStyle.trim()}`);
   }
-  
+
   if (data.inputs?.trim()) {
     lines.push(`EXPECTED INPUT: ${data.inputs.trim()}`);
   }
-  
+
   if (data.outputFormat?.trim()) {
     lines.push(`DESIRED OUTPUT: ${data.outputFormat.trim()}`);
   }
-  
+
   if (data.constraints?.trim()) {
     lines.push(`CONSTRAINTS: ${data.constraints.trim()}`);
   }
-  
+
   if (data.additionalNotes?.trim()) {
     lines.push(`ADDITIONAL NOTES: ${data.additionalNotes.trim()}`);
   }
-  
+
   return lines.join("\n");
 }
 
-export function generatePromptFromWizard(data: WizardFormData): { prompt: string; usedFramework: PromptFramework } {
+export function generatePromptFromWizard(data: WizardFormData): {
+  prompt: string;
+  usedFramework: PromptFramework;
+} {
   let framework = data.framework;
-  
+
   if (framework === "auto") {
     framework = autoSelectFramework(data);
   }

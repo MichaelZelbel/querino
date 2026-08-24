@@ -79,7 +79,9 @@ for (const file of report) {
       ratcheted++;
       perFile[relative] = (perFile[relative] ?? 0) + 1;
     } else if (message.severity === 2) {
-      errors.push(`${relative}:${message.line}:${message.column}  [${message.ruleId ?? "?"}]  ${message.message}`);
+      errors.push(
+        `${relative}:${message.line}:${message.column}  [${message.ruleId ?? "?"}]  ${message.message}`,
+      );
     }
   }
 }
@@ -87,7 +89,9 @@ for (const file of report) {
 // An outright error is never acceptable, ceiling or no ceiling. This is the
 // thing the noise used to hide.
 if (errors.length > 0) {
-  console.error(`ESLint reports ${errors.length} error${errors.length === 1 ? "" : "s"}:\n`);
+  console.error(
+    `ESLint reports ${errors.length} error${errors.length === 1 ? "" : "s"}:\n`,
+  );
   for (const line of errors) console.error(`  ${line}`);
   console.error("\nThese are errors, not `any`s. Fix them.");
   process.exit(1);
@@ -111,7 +115,9 @@ if (process.argv.includes("--update")) {
         rule: RATCHETED,
         note: "The ceiling on `any`. It may be lowered, never raised. See scripts/lint-ratchet.mjs.",
         total: ratcheted,
-        perFile: Object.fromEntries(Object.entries(perFile).sort(([a], [b]) => a.localeCompare(b))),
+        perFile: Object.fromEntries(
+          Object.entries(perFile).sort(([a], [b]) => a.localeCompare(b)),
+        ),
       },
       null,
       2,
@@ -131,13 +137,17 @@ if (ratcheted > ceiling.total) {
   for (const [file, now, before] of worse) {
     console.error(`  ${file}  ${before} -> ${now}`);
   }
-  console.error("\nGive those a real type. If one genuinely cannot have one, say why in a comment");
+  console.error(
+    "\nGive those a real type. If one genuinely cannot have one, say why in a comment",
+  );
   console.error("and lower some other file's count to pay for it.");
   process.exit(1);
 }
 
 if (ratcheted < ceiling.total) {
-  console.error(`\`any\` count fell from ${ceiling.total} to ${ratcheted}, and the ceiling still says ${ceiling.total}.`);
+  console.error(
+    `\`any\` count fell from ${ceiling.total} to ${ratcheted}, and the ceiling still says ${ceiling.total}.`,
+  );
   console.error("Bank it, so it cannot leak back:\n");
   console.error("  node scripts/lint-ratchet.mjs --update\n");
   process.exit(1);

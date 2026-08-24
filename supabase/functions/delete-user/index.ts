@@ -24,12 +24,15 @@ serve(async (req) => {
     // Get the Authorization header
     const authHeader = req.headers.get("Authorization");
     console.log("v3 - Auth header present:", !!authHeader);
-    
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       console.error("v3 - No valid authorization header provided");
       return new Response(
         JSON.stringify({ error: "No authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -42,12 +45,16 @@ serve(async (req) => {
     });
 
     // Cryptographically verify the JWT via Supabase (uses JWKS).
-    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.getUser(token);
     if (authError || !authData?.user) {
       console.error("v4 - JWT verification failed:", authError?.message);
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -56,14 +63,19 @@ serve(async (req) => {
 
     // Check if requesting user is admin. user_roles (via is_admin RPC) is
     // the authoritative role source — profiles.role can drift.
-    const { data: isAdminData, error: adminError } = await supabaseAdmin
-      .rpc("is_admin", { _user_id: requestingUserId });
+    const { data: isAdminData, error: adminError } = await supabaseAdmin.rpc(
+      "is_admin",
+      { _user_id: requestingUserId },
+    );
 
     if (adminError || !isAdminData) {
       console.error("v4 - User is not admin:", adminError?.message);
       return new Response(
         JSON.stringify({ error: "Only admins can delete users" }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -72,42 +84,56 @@ serve(async (req) => {
     console.log("v3 - User ID to delete:", userId);
 
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: "User ID is required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "User ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Prevent self-deletion
     if (userId === requestingUserId) {
       return new Response(
         JSON.stringify({ error: "You cannot delete your own account" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     // Delete the user from auth.users (this will cascade to profiles due to foreign key)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const { error: deleteError } =
+      await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       console.error("v3 - Error deleting user:", deleteError);
       return new Response(
-        JSON.stringify({ error: `Failed to delete user: ${deleteError.message}` }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          error: `Failed to delete user: ${deleteError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
-    console.log(`v3 - User ${userId} deleted successfully by admin ${requestingUserId}`);
+    console.log(
+      `v3 - User ${userId} deleted successfully by admin ${requestingUserId}`,
+    );
 
     return new Response(
       JSON.stringify({ success: true, message: "User deleted successfully" }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   } catch (error: any) {
     console.error("v3 - Error in delete-user function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 });

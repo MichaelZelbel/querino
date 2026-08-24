@@ -6,7 +6,8 @@ export const Route = createFileRoute("/docs")({
   head: () =>
     pageHead({
       title: "Documentation — Querino",
-      description: "Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino.",
+      description:
+        "Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino.",
       canonical: "/docs",
     }),
   component: Docs,

@@ -15,10 +15,17 @@ type Entry = {
 };
 
 const entries: Entry[] = JSON.parse(
-  readFileSync(resolve(process.cwd(), "migration/screenshot-urls.json"), "utf8"),
+  readFileSync(
+    resolve(process.cwd(), "migration/screenshot-urls.json"),
+    "utf8",
+  ),
 );
 
-const outDir = resolve(process.cwd(), "migration", process.env.SHOT_DIR ?? "baseline");
+const outDir = resolve(
+  process.cwd(),
+  "migration",
+  process.env.SHOT_DIR ?? "baseline",
+);
 mkdirSync(outDir, { recursive: true });
 
 const VIEWPORTS = [
@@ -47,11 +54,13 @@ for (const vp of VIEWPORTS) {
         });
 
         await page.goto(entry.url!, { waitUntil: "networkidle" });
-        await page.waitForFunction(() => document.fonts.status === "loaded", null, {
-          timeout: 15_000,
-        }).catch(() => {
-          /* fonts blocked or offline: photograph the fallback rather than fail */
-        });
+        await page
+          .waitForFunction(() => document.fonts.status === "loaded", null, {
+            timeout: 15_000,
+          })
+          .catch(() => {
+            /* fonts blocked or offline: photograph the fallback rather than fail */
+          });
 
         // Freeze anything still moving. reducedMotion already suppresses most of it;
         // this also stops the caret and the lazy-route spinner mid-frame.
@@ -72,7 +81,10 @@ for (const vp of VIEWPORTS) {
         // The one real assertion: the app rendered something, rather than a blank
         // white page from a chunk that failed to load.
         const bodyText = (await page.locator("body").innerText()).trim();
-        expect(bodyText.length, `${entry.url} rendered an empty body`).toBeGreaterThan(0);
+        expect(
+          bodyText.length,
+          `${entry.url} rendered an empty body`,
+        ).toBeGreaterThan(0);
       });
     }
   });

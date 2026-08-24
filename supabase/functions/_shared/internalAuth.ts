@@ -46,7 +46,11 @@ export function constantTimeEquals(a: string, b: string): boolean {
 }
 
 function bearerOf(req: Request): string {
-  return (req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "")
+  return (
+    req.headers.get("Authorization") ??
+    req.headers.get("authorization") ??
+    ""
+  )
     .replace(/^Bearer\s+/i, "")
     .trim();
 }
@@ -62,7 +66,11 @@ export function hasInternalKey(req: Request): boolean {
     );
     return false;
   }
-  const presented = (req.headers.get(HEADER) ?? req.headers.get(HEADER.toLowerCase()) ?? "").trim();
+  const presented = (
+    req.headers.get(HEADER) ??
+    req.headers.get(HEADER.toLowerCase()) ??
+    ""
+  ).trim();
   return constantTimeEquals(presented, secret);
 }
 
@@ -98,26 +106,37 @@ export async function isAdminCaller(req: Request): Promise<boolean> {
   if (!url || !serviceKey) return false;
 
   try {
-    const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-    const { data: userData, error: userError } = await admin.auth.getUser(token);
+    const admin = createClient(url, serviceKey, {
+      auth: { persistSession: false },
+    });
+    const { data: userData, error: userError } =
+      await admin.auth.getUser(token);
     if (userError || !userData?.user?.id) return false;
 
     const { data: isAdmin, error: roleError } = await admin.rpc("is_admin", {
       _user_id: userData.user.id,
     });
     if (roleError) {
-      console.error("[internalAuth] is_admin lookup failed:", roleError.message);
+      console.error(
+        "[internalAuth] is_admin lookup failed:",
+        roleError.message,
+      );
       return false;
     }
     return isAdmin === true;
   } catch (err) {
-    console.error("[internalAuth] admin check threw:", err instanceof Error ? err.message : err);
+    console.error(
+      "[internalAuth] admin check threw:",
+      err instanceof Error ? err.message : err,
+    );
     return false;
   }
 }
 
 /** The 401 every machine endpoint returns. Deliberately says nothing useful. */
-export function unauthorized(extraHeaders: Record<string, string> = {}): Response {
+export function unauthorized(
+  extraHeaders: Record<string, string> = {},
+): Response {
   return new Response(JSON.stringify({ error: "Unauthorized" }), {
     status: 401,
     headers: { "Content-Type": "application/json", ...extraHeaders },
@@ -150,6 +169,8 @@ export async function requireMachineOrAdmin(
 ): Promise<Response | null> {
   if (isMachineCaller(req)) return null;
   if (await isAdminCaller(req)) return null;
-  console.warn("[internalAuth] refused a caller that is neither a job nor an admin");
+  console.warn(
+    "[internalAuth] refused a caller that is neither a job nor an admin",
+  );
   return unauthorized(extraHeaders);
 }

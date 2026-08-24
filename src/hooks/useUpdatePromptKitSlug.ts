@@ -13,15 +13,18 @@ export function useUpdatePromptKitSlug() {
   const updateSlug = async (
     promptKitId: string,
     newSlug: string,
-    userId: string
+    userId: string,
   ): Promise<UpdateSlugResult> => {
     setUpdating(true);
     try {
-      const { data, error } = await (supabase.rpc as any)("update_prompt_kit_slug", {
-        p_prompt_kit_id: promptKitId,
-        p_new_slug: newSlug,
-        p_user_id: userId,
-      });
+      const { data, error } = await (supabase.rpc as any)(
+        "update_prompt_kit_slug",
+        {
+          p_prompt_kit_id: promptKitId,
+          p_new_slug: newSlug,
+          p_user_id: userId,
+        },
+      );
 
       if (error) throw error;
 

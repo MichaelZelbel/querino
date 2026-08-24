@@ -12,7 +12,11 @@ import {
   MessageSquare,
   Sparkles,
 } from "lucide-react";
-import { runCanvasAI, type RunCanvasAIResult, type ArtifactType } from "@/lib/runCanvasAI";
+import {
+  runCanvasAI,
+  type RunCanvasAIResult,
+  type ArtifactType,
+} from "@/lib/runCanvasAI";
 import { toast } from "sonner";
 
 interface ChatMessage {
@@ -35,54 +39,132 @@ interface ArtifactCoachPanelProps {
 
 const COACH_CONFIG: Record<
   ArtifactType,
-  { label: string; helperText: string; placeholder: string; quickActions: { label: string; message: string }[] }
+  {
+    label: string;
+    helperText: string;
+    placeholder: string;
+    quickActions: { label: string; message: string }[];
+  }
 > = {
   prompt: {
     label: "Prompt Coach",
     helperText: "This AI sees your current prompt content.",
     placeholder: "Ask the Prompt Coach...",
     quickActions: [
-      { label: "Make clearer", message: "Make this prompt clearer and more specific." },
-      { label: "Make stricter", message: "Make this prompt stricter with fewer ambiguities." },
-      { label: "Add output format", message: "Add a clear output format specification to this prompt." },
-      { label: "Shorten", message: "Shorten this prompt while preserving its intent." },
-      { label: "Add examples", message: "Add concrete examples to illustrate the expected behavior." },
+      {
+        label: "Make clearer",
+        message: "Make this prompt clearer and more specific.",
+      },
+      {
+        label: "Make stricter",
+        message: "Make this prompt stricter with fewer ambiguities.",
+      },
+      {
+        label: "Add output format",
+        message: "Add a clear output format specification to this prompt.",
+      },
+      {
+        label: "Shorten",
+        message: "Shorten this prompt while preserving its intent.",
+      },
+      {
+        label: "Add examples",
+        message: "Add concrete examples to illustrate the expected behavior.",
+      },
     ],
   },
   skill: {
     label: "Skill Coach",
-    helperText: "This AI sees your current skill content and helps you write better LLM frameworks.",
+    helperText:
+      "This AI sees your current skill content and helps you write better LLM frameworks.",
     placeholder: "Ask the Skill Coach...",
     quickActions: [
-      { label: "Improve structure", message: "Improve the structure and clarity of this skill." },
-      { label: "Add role definition", message: "Add or improve the role definition at the top of this skill." },
-      { label: "Add examples", message: "Add concrete examples to illustrate the expected behavior." },
-      { label: "Make reusable", message: "Make this skill more reusable and generic so it can be applied across tasks." },
-      { label: "Add output format", message: "Add a clear output format specification to this skill." },
+      {
+        label: "Improve structure",
+        message: "Improve the structure and clarity of this skill.",
+      },
+      {
+        label: "Add role definition",
+        message: "Add or improve the role definition at the top of this skill.",
+      },
+      {
+        label: "Add examples",
+        message: "Add concrete examples to illustrate the expected behavior.",
+      },
+      {
+        label: "Make reusable",
+        message:
+          "Make this skill more reusable and generic so it can be applied across tasks.",
+      },
+      {
+        label: "Add output format",
+        message: "Add a clear output format specification to this skill.",
+      },
     ],
   },
   workflow: {
     label: "Workflow Coach",
-    helperText: "This AI sees your current workflow content and helps you design better n8n automations.",
+    helperText:
+      "This AI sees your current workflow content and helps you design better n8n automations.",
     placeholder: "Ask the Workflow Coach...",
     quickActions: [
-      { label: "Clarify steps", message: "Clarify each step in this workflow to make it easier to implement." },
-      { label: "Add error handling", message: "Add error handling and edge case considerations to this workflow." },
-      { label: "Improve structure", message: "Improve the overall structure and organization of this workflow description." },
-      { label: "Add trigger details", message: "Add more detail about how this workflow is triggered." },
-      { label: "Summarize", message: "Add a clear summary at the top describing what this workflow does." },
+      {
+        label: "Clarify steps",
+        message:
+          "Clarify each step in this workflow to make it easier to implement.",
+      },
+      {
+        label: "Add error handling",
+        message:
+          "Add error handling and edge case considerations to this workflow.",
+      },
+      {
+        label: "Improve structure",
+        message:
+          "Improve the overall structure and organization of this workflow description.",
+      },
+      {
+        label: "Add trigger details",
+        message: "Add more detail about how this workflow is triggered.",
+      },
+      {
+        label: "Summarize",
+        message:
+          "Add a clear summary at the top describing what this workflow does.",
+      },
     ],
   },
   prompt_kit: {
     label: "Prompt Kit Coach",
-    helperText: "This AI sees the entire kit and helps you add, refine, and structure the prompts inside it.",
+    helperText:
+      "This AI sees the entire kit and helps you add, refine, and structure the prompts inside it.",
     placeholder: "Ask the Prompt Kit Coach...",
     quickActions: [
-      { label: "Suggest missing prompts", message: "Suggest prompts that are missing from this kit to make it more complete." },
-      { label: "Add a new prompt", message: "Add a new '## Prompt: <Title>' section that complements the existing prompts." },
-      { label: "Improve consistency", message: "Improve naming and style consistency across the prompts in this kit." },
-      { label: "Tighten prompts", message: "Make each prompt in the kit clearer and less ambiguous, preserving structure." },
-      { label: "Add output formats", message: "Add or unify clear output format specifications across the prompts in this kit." },
+      {
+        label: "Suggest missing prompts",
+        message:
+          "Suggest prompts that are missing from this kit to make it more complete.",
+      },
+      {
+        label: "Add a new prompt",
+        message:
+          "Add a new '## Prompt: <Title>' section that complements the existing prompts.",
+      },
+      {
+        label: "Improve consistency",
+        message:
+          "Improve naming and style consistency across the prompts in this kit.",
+      },
+      {
+        label: "Tighten prompts",
+        message:
+          "Make each prompt in the kit clearer and less ambiguous, preserving structure.",
+      },
+      {
+        label: "Add output formats",
+        message:
+          "Add or unify clear output format specifications across the prompts in this kit.",
+      },
     ],
   },
 };
@@ -107,7 +189,8 @@ export function ArtifactCoachPanel({
       // This initialiser runs during render, where a server has no localStorage.
       // Guard the read alone: the default greeting below must still be reached,
       // or the server and the client would render different first messages.
-      const stored = typeof window === "undefined" ? null : localStorage.getItem(storageKey);
+      const stored =
+        typeof window === "undefined" ? null : localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored) as ChatMessage[];
     } catch {
       // ignore parse errors
@@ -116,8 +199,10 @@ export function ArtifactCoachPanel({
       const newGreeting: Record<ArtifactType, string> = {
         prompt: "What do you want this prompt to do?",
         skill: "What kind of skill or LLM framework do you want to create?",
-        workflow: "What workflow do you want to design? Tell me about your automation goal.",
-        prompt_kit: "What use case should this prompt kit cover? I can help you draft and structure the prompts inside it.",
+        workflow:
+          "What workflow do you want to design? Tell me about your automation goal.",
+        prompt_kit:
+          "What use case should this prompt kit cover? I can help you draft and structure the prompts inside it.",
       };
       return [{ role: "assistant", content: newGreeting[artifactType] }];
     }
@@ -224,7 +309,9 @@ export function ArtifactCoachPanel({
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">{config.label}</span>
+          <span className="text-sm font-semibold text-foreground">
+            {config.label}
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -271,7 +358,8 @@ export function ArtifactCoachPanel({
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Bot className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">
-                Ask me to improve your {artifactType}, or use the quick actions below.
+                Ask me to improve your {artifactType}, or use the quick actions
+                below.
               </p>
             </div>
           )}

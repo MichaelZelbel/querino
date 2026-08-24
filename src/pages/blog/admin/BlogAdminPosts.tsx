@@ -36,7 +36,15 @@ import {
 import { useBlogPosts, useDeleteBlogPost } from "@/hooks/useBlogPosts";
 import { useBlogCategories } from "@/hooks/useBlogCategories";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Eye,
+  Loader2,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { BlogPostStatus } from "@/types/blog";
@@ -44,15 +52,17 @@ import type { BlogPostStatus } from "@/types/blog";
 export default function BlogAdminPosts() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<BlogPostStatus | 'all'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<BlogPostStatus | "all">(
+    "all",
+  );
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: posts, isLoading } = useBlogPosts({
     status: statusFilter,
-    categoryId: categoryFilter !== 'all' ? categoryFilter : undefined,
+    categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
     search: debouncedSearch || undefined,
   });
   const { data: categories } = useBlogCategories();
@@ -89,7 +99,10 @@ export default function BlogAdminPosts() {
               className="pl-9"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as BlogPostStatus | 'all')}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as BlogPostStatus | "all")}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -150,40 +163,55 @@ export default function BlogAdminPosts() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {post.author?.display_name || 'Unknown'}
+                        {post.author?.display_name || "Unknown"}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
-                          post.status === 'published'
-                            ? 'bg-green-500/10 text-green-600'
-                            : post.status === 'scheduled'
-                            ? 'bg-blue-500/10 text-blue-600'
-                            : 'bg-amber-500/10 text-amber-600'
+                          post.status === "published"
+                            ? "bg-green-500/10 text-green-600"
+                            : post.status === "scheduled"
+                              ? "bg-blue-500/10 text-blue-600"
+                              : "bg-amber-500/10 text-amber-600"
                         }`}
                       >
                         {post.status}
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(post.created_at), {
+                        addSuffix: true,
+                      })}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8" aria-label="Post actions">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 sm:h-8 sm:w-8"
+                            aria-label="Post actions"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/blog/admin/posts/${post.id}/edit`)}>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/blog/admin/posts/${post.id}/edit`)
+                            }
+                          >
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          {post.status === 'published' && (
+                          {post.status === "published" && (
                             <DropdownMenuItem asChild>
-                              <a href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                              <a
+                                href={`/blog/${post.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View
                               </a>
@@ -203,9 +231,15 @@ export default function BlogAdminPosts() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No posts found.{' '}
-                    <Link to="/blog/admin/posts/new" className="text-primary hover:underline">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No posts found.{" "}
+                    <Link
+                      to="/blog/admin/posts/new"
+                      className="text-primary hover:underline"
+                    >
                       Create your first post
                     </Link>
                   </TableCell>
@@ -222,7 +256,8 @@ export default function BlogAdminPosts() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Post</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
+              Are you sure you want to delete this post? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

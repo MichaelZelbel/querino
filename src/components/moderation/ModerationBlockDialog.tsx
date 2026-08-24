@@ -50,7 +50,8 @@ export function ModerationBlockDialog({
                 </p>
               )}
               <p className="text-sm">
-                Please review and edit your content. Your artifact has been kept as a private draft — nothing was lost.
+                Please review and edit your content. Your artifact has been kept
+                as a private draft — nothing was lost.
               </p>
               {supportHint && (
                 <p className="text-sm text-muted-foreground">{supportHint}</p>

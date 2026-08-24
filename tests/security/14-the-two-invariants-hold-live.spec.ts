@@ -45,7 +45,10 @@ async function violations(): Promise<Violation[]> {
     method: "POST",
     body: {},
   });
-  expect(res.ok, `security_invariants() failed: ${JSON.stringify(res.error)}`).toBe(true);
+  expect(
+    res.ok,
+    `security_invariants() failed: ${JSON.stringify(res.error)}`,
+  ).toBe(true);
   return res.data ?? [];
 }
 
@@ -55,7 +58,9 @@ function describeAll(rows: Violation[]): string[] {
 
 test.describe("The structural rules, asked of the running database", () => {
   test("every SECURITY DEFINER function sets search_path", async () => {
-    const bad = (await violations()).filter((v) => v.kind === "function_without_search_path");
+    const bad = (await violations()).filter(
+      (v) => v.kind === "function_without_search_path",
+    );
     expect(
       describeAll(bad),
       "these run as their owner while the caller picks what their unqualified names mean",
@@ -63,7 +68,9 @@ test.describe("The structural rules, asked of the running database", () => {
   });
 
   test("every table in public has row-level security", async () => {
-    const bad = (await violations()).filter((v) => v.kind === "table_without_rls");
+    const bad = (await violations()).filter(
+      (v) => v.kind === "table_without_rls",
+    );
     expect(
       describeAll(bad),
       "these are readable by anyone holding the anon key, which is in every visitor's browser",
@@ -71,7 +78,9 @@ test.describe("The structural rules, asked of the running database", () => {
   });
 
   test("every view in public runs as its caller", async () => {
-    const bad = (await violations()).filter((v) => v.kind === "view_without_security_invoker");
+    const bad = (await violations()).filter(
+      (v) => v.kind === "view_without_security_invoker",
+    );
     expect(
       describeAll(bad),
       "a view without security_invoker runs as its owner, which row-level security does not " +
@@ -94,20 +103,37 @@ test.describe("The structural rules, asked of the running database", () => {
 
   test("and there is enough schema for any of that to mean something", async () => {
     const res = await restAsService<
-      Array<{ security_definer_functions: number; public_tables: number; public_views: number }>
+      Array<{
+        security_definer_functions: number;
+        public_tables: number;
+        public_views: number;
+      }>
     >("rpc/security_invariants_scope", { method: "POST", body: {} });
-    expect(res.ok, `the scope query failed: ${JSON.stringify(res.error)}`).toBe(true);
+    expect(res.ok, `the scope query failed: ${JSON.stringify(res.error)}`).toBe(
+      true,
+    );
 
     const scope = res.data![0];
-    expect(scope.security_definer_functions, "no SECURITY DEFINER functions, so the check is vacuous")
-      .toBeGreaterThan(40);
-    expect(scope.public_tables, "no tables in public, so the check is vacuous").toBeGreaterThan(40);
-    expect(scope.public_views, "no views in public, so the check is vacuous").toBeGreaterThan(0);
+    expect(
+      scope.security_definer_functions,
+      "no SECURITY DEFINER functions, so the check is vacuous",
+    ).toBeGreaterThan(40);
+    expect(
+      scope.public_tables,
+      "no tables in public, so the check is vacuous",
+    ).toBeGreaterThan(40);
+    expect(
+      scope.public_views,
+      "no views in public, so the check is vacuous",
+    ).toBeGreaterThan(0);
   });
 
   test("the invariants function is not reachable by a browser session", async () => {
     const { restAsUser } = await import("./helpers/api");
-    const res = await restAsUser("rpc/security_invariants", { method: "POST", body: {} });
+    const res = await restAsUser("rpc/security_invariants", {
+      method: "POST",
+      body: {},
+    });
     expect(
       res.status,
       "a logged-in user can enumerate this project's security posture",
@@ -118,12 +144,18 @@ test.describe("The structural rules, asked of the running database", () => {
     // The only check here that needs the account-scoped token, so it is skipped
     // in CI rather than putting that token in a public repository's secrets.
     const token = process.env.SUPABASE_ACCESS_TOKEN;
-    test.skip(!token, "SUPABASE_ACCESS_TOKEN is not set, so the advisor cannot be asked");
+    test.skip(
+      !token,
+      "SUPABASE_ACCESS_TOKEN is not set, so the advisor cannot be asked",
+    );
 
     const ref = process.env.QUERINO_PROJECT_REF ?? "zvuwkffneqxqsihlnfsd";
-    const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/advisors/security`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(
+      `https://api.supabase.com/v1/projects/${ref}/advisors/security`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     expect(res.ok, `the advisor endpoint answered ${res.status}`).toBe(true);
 
     const body = (await res.json()) as {

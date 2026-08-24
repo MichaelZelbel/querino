@@ -36,8 +36,22 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Loader2, X, ArrowLeft, Trash2, Save, FileText, Sparkles, Bot, GitBranch, History } from "lucide-react";
-import { VersionHistoryPanel, type VersionTableConfig } from "@/components/versions";
+import {
+  Loader2,
+  X,
+  ArrowLeft,
+  Trash2,
+  Save,
+  FileText,
+  Sparkles,
+  Bot,
+  GitBranch,
+  History,
+} from "lucide-react";
+import {
+  VersionHistoryPanel,
+  type VersionTableConfig,
+} from "@/components/versions";
 
 const WORKFLOW_VERSIONS_CONFIG: VersionTableConfig = {
   versionsTable: "workflow_versions",
@@ -49,7 +63,10 @@ import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
-import { DownloadMarkdownButton, ImportMarkdownButton } from "@/components/markdown";
+import {
+  DownloadMarkdownButton,
+  ImportMarkdownButton,
+} from "@/components/markdown";
 import { categoryOptions } from "@/types/prompt";
 import type { Workflow } from "@/types/workflow";
 import type { ParsedMarkdown } from "@/lib/markdown";
@@ -105,7 +122,8 @@ export default function WorkflowEdit() {
     language: DEFAULT_LANGUAGE,
   });
   const [tagInput, setTagInput] = useState("");
-  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
+  const [moderationBlock, setModerationBlock] =
+    useState<ModerationResult | null>(null);
 
   const workflowId = workflow?.id;
 
@@ -117,9 +135,10 @@ export default function WorkflowEdit() {
 
   // Session ID for the coach
   const workspaceScope = currentWorkspace ?? "personal";
-  const coachSessionId = workflowId && user
-    ? deterministicSessionId(workspaceScope, user.id, workflowId)
-    : "draft";
+  const coachSessionId =
+    workflowId && user
+      ? deterministicSessionId(workspaceScope, user.id, workflowId)
+      : "draft";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -150,7 +169,10 @@ export default function WorkflowEdit() {
 
         let workflowContent = data.content || "";
         if (!workflowContent && data.json) {
-          workflowContent = typeof data.json === "string" ? data.json : JSON.stringify(data.json, null, 2);
+          workflowContent =
+            typeof data.json === "string"
+              ? data.json
+              : JSON.stringify(data.json, null, 2);
         }
 
         setFormData({
@@ -176,18 +198,22 @@ export default function WorkflowEdit() {
 
   const handleApplyAIContent = (newContent: string) => {
     setPreviousContent(formData.content);
-    setFormData(prev => ({ ...prev, content: newContent }));
+    setFormData((prev) => ({ ...prev, content: newContent }));
   };
 
   const handleUndoAI = () => {
     if (previousContent !== null) {
-      setFormData(prev => ({ ...prev, content: previousContent! }));
+      setFormData((prev) => ({ ...prev, content: previousContent! }));
       setPreviousContent(null);
     }
   };
 
   const normalizeTag = (tag: string) => {
-    return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    return tag
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -202,7 +228,10 @@ export default function WorkflowEdit() {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter((t) => t !== tagToRemove),
+    });
   };
 
   const handleSuggestMetadata = async () => {
@@ -214,20 +243,32 @@ export default function WorkflowEdit() {
     setIsGeneratingMetadata(true);
     setMetadataError(null);
     try {
-      const { data: result, error } = await supabase.functions.invoke("suggest-workflow-metadata", {
-        body: { workflow_content: formData.content.trim(), user_id: user?.id },
-      });
+      const { data: result, error } = await supabase.functions.invoke(
+        "suggest-workflow-metadata",
+        {
+          body: {
+            workflow_content: formData.content.trim(),
+            user_id: user?.id,
+          },
+        },
+      );
       if (error) throw new Error("Failed to generate suggestions");
       const data = result.output || result;
-      if (data.title) setFormData(prev => ({ ...prev, title: data.title }));
-      if (data.description) setFormData(prev => ({ ...prev, description: data.description }));
+      if (data.title) setFormData((prev) => ({ ...prev, title: data.title }));
+      if (data.description)
+        setFormData((prev) => ({ ...prev, description: data.description }));
       if (data.category) {
-        const matched = categoryOptions.find(c => c.id.toLowerCase() === data.category.toLowerCase());
-        if (matched) setFormData(prev => ({ ...prev, category: matched.id }));
+        const matched = categoryOptions.find(
+          (c) => c.id.toLowerCase() === data.category.toLowerCase(),
+        );
+        if (matched) setFormData((prev) => ({ ...prev, category: matched.id }));
       }
       if (data.tags && Array.isArray(data.tags)) {
-        const newTags = data.tags.map((t: string) => normalizeTag(t)).filter(Boolean).slice(0, 10);
-        setFormData(prev => ({ ...prev, tags: newTags }));
+        const newTags = data.tags
+          .map((t: string) => normalizeTag(t))
+          .filter(Boolean)
+          .slice(0, 10);
+        setFormData((prev) => ({ ...prev, tags: newTags }));
       }
     } catch {
       setMetadataError("Could not generate suggestions. Please try again.");
@@ -238,15 +279,25 @@ export default function WorkflowEdit() {
 
   const handleSaveChanges = async () => {
     if (!user || !workflowId) return;
-    if (!formData.title.trim()) { toast.error("Title is required"); return; }
-    if (!formData.content.trim()) { toast.error("Workflow content is required"); return; }
+    if (!formData.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (!formData.content.trim()) {
+      toast.error("Workflow content is required");
+      return;
+    }
 
     if (formData.isPublic) {
       const result = await moderateContent(
-        { title: formData.title, description: formData.description, content: formData.content },
+        {
+          title: formData.title,
+          description: formData.description,
+          content: formData.content,
+        },
         "edit_public",
         "workflow",
-        workflowId
+        workflowId,
       );
       if (!result.approved) {
         setModerationBlock(result);
@@ -267,7 +318,10 @@ export default function WorkflowEdit() {
           language: formData.language,
         })
         .eq("id", workflowId);
-      if (error) { toast.error("Failed to update workflow"); return; }
+      if (error) {
+        toast.error("Failed to update workflow");
+        return;
+      }
       markSaved();
       toast.success("Changes saved!");
     } catch {
@@ -281,15 +335,25 @@ export default function WorkflowEdit() {
   // persist to the live row. Mirrors the prompts flow.
   const handleSaveAsNewVersion = async () => {
     if (!user || !workflowId) return;
-    if (!formData.title.trim()) { toast.error("Title is required"); return; }
-    if (!formData.content.trim()) { toast.error("Workflow content is required"); return; }
+    if (!formData.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (!formData.content.trim()) {
+      toast.error("Workflow content is required");
+      return;
+    }
 
     if (formData.isPublic) {
       const result = await moderateContent(
-        { title: formData.title, description: formData.description, content: formData.content },
+        {
+          title: formData.title,
+          description: formData.description,
+          content: formData.content,
+        },
         "edit_public",
         "workflow",
-        workflowId
+        workflowId,
       );
       if (!result.approved) {
         setModerationBlock(result);
@@ -299,7 +363,8 @@ export default function WorkflowEdit() {
 
     setIsSavingVersion(true);
     try {
-      const { data: latest } = await supabase.from("workflow_versions")
+      const { data: latest } = await supabase
+        .from("workflow_versions")
         .select("version_number")
         .eq("workflow_id", workflowId)
         .order("version_number", { ascending: false })
@@ -307,15 +372,17 @@ export default function WorkflowEdit() {
         .maybeSingle();
       const nextVersionNumber = (latest?.version_number ?? 0) + 1;
 
-      const { error: versionError } = await supabase.from("workflow_versions").insert({
-        workflow_id: workflowId,
-        version_number: nextVersionNumber,
-        title: formData.title.trim(),
-        description: formData.description.trim() || null,
-        content: formData.content.trim(),
-        tags: formData.tags.length > 0 ? formData.tags : null,
-        change_notes: changeNotes.trim() || null,
-      });
+      const { error: versionError } = await supabase
+        .from("workflow_versions")
+        .insert({
+          workflow_id: workflowId,
+          version_number: nextVersionNumber,
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          content: formData.content.trim(),
+          tags: formData.tags.length > 0 ? formData.tags : null,
+          change_notes: changeNotes.trim() || null,
+        });
       if (versionError) {
         console.error("Error creating workflow version:", versionError);
         toast.error("Failed to create new version");
@@ -359,7 +426,10 @@ export default function WorkflowEdit() {
       setWorkflow(data);
       let workflowContent = data.content || "";
       if (!workflowContent && data.json) {
-        workflowContent = typeof data.json === "string" ? data.json : JSON.stringify(data.json, null, 2);
+        workflowContent =
+          typeof data.json === "string"
+            ? data.json
+            : JSON.stringify(data.json, null, 2);
       }
       setFormData({
         title: data.title,
@@ -378,7 +448,9 @@ export default function WorkflowEdit() {
     if (!workflowId) return;
     setIsDeleting(true);
     try {
-      const { error } = await (supabase.from("workflows") as any).delete().eq("id", workflowId);
+      const { error } = await (supabase.from("workflows") as any)
+        .delete()
+        .eq("id", workflowId);
       if (error) throw error;
       toast.success("Workflow deleted");
       navigate("/library");
@@ -478,14 +550,23 @@ export default function WorkflowEdit() {
                 </Sheet>
               )}
 
-              <SaveStateBadge isDirty={isDirty} isSaving={isSubmitting} savedAt={savedAt} className="mr-1" />
+              <SaveStateBadge
+                isDirty={isDirty}
+                isSaving={isSubmitting}
+                savedAt={savedAt}
+                className="mr-1"
+              />
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSubmitting || isSavingVersion}
                 className="gap-2"
                 title="Save (⌘S / Ctrl+S)"
               >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Save Changes
               </Button>
               <Button
@@ -494,17 +575,34 @@ export default function WorkflowEdit() {
                 variant="secondary"
                 className="gap-2"
               >
-                {isSavingVersion ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitBranch className="h-4 w-4" />}
+                {isSavingVersion ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <GitBranch className="h-4 w-4" />
+                )}
                 Save as New Version
               </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setShowVersionPanel(true)}>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setShowVersionPanel(true)}
+              >
                 <History className="h-4 w-4" />
                 Version History
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon" disabled={isDeleting} aria-label="Delete workflow">
-                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    disabled={isDeleting}
+                    aria-label="Delete workflow"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -512,13 +610,19 @@ export default function WorkflowEdit() {
                     <AlertDialogTitle>Delete this workflow?</AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-2">
-                        <p>This action cannot be undone. Deleting this workflow will also remove:</p>
+                        <p>
+                          This action cannot be undone. Deleting this workflow
+                          will also remove:
+                        </p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                           <li>All saved versions and version history</li>
                           <li>All comments, reviews and ratings</li>
                           <li>Any edit suggestions submitted by others</li>
                           <li>References from collections it belongs to</li>
-                          <li>Synced copies in connected GitHub repositories and Menerio</li>
+                          <li>
+                            Synced copies in connected GitHub repositories and
+                            Menerio
+                          </li>
                         </ul>
                       </div>
                     </AlertDialogDescription>
@@ -542,7 +646,9 @@ export default function WorkflowEdit() {
             {/* Left: Editor */}
             <div className="flex-1 min-w-0">
               <div className="rounded-xl border border-border bg-card p-6">
-                <h1 className="mb-6 text-xl font-semibold text-foreground">Edit Workflow</h1>
+                <h1 className="mb-6 text-xl font-semibold text-foreground">
+                  Edit Workflow
+                </h1>
 
                 <div className="space-y-6">
                   {/* Workflow Content */}
@@ -554,7 +660,9 @@ export default function WorkflowEdit() {
                     <LineNumberedEditor
                       id="content"
                       value={formData.content}
-                      onChange={(val) => setFormData({ ...formData, content: val })}
+                      onChange={(val) =>
+                        setFormData({ ...formData, content: val })
+                      }
                       placeholder={`# My Workflow\n\n## Description\nDescribe what this workflow does...\n\n## Steps\n1. First step...\n2. Second step...`}
                     />
                     <p className="text-xs text-muted-foreground">
@@ -569,16 +677,28 @@ export default function WorkflowEdit() {
                       variant="outline"
                       size="sm"
                       onClick={handleSuggestMetadata}
-                      disabled={isGeneratingMetadata || !formData.content.trim()}
+                      disabled={
+                        isGeneratingMetadata || !formData.content.trim()
+                      }
                       className="gap-1.5"
                     >
                       {isGeneratingMetadata ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating…</>
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Generating…
+                        </>
                       ) : (
-                        <><Sparkles className="h-3.5 w-3.5" />Suggest title, description, category & tags</>
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Suggest title, description, category & tags
+                        </>
                       )}
                     </Button>
-                    {metadataError && <p className="text-sm text-destructive">{metadataError}</p>}
+                    {metadataError && (
+                      <p className="text-sm text-destructive">
+                        {metadataError}
+                      </p>
+                    )}
                   </div>
 
                   {/* Title */}
@@ -587,7 +707,9 @@ export default function WorkflowEdit() {
                     <Input
                       id="title"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
                       placeholder="e.g., Code Review Workflow"
                     />
                   </div>
@@ -598,7 +720,12 @@ export default function WorkflowEdit() {
                     <Textarea
                       id="description"
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="Brief description of what this workflow does..."
                       rows={2}
                     />
@@ -607,20 +734,30 @@ export default function WorkflowEdit() {
                   {/* Category */}
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, category: v })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categoryOptions.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Language */}
-                  <LanguageSelect value={formData.language} onChange={(v) => setFormData({ ...formData, language: v })} />
+                  <LanguageSelect
+                    value={formData.language}
+                    onChange={(v) => setFormData({ ...formData, language: v })}
+                  />
 
                   {/* Tags */}
                   <div className="space-y-2">
@@ -635,9 +772,17 @@ export default function WorkflowEdit() {
                     {formData.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {formData.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="gap-1">
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="gap-1"
+                          >
                             {tag}
-                            <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="ml-1 hover:text-destructive"
+                            >
                               <X className="h-3 w-3" />
                             </button>
                           </Badge>
@@ -655,21 +800,29 @@ export default function WorkflowEdit() {
                   {/* Visibility Toggle */}
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>
-                      <Label htmlFor="visibility" className="text-base">Make this workflow public</Label>
+                      <Label htmlFor="visibility" className="text-base">
+                        Make this workflow public
+                      </Label>
                       <p className="text-sm text-muted-foreground">
-                        {formData.isPublic ? "Anyone can discover and use this workflow" : "Only you can see this workflow"}
+                        {formData.isPublic
+                          ? "Anyone can discover and use this workflow"
+                          : "Only you can see this workflow"}
                       </p>
                     </div>
                     <Switch
                       id="visibility"
                       checked={formData.isPublic}
-                      onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, isPublic: checked })
+                      }
                     />
                   </div>
 
                   {/* Change Notes */}
                   <div className="space-y-2">
-                    <Label htmlFor="changeNotes">Change Notes (for new version)</Label>
+                    <Label htmlFor="changeNotes">
+                      Change Notes (for new version)
+                    </Label>
                     <Textarea
                       id="changeNotes"
                       value={changeNotes}
@@ -678,7 +831,8 @@ export default function WorkflowEdit() {
                       rows={2}
                     />
                     <p className="text-xs text-muted-foreground">
-                      These notes will be saved when you click "Save as New Version"
+                      These notes will be saved when you click "Save as New
+                      Version"
                     </p>
                   </div>
                 </div>
@@ -687,7 +841,10 @@ export default function WorkflowEdit() {
 
             {/* Right: AI Coach Panel (desktop only) */}
             {!isMobile && (
-              <div className="w-[380px] shrink-0 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+              <div
+                className="w-[380px] shrink-0 sticky top-24 self-start"
+                style={{ height: "calc(100vh - 12rem)" }}
+              >
                 {coachPanel}
               </div>
             )}

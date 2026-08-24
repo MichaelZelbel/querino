@@ -51,7 +51,7 @@ export function StarRating({
               className={cn(
                 "transition-colors",
                 !readonly && "cursor-pointer hover:scale-110",
-                readonly && "cursor-default"
+                readonly && "cursor-default",
               )}
             >
               <Star
@@ -61,8 +61,8 @@ export function StarRating({
                   isFilled
                     ? "fill-warning text-warning"
                     : isHalf
-                    ? "fill-warning/50 text-warning"
-                    : "text-muted-foreground/30"
+                      ? "fill-warning/50 text-warning"
+                      : "text-muted-foreground/30",
                 )}
               />
             </button>

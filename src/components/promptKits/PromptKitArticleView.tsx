@@ -27,7 +27,9 @@ function PromptCard({
   copied: boolean;
 }) {
   const [expanded, setExpanded] = useState(body.length <= COLLAPSE_THRESHOLD);
-  const shown = expanded ? body : body.slice(0, COLLAPSE_THRESHOLD).trimEnd() + "…";
+  const shown = expanded
+    ? body
+    : body.slice(0, COLLAPSE_THRESHOLD).trimEnd() + "…";
   const canCollapse = body.length > COLLAPSE_THRESHOLD;
 
   return (
@@ -37,7 +39,9 @@ function PromptCard({
           <Badge variant="secondary" className="shrink-0">
             #{index}
           </Badge>
-          <h3 className="font-semibold text-foreground truncate">{title || "Untitled"}</h3>
+          <h3 className="font-semibold text-foreground truncate">
+            {title || "Untitled"}
+          </h3>
         </div>
         <Button
           size="sm"
@@ -88,7 +92,11 @@ function PromptCard({
   );
 }
 
-export function PromptKitArticleView({ content, onCopyItem, copiedIdx }: PromptKitArticleViewProps) {
+export function PromptKitArticleView({
+  content,
+  onCopyItem,
+  copiedIdx,
+}: PromptKitArticleViewProps) {
   const segments = parsePromptKitDocument(content || "");
 
   if (segments.length === 0) {
@@ -104,8 +112,8 @@ export function PromptKitArticleView({ content, onCopyItem, copiedIdx }: PromptK
     return (
       <div className="rounded-xl border border-border bg-muted/30 p-6">
         <p className="text-muted-foreground">
-          This kit doesn't contain any prompts yet (no <code className="font-mono">## Prompt:</code>{" "}
-          headings found).
+          This kit doesn't contain any prompts yet (no{" "}
+          <code className="font-mono">## Prompt:</code> headings found).
         </p>
         <pre className="mt-4 whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
           {content}

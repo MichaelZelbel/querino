@@ -6,7 +6,10 @@ interface AutosaveIndicatorProps {
 }
 
 export function AutosaveIndicator({ status }: AutosaveIndicatorProps) {
-  const statusConfig: Record<AutosaveStatus, { icon: typeof Check; text: string; className: string; animate?: boolean }> = {
+  const statusConfig: Record<
+    AutosaveStatus,
+    { icon: typeof Check; text: string; className: string; animate?: boolean }
+  > = {
     saved: {
       icon: Check,
       text: "Saved",

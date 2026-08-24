@@ -7,7 +7,10 @@ export interface UseReviewsResult {
   userReview: ReviewWithUser | null;
   loading: boolean;
   submitting: boolean;
-  submitReview: (rating: number, comment?: string) => Promise<{ error: Error | null }>;
+  submitReview: (
+    rating: number,
+    comment?: string,
+  ) => Promise<{ error: Error | null }>;
   deleteReview: () => Promise<{ error: Error | null }>;
   refetch: () => Promise<void>;
 }
@@ -27,7 +30,7 @@ interface ReviewsConfig {
 export function createReviewsHook(config: ReviewsConfig) {
   return function useArtifactReviews(
     itemId: string | undefined,
-    userId: string | undefined
+    userId: string | undefined,
   ): UseReviewsResult {
     const [reviews, setReviews] = useState<ReviewWithUser[]>([]);
     const [userReview, setUserReview] = useState<ReviewWithUser | null>(null);
@@ -41,15 +44,19 @@ export function createReviewsHook(config: ReviewsConfig) {
       }
 
       try {
-        const { data, error } = await (supabase.from(config.table as any) as any)
-          .select(`
+        const { data, error } = await (
+          supabase.from(config.table as any) as any
+        )
+          .select(
+            `
             *,
             profiles:user_id (
               id,
               display_name,
               avatar_url
             )
-          `)
+          `,
+          )
           .eq(config.idColumn, itemId)
           .order("created_at", { ascending: false });
 
@@ -58,13 +65,15 @@ export function createReviewsHook(config: ReviewsConfig) {
           return;
         }
 
-        const transformedReviews: ReviewWithUser[] = (data as any[]).map((item) => ({
-          ...item,
-          // ReviewWithUser is prompt-shaped; map the FK to the generic field.
-          prompt_id: item[config.idColumn],
-          user: item.profiles || null,
-          profiles: undefined,
-        }));
+        const transformedReviews: ReviewWithUser[] = (data as any[]).map(
+          (item) => ({
+            ...item,
+            // ReviewWithUser is prompt-shaped; map the FK to the generic field.
+            prompt_id: item[config.idColumn],
+            user: item.profiles || null,
+            profiles: undefined,
+          }),
+        );
 
         setReviews(transformedReviews);
 
@@ -85,7 +94,7 @@ export function createReviewsHook(config: ReviewsConfig) {
 
     const submitReview = async (
       rating: number,
-      comment?: string
+      comment?: string,
     ): Promise<{ error: Error | null }> => {
       if (!itemId || !userId) {
         return { error: new Error("Missing item or user ID") };
@@ -107,7 +116,9 @@ export function createReviewsHook(config: ReviewsConfig) {
             return { error: new Error(error.message) };
           }
         } else {
-          const { error } = await (supabase.from(config.table as any) as any).insert({
+          const { error } = await (
+            supabase.from(config.table as any) as any
+          ).insert({
             [config.idColumn]: itemId,
             user_id: userId,
             rating,
@@ -124,7 +135,9 @@ export function createReviewsHook(config: ReviewsConfig) {
         return { error: null };
       } catch (err) {
         console.error(`Error submitting ${config.table} review:`, err);
-        return { error: err instanceof Error ? err : new Error("Unknown error") };
+        return {
+          error: err instanceof Error ? err : new Error("Unknown error"),
+        };
       } finally {
         setSubmitting(false);
       }
@@ -151,7 +164,9 @@ export function createReviewsHook(config: ReviewsConfig) {
         return { error: null };
       } catch (err) {
         console.error(`Error deleting ${config.table} review:`, err);
-        return { error: err instanceof Error ? err : new Error("Unknown error") };
+        return {
+          error: err instanceof Error ? err : new Error("Unknown error"),
+        };
       } finally {
         setSubmitting(false);
       }

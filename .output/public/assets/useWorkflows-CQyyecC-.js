@@ -1,0 +1,8 @@
+import{n as e}from"./client-JNFkalRR.js";import{n as t}from"./useMutation-CAi2_fXj.js";import{t as n}from"./useSemanticMerge-DKwSiQg8.js";function r(r){let i=async t=>{if(t.length===0)return[];let{data:n,error:i}=await e.from(r.table).select(`*, profiles:author_id (id, display_name, avatar_url)`).in(`id`,t);return i||!n?[]:n.map(e=>({...e,author:e.profiles||null}))};return function(a={}){let{searchQuery:o=``,published:s,authorId:c,teamId:l,category:u,sortBy:d=`newest`,limit:f}=a;return t({queryKey:[r.queryKey,o,s,c,l,u,d,f],queryFn:async()=>{let t=e.from(r.table).select(`
+            *,
+            profiles:author_id (
+              id,
+              display_name,
+              avatar_url
+            )
+          `);t=d===`rating`?t.order(`rating_avg`,{ascending:!1}).order(`rating_count`,{ascending:!1}).order(`created_at`,{ascending:!1}):t.order(`created_at`,{ascending:!1}),s!==void 0&&(t=t.eq(`published`,s)),u&&u!==`all`&&(t=t.eq(`category`,u)),l?t=t.eq(`team_id`,l):c&&(t=t.eq(`author_id`,c).is(`team_id`,null)),o.trim()&&(t=t.textSearch(`title,description,content`,o.trim(),{type:`websearch`,config:`simple`})),f&&(t=t.limit(f));let{data:a,error:p}=await t;if(p)throw p;let m=(a||[]).map(e=>({...e,author:e.profiles||null}));return s===!0&&o.trim().length>=3?await n(r.semanticType,o.trim(),m,i):m}})}}var i=r({table:`skills`,queryKey:`skills`,semanticType:`skill`}),a=r({table:`workflows`,queryKey:`workflows`,semanticType:`workflow`});export{i as n,r,a as t};

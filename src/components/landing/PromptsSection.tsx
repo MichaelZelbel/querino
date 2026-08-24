@@ -37,25 +37,37 @@ export function PromptsSection({
 
   // Server-side filtered + paginated (search results are relevance-ranked
   // and capped server-side; browsing loads pages of 24 with Load More).
-  const { data: prompts, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useSearchPrompts({
-      searchQuery: debouncedSearch,
-      isPublic: true,
-      category,
-      tag: tagFilter || undefined,
-      sortBy,
-    });
+  const {
+    data: prompts,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useSearchPrompts({
+    searchQuery: debouncedSearch,
+    isPublic: true,
+    category,
+    tag: tagFilter || undefined,
+    sortBy,
+  });
 
   const filteredAndSortedPrompts = prompts ?? [];
 
-  const sortOptions: { value: SortOption; label: string; icon: typeof TrendingUp }[] = [
+  const sortOptions: {
+    value: SortOption;
+    label: string;
+    icon: typeof TrendingUp;
+  }[] = [
     { value: "trending", label: "Trending", icon: TrendingUp },
     { value: "newest", label: "Newest", icon: Clock },
     { value: "rating", label: "Top Rated", icon: Star },
   ];
 
   return (
-    <section className={`bg-muted/30 ${showHeader ? 'py-20 md:py-28' : 'py-8 md:py-12'}`}>
+    <section
+      className={`bg-muted/30 ${showHeader ? "py-20 md:py-28" : "py-8 md:py-12"}`}
+    >
       <div className="container mx-auto px-4">
         {showHeader && (
           <div className="mx-auto mb-12 max-w-2xl text-center">
@@ -63,7 +75,8 @@ export function PromptsSection({
               Explore Prompts
             </h2>
             <p className="text-lg text-muted-foreground">
-              Browse our curated collection of high-quality prompts. Copy instantly.
+              Browse our curated collection of high-quality prompts. Copy
+              instantly.
             </p>
           </div>
         )}
@@ -88,14 +101,16 @@ export function PromptsSection({
             {sortOptions.map(({ value, label, icon: Icon }) => (
               <Button
                 key={value}
-                variant={sortBy === value && !isSearching ? "secondary" : "ghost"}
+                variant={
+                  sortBy === value && !isSearching ? "secondary" : "ghost"
+                }
                 size="sm"
                 onClick={() => setSortBy(value)}
                 disabled={isSearching}
                 className={cn(
-                  "gap-1.5", 
+                  "gap-1.5",
                   sortBy === value && !isSearching && "font-medium",
-                  isSearching && "opacity-50 cursor-not-allowed"
+                  isSearching && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -108,7 +123,7 @@ export function PromptsSection({
               Showing results by relevance
             </p>
           )}
-          
+
           <div className="flex justify-center">
             <CategoryFilter selected={category} onSelect={setCategory} />
           </div>
@@ -132,7 +147,10 @@ export function PromptsSection({
         {isLoading && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="space-y-4 rounded-xl border border-border bg-card p-6">
+              <div
+                key={i}
+                className="space-y-4 rounded-xl border border-border bg-card p-6"
+              >
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-20 w-full" />
@@ -158,7 +176,7 @@ export function PromptsSection({
         {!isLoading && !error && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredAndSortedPrompts.map((prompt, index) => (
-              <div 
+              <div
                 key={prompt.id}
                 className="animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.05}s` }}

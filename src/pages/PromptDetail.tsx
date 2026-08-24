@@ -25,7 +25,28 @@ import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { CopyToTeamModal } from "@/components/prompts/CopyToTeamModal";
-import { Copy, Check, Bookmark, BookmarkCheck, ArrowLeft, Pencil, Lock, Calendar, Users, Sparkles, Tag, Files, Pin, PinOff, FolderPlus, GitPullRequest, History, UsersRound, Languages, CopyPlus } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Bookmark,
+  BookmarkCheck,
+  ArrowLeft,
+  Pencil,
+  Lock,
+  Calendar,
+  Users,
+  Sparkles,
+  Tag,
+  Files,
+  Pin,
+  PinOff,
+  FolderPlus,
+  GitPullRequest,
+  History,
+  UsersRound,
+  Languages,
+  CopyPlus,
+} from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
@@ -48,7 +69,9 @@ interface PromptWithAuthor extends Prompt {
 // The route loader fetches this record on the server, so the first render already has
 // it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
 // it keeps the page current and handles a slug change without a full navigation.
-export default function PromptDetail({ initialPrompt = null }: { initialPrompt?: PromptWithAuthor | null } = {}) {
+export default function PromptDetail({
+  initialPrompt = null,
+}: { initialPrompt?: PromptWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -65,27 +88,27 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
-  
+
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showTranslateModal, setShowTranslateModal] = useState(false);
-  
-  const { 
-    suggestions, 
-    loading: loadingSuggestions, 
+
+  const {
+    suggestions,
+    loading: loadingSuggestions,
     openCount,
     createSuggestion,
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges,
-    refetch: refetchSuggestions
-  } = useSuggestions('prompt', prompt?.id || '');
-  
+    refetch: refetchSuggestions,
+  } = useSuggestions("prompt", prompt?.id || "");
+
   const isSaved = prompt?.id ? isPromptSaved(prompt.id) : false;
   const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
-  
+
   // Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
@@ -96,7 +119,12 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
   const hasTeams = teams.length > 0;
   // Show "Copy to team" only for personal prompts the user owns (no team_id)
   const isPersonalPrompt = !prompt?.team_id;
-  const canCopyToTeam = isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalPrompt;
+  const canCopyToTeam =
+    isAuthor &&
+    isPremium &&
+    hasTeams &&
+    isPersonalWorkspace &&
+    isPersonalPrompt;
 
   const fetchPrompt = async () => {
     if (!slug) {
@@ -120,14 +148,16 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
     try {
       const { data, error } = await supabase
         .from("prompts")
-        .select(`
+        .select(
+          `
           *,
           profiles:author_id (
             id,
             display_name,
             avatar_url
           )
-        `)
+        `,
+        )
         .eq("slug", slug)
         .maybeSingle();
 
@@ -178,7 +208,7 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
 
   const handleCopy = async () => {
     if (!prompt) return;
-    
+
     try {
       await navigator.clipboard.writeText(prompt.content);
       setCopied(true);
@@ -191,7 +221,7 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
 
   const handleSaveToLibrary = async () => {
     if (!prompt?.id) return;
-    
+
     if (!user) {
       navigate(`/auth?redirect=/prompts/${prompt.slug}`);
       return;
@@ -221,7 +251,7 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
 
   const handleTogglePin = async () => {
     if (!prompt?.id) return;
-    
+
     if (!user) {
       navigate(`/auth?redirect=/prompts/${prompt.slug}`);
       return;
@@ -259,24 +289,24 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
         },
         "edit_public",
         "prompt",
-        prompt.id
+        prompt.id,
       );
       if (!result.approved) {
         toast.error(
           result.reason ||
-            "This suggestion was blocked by moderation and cannot be applied to a public prompt."
+            "This suggestion was blocked by moderation and cannot be applied to a public prompt.",
         );
         return;
       }
     }
 
     const { error } = await supabase
-      .from('prompts')
+      .from("prompts")
       .update(updates)
-      .eq('id', prompt.id);
+      .eq("id", prompt.id);
 
     if (error) throw error;
-    
+
     // Refresh the prompt data
     const { data } = await supabase
       .from("prompts")
@@ -284,7 +314,7 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
       // The caller returns early when slug is missing.
       .eq("slug", slug!)
       .maybeSingle();
-    
+
     if (data) {
       setPrompt({
         ...(data as any),
@@ -333,7 +363,8 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
               Prompt Not Found
             </h1>
             <p className="mb-8 text-lg text-muted-foreground">
-              The prompt you're looking for doesn't exist or is no longer available.
+              The prompt you're looking for doesn't exist or is no longer
+              available.
             </p>
             <Link to="/discover">
               <Button className="gap-2">
@@ -349,7 +380,10 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
   }
 
   const promptCanonical = `${siteOrigin()}/prompts/${prompt.slug}`;
-  const promptDescription = prompt.summary || prompt.description || `${prompt.title} — AI prompt on Querino`;
+  const promptDescription =
+    prompt.summary ||
+    prompt.description ||
+    `${prompt.title} — AI prompt on Querino`;
   const promptJsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -376,457 +410,482 @@ export default function PromptDetail({ initialPrompt = null }: { initialPrompt?:
       <div className="flex flex-1">
         <main className="flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
-          {/* Back Link */}
-          <button 
-            onClick={() => navigate(-1)} 
-            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
+            {/* Back Link */}
+            <button
+              onClick={() => navigate(-1)}
+              className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
 
-          {/* Header Section */}
-          <div className="mb-8">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Badge variant="secondary" className="text-sm capitalize">
-                {prompt.category}
-              </Badge>
-              {!prompt.is_public && isAuthor && (
-                <Badge variant="outline" className="gap-1 text-sm">
-                  <Lock className="h-3 w-3" />
-                  Private
+            {/* Header Section */}
+            <div className="mb-8">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <Badge variant="secondary" className="text-sm capitalize">
+                  {prompt.category}
                 </Badge>
-              )}
-              {prompt.tags && prompt.tags.length > 0 && (
-                <>
-                  {prompt.tags.slice(0, 5).map((tag) => (
-                    <Link key={tag} to={`/discover?tag=${encodeURIComponent(tag)}`}>
-                      <Badge 
-                        variant="outline" 
-                        className="text-sm gap-1 cursor-pointer hover:bg-accent transition-colors"
+                {!prompt.is_public && isAuthor && (
+                  <Badge variant="outline" className="gap-1 text-sm">
+                    <Lock className="h-3 w-3" />
+                    Private
+                  </Badge>
+                )}
+                {prompt.tags && prompt.tags.length > 0 && (
+                  <>
+                    {prompt.tags.slice(0, 5).map((tag) => (
+                      <Link
+                        key={tag}
+                        to={`/discover?tag=${encodeURIComponent(tag)}`}
                       >
-                        <Tag className="h-3 w-3" />
-                        {tag}
-                      </Badge>
-                    </Link>
-                  ))}
-                </>
-              )}
-            </div>
-            
-            <h1 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">
-              {prompt.title}
-            </h1>
-            
-            <p className="text-lg text-muted-foreground">
-              {prompt.description}
-            </p>
+                        <Badge
+                          variant="outline"
+                          className="text-sm gap-1 cursor-pointer hover:bg-accent transition-colors"
+                        >
+                          <Tag className="h-3 w-3" />
+                          {tag}
+                        </Badge>
+                      </Link>
+                    ))}
+                  </>
+                )}
+              </div>
 
-          {/* Author & Meta Info */}
-            <div className="mt-6 flex flex-wrap items-center gap-6">
-              {prompt.author && (
-                <Link 
-                  to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={prompt.author.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {getAuthorInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                      {prompt.author.display_name || "Anonymous"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Author</p>
+              <h1 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">
+                {prompt.title}
+              </h1>
+
+              <p className="text-lg text-muted-foreground">
+                {prompt.description}
+              </p>
+
+              {/* Author & Meta Info */}
+              <div className="mt-6 flex flex-wrap items-center gap-6">
+                {prompt.author && (
+                  <Link
+                    to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
+                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage
+                        src={prompt.author.avatar_url || undefined}
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getAuthorInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                        {prompt.author.display_name || "Anonymous"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Author</p>
+                    </div>
+                  </Link>
+                )}
+
+                {prompt.published_at && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      Published{" "}
+                      {format(new Date(prompt.published_at), "MMM d, yyyy")}
+                    </span>
                   </div>
-                </Link>
-              )}
+                )}
 
-              {prompt.published_at && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Published {format(new Date(prompt.published_at), "MMM d, yyyy")}</span>
+                  <Users className="h-4 w-4" />
+                  <span>{prompt.copies_count.toLocaleString()} copies</span>
                 </div>
-              )}
-
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>{prompt.copies_count.toLocaleString()} copies</span>
               </div>
             </div>
-          </div>
 
-          {/* Summary Section */}
-          {prompt.summary && (
-            <div className="mb-8 rounded-xl border border-border bg-card p-6">
-              <h2 className="mb-3 text-lg font-semibold text-foreground">
-                Summary
-              </h2>
-              <p className="text-muted-foreground">
-                {prompt.summary}
-              </p>
-            </div>
-          )}
+            {/* Summary Section */}
+            {prompt.summary && (
+              <div className="mb-8 rounded-xl border border-border bg-card p-6">
+                <h2 className="mb-3 text-lg font-semibold text-foreground">
+                  Summary
+                </h2>
+                <p className="text-muted-foreground">{prompt.summary}</p>
+              </div>
+            )}
 
-          {/* Action Bar - above content */}
-          <div className="mb-6 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              variant={copied ? "success" : "default"}
-              onClick={handleCopy}
-              className="gap-2"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  Copy Prompt
-                </>
+            {/* Action Bar - above content */}
+            <div className="mb-6 flex flex-wrap gap-3">
+              <Button
+                size="lg"
+                variant={copied ? "success" : "default"}
+                onClick={handleCopy}
+                className="gap-2"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copy Prompt
+                  </>
+                )}
+              </Button>
+
+              {/* Only show Save button for prompts user doesn't own */}
+              {!isAuthor && (
+                <Button
+                  size="lg"
+                  variant={isSaved ? "secondary" : "outline"}
+                  onClick={handleSaveToLibrary}
+                  disabled={saving}
+                  className="gap-2"
+                >
+                  {isSaved ? (
+                    <>
+                      <BookmarkCheck className="h-4 w-4" />
+                      Saved ✓
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark className="h-4 w-4" />
+                      Save to My Library
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
-            
-            {/* Only show Save button for prompts user doesn't own */}
-            {!isAuthor && (
-              <Button
-                size="lg"
-                variant={isSaved ? "secondary" : "outline"}
-                onClick={handleSaveToLibrary}
-                disabled={saving}
-                className="gap-2"
-              >
-                {isSaved ? (
-                  <>
-                    <BookmarkCheck className="h-4 w-4" />
-                    Saved ✓
-                  </>
-                ) : (
-                  <>
-                    <Bookmark className="h-4 w-4" />
-                    Save to My Library
-                  </>
-                )}
-              </Button>
-            )}
 
-            {user && (
-              <Button
-                size="lg"
-                variant={isPinned ? "secondary" : "outline"}
-                onClick={handleTogglePin}
-                disabled={pinning}
-                className="gap-2"
-              >
-                {isPinned ? (
-                  <>
-                    <PinOff className="h-4 w-4" />
-                    Unpin
-                  </>
-                ) : (
-                  <>
-                    <Pin className="h-4 w-4" />
-                    Pin
-                  </>
-                )}
-              </Button>
-            )}
-
-            {isAuthor && (
-              <>
-                <Link to={`/library/${prompt.slug}/edit`}>
-                  <Button size="lg" variant="outline" className="gap-2">
-                    <Pencil className="h-4 w-4" />
-                    Edit Prompt
-                  </Button>
-                </Link>
+              {user && (
                 <Button
                   size="lg"
-                  variant="outline"
-                  onClick={() => duplicateArtifact("prompt", prompt, user!.id)}
-                  disabled={duplicating}
+                  variant={isPinned ? "secondary" : "outline"}
+                  onClick={handleTogglePin}
+                  disabled={pinning}
                   className="gap-2"
                 >
-                  <CopyPlus className="h-4 w-4" />
-                  Duplicate
+                  {isPinned ? (
+                    <>
+                      <PinOff className="h-4 w-4" />
+                      Unpin
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="h-4 w-4" />
+                      Pin
+                    </>
+                  )}
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setShowVersionHistory(true)}
-                  className="gap-2"
-                >
-                  <History className="h-4 w-4" />
-                  Version History
-                </Button>
-                
-                {canCopyToTeam && (
+              )}
+
+              {isAuthor && (
+                <>
+                  <Link to={`/library/${prompt.slug}/edit`}>
+                    <Button size="lg" variant="outline" className="gap-2">
+                      <Pencil className="h-4 w-4" />
+                      Edit Prompt
+                    </Button>
+                  </Link>
                   <Button
                     size="lg"
                     variant="outline"
-                    onClick={() => setShowCopyToTeamModal(true)}
+                    onClick={() =>
+                      duplicateArtifact("prompt", prompt, user!.id)
+                    }
+                    disabled={duplicating}
                     className="gap-2"
                   >
-                    <UsersRound className="h-4 w-4" />
-                    Copy to team…
+                    <CopyPlus className="h-4 w-4" />
+                    Duplicate
                   </Button>
-                )}
-              </>
-            )}
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setShowVersionHistory(true)}
+                    className="gap-2"
+                  >
+                    <History className="h-4 w-4" />
+                    Version History
+                  </Button>
 
-            {user && !isAuthor && (
-              <>
+                  {canCopyToTeam && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => setShowCopyToTeamModal(true)}
+                      className="gap-2"
+                    >
+                      <UsersRound className="h-4 w-4" />
+                      Copy to team…
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {user && !isAuthor && (
+                <>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => clonePrompt(prompt, user.id)}
+                    disabled={cloning}
+                    className="gap-2"
+                  >
+                    <Files className="h-4 w-4" />
+                    {cloning ? "Cloning..." : "Clone Prompt"}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setShowSuggestModal(true)}
+                    className="gap-2"
+                  >
+                    <GitPullRequest className="h-4 w-4" />
+                    Suggest Edit
+                  </Button>
+                </>
+              )}
+
+              {user && (
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => clonePrompt(prompt, user.id)}
-                  disabled={cloning}
+                  onClick={() =>
+                    isPremium
+                      ? setShowRefineModal(true)
+                      : setShowUpsellModal(true)
+                  }
                   className="gap-2"
                 >
-                  <Files className="h-4 w-4" />
-                  {cloning ? "Cloning..." : "Clone Prompt"}
+                  {isPremium ? (
+                    <Sparkles className="h-4 w-4" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
+                  Refine with AI
                 </Button>
+              )}
+
+              {user && (
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => setShowSuggestModal(true)}
+                  onClick={() => setShowTranslateModal(true)}
                   className="gap-2"
                 >
-                  <GitPullRequest className="h-4 w-4" />
-                  Suggest Edit
+                  <Languages className="h-4 w-4" />
+                  Translate
                 </Button>
-              </>
-            )}
+              )}
 
-            {user && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => (isPremium ? setShowRefineModal(true) : setShowUpsellModal(true))}
-                className="gap-2"
-              >
-                {isPremium ? <Sparkles className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                Refine with AI
-              </Button>
-            )}
+              {isAuthor && hasMenerio && prompt && (
+                <MenerioSyncButton
+                  artifactType="prompt"
+                  artifactId={prompt.id}
+                  menerioSynced={(prompt as any).menerio_synced || false}
+                  menerioSyncedAt={(prompt as any).menerio_synced_at || null}
+                  menerioNoteId={(prompt as any).menerio_note_id || null}
+                  onSyncComplete={fetchPrompt}
+                />
+              )}
 
-            {user && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setShowTranslateModal(true)}
-                className="gap-2"
-              >
-                <Languages className="h-4 w-4" />
-                Translate
-              </Button>
-            )}
+              {user && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowCollectionModal(true)}
+                  className="gap-2"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  Add to Collection
+                </Button>
+              )}
 
-            {isAuthor && hasMenerio && prompt && (
-              <MenerioSyncButton
-                artifactType="prompt"
-                artifactId={prompt.id}
-                menerioSynced={(prompt as any).menerio_synced || false}
-                menerioSyncedAt={(prompt as any).menerio_synced_at || null}
-                menerioNoteId={(prompt as any).menerio_note_id || null}
-                onSyncComplete={fetchPrompt}
+              <DownloadMarkdownButton
+                title={prompt.title}
+                type="prompt"
+                description={prompt.description}
+                tags={prompt.tags}
+                content={prompt.content}
               />
-            )}
-
-            {user && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setShowCollectionModal(true)}
-                className="gap-2"
-              >
-                <FolderPlus className="h-4 w-4" />
-                Add to Collection
-              </Button>
-            )}
-
-            <DownloadMarkdownButton
-              title={prompt.title}
-              type="prompt"
-              description={prompt.description}
-              tags={prompt.tags}
-              content={prompt.content}
-            />
-          </div>
-
-          {/* Send to LLM - directly above content */}
-          <div className="mb-6 rounded-xl border border-border bg-card p-6">
-            <SendToLLMButtons title={prompt.title} content={prompt.content} />
-          </div>
-
-          {/* Prompt Content */}
-          <div className="mb-8">
-            <h2 className="mb-4 text-lg font-semibold text-foreground">
-              Prompt
-            </h2>
-            <div className="relative rounded-xl border border-border bg-muted/30 p-6">
-              <button
-                onClick={handleCopy}
-                className="absolute top-3 right-3 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground transition-colors"
-                title="Copy to clipboard"
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </button>
-              <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
-                {prompt.content}
-              </pre>
             </div>
-          </div>
 
-          {/* Example Output Section */}
-          {prompt.example_output && (
+            {/* Send to LLM - directly above content */}
+            <div className="mb-6 rounded-xl border border-border bg-card p-6">
+              <SendToLLMButtons title={prompt.title} content={prompt.content} />
+            </div>
+
+            {/* Prompt Content */}
             <div className="mb-8">
               <h2 className="mb-4 text-lg font-semibold text-foreground">
-                Example Output
+                Prompt
               </h2>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground leading-relaxed">
-                  {prompt.example_output}
+              <div className="relative rounded-xl border border-border bg-muted/30 p-6">
+                <button
+                  onClick={handleCopy}
+                  className="absolute top-3 right-3 p-1.5 rounded-md bg-background/80 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+                <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                  {prompt.content}
                 </pre>
               </div>
             </div>
-          )}
 
-          {/* Modals */}
-          <RefinePromptModal
-            isOpen={showRefineModal}
-            onClose={() => setShowRefineModal(false)}
-            promptContent={prompt.content}
-            promptTitle={prompt.title}
-            promptId={prompt.id}
-            isPublic={prompt.is_public}
-            onPromptUpdated={fetchPrompt}
-            userId={user?.id}
-          />
-
-          <UpsellModal
-            open={showUpsellModal}
-            onOpenChange={setShowUpsellModal}
-            feature="Refine with AI"
-          />
-
-
-          <AddToCollectionModal
-            open={showCollectionModal}
-            onOpenChange={setShowCollectionModal}
-            itemType="prompt"
-            itemId={prompt.id}
-          />
-
-          <TranslateModal
-            open={showTranslateModal}
-            onOpenChange={setShowTranslateModal}
-            artifactType="prompt"
-            sourceLanguage={prompt.language || "en"}
-            title={prompt.title}
-            description={prompt.description}
-            content={prompt.content}
-            tags={prompt.tags || []}
-            category={prompt.category}
-          />
-
-          {canCopyToTeam && (
-            <CopyToTeamModal
-              open={showCopyToTeamModal}
-              onOpenChange={setShowCopyToTeamModal}
-              prompt={prompt}
-            />
-          )}
-
-          <SuggestEditModal
-            open={showSuggestModal}
-            onOpenChange={setShowSuggestModal}
-            itemType="prompt"
-            currentTitle={prompt.title}
-            currentDescription={prompt.description}
-            currentContent={prompt.content}
-            onSubmit={createSuggestion}
-          />
-
-          {isAuthor && (
-            <VersionHistoryPanel
-              open={showVersionHistory}
-              onOpenChange={setShowVersionHistory}
-              promptId={prompt.id}
-              currentPrompt={{
-                id: prompt.id,
-                title: prompt.title,
-                description: prompt.description,
-                content: prompt.content,
-                tags: prompt.tags,
-              }}
-            />
-          )}
-
-          {/* Ratings & Reviews Section */}
-          <ReviewSection
-            promptId={prompt.id}
-            userId={user?.id}
-            ratingAvg={prompt.rating_avg}
-            ratingCount={prompt.rating_count}
-          />
-
-          {/* Tabbed Content Section */}
-          <Tabs defaultValue="details" className="mt-8">
-            <TabsList>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="comments">Comments</TabsTrigger>
-              <TabsTrigger value="suggestions" className="gap-2">
-                Suggestions
-                {openCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                    {openCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="details" className="mt-6">
-              
-              {/* Activity Sidebar */}
-              <div className="mt-8">
-                <ActivitySidebar itemId={prompt.id} itemType="prompt" />
+            {/* Example Output Section */}
+            {prompt.example_output && (
+              <div className="mb-8">
+                <h2 className="mb-4 text-lg font-semibold text-foreground">
+                  Example Output
+                </h2>
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground leading-relaxed">
+                    {prompt.example_output}
+                  </pre>
+                </div>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="comments" className="mt-6">
-              <CommentsSection itemType="prompt" itemId={prompt.id} teamId={(prompt as any).team_id} />
-            </TabsContent>
-            
-            <TabsContent value="suggestions" className="mt-6">
-              <SuggestionsTab
-                suggestions={suggestions}
-                loading={loadingSuggestions}
-                itemType="prompt"
-                itemId={prompt.id}
-                originalTitle={prompt.title}
-                originalDescription={prompt.description}
-                originalContent={prompt.content}
-                isOwner={!!isAuthor}
-                onReviewSuggestion={reviewSuggestion}
-                onRequestChanges={requestChanges}
-                onUpdateSuggestion={updateSuggestionAfterChanges}
-                onApplySuggestion={handleApplySuggestion}
+            )}
+
+            {/* Modals */}
+            <RefinePromptModal
+              isOpen={showRefineModal}
+              onClose={() => setShowRefineModal(false)}
+              promptContent={prompt.content}
+              promptTitle={prompt.title}
+              promptId={prompt.id}
+              isPublic={prompt.is_public}
+              onPromptUpdated={fetchPrompt}
+              userId={user?.id}
+            />
+
+            <UpsellModal
+              open={showUpsellModal}
+              onOpenChange={setShowUpsellModal}
+              feature="Refine with AI"
+            />
+
+            <AddToCollectionModal
+              open={showCollectionModal}
+              onOpenChange={setShowCollectionModal}
+              itemType="prompt"
+              itemId={prompt.id}
+            />
+
+            <TranslateModal
+              open={showTranslateModal}
+              onOpenChange={setShowTranslateModal}
+              artifactType="prompt"
+              sourceLanguage={prompt.language || "en"}
+              title={prompt.title}
+              description={prompt.description}
+              content={prompt.content}
+              tags={prompt.tags || []}
+              category={prompt.category}
+            />
+
+            {canCopyToTeam && (
+              <CopyToTeamModal
+                open={showCopyToTeamModal}
+                onOpenChange={setShowCopyToTeamModal}
+                prompt={prompt}
               />
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+
+            <SuggestEditModal
+              open={showSuggestModal}
+              onOpenChange={setShowSuggestModal}
+              itemType="prompt"
+              currentTitle={prompt.title}
+              currentDescription={prompt.description}
+              currentContent={prompt.content}
+              onSubmit={createSuggestion}
+            />
+
+            {isAuthor && (
+              <VersionHistoryPanel
+                open={showVersionHistory}
+                onOpenChange={setShowVersionHistory}
+                promptId={prompt.id}
+                currentPrompt={{
+                  id: prompt.id,
+                  title: prompt.title,
+                  description: prompt.description,
+                  content: prompt.content,
+                  tags: prompt.tags,
+                }}
+              />
+            )}
+
+            {/* Ratings & Reviews Section */}
+            <ReviewSection
+              promptId={prompt.id}
+              userId={user?.id}
+              ratingAvg={prompt.rating_avg}
+              ratingCount={prompt.rating_count}
+            />
+
+            {/* Tabbed Content Section */}
+            <Tabs defaultValue="details" className="mt-8">
+              <TabsList>
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="suggestions" className="gap-2">
+                  Suggestions
+                  {openCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 h-5 px-1.5 text-xs"
+                    >
+                      {openCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="mt-6">
+                {/* Activity Sidebar */}
+                <div className="mt-8">
+                  <ActivitySidebar itemId={prompt.id} itemType="prompt" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="comments" className="mt-6">
+                <CommentsSection
+                  itemType="prompt"
+                  itemId={prompt.id}
+                  teamId={(prompt as any).team_id}
+                />
+              </TabsContent>
+
+              <TabsContent value="suggestions" className="mt-6">
+                <SuggestionsTab
+                  suggestions={suggestions}
+                  loading={loadingSuggestions}
+                  itemType="prompt"
+                  itemId={prompt.id}
+                  originalTitle={prompt.title}
+                  originalDescription={prompt.description}
+                  originalContent={prompt.content}
+                  isOwner={!!isAuthor}
+                  onReviewSuggestion={reviewSuggestion}
+                  onRequestChanges={requestChanges}
+                  onUpdateSuggestion={updateSuggestionAfterChanges}
+                  onApplySuggestion={handleApplySuggestion}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         </main>
 
         {/* AI Insights Panel */}
-        <AIInsightsPanel 
-          itemType="prompt" 
-          itemId={prompt.id} 
-          teamId={(prompt as any).team_id} 
+        <AIInsightsPanel
+          itemType="prompt"
+          itemId={prompt.id}
+          teamId={(prompt as any).team_id}
         />
       </div>
       <Footer />

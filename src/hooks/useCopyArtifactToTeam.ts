@@ -25,7 +25,9 @@ interface CopyToTeamConfig<S> {
  * Shared copy-to-team hook. The four per-type hooks differed only in table
  * name and insert-field mapping; they now delegate here.
  */
-export function createCopyToTeamHook<S extends { id: string }>(config: CopyToTeamConfig<S>) {
+export function createCopyToTeamHook<S extends { id: string }>(
+  config: CopyToTeamConfig<S>,
+) {
   return function useCopyArtifactToTeam() {
     const [copying, setCopying] = useState(false);
 
@@ -34,7 +36,7 @@ export function createCopyToTeamHook<S extends { id: string }>(config: CopyToTea
       teamId: string,
       teamName: string,
       userId: string,
-      options: CopyOptions = { includeMetadata: true }
+      options: CopyOptions = { includeMetadata: true },
     ): Promise<CopyResult | null> => {
       setCopying(true);
 
@@ -45,7 +47,9 @@ export function createCopyToTeamHook<S extends { id: string }>(config: CopyToTea
           team_id: teamId,
         };
 
-        const { data, error } = await (supabase.from(config.table as any) as any)
+        const { data, error } = await (
+          supabase.from(config.table as any) as any
+        )
           .insert(insertData)
           .select("id, slug")
           .single();

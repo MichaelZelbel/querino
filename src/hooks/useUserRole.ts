@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 
-export type AppRole = 'free' | 'premium' | 'premium_gift' | 'admin';
+export type AppRole = "free" | "premium" | "premium_gift" | "admin";
 
 /**
  * Hook to fetch and manage the current user's role from the user_roles table.
@@ -55,7 +55,8 @@ export function useUserRole() {
     isLoading: !!userId && query.isLoading,
     error: query.error ? (query.error as Error).message : null,
     isAdmin: role === "admin",
-    isPremium: role === "premium" || role === "premium_gift" || role === "admin",
+    isPremium:
+      role === "premium" || role === "premium_gift" || role === "admin",
     isFree: role === "free",
     refetch,
   };

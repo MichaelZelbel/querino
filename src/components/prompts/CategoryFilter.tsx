@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { categories } from "@/types/prompt";
-import { 
-  Sparkles, 
-  PenTool, 
-  Code, 
-  Briefcase, 
-  Palette, 
-  Search, 
-  GraduationCap 
+import {
+  Sparkles,
+  PenTool,
+  Code,
+  Briefcase,
+  Palette,
+  Search,
+  GraduationCap,
 } from "lucide-react";
 
 const iconMap = {
@@ -31,7 +31,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
       {categories.map((category) => {
         const Icon = iconMap[category.icon as keyof typeof iconMap];
         const isSelected = selected === category.id;
-        
+
         return (
           <Button
             key={category.id}

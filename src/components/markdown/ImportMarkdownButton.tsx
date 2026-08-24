@@ -29,7 +29,7 @@ interface ImportMarkdownButtonProps {
   label?: string;
   /** Class name */
   className?: string;
-  /** 
+  /**
    * For editor mode: callback with parsed data instead of navigation.
    * If provided, shows confirmation modal before replacing.
    */

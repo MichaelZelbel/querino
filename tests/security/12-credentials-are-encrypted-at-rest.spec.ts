@@ -15,14 +15,22 @@
 //     silently stops working is the obvious way to "fix" this badly
 
 import { test, expect } from "@playwright/test";
-import { hasManagementToken, restAsService, restAsUser, sqlProbe } from "./helpers/api";
+import {
+  hasManagementToken,
+  restAsService,
+  restAsUser,
+  sqlProbe,
+} from "./helpers/api";
 
 test.describe("H3 — a stored credential is not readable from the table", () => {
   test("no credential row carries a plaintext value", async () => {
-    const res = await restAsService<Array<{ id: string; credential_value: string | null }>>(
-      "user_credentials?select=id,credential_value,credential_secret_id",
-    );
-    expect(res.ok, `could not read the credentials table: ${JSON.stringify(res.error)}`).toBe(true);
+    const res = await restAsService<
+      Array<{ id: string; credential_value: string | null }>
+    >("user_credentials?select=id,credential_value,credential_secret_id");
+    expect(
+      res.ok,
+      `could not read the credentials table: ${JSON.stringify(res.error)}`,
+    ).toBe(true);
 
     for (const row of res.data ?? []) {
       expect(
@@ -33,9 +41,9 @@ test.describe("H3 — a stored credential is not readable from the table", () =>
   });
 
   test("every credential points at a Vault secret", async () => {
-    const res = await restAsService<Array<{ id: string; credential_secret_id: string | null }>>(
-      "user_credentials?select=id,credential_secret_id",
-    );
+    const res = await restAsService<
+      Array<{ id: string; credential_secret_id: string | null }>
+    >("user_credentials?select=id,credential_secret_id");
     for (const row of res.data ?? []) {
       expect(
         row.credential_secret_id,
@@ -55,10 +63,13 @@ test.describe("H3 — a stored credential is not readable from the table", () =>
 
   test("what the Settings page does still works", async () => {
     // It selects the id and nothing else, to decide whether to draw bullets.
-    const res = await restAsUser("user_credentials?select=id&credential_type=eq.github_token");
-    expect(res.ok, `Settings can no longer tell whether a token is set: ${JSON.stringify(res.error)}`).toBe(
-      true,
+    const res = await restAsUser(
+      "user_credentials?select=id&credential_type=eq.github_token",
     );
+    expect(
+      res.ok,
+      `Settings can no longer tell whether a token is set: ${JSON.stringify(res.error)}`,
+    ).toBe(true);
   });
 
   test("only the service role can decrypt a credential", async () => {
@@ -73,7 +84,10 @@ test.describe("H3 — a stored credential is not readable from the table", () =>
   });
 
   test("an edge function can still read a token, and writing one still round-trips", async () => {
-    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
+    test.skip(
+      !hasManagementToken(),
+      "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
+    );
     const out = await sqlProbe(`
       DO $probe$
       DECLARE
@@ -117,6 +131,8 @@ test.describe("H3 — a stored credential is not readable from the table", () =>
       END $probe$;
     `);
 
-    expect(out, `the credential round trip is broken: ${out}`).toContain("PROBE OK");
+    expect(out, `the credential round trip is broken: ${out}`).toContain(
+      "PROBE OK",
+    );
   });
 });

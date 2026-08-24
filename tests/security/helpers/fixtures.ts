@@ -24,7 +24,10 @@ export async function activeAllowance(): Promise<AllowancePeriod> {
       `&period_start=lte.${nowIso}&period_end=gt.${nowIso}` +
       `&select=id,user_id,period_start,period_end,tokens_granted,tokens_used`,
   );
-  if (!res.ok) throw new Error(`Reading the allowance failed: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(
+      `Reading the allowance failed: ${JSON.stringify(res.error)}`,
+    );
   const rows = res.data ?? [];
   if (rows.length === 0) {
     throw new Error("The test account has no active allowance period.");
@@ -40,17 +43,23 @@ export async function activeAllowance(): Promise<AllowancePeriod> {
 }
 
 /** Overwrite tokens_used on one allowance period. */
-export async function setTokensUsed(periodId: string, tokensUsed: number): Promise<void> {
+export async function setTokensUsed(
+  periodId: string,
+  tokensUsed: number,
+): Promise<void> {
   const res = await restAsService(`ai_allowance_periods?id=eq.${periodId}`, {
     method: "PATCH",
     body: { tokens_used: tokensUsed },
     headers: { Prefer: "return=minimal" },
   });
-  if (!res.ok) throw new Error(`Writing tokens_used failed: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(`Writing tokens_used failed: ${JSON.stringify(res.error)}`);
 }
 
 /** Run `body` with the test account's credits at zero, then put them back. */
-export async function withExhaustedCredits<T>(body: () => Promise<T>): Promise<T> {
+export async function withExhaustedCredits<T>(
+  body: () => Promise<T>,
+): Promise<T> {
   const period = await activeAllowance();
   const original = period.tokens_used;
   await setTokensUsed(period.id, period.tokens_granted);
@@ -63,7 +72,8 @@ export async function withExhaustedCredits<T>(body: () => Promise<T>): Promise<T
 
 // ── MCP token ─────────────────────────────────────────────────────────
 
-const sha256Hex = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
+const sha256Hex = (s: string) =>
+  createHash("sha256").update(s, "utf8").digest("hex");
 
 export interface MintedMcpToken {
   token: string;
@@ -90,7 +100,9 @@ export async function mintMcpToken(): Promise<MintedMcpToken> {
     headers: { Prefer: "return=representation" },
   });
   if (!res.ok || !res.data?.[0]) {
-    throw new Error(`Minting an MCP token failed: ${JSON.stringify(res.error)}`);
+    throw new Error(
+      `Minting an MCP token failed: ${JSON.stringify(res.error)}`,
+    );
   }
 
   const id = res.data[0].id;
@@ -136,7 +148,9 @@ export async function createSearchablePrompt(): Promise<PromptFixture> {
     headers: { Prefer: "return=representation" },
   });
   if (!res.ok || !res.data?.[0]) {
-    throw new Error(`Creating the search fixture failed: ${JSON.stringify(res.error)}`);
+    throw new Error(
+      `Creating the search fixture failed: ${JSON.stringify(res.error)}`,
+    );
   }
 
   const id = res.data[0].id;
@@ -199,7 +213,9 @@ export async function createSearchableSkill(): Promise<SkillFixture> {
     headers: { Prefer: "return=representation" },
   });
   if (!res.ok || !res.data?.[0]) {
-    throw new Error(`Creating the skill search fixture failed: ${JSON.stringify(res.error)}`);
+    throw new Error(
+      `Creating the skill search fixture failed: ${JSON.stringify(res.error)}`,
+    );
   }
 
   const id = res.data[0].id;

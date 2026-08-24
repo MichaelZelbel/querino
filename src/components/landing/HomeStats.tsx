@@ -8,7 +8,13 @@ interface HomeStatsData {
   totalArtifacts: number | null;
 }
 
-function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: number }) {
+function AnimatedNumber({
+  value,
+  duration = 1000,
+}: {
+  value: number;
+  duration?: number;
+}) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -47,20 +53,21 @@ export function HomeStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [promptsResult, skillsResult, workflowsResult] = await Promise.all([
-          supabase
-            .from("prompts")
-            .select("id", { count: "exact", head: true })
-            .eq("is_public", true),
-          supabase
-            .from("skills")
-            .select("id", { count: "exact", head: true })
-            .eq("published", true),
-          supabase
-            .from("workflows")
-            .select("id", { count: "exact", head: true })
-            .eq("published", true),
-        ]);
+        const [promptsResult, skillsResult, workflowsResult] =
+          await Promise.all([
+            supabase
+              .from("prompts")
+              .select("id", { count: "exact", head: true })
+              .eq("is_public", true),
+            supabase
+              .from("skills")
+              .select("id", { count: "exact", head: true })
+              .eq("published", true),
+            supabase
+              .from("workflows")
+              .select("id", { count: "exact", head: true })
+              .eq("published", true),
+          ]);
 
         const promptsCount = promptsResult.count ?? 0;
         const skillsCount = skillsResult.count ?? 0;
@@ -81,7 +88,10 @@ export function HomeStats() {
   }, []);
 
   return (
-    <div className="mt-12 grid grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+    <div
+      className="mt-12 grid grid-cols-3 gap-6 animate-fade-in-up"
+      style={{ animationDelay: "0.4s" }}
+    >
       {/* Public Prompts */}
       <div className="text-center lg:text-left">
         <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">

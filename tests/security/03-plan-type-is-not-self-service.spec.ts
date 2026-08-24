@@ -29,17 +29,29 @@ async function readProfile(): Promise<Profile> {
   const cols = await restAsUser<Array<{ id: string; bio: string | null }>>(
     `profiles?id=eq.${userId}&select=id,bio`,
   );
-  expect(cols.ok, `reading own profile failed: ${JSON.stringify(cols.error)}`).toBe(true);
+  expect(
+    cols.ok,
+    `reading own profile failed: ${JSON.stringify(cols.error)}`,
+  ).toBe(true);
   const row = cols.data?.[0];
   if (!row) throw new Error("The test account has no profile row.");
 
-  const plan = await restAsUser<Array<{ plan_type: string | null }>>("rpc/get_my_plan", {
-    method: "POST",
-    body: {},
-  });
-  expect(plan.ok, `get_my_plan failed: ${JSON.stringify(plan.error)}`).toBe(true);
+  const plan = await restAsUser<Array<{ plan_type: string | null }>>(
+    "rpc/get_my_plan",
+    {
+      method: "POST",
+      body: {},
+    },
+  );
+  expect(plan.ok, `get_my_plan failed: ${JSON.stringify(plan.error)}`).toBe(
+    true,
+  );
 
-  return { id: row.id, bio: row.bio, plan_type: plan.data?.[0]?.plan_type ?? null };
+  return {
+    id: row.id,
+    bio: row.bio,
+    plan_type: plan.data?.[0]?.plan_type ?? null,
+  };
 }
 
 // The privileged columns must stay unreadable from the table itself, or the
@@ -104,7 +116,10 @@ test.describe("C3 — a user cannot promote itself", () => {
   });
 
   test("hiding the change among ordinary columns does not smuggle it through", async () => {
-    const res = await patchProfile({ bio: "smuggle attempt", plan_type: "premium" });
+    const res = await patchProfile({
+      bio: "smuggle attempt",
+      plan_type: "premium",
+    });
     expect(res.ok).toBe(false);
 
     const after = await readProfile();
@@ -116,7 +131,10 @@ test.describe("C3 — a user cannot promote itself", () => {
     const marker = `security-suite ${Date.now()}`;
     try {
       const res = await patchProfile({ bio: marker });
-      expect(res.ok, `editing bio must still work: ${JSON.stringify(res.error)}`).toBe(true);
+      expect(
+        res.ok,
+        `editing bio must still work: ${JSON.stringify(res.error)}`,
+      ).toBe(true);
       expect((await readProfile()).bio).toBe(marker);
     } finally {
       await patchProfile({ bio: original });

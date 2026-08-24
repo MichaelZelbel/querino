@@ -7,7 +7,13 @@ import { useTeam, useUpdateTeam } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,7 +80,9 @@ export default function Settings() {
 
   const { user, profile, loading: authLoading, signOut } = useAuthContext();
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
-  const { data: teamData } = useTeam(isTeamWorkspace ? currentWorkspace : undefined);
+  const { data: teamData } = useTeam(
+    isTeamWorkspace ? currentWorkspace : undefined,
+  );
   const updateTeam = useUpdateTeam();
 
   // Active section tracking for sidebar highlight
@@ -87,23 +95,32 @@ export default function Settings() {
   const [personalGithubRepo, setPersonalGithubRepo] = useState("");
   const [personalGithubBranch, setPersonalGithubBranch] = useState("main");
   const [personalGithubFolder, setPersonalGithubFolder] = useState("");
-  const [personalGithubSyncEnabled, setPersonalGithubSyncEnabled] = useState(false);
+  const [personalGithubSyncEnabled, setPersonalGithubSyncEnabled] =
+    useState(false);
   const [personalGithubToken, setPersonalGithubToken] = useState("");
-  const [personalGithubLastSynced, setPersonalGithubLastSynced] = useState<string | null>(null);
+  const [personalGithubLastSynced, setPersonalGithubLastSynced] = useState<
+    string | null
+  >(null);
   const [savingPersonalGithub, setSavingPersonalGithub] = useState(false);
   const [loadingPersonalGithub, setLoadingPersonalGithub] = useState(true);
   const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<"idle" | "success" | "error">("idle");
+  const [connectionStatus, setConnectionStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
 
   // Team GitHub Sync state
   const [teamGithubRepo, setTeamGithubRepo] = useState("");
   const [teamGithubBranch, setTeamGithubBranch] = useState("main");
   const [teamGithubFolder, setTeamGithubFolder] = useState("");
   const [teamGithubToken, setTeamGithubToken] = useState("");
-  const [teamGithubLastSynced, setTeamGithubLastSynced] = useState<string | null>(null);
+  const [teamGithubLastSynced, setTeamGithubLastSynced] = useState<
+    string | null
+  >(null);
   const [savingTeamGithub, setSavingTeamGithub] = useState(false);
   const [testingTeamConnection, setTestingTeamConnection] = useState(false);
-  const [teamConnectionStatus, setTeamConnectionStatus] = useState<"idle" | "success" | "error">("idle");
+  const [teamConnectionStatus, setTeamConnectionStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
 
   // Delete account state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -127,7 +144,9 @@ export default function Settings() {
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at")
+        .select(
+          "github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at",
+        )
         .eq("id", user.id)
         .single();
 
@@ -196,7 +215,7 @@ export default function Settings() {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         if (visible[0]) setActiveSection(visible[0].target.id);
       },
-      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
     SECTIONS.forEach((s) => {
       const el = document.getElementById(s.id);
@@ -235,7 +254,7 @@ export default function Settings() {
               credential_value: personalGithubToken,
               team_id: null,
             },
-            { onConflict: "user_id,credential_type,team_id" }
+            { onConflict: "user_id,credential_type,team_id" },
           );
         if (tokenError) throw tokenError;
       }
@@ -276,7 +295,9 @@ export default function Settings() {
       console.error("Connection test failed:", error);
       if (isTeam) setTeamConnectionStatus("error");
       else setConnectionStatus("error");
-      toast.error(error instanceof Error ? error.message : "Failed to connect to GitHub");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to connect to GitHub",
+      );
     } finally {
       if (isTeam) setTestingTeamConnection(false);
       else setTestingConnection(false);
@@ -312,7 +333,7 @@ export default function Settings() {
               credential_value: teamGithubToken,
               team_id: currentTeam.id,
             },
-            { onConflict: "user_id,credential_type,team_id" }
+            { onConflict: "user_id,credential_type,team_id" },
           );
         if (tokenError) throw tokenError;
       }
@@ -340,7 +361,9 @@ export default function Settings() {
       toast.success(`Password reset link sent to ${user.email}`);
     } catch (error) {
       console.error("Password reset error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to send reset email");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send reset email",
+      );
     } finally {
       setSendingReset(false);
     }
@@ -362,9 +385,12 @@ export default function Settings() {
     }
     setDeletingAccount(true);
     try {
-      const { data, error } = await supabase.functions.invoke("delete-my-account", {
-        body: { confirmation: "DELETE" },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "delete-my-account",
+        {
+          body: { confirmation: "DELETE" },
+        },
+      );
       if (error) throw error;
       if (data?.success) {
         toast.success("Account deleted successfully. Redirecting...");
@@ -375,7 +401,9 @@ export default function Settings() {
       }
     } catch (error) {
       console.error("Error deleting account:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete account");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete account",
+      );
     } finally {
       setDeletingAccount(false);
       setDeleteDialogOpen(false);
@@ -412,7 +440,9 @@ export default function Settings() {
       <main className="container mx-auto px-4 py-12">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="font-display text-display-lg text-foreground mb-2">Settings</h1>
+            <h1 className="font-display text-display-lg text-foreground mb-2">
+              Settings
+            </h1>
             <p className="text-muted-foreground text-lg">
               Manage your account preferences and settings.
             </p>
@@ -425,7 +455,9 @@ export default function Settings() {
         </div>
 
         {/* Workspace Indicator */}
-        <Alert className={`mb-8 ${isTeamWorkspace ? "border-primary/30 bg-primary/5" : "border-border"}`}>
+        <Alert
+          className={`mb-8 ${isTeamWorkspace ? "border-primary/30 bg-primary/5" : "border-border"}`}
+        >
           <div className="flex items-center gap-3">
             {isTeamWorkspace ? (
               <Building2 className="h-5 w-5 text-primary" />
@@ -434,16 +466,22 @@ export default function Settings() {
             )}
             <AlertDescription className="flex-1">
               <span className="font-medium">
-                {isTeamWorkspace ? `Team: ${currentTeam?.name}` : "Personal Workspace"}
+                {isTeamWorkspace
+                  ? `Team: ${currentTeam?.name}`
+                  : "Personal Workspace"}
               </span>
               <span className="text-muted-foreground ml-2">
-                — {isTeamWorkspace
+                —{" "}
+                {isTeamWorkspace
                   ? "GitHub sync settings below apply to this team's artefacts."
                   : "GitHub sync settings below apply to your personal artefacts."}
               </span>
             </AlertDescription>
             {isTeamWorkspace && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
+              <Badge
+                variant="secondary"
+                className="bg-primary/10 text-primary border-0"
+              >
                 {currentTeam?.role}
               </Badge>
             )}
@@ -463,7 +501,7 @@ export default function Settings() {
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start gap-3",
-                    isActive && "font-medium"
+                    isActive && "font-medium",
                   )}
                 >
                   <a href={`#${s.id}`}>
@@ -502,26 +540,37 @@ export default function Settings() {
                   )}
                 </div>
                 <CardDescription>
-                  Your public identity on Querino. Edit your display name, avatar, bio and links.
+                  Your public identity on Querino. Edit your display name,
+                  avatar, bio and links.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || "Avatar"} />
+                    <AvatarImage
+                      src={profile?.avatar_url || undefined}
+                      alt={profile?.display_name || "Avatar"}
+                    />
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">
                       {profile?.display_name || "Unnamed user"}
                     </p>
-                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {user.email}
+                    </p>
                     {profile?.bio && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{profile.bio}</p>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {profile.bio}
+                      </p>
                     )}
                   </div>
                 </div>
-                <Button onClick={() => navigate("/profile/edit")} className="gap-2">
+                <Button
+                  onClick={() => navigate("/profile/edit")}
+                  className="gap-2"
+                >
                   <Pencil className="h-4 w-4" />
                   Edit profile
                 </Button>
@@ -542,9 +591,13 @@ export default function Settings() {
                     <Bell className="h-5 w-5" />
                     Notifications
                   </CardTitle>
-                  <Badge variant="outline" className="text-muted-foreground">Coming soon</Badge>
+                  <Badge variant="outline" className="text-muted-foreground">
+                    Coming soon
+                  </Badge>
                 </div>
-                <CardDescription>Choose what notifications you want to receive.</CardDescription>
+                <CardDescription>
+                  Choose what notifications you want to receive.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -586,7 +639,9 @@ export default function Settings() {
                   <Palette className="h-5 w-5" />
                   Appearance
                 </CardTitle>
-                <CardDescription>Customize how Querino looks for you.</CardDescription>
+                <CardDescription>
+                  Customize how Querino looks for you.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -598,7 +653,9 @@ export default function Settings() {
                   </div>
                   <Switch
                     checked={themeMounted && resolvedTheme === "dark"}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    onCheckedChange={(checked) =>
+                      setTheme(checked ? "dark" : "light")
+                    }
                     aria-label="Toggle dark mode"
                   />
                 </div>
@@ -621,10 +678,14 @@ export default function Settings() {
                   <div>
                     <p className="font-medium">Join a team</p>
                     <p className="text-sm text-muted-foreground">
-                      Paste an invite link shared with you to join their workspace.
+                      Paste an invite link shared with you to join their
+                      workspace.
                     </p>
                   </div>
-                  <Button variant="outline" onClick={() => setShowJoinTeamModal(true)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowJoinTeamModal(true)}
+                  >
                     Join team
                   </Button>
                 </div>
@@ -662,13 +723,17 @@ export default function Settings() {
                         <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <p className="text-sm text-muted-foreground">
                           These settings apply to all artefacts in the{" "}
-                          <strong>{currentTeam?.name}</strong> workspace. Team members with editor+
-                          access can sync to this repository.
+                          <strong>{currentTeam?.name}</strong> workspace. Team
+                          members with editor+ access can sync to this
+                          repository.
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="teamGithubToken" className="flex items-center gap-2">
+                        <Label
+                          htmlFor="teamGithubToken"
+                          className="flex items-center gap-2"
+                        >
                           <Key className="h-4 w-4" />
                           Personal Access Token
                         </Label>
@@ -692,12 +757,16 @@ export default function Settings() {
                           >
                             GitHub Settings
                           </a>{" "}
-                          with <code className="bg-muted px-1 rounded">repo</code> scope.
+                          with{" "}
+                          <code className="bg-muted px-1 rounded">repo</code>{" "}
+                          scope.
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="teamGithubRepo">Repository (owner/name)</Label>
+                        <Label htmlFor="teamGithubRepo">
+                          Repository (owner/name)
+                        </Label>
                         <Input
                           id="teamGithubRepo"
                           placeholder="organization/team-repo"
@@ -712,7 +781,9 @@ export default function Settings() {
                             id="teamGithubBranch"
                             placeholder="main"
                             value={teamGithubBranch}
-                            onChange={(e) => setTeamGithubBranch(e.target.value)}
+                            onChange={(e) =>
+                              setTeamGithubBranch(e.target.value)
+                            }
                           />
                         </div>
                         <div className="space-y-2">
@@ -721,7 +792,9 @@ export default function Settings() {
                             id="teamGithubFolder"
                             placeholder="prompts"
                             value={teamGithubFolder}
-                            onChange={(e) => setTeamGithubFolder(e.target.value)}
+                            onChange={(e) =>
+                              setTeamGithubFolder(e.target.value)
+                            }
                           />
                         </div>
                       </div>
@@ -729,12 +802,16 @@ export default function Settings() {
                       {teamGithubLastSynced && (
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          Last synced: {new Date(teamGithubLastSynced).toLocaleString()}
+                          Last synced:{" "}
+                          {new Date(teamGithubLastSynced).toLocaleString()}
                         </p>
                       )}
 
                       <div className="flex gap-3">
-                        <Button onClick={handleSaveTeamGithubSettings} disabled={savingTeamGithub}>
+                        <Button
+                          onClick={handleSaveTeamGithubSettings}
+                          disabled={savingTeamGithub}
+                        >
                           {savingTeamGithub ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -747,7 +824,11 @@ export default function Settings() {
                         <Button
                           variant="outline"
                           onClick={() => handleTestConnection(true)}
-                          disabled={testingTeamConnection || !teamGithubRepo || !teamGithubToken}
+                          disabled={
+                            testingTeamConnection ||
+                            !teamGithubRepo ||
+                            !teamGithubToken
+                          }
                         >
                           {testingTeamConnection ? (
                             <>
@@ -777,7 +858,10 @@ export default function Settings() {
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="personalGithubToken" className="flex items-center gap-2">
+                        <Label
+                          htmlFor="personalGithubToken"
+                          className="flex items-center gap-2"
+                        >
                           <Key className="h-4 w-4" />
                           Personal Access Token
                         </Label>
@@ -801,17 +885,23 @@ export default function Settings() {
                           >
                             GitHub Settings
                           </a>{" "}
-                          with <code className="bg-muted px-1 rounded">repo</code> scope.
+                          with{" "}
+                          <code className="bg-muted px-1 rounded">repo</code>{" "}
+                          scope.
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="personalGithubRepo">Repository (owner/name)</Label>
+                        <Label htmlFor="personalGithubRepo">
+                          Repository (owner/name)
+                        </Label>
                         <Input
                           id="personalGithubRepo"
                           placeholder="yourname/your-repo"
                           value={personalGithubRepo}
-                          onChange={(e) => setPersonalGithubRepo(e.target.value)}
+                          onChange={(e) =>
+                            setPersonalGithubRepo(e.target.value)
+                          }
                         />
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -821,16 +911,22 @@ export default function Settings() {
                             id="personalGithubBranch"
                             placeholder="main"
                             value={personalGithubBranch}
-                            onChange={(e) => setPersonalGithubBranch(e.target.value)}
+                            onChange={(e) =>
+                              setPersonalGithubBranch(e.target.value)
+                            }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="personalGithubFolder">Folder path</Label>
+                          <Label htmlFor="personalGithubFolder">
+                            Folder path
+                          </Label>
                           <Input
                             id="personalGithubFolder"
                             placeholder="querino-prompts"
                             value={personalGithubFolder}
-                            onChange={(e) => setPersonalGithubFolder(e.target.value)}
+                            onChange={(e) =>
+                              setPersonalGithubFolder(e.target.value)
+                            }
                           />
                         </div>
                       </div>
@@ -839,7 +935,8 @@ export default function Settings() {
                         <div>
                           <p className="font-medium">Enable GitHub Sync</p>
                           <p className="text-sm text-muted-foreground">
-                            Allow syncing your prompts, skills, and workflows to GitHub.
+                            Allow syncing your prompts, skills, and workflows to
+                            GitHub.
                           </p>
                         </div>
                         <Switch
@@ -851,12 +948,16 @@ export default function Settings() {
                       {personalGithubLastSynced && (
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          Last synced: {new Date(personalGithubLastSynced).toLocaleString()}
+                          Last synced:{" "}
+                          {new Date(personalGithubLastSynced).toLocaleString()}
                         </p>
                       )}
 
                       <div className="flex gap-3">
-                        <Button onClick={handleSavePersonalGithubSettings} disabled={savingPersonalGithub}>
+                        <Button
+                          onClick={handleSavePersonalGithubSettings}
+                          disabled={savingPersonalGithub}
+                        >
                           {savingPersonalGithub ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -869,7 +970,11 @@ export default function Settings() {
                         <Button
                           variant="outline"
                           onClick={() => handleTestConnection(false)}
-                          disabled={testingConnection || !personalGithubRepo || !personalGithubToken}
+                          disabled={
+                            testingConnection ||
+                            !personalGithubRepo ||
+                            !personalGithubToken
+                          }
                         >
                           {testingConnection ? (
                             <>
@@ -993,8 +1098,8 @@ export default function Settings() {
                     Delete Account
                   </CardTitle>
                   <CardDescription>
-                    Permanently delete your account and all associated data. This action cannot be
-                    undone.
+                    Permanently delete your account and all associated data.
+                    This action cannot be undone.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1013,7 +1118,10 @@ export default function Settings() {
                     </AlertDescription>
                   </Alert>
 
-                  <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <Dialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button variant="destructive" className="gap-2">
                         <Trash2 className="h-4 w-4" />
@@ -1028,17 +1136,37 @@ export default function Settings() {
                         </DialogTitle>
                         <DialogDescription asChild>
                           <div className="space-y-2">
-                            <p>This action is permanent and cannot be undone. Deleting your account will remove:</p>
+                            <p>
+                              This action is permanent and cannot be undone.
+                              Deleting your account will remove:
+                            </p>
                             <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                              <li>Your profile, avatar and public creator page</li>
-                              <li>All your prompts, skills, workflows and prompt kits — including every saved version</li>
+                              <li>
+                                Your profile, avatar and public creator page
+                              </li>
+                              <li>
+                                All your prompts, skills, workflows and prompt
+                                kits — including every saved version
+                              </li>
                               <li>All collections, pins and saved artifacts</li>
-                              <li>All comments, reviews, ratings and edit suggestions you authored</li>
-                              <li>Team memberships; teams you own will be transferred or deleted</li>
-                              <li>MCP tokens, GitHub sync configuration and Menerio integration</li>
+                              <li>
+                                All comments, reviews, ratings and edit
+                                suggestions you authored
+                              </li>
+                              <li>
+                                Team memberships; teams you own will be
+                                transferred or deleted
+                              </li>
+                              <li>
+                                MCP tokens, GitHub sync configuration and
+                                Menerio integration
+                              </li>
                               <li>AI credit balance and usage history</li>
                             </ul>
-                            <p className="text-sm">This satisfies your GDPR Right to Erasure (Art. 17).</p>
+                            <p className="text-sm">
+                              This satisfies your GDPR Right to Erasure (Art.
+                              17).
+                            </p>
                           </div>
                         </DialogDescription>
                       </DialogHeader>
@@ -1046,11 +1174,14 @@ export default function Settings() {
                       <div className="space-y-4 py-4">
                         <p className="text-sm text-muted-foreground">
                           To confirm deletion, type{" "}
-                          <strong className="text-foreground">DELETE</strong> in the field below:
+                          <strong className="text-foreground">DELETE</strong> in
+                          the field below:
                         </p>
                         <Input
                           value={deleteConfirmation}
-                          onChange={(e) => setDeleteConfirmation(e.target.value)}
+                          onChange={(e) =>
+                            setDeleteConfirmation(e.target.value)
+                          }
                           placeholder="Type DELETE to confirm"
                           className="font-mono"
                         />
@@ -1070,7 +1201,9 @@ export default function Settings() {
                         <Button
                           variant="destructive"
                           onClick={handleDeleteAccount}
-                          disabled={deleteConfirmation !== "DELETE" || deletingAccount}
+                          disabled={
+                            deleteConfirmation !== "DELETE" || deletingAccount
+                          }
                         >
                           {deletingAccount ? (
                             <>
@@ -1093,7 +1226,10 @@ export default function Settings() {
 
       <Footer />
 
-      <JoinTeamModal open={showJoinTeamModal} onOpenChange={setShowJoinTeamModal} />
+      <JoinTeamModal
+        open={showJoinTeamModal}
+        onOpenChange={setShowJoinTeamModal}
+      />
     </div>
   );
 }

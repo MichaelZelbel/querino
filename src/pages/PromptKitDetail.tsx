@@ -12,9 +12,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Copy, Check, ArrowLeft, Pencil, Calendar, Tag, Package,
-  History, GitFork, Users, MessageSquarePlus, MessageSquare,
-  Pin, PinOff, FolderPlus, Activity as ActivityIcon,
+  Copy,
+  Check,
+  ArrowLeft,
+  Pencil,
+  Calendar,
+  Tag,
+  Package,
+  History,
+  GitFork,
+  Users,
+  MessageSquarePlus,
+  MessageSquare,
+  Pin,
+  PinOff,
+  FolderPlus,
+  Activity as ActivityIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
@@ -45,7 +58,9 @@ interface KitWithAuthor extends PromptKit {
 // The route loader fetches this record on the server, so the first render already has
 // it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
 // it keeps the page current and handles a slug change without a full navigation.
-export default function PromptKitDetail({ initialKit = null }: { initialKit?: KitWithAuthor | null } = {}) {
+export default function PromptKitDetail({
+  initialKit = null,
+}: { initialKit?: KitWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -67,7 +82,8 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
   const hasTeams = teams && teams.length > 0;
 
-  const { isPinned: isKitPinned, togglePin: toggleKitPin } = usePinnedPromptKits();
+  const { isPinned: isKitPinned, togglePin: toggleKitPin } =
+    usePinnedPromptKits();
   const isPinned = kit?.id ? isKitPinned(kit.id) : false;
 
   const handleTogglePin = async () => {
@@ -94,16 +110,16 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges,
-  } = useSuggestions('prompt_kit', kit?.id || '');
+  } = useSuggestions("prompt_kit", kit?.id || "");
 
   const handleApplySuggestion = async (suggestion: any) => {
     if (!kit) return;
     const updates: any = { content: suggestion.content };
     if (suggestion.title) updates.title = suggestion.title;
     if (suggestion.description) updates.description = suggestion.description;
-    const { error } = await (supabase.from('prompt_kits') as any)
+    const { error } = await (supabase.from("prompt_kits") as any)
       .update(updates)
-      .eq('id', kit.id);
+      .eq("id", kit.id);
     if (error) throw error;
     const { data } = await (supabase.from("prompt_kits") as any)
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
@@ -137,13 +153,17 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
           .maybeSingle();
         if (error || !data) {
           // Try slug redirect
-          const { data: redirect } = await (supabase.from("prompt_kit_slug_redirects") as any)
+          const { data: redirect } = await (
+            supabase.from("prompt_kit_slug_redirects") as any
+          )
             .select("prompt_kit_id")
             .eq("old_slug", slug)
             .maybeSingle();
           if (redirect?.prompt_kit_id) {
             const { data: kit2 } = await (supabase.from("prompt_kits") as any)
-              .select(`*, profiles:author_id (id, display_name, avatar_url), slug`)
+              .select(
+                `*, profiles:author_id (id, display_name, avatar_url), slug`,
+              )
               .eq("id", redirect.prompt_kit_id)
               .maybeSingle();
             if (kit2?.slug) {
@@ -221,9 +241,12 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
         <Header />
         <main className="flex-1 py-20">
           <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">Prompt Kit Not Found</h1>
+            <h1 className="mb-4 text-display-md font-bold text-foreground">
+              Prompt Kit Not Found
+            </h1>
             <p className="mb-8 text-lg text-muted-foreground">
-              The prompt kit you're looking for doesn't exist or is no longer available.
+              The prompt kit you're looking for doesn't exist or is no longer
+              available.
             </p>
             <Link to="/discover">
               <Button className="gap-2">
@@ -299,7 +322,9 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
               )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                <span>Created {format(new Date(kit.created_at), "MMM d, yyyy")}</span>
+                <span>
+                  Created {format(new Date(kit.created_at), "MMM d, yyyy")}
+                </span>
               </div>
             </div>
           </div>
@@ -312,9 +337,15 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
               className="gap-2"
             >
               {copiedAll ? (
-                <><Check className="h-4 w-4" />Copied!</>
+                <>
+                  <Check className="h-4 w-4" />
+                  Copied!
+                </>
               ) : (
-                <><Copy className="h-4 w-4" />Copy entire kit</>
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copy entire kit
+                </>
               )}
             </Button>
             {isAuthor && (
@@ -326,7 +357,12 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
               </Link>
             )}
             {isAuthor && (
-              <Button size="lg" variant="outline" onClick={() => setHistoryOpen(true)} className="gap-2">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setHistoryOpen(true)}
+                className="gap-2"
+              >
                 <History className="h-4 w-4" />
                 History
               </Button>
@@ -335,10 +371,19 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => cloneKit(
-                  { id: kit.id, title: kit.title, description: kit.description, content: kit.content, category: kit.category, tags: kit.tags },
-                  user.id
-                )}
+                onClick={() =>
+                  cloneKit(
+                    {
+                      id: kit.id,
+                      title: kit.title,
+                      description: kit.description,
+                      content: kit.content,
+                      category: kit.category,
+                      tags: kit.tags,
+                    },
+                    user.id,
+                  )
+                }
                 disabled={cloning}
                 className="gap-2"
               >
@@ -346,73 +391,89 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
                 {cloning ? "Cloning..." : "Clone to my library"}
               </Button>
             )}
-          {user && hasTeams && (
-            <Button size="lg" variant="outline" onClick={() => setCopyTeamOpen(true)} className="gap-2">
-              <Users className="h-4 w-4" />
-              Copy to team
-            </Button>
-          )}
-          {user && !isAuthor && (
-            <Button size="lg" variant="outline" onClick={() => setSuggestOpen(true)} className="gap-2">
-              <MessageSquarePlus className="h-4 w-4" />
-              Suggest edit
-            </Button>
-          )}
-          {user && (
-            <Button
+            {user && hasTeams && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setCopyTeamOpen(true)}
+                className="gap-2"
+              >
+                <Users className="h-4 w-4" />
+                Copy to team
+              </Button>
+            )}
+            {user && !isAuthor && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setSuggestOpen(true)}
+                className="gap-2"
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                Suggest edit
+              </Button>
+            )}
+            {user && (
+              <Button
+                size="lg"
+                variant={isPinned ? "secondary" : "outline"}
+                onClick={handleTogglePin}
+                disabled={pinning}
+                className="gap-2"
+              >
+                {isPinned ? (
+                  <>
+                    <PinOff className="h-4 w-4" />
+                    Unpin
+                  </>
+                ) : (
+                  <>
+                    <Pin className="h-4 w-4" />
+                    Pin
+                  </>
+                )}
+              </Button>
+            )}
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setCollectionOpen(true)}
+                className="gap-2"
+              >
+                <FolderPlus className="h-4 w-4" />
+                Add to collection
+              </Button>
+            )}
+            <DownloadMarkdownButton
+              title={kit.title}
+              type="prompt_kit"
+              description={kit.description}
+              tags={kit.tags}
+              content={kit.content}
               size="lg"
-              variant={isPinned ? "secondary" : "outline"}
-              onClick={handleTogglePin}
-              disabled={pinning}
-              className="gap-2"
-            >
-              {isPinned ? (
-                <><PinOff className="h-4 w-4" />Unpin</>
-              ) : (
-                <><Pin className="h-4 w-4" />Pin</>
-              )}
-            </Button>
-          )}
-          {user && (
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => setCollectionOpen(true)}
-              className="gap-2"
-            >
-              <FolderPlus className="h-4 w-4" />
-              Add to collection
-            </Button>
-          )}
-          <DownloadMarkdownButton
-            title={kit.title}
-            type="prompt_kit"
-            description={kit.description}
-            tags={kit.tags}
-            content={kit.content}
-            size="lg"
-          />
-          {user && (
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => setTranslateOpen(true)}
-              className="gap-2"
-            >
-              <Languages className="h-4 w-4" />
-              Translate
-            </Button>
-          )}
-          {isAuthor && hasMenerio && (
-            <MenerioSyncButton
-              artifactType="prompt_kit"
-              artifactId={kit.id}
-              menerioSynced={!!kit.menerio_synced}
-              menerioSyncedAt={kit.menerio_synced_at || null}
-              menerioNoteId={kit.menerio_note_id || null}
             />
-          )}
-        </div>
+            {user && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setTranslateOpen(true)}
+                className="gap-2"
+              >
+                <Languages className="h-4 w-4" />
+                Translate
+              </Button>
+            )}
+            {isAuthor && hasMenerio && (
+              <MenerioSyncButton
+                artifactType="prompt_kit"
+                artifactId={kit.id}
+                menerioSynced={!!kit.menerio_synced}
+                menerioSyncedAt={kit.menerio_synced_at || null}
+                menerioNoteId={kit.menerio_note_id || null}
+              />
+            )}
+          </div>
 
           <PromptKitArticleView
             content={kit.content || ""}
@@ -440,7 +501,10 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
                 <MessageSquarePlus className="h-4 w-4" />
                 Suggestions
                 {openCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 h-5 px-1.5 text-xs"
+                  >
                     {openCount}
                   </Badge>
                 )}
@@ -452,7 +516,11 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
             </TabsList>
 
             <TabsContent value="comments" className="mt-6">
-              <CommentsSection itemType="prompt_kit" itemId={kit.id} teamId={(kit as any).team_id} />
+              <CommentsSection
+                itemType="prompt_kit"
+                itemId={kit.id}
+                teamId={(kit as any).team_id}
+              />
             </TabsContent>
 
             <TabsContent value="suggestions" className="mt-6">
@@ -462,7 +530,7 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
                 itemType="prompt_kit"
                 itemId={kit.id}
                 originalTitle={kit.title}
-                originalDescription={kit.description || ''}
+                originalDescription={kit.description || ""}
                 originalContent={kit.content}
                 isOwner={!!isAuthor}
                 onReviewSuggestion={reviewSuggestion}
@@ -506,7 +574,7 @@ export default function PromptKitDetail({ initialKit = null }: { initialKit?: Ki
         onOpenChange={setSuggestOpen}
         itemType="prompt_kit"
         currentTitle={kit.title}
-        currentDescription={kit.description || ''}
+        currentDescription={kit.description || ""}
         currentContent={kit.content}
         onSubmit={createSuggestion}
       />

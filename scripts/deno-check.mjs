@@ -54,7 +54,10 @@ function denoBinary() {
   );
   if (existsSync(vendored)) return vendored;
 
-  const probe = spawnSync("deno", ["--version"], { encoding: "utf8", shell: true });
+  const probe = spawnSync("deno", ["--version"], {
+    encoding: "utf8",
+    shell: true,
+  });
   if (probe.status === 0) return "deno";
 
   console.error("Deno was not found.\n");
@@ -112,13 +115,19 @@ for (const line of clean.split(/\r?\n/)) {
 // Cross-check against Deno's own tally, so a change in its output format shows
 // up as a loud mismatch rather than as a silently passing ratchet.
 const reported = /Found (\d+) errors?\./.exec(clean);
-const denoTotal = reported ? Number(reported[1]) : result.status === 0 ? 0 : null;
+const denoTotal = reported
+  ? Number(reported[1])
+  : result.status === 0
+    ? 0
+    : null;
 
 if (denoTotal !== null && denoTotal !== total) {
   console.error(
     `Parsed ${total} error location${total === 1 ? "" : "s"} but Deno reported ${denoTotal}.`,
   );
-  console.error("The output format has probably changed. Fix this script before trusting it.\n");
+  console.error(
+    "The output format has probably changed. Fix this script before trusting it.\n",
+  );
   console.error(clean.slice(0, 4000));
   process.exit(2);
 }
@@ -148,12 +157,16 @@ if (process.argv.includes("--update")) {
       2,
     ) + "\n",
   );
-  console.log(`Baseline recorded: ${total} type error${total === 1 ? "" : "s"}.`);
+  console.log(
+    `Baseline recorded: ${total} type error${total === 1 ? "" : "s"}.`,
+  );
   process.exit(0);
 }
 
 if (!baseline) {
-  console.error("No baseline yet. Record one:\n\n  node scripts/deno-check.mjs --update\n");
+  console.error(
+    "No baseline yet. Record one:\n\n  node scripts/deno-check.mjs --update\n",
+  );
   process.exit(1);
 }
 
@@ -171,7 +184,11 @@ if (worse.length > 0) {
     clean
       .split(/\r?\n/)
       .filter((l) => /\[ERROR\]|at file:/.test(l))
-      .filter((l) => worse.some(([name]) => l.includes(`/${name}/`)) || /\[ERROR\]/.test(l))
+      .filter(
+        (l) =>
+          worse.some(([name]) => l.includes(`/${name}/`)) ||
+          /\[ERROR\]/.test(l),
+      )
       .slice(0, 60)
       .join("\n"),
   );
@@ -179,7 +196,9 @@ if (worse.length > 0) {
 }
 
 if (total < baseline.total) {
-  console.log(`Type errors fell from ${baseline.total} to ${total}. Bank it:\n`);
+  console.log(
+    `Type errors fell from ${baseline.total} to ${total}. Bank it:\n`,
+  );
   console.log("  node scripts/deno-check.mjs --update\n");
   process.exit(1);
 }

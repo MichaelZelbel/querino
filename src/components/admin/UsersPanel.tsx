@@ -2,11 +2,30 @@ import { useEffect, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -50,9 +69,16 @@ export function UsersPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [editedUsers, setEditedUsers] = useState<Record<string, { role?: AppRole }>>({});
-  const [allowances, setAllowances] = useState<Record<string, AllowancePeriod>>({});
-  const [tokenModalUser, setTokenModalUser] = useState<{ id: string; displayName: string | null } | null>(null);
+  const [editedUsers, setEditedUsers] = useState<
+    Record<string, { role?: AppRole }>
+  >({});
+  const [allowances, setAllowances] = useState<Record<string, AllowancePeriod>>(
+    {},
+  );
+  const [tokenModalUser, setTokenModalUser] = useState<{
+    id: string;
+    displayName: string | null;
+  } | null>(null);
 
   // Fetch users and initialize allowances
   useEffect(() => {
@@ -69,12 +95,17 @@ export function UsersPanel() {
     // download the whole user list, so it now answers with counts only and the
     // table is filled from the database like every other panel here.
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await supabase.functions.invoke("ensure-token-allowance", {
-        body: { batch_init: true },
-      });
+      const response = await supabase.functions.invoke(
+        "ensure-token-allowance",
+        {
+          body: { batch_init: true },
+        },
+      );
 
       if (response.error) {
         console.error("Error initializing allowances:", response.error);
@@ -133,7 +164,9 @@ export function UsersPanel() {
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("ai_allowance_periods")
-        .select("id, user_id, tokens_granted, tokens_used, period_start, period_end")
+        .select(
+          "id, user_id, tokens_granted, tokens_used, period_start, period_end",
+        )
         .lte("period_start", now)
         .gt("period_end", now);
 
@@ -141,7 +174,10 @@ export function UsersPanel() {
 
       const allowanceMap: Record<string, AllowancePeriod> = {};
       (data || []).forEach((row) => {
-        if (!allowanceMap[row.user_id] || row.period_end > allowanceMap[row.user_id].id) {
+        if (
+          !allowanceMap[row.user_id] ||
+          row.period_end > allowanceMap[row.user_id].id
+        ) {
           allowanceMap[row.user_id] = {
             id: row.id,
             user_id: row.user_id,
@@ -156,7 +192,10 @@ export function UsersPanel() {
     }
   };
 
-  const handleAllowanceUpdate = (userId: string, newAllowance: AllowancePeriod) => {
+  const handleAllowanceUpdate = (
+    userId: string,
+    newAllowance: AllowancePeriod,
+  ) => {
     setAllowances((prev) => ({
       ...prev,
       [userId]: newAllowance,
@@ -186,11 +225,7 @@ export function UsersPanel() {
 
       // Update local state
       setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId
-            ? { ...u, role: changes.role! }
-            : u
-        )
+        prev.map((u) => (u.id === userId ? { ...u, role: changes.role! } : u)),
       );
 
       // Clear edited state for this user
@@ -216,7 +251,9 @@ export function UsersPanel() {
 
     setDeletingUserId(userId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Not authenticated");
       }
@@ -243,7 +280,9 @@ export function UsersPanel() {
       toast.success("User deleted successfully");
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete user");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete user",
+      );
     } finally {
       setDeletingUserId(null);
     }
@@ -293,7 +332,8 @@ export function UsersPanel() {
             </div>
           </div>
           <CardDescription>
-            {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""} found
+            {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}{" "}
+            found
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -344,7 +384,9 @@ export function UsersPanel() {
                       <TableCell>
                         <Select
                           value={getUserRole(u.id)}
-                          onValueChange={(value) => handleRoleChange(u.id, value as AppRole)}
+                          onValueChange={(value) =>
+                            handleRoleChange(u.id, value as AppRole)
+                          }
                         >
                           <SelectTrigger className="w-36">
                             <SelectValue />
@@ -352,7 +394,9 @@ export function UsersPanel() {
                           <SelectContent>
                             <SelectItem value="free">free</SelectItem>
                             <SelectItem value="premium">premium</SelectItem>
-                            <SelectItem value="premium_gift">premium_gift</SelectItem>
+                            <SelectItem value="premium_gift">
+                              premium_gift
+                            </SelectItem>
                             <SelectItem value="admin">admin</SelectItem>
                           </SelectContent>
                         </Select>
@@ -373,7 +417,12 @@ export function UsersPanel() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setTokenModalUser({ id: u.id, displayName: u.display_name })}
+                          onClick={() =>
+                            setTokenModalUser({
+                              id: u.id,
+                              displayName: u.display_name,
+                            })
+                          }
                           title="Manage tokens & plan"
                         >
                           <Coins className="h-4 w-4 text-amber-500" />
@@ -398,7 +447,9 @@ export function UsersPanel() {
                                 size="sm"
                                 variant="ghost"
                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={u.id === user?.id || deletingUserId === u.id}
+                                disabled={
+                                  u.id === user?.id || deletingUserId === u.id
+                                }
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -411,7 +462,8 @@ export function UsersPanel() {
                                   <span className="font-semibold">
                                     {u.display_name || "this user"}
                                   </span>
-                                  ? This action cannot be undone and will remove all their data.
+                                  ? This action cannot be undone and will remove
+                                  all their data.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -420,7 +472,9 @@ export function UsersPanel() {
                                   onClick={() => handleDeleteUser(u.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  {deletingUserId === u.id ? "Deleting..." : "Delete"}
+                                  {deletingUserId === u.id
+                                    ? "Deleting..."
+                                    : "Delete"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

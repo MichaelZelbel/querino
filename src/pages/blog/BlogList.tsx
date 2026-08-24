@@ -66,8 +66,12 @@ export default function BlogList() {
                 ) : (
                   <div className="text-center py-16">
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold text-foreground mb-2">No posts yet</h2>
-                    <p className="text-muted-foreground">Check back soon for new content.</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-2">
+                      No posts yet
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Check back soon for new content.
+                    </p>
                   </div>
                 )}
               </div>

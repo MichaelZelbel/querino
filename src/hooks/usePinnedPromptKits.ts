@@ -26,7 +26,10 @@ export function usePinnedPromptKits() {
     fetchIds();
   }, [fetchIds]);
 
-  const isPinned = useCallback((kitId: string) => pinnedIds.has(kitId), [pinnedIds]);
+  const isPinned = useCallback(
+    (kitId: string) => pinnedIds.has(kitId),
+    [pinnedIds],
+  );
 
   const pin = useCallback(
     async (kitId: string) => {

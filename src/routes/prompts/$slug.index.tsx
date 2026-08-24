@@ -13,7 +13,9 @@ export const Route = createFileRoute("/prompts/$slug/")({
     if (!loaderData) return privateHead("Not Found");
     const url = `/prompts/${loaderData.slug ?? loaderData.id}`;
     const description =
-      loaderData.summary || loaderData.description || `${loaderData.title} — AI prompt on Querino`;
+      loaderData.summary ||
+      loaderData.description ||
+      `${loaderData.title} — AI prompt on Querino`;
     return pageHead({
       title: loaderData.title,
       description,

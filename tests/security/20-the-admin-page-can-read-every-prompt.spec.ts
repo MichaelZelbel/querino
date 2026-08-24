@@ -16,7 +16,12 @@
 // in case a previous run was killed outright.
 
 import { test, expect } from "@playwright/test";
-import { asUser, callFunction, restAsService, signInTestUser } from "./helpers/api";
+import {
+  asUser,
+  callFunction,
+  restAsService,
+  signInTestUser,
+} from "./helpers/api";
 
 interface ListedConfig {
   call_site: string;
@@ -35,7 +40,10 @@ async function setRole(role: "free" | "admin"): Promise<void> {
     body: { role },
     headers: { Prefer: "return=minimal" },
   });
-  if (!res.ok) throw new Error(`Could not set role to ${role}: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(
+      `Could not set role to ${role}: ${JSON.stringify(res.error)}`,
+    );
 }
 
 async function listAsAdmin(): Promise<ListedConfig[]> {
@@ -46,7 +54,7 @@ async function listAsAdmin(): Promise<ListedConfig[]> {
     asUser(session.accessToken),
   );
   expect(res.status, `list failed: ${res.text.slice(0, 300)}`).toBe(200);
-  return ((res.body as { configs?: ListedConfig[] }).configs ?? []);
+  return (res.body as { configs?: ListedConfig[] }).configs ?? [];
 }
 
 // Captured before anything is written, restored afterwards. Hardcoding the
@@ -59,7 +67,10 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   if (originalPrompt !== null) {
-    await restAsService(ROW, { method: "PATCH", body: { system_prompt: originalPrompt } });
+    await restAsService(ROW, {
+      method: "PATCH",
+      body: { system_prompt: originalPrompt },
+    });
   }
   await setRole("free");
 });
@@ -69,7 +80,10 @@ test.describe("the admin page can read the prompt it would send", () => {
     await setRole("admin");
     const configs = await listAsAdmin();
 
-    expect(configs.length, "the registry seeds seventeen call sites").toBeGreaterThanOrEqual(17);
+    expect(
+      configs.length,
+      "the registry seeds seventeen call sites",
+    ).toBeGreaterThanOrEqual(17);
 
     const empty = configs
       .filter((c) => !(c.default_system_prompt ?? "").trim())
@@ -90,13 +104,18 @@ test.describe("the admin page can read the prompt it would send", () => {
       const text = c.default_system_prompt ?? "";
       const used = [...text.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
       for (const name of used) {
-        if (!c.placeholders.includes(name)) wrong.push(`${c.call_site} uses {{${name}}}`);
+        if (!c.placeholders.includes(name))
+          wrong.push(`${c.call_site} uses {{${name}}}`);
       }
       for (const name of c.placeholders) {
-        if (!text.includes(`{{${name}}}`)) wrong.push(`${c.call_site} advertises unused {{${name}}}`);
+        if (!text.includes(`{{${name}}}`))
+          wrong.push(`${c.call_site} advertises unused {{${name}}}`);
       }
     }
-    expect(wrong, "the hint under the box does not match the prompt above it").toEqual([]);
+    expect(
+      wrong,
+      "the hint under the box does not match the prompt above it",
+    ).toEqual([]);
   });
 
   test("saving the prefilled default does not turn it into an override", async () => {
@@ -108,7 +127,10 @@ test.describe("the admin page can read the prompt it would send", () => {
     originalPrompt = before.data[0]?.system_prompt ?? null;
 
     const listed = (await listAsAdmin()).find((c) => c.call_site === CALL_SITE);
-    expect(listed?.default_system_prompt, "no default to save back").toBeTruthy();
+    expect(
+      listed?.default_system_prompt,
+      "no default to save back",
+    ).toBeTruthy();
 
     // Exactly what the dialog would send if someone opened it and pressed Save.
     const session = await signInTestUser();
@@ -144,14 +166,19 @@ test.describe("the admin page can read the prompt it would send", () => {
 
     const saved = await callFunction(
       "admin-llm-config",
-      { action: "save", call_site: CALL_SITE, tier: "default", patch: { system_prompt: edited } },
+      {
+        action: "save",
+        call_site: CALL_SITE,
+        tier: "default",
+        patch: { system_prompt: edited },
+      },
       asUser(session.accessToken),
     );
     expect(saved.status, saved.text.slice(0, 300)).toBe(200);
 
-    const withOverride = await restAsService<Array<{ system_prompt: string | null }>>(
-      `${ROW}&select=system_prompt`,
-    );
+    const withOverride = await restAsService<
+      Array<{ system_prompt: string | null }>
+    >(`${ROW}&select=system_prompt`);
     expect(
       withOverride.data[0].system_prompt,
       "a genuine edit was discarded, which would make the whole page read-only in practice",
@@ -170,9 +197,12 @@ test.describe("the admin page can read the prompt it would send", () => {
     );
     expect(reset.status).toBe(200);
 
-    const afterReset = await restAsService<Array<{ system_prompt: string | null }>>(
-      `${ROW}&select=system_prompt`,
-    );
-    expect(afterReset.data[0].system_prompt, "reset left the override in place").toBeNull();
+    const afterReset = await restAsService<
+      Array<{ system_prompt: string | null }>
+    >(`${ROW}&select=system_prompt`);
+    expect(
+      afterReset.data[0].system_prompt,
+      "reset left the override in place",
+    ).toBeNull();
   });
 });

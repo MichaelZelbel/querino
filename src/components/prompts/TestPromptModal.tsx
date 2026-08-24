@@ -54,7 +54,9 @@ export function TestPromptModal({
 
       if (!testUrl) {
         // Fallback for when URL is not configured
-        setError("Test endpoint not configured. Please set VITE_PROMPT_TEST_URL.");
+        setError(
+          "Test endpoint not configured. Please set VITE_PROMPT_TEST_URL.",
+        );
         return;
       }
 
@@ -77,8 +79,10 @@ export function TestPromptModal({
 
       const data = await response.json();
       setResult({
-        output: data.output || data.result || data.response || JSON.stringify(data),
-        tokensUsed: data.tokens_used || data.tokensUsed || data.usage?.total_tokens,
+        output:
+          data.output || data.result || data.response || JSON.stringify(data),
+        tokensUsed:
+          data.tokens_used || data.tokensUsed || data.usage?.total_tokens,
       });
     } catch (err) {
       console.error("Error testing prompt:", err);
@@ -125,7 +129,10 @@ export function TestPromptModal({
 
           {/* Test Input */}
           <div>
-            <Label htmlFor="test-input" className="text-sm font-medium mb-2 block">
+            <Label
+              htmlFor="test-input"
+              className="text-sm font-medium mb-2 block"
+            >
               Additional prompt text (optional)
             </Label>
             <Textarea

@@ -16,7 +16,12 @@ interface LanguageSelectProps {
   className?: string;
 }
 
-export function LanguageSelect({ value, onChange, label = "Language", className }: LanguageSelectProps) {
+export function LanguageSelect({
+  value,
+  onChange,
+  label = "Language",
+  className,
+}: LanguageSelectProps) {
   return (
     <div className={`space-y-2 ${className || ""}`}>
       <Label className="flex items-center gap-2">

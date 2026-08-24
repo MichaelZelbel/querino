@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +14,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -79,15 +98,20 @@ export default function LLMConfigPanel() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-llm-config", {
-        body: { action: "list" },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "admin-llm-config",
+        {
+          body: { action: "list" },
+        },
+      );
       if (error) throw error;
       setConfigs(data.configs ?? []);
       setPresets(data.providers ?? []);
       setAvailability(data.availability ?? {});
     } catch (e) {
-      toast.error("Failed to load LLM configs", { description: (e as Error).message });
+      toast.error("Failed to load LLM configs", {
+        description: (e as Error).message,
+      });
     } finally {
       setLoading(false);
     }
@@ -98,7 +122,10 @@ export default function LLMConfigPanel() {
   }, []);
 
   const filtered = useMemo(
-    () => configs.filter((c) => c.call_site.toLowerCase().includes(filter.toLowerCase())),
+    () =>
+      configs.filter((c) =>
+        c.call_site.toLowerCase().includes(filter.toLowerCase()),
+      ),
     [configs, filter],
   );
 
@@ -107,11 +134,13 @@ export default function LLMConfigPanel() {
       <CardHeader>
         <CardTitle>LLM Call Configuration</CardTitle>
         <CardDescription>
-          Provider, model and system prompt for each AI call site. Edit shows the prompt that would
-          actually be sent, whether that is the one in the code or an override. Saving it unchanged
-          leaves the call site following the code; an inactive entry, or an empty system prompt, does
-          the same. Runtime context is substituted into <code>{`{{placeholder}}`}</code> before the
-          prompt is sent. A change can take up to 30 seconds to reach every call site.
+          Provider, model and system prompt for each AI call site. Edit shows
+          the prompt that would actually be sent, whether that is the one in the
+          code or an override. Saving it unchanged leaves the call site
+          following the code; an inactive entry, or an empty system prompt, does
+          the same. Runtime context is substituted into{" "}
+          <code>{`{{placeholder}}`}</code> before the prompt is sent. A change
+          can take up to 30 seconds to reach every call site.
         </CardDescription>
         <div className="flex flex-wrap gap-2 pt-2">
           {presets.map((p) => (
@@ -151,22 +180,37 @@ export default function LLMConfigPanel() {
               <TableBody>
                 {filtered.map((c) => (
                   <TableRow key={`${c.call_site}:${c.tier}`}>
-                    <TableCell className="font-mono text-xs">{c.call_site}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {c.call_site}
+                    </TableCell>
                     <TableCell>
                       <Badge
-                        variant={availability[c.provider] ? "secondary" : "destructive"}
+                        variant={
+                          availability[c.provider] ? "secondary" : "destructive"
+                        }
                         className="text-[10px]"
                       >
-                        {presets.find((p) => p.provider === c.provider)?.label ?? c.provider}
+                        {presets.find((p) => p.provider === c.provider)
+                          ?.label ?? c.provider}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{c.model}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {c.model}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {c.system_prompt ? "Custom" : <span className="italic">Code default</span>}
+                      {c.system_prompt ? (
+                        "Custom"
+                      ) : (
+                        <span className="italic">Code default</span>
+                      )}
                     </TableCell>
                     <TableCell>{c.enabled ? "✓" : "—"}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(c)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditing(c)}
+                      >
                         Edit
                       </Button>
                     </TableCell>
@@ -220,38 +264,43 @@ function EditDialog({
   );
   const [testResult, setTestResult] = useState<TestResult | null>(null);
 
-  const models = presets.find((p) => p.provider === draft.provider)?.models ?? [];
+  const models =
+    presets.find((p) => p.provider === draft.provider)?.models ?? [];
   const isCustomModel = !models.some((m) => m.value === draft.model);
 
   // What the badge says, and what the server will conclude on save. An empty box
   // and an untouched default are both "keep using the code".
   const promptText = draft.system_prompt ?? "";
   const isOverride =
-    promptText.trim().length > 0 && !isStillTheDefault(promptText, config.default_system_prompt);
+    promptText.trim().length > 0 &&
+    !isStillTheDefault(promptText, config.default_system_prompt);
 
   // Writes go through the admin function rather than PostgREST, so the whole
   // table stays behind one audited, admin-gated endpoint.
   const save = async (): Promise<boolean> => {
     setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-llm-config", {
-        body: {
-          action: "save",
-          call_site: draft.call_site,
-          tier: draft.tier,
-          patch: {
-            provider: draft.provider,
-            model: draft.model.trim(),
-            // Null unless it is a real edit. The server concludes the same
-            // thing from the text alone, but sending it explicitly means the
-            // page is safe whichever of the two deploys lands first.
-            system_prompt: isOverride ? draft.system_prompt : null,
-            temperature: draft.temperature,
-            max_tokens: draft.max_tokens,
-            enabled: draft.enabled,
+      const { data, error } = await supabase.functions.invoke(
+        "admin-llm-config",
+        {
+          body: {
+            action: "save",
+            call_site: draft.call_site,
+            tier: draft.tier,
+            patch: {
+              provider: draft.provider,
+              model: draft.model.trim(),
+              // Null unless it is a real edit. The server concludes the same
+              // thing from the text alone, but sending it explicitly means the
+              // page is safe whichever of the two deploys lands first.
+              system_prompt: isOverride ? draft.system_prompt : null,
+              temperature: draft.temperature,
+              max_tokens: draft.max_tokens,
+              enabled: draft.enabled,
+            },
           },
         },
-      });
+      );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success("Saved");
@@ -270,14 +319,17 @@ function EditDialog({
     try {
       // Save first, so the test exercises what is actually persisted.
       if (!(await save())) return;
-      const { data, error } = await supabase.functions.invoke("admin-llm-config", {
-        body: {
-          action: "test",
-          call_site: draft.call_site,
-          tier: draft.tier,
-          prompt: testPrompt,
+      const { data, error } = await supabase.functions.invoke(
+        "admin-llm-config",
+        {
+          body: {
+            action: "test",
+            call_site: draft.call_site,
+            tier: draft.tier,
+            prompt: testPrompt,
+          },
         },
-      });
+      );
       if (error) throw error;
       setTestResult(data as TestResult);
     } catch (e) {
@@ -291,7 +343,9 @@ function EditDialog({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-mono text-base">{draft.call_site}</DialogTitle>
+          <DialogTitle className="font-mono text-base">
+            {draft.call_site}
+          </DialogTitle>
           <DialogDescription>{config.description}</DialogDescription>
         </DialogHeader>
 
@@ -303,8 +357,13 @@ function EditDialog({
                 value={draft.provider}
                 onValueChange={(v) => {
                   const next = v as Provider;
-                  const firstModel = presets.find((p) => p.provider === next)?.models[0]?.value;
-                  setDraft({ ...draft, provider: next, model: firstModel ?? draft.model });
+                  const firstModel = presets.find((p) => p.provider === next)
+                    ?.models[0]?.value;
+                  setDraft({
+                    ...draft,
+                    provider: next,
+                    model: firstModel ?? draft.model,
+                  });
                 }}
               >
                 <SelectTrigger>
@@ -358,7 +417,10 @@ function EditDialog({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Label>System prompt</Label>
-                <Badge variant={isOverride ? "default" : "secondary"} className="text-[10px]">
+                <Badge
+                  variant={isOverride ? "default" : "secondary"}
+                  className="text-[10px]"
+                >
                   {isOverride ? "Custom" : "Code default"}
                 </Badge>
               </div>
@@ -367,7 +429,10 @@ function EditDialog({
                   size="sm"
                   variant="ghost"
                   onClick={() =>
-                    setDraft({ ...draft, system_prompt: config.default_system_prompt ?? "" })
+                    setDraft({
+                      ...draft,
+                      system_prompt: config.default_system_prompt ?? "",
+                    })
                   }
                 >
                   <RotateCcw className="h-3 w-3 mr-1" /> Reset to code default
@@ -377,7 +442,9 @@ function EditDialog({
             <Textarea
               rows={10}
               value={draft.system_prompt ?? ""}
-              onChange={(e) => setDraft({ ...draft, system_prompt: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, system_prompt: e.target.value })
+              }
               placeholder="Leave empty to use the default in the code."
               className="font-mono text-xs"
             />
@@ -409,7 +476,8 @@ function EditDialog({
                 onChange={(e) =>
                   setDraft({
                     ...draft,
-                    temperature: e.target.value === "" ? null : Number(e.target.value),
+                    temperature:
+                      e.target.value === "" ? null : Number(e.target.value),
                   })
                 }
                 placeholder="auto"
@@ -424,7 +492,8 @@ function EditDialog({
                 onChange={(e) =>
                   setDraft({
                     ...draft,
-                    max_tokens: e.target.value === "" ? null : Number(e.target.value),
+                    max_tokens:
+                      e.target.value === "" ? null : Number(e.target.value),
                   })
                 }
                 placeholder="auto"
@@ -461,15 +530,19 @@ function EditDialog({
                   <>
                     <div className="text-muted-foreground">
                       {testResult.provider} / <code>{testResult.model}</code> ·{" "}
-                      {testResult.latency_ms}ms · config: {testResult.config_source}
-                      {testResult.usage && ` · ${testResult.usage.total_tokens} tokens`}
+                      {testResult.latency_ms}ms · config:{" "}
+                      {testResult.config_source}
+                      {testResult.usage &&
+                        ` · ${testResult.usage.total_tokens} tokens`}
                     </div>
                     <pre className="whitespace-pre-wrap rounded bg-background p-2 border max-h-48 overflow-auto">
                       {testResult.content}
                     </pre>
                   </>
                 ) : (
-                  <div className="text-destructive">Error: {testResult.error}</div>
+                  <div className="text-destructive">
+                    Error: {testResult.error}
+                  </div>
                 )}
               </div>
             )}

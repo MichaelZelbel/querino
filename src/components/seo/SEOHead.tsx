@@ -28,7 +28,8 @@ export function SEOHead({
 }: SEOHeadProps) {
   const siteName = "Querino";
   const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
-  const defaultDescription = "Discover and share AI prompts, skills, and workflows.";
+  const defaultDescription =
+    "Discover and share AI prompts, skills, and workflows.";
   const finalDescription = description || defaultDescription;
   const rssUrl = `${siteOrigin()}/api/rss.xml`;
 
@@ -39,7 +40,9 @@ export function SEOHead({
     // Helper to set or create meta tag
     const setMeta = (name: string, content: string, isProperty = false) => {
       const attr = isProperty ? "property" : "name";
-      let meta = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement;
+      let meta = document.querySelector(
+        `meta[${attr}="${name}"]`,
+      ) as HTMLMetaElement;
       if (!meta) {
         meta = document.createElement("meta");
         meta.setAttribute(attr, name);
@@ -85,8 +88,11 @@ export function SEOHead({
     }
 
     // Canonical URL - always set, default to current path (no query params)
-    const finalCanonical = canonicalUrl || (window.location.origin + window.location.pathname);
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    const finalCanonical =
+      canonicalUrl || window.location.origin + window.location.pathname;
+    let canonical = document.querySelector(
+      'link[rel="canonical"]',
+    ) as HTMLLinkElement;
     if (!canonical) {
       canonical = document.createElement("link");
       canonical.setAttribute("rel", "canonical");
@@ -95,7 +101,9 @@ export function SEOHead({
     canonical.setAttribute("href", finalCanonical);
 
     // RSS Feed link
-    let rssLink = document.querySelector('link[type="application/rss+xml"]') as HTMLLinkElement;
+    let rssLink = document.querySelector(
+      'link[type="application/rss+xml"]',
+    ) as HTMLLinkElement;
     if (includeRssFeed) {
       if (!rssLink) {
         rssLink = document.createElement("link");
@@ -128,7 +136,19 @@ export function SEOHead({
     return () => {
       // Reset title on unmount if needed
     };
-  }, [fullTitle, finalDescription, ogImage, ogType, canonicalUrl, publishedTime, author, noIndex, includeRssFeed, rssUrl, jsonLd]);
+  }, [
+    fullTitle,
+    finalDescription,
+    ogImage,
+    ogType,
+    canonicalUrl,
+    publishedTime,
+    author,
+    noIndex,
+    includeRssFeed,
+    rssUrl,
+    jsonLd,
+  ]);
 
   return null;
 }

@@ -12,7 +12,8 @@
  */
 
 const SITE_NAME = "Querino";
-const DEFAULT_DESCRIPTION = "Discover and share AI prompts, skills, and workflows.";
+const DEFAULT_DESCRIPTION =
+  "Discover and share AI prompts, skills, and workflows.";
 const DEFAULT_OG_IMAGE = "https://lovable.dev/opengraph-image-p98pqg.png";
 
 // The canonical origin. Unlike the browser-side helper in src/config/site.ts this never
@@ -38,7 +39,9 @@ export interface PageHead {
 }
 
 const absolute = (url: string) =>
-  url.startsWith("http") ? url : `${SITE_ORIGIN}${url.startsWith("/") ? url : `/${url}`}`;
+  url.startsWith("http")
+    ? url
+    : `${SITE_ORIGIN}${url.startsWith("/") ? url : `/${url}`}`;
 
 export function pageHead(page: PageHead) {
   const fullTitle = page.title.includes(SITE_NAME)
@@ -65,8 +68,13 @@ export function pageHead(page: PageHead) {
   if (canonical) meta.push({ property: "og:url", content: canonical });
   if (page.noIndex) meta.push({ name: "robots", content: "noindex, nofollow" });
   if (page.ogType === "article") {
-    if (page.publishedTime) meta.push({ property: "article:published_time", content: page.publishedTime });
-    if (page.author) meta.push({ property: "article:author", content: page.author });
+    if (page.publishedTime)
+      meta.push({
+        property: "article:published_time",
+        content: page.publishedTime,
+      });
+    if (page.author)
+      meta.push({ property: "article:author", content: page.author });
   }
 
   const links: Array<Record<string, string>> = [];

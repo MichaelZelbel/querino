@@ -29,7 +29,7 @@ interface PromptKitRichEditorProps {
 export function PromptKitRichEditor({
   value,
   onChange,
-  placeholder = "Write an intro for your kit, then click \"Insert prompt\" to add a prompt block…",
+  placeholder = 'Write an intro for your kit, then click "Insert prompt" to add a prompt block…',
   error = false,
   minHeight = 360,
 }: PromptKitRichEditorProps) {
@@ -60,7 +60,11 @@ export function PromptKitRichEditor({
       Color,
       Superscript,
       Subscript,
-      Markdown.configure({ html: true, transformPastedText: true, breaks: false }),
+      Markdown.configure({
+        html: true,
+        transformPastedText: true,
+        breaks: false,
+      }),
       PromptBlock,
     ],
     content: markdownToEditorContent(value || ""),
@@ -86,7 +90,9 @@ export function PromptKitRichEditor({
     if (isInternalUpdate.current) return;
     const current = buildKitMarkdown(editor as any);
     if ((value || "").trim() === (current || "").trim()) return;
-    editor.commands.setContent(markdownToEditorContent(value || ""), { emitUpdate: false });
+    editor.commands.setContent(markdownToEditorContent(value || ""), {
+      emitUpdate: false,
+    });
   }, [value, editor]);
 
   return (

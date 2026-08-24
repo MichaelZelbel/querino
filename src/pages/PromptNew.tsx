@@ -26,7 +26,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Loader2, ArrowLeft, Wand2, X, Save, Bot, Sparkles } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  Wand2,
+  X,
+  Save,
+  Bot,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
@@ -36,7 +44,10 @@ import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { PromptCoachPanel } from "@/components/studio/PromptCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
+import {
+  getOrCreateDraftSessionId,
+  promoteDraftSession,
+} from "@/lib/runCanvasAI";
 import { generateSlug } from "@/hooks/useGenerateSlug";
 
 export default function PromptNew() {
@@ -49,13 +60,21 @@ export default function PromptNew() {
 
   // Form state
   const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [shortDescription, setShortDescription] = useState(searchParams.get("description") || "");
-  const [content, setContent] = useState(searchParams.get("content") || searchParams.get("draft") || "");
+  const [shortDescription, setShortDescription] = useState(
+    searchParams.get("description") || "",
+  );
+  const [content, setContent] = useState(
+    searchParams.get("content") || searchParams.get("draft") || "",
+  );
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>(searchParams.get("tags")?.split(",").filter(Boolean) || []);
+  const [tags, setTags] = useState<string[]>(
+    searchParams.get("tags")?.split(",").filter(Boolean) || [],
+  );
   const [isPublic, setIsPublic] = useState(false);
-  const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(
+    searchParams.get("language") || DEFAULT_LANGUAGE,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Menerio callback params (from /create-from-menerio redirect)
@@ -70,7 +89,8 @@ export default function PromptNew() {
   const [previousContent, setPreviousContent] = useState<string | null>(null);
 
   // Moderation state
-  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
+  const [moderationBlock, setModerationBlock] =
+    useState<ModerationResult | null>(null);
 
   // Mobile coach sheet
   const [showCoachSheet, setShowCoachSheet] = useState(false);
@@ -86,10 +106,10 @@ export default function PromptNew() {
     return tag
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9\-\s]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/[^a-z0-9\-\s]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
   };
 
   const handleAddTag = () => {
@@ -131,11 +151,18 @@ export default function PromptNew() {
       if (result.title) setTitle(result.title);
       if (result.description) setShortDescription(result.description);
       if (result.category) {
-        const matched = categoryOptions.find(cat => cat.id.toLowerCase() === result.category.toLowerCase());
+        const matched = categoryOptions.find(
+          (cat) => cat.id.toLowerCase() === result.category.toLowerCase(),
+        );
         if (matched) setCategory(matched.id);
       }
       if (result.tags && Array.isArray(result.tags)) {
-        setTags(result.tags.map((t: string) => normalizeTag(t)).filter((t: string) => t).slice(0, 10));
+        setTags(
+          result.tags
+            .map((t: string) => normalizeTag(t))
+            .filter((t: string) => t)
+            .slice(0, 10),
+        );
       }
     } catch (error) {
       console.error("Error suggesting metadata:", error);
@@ -148,9 +175,13 @@ export default function PromptNew() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!title.trim()) newErrors.title = "Title is required";
-    else if (title.length > 100) newErrors.title = "Title must be less than 100 characters";
-    if (!shortDescription.trim()) newErrors.shortDescription = "Short description is required";
-    else if (shortDescription.length > 2000) newErrors.shortDescription = "Description must be less than 2000 characters";
+    else if (title.length > 100)
+      newErrors.title = "Title must be less than 100 characters";
+    if (!shortDescription.trim())
+      newErrors.shortDescription = "Short description is required";
+    else if (shortDescription.length > 2000)
+      newErrors.shortDescription =
+        "Description must be less than 2000 characters";
     if (!content.trim()) newErrors.content = "Prompt content is required";
     if (!category) newErrors.category = "Please select a category";
     setErrors(newErrors);
@@ -165,7 +196,7 @@ export default function PromptNew() {
       const result = await moderateContent(
         { title, description: shortDescription, content },
         "publish",
-        "prompt"
+        "prompt",
       );
       if (!result.approved) {
         setModerationBlock(result);
@@ -197,25 +228,35 @@ export default function PromptNew() {
         .single();
 
       if (error) {
-        console.error("Error creating prompt:", error.message, error.details, error.hint, error.code);
+        console.error(
+          "Error creating prompt:",
+          error.message,
+          error.details,
+          error.hint,
+          error.code,
+        );
         toast.error(`Failed to create prompt: ${error.message}`);
         return;
       }
 
       // Create version 1
-      const { error: versionError } = await supabase.from("prompt_versions").insert({
-        prompt_id: newPrompt.id,
-        version_number: 1,
-        title: title.trim(),
-        description: shortDescription.trim(),
-        content: content.trim(),
-        tags: tags.length > 0 ? tags : null,
-        change_notes: "Initial version",
-      });
+      const { error: versionError } = await supabase
+        .from("prompt_versions")
+        .insert({
+          prompt_id: newPrompt.id,
+          version_number: 1,
+          title: title.trim(),
+          description: shortDescription.trim(),
+          content: content.trim(),
+          tags: tags.length > 0 ? tags : null,
+          change_notes: "Initial version",
+        });
 
       if (versionError) {
         console.error("Error creating initial version:", versionError);
-        toast.warning("Prompt created, but the initial version entry could not be saved.");
+        toast.warning(
+          "Prompt created, but the initial version entry could not be saved.",
+        );
       }
 
       // Promote draft coach session to deterministic session for this prompt
@@ -225,15 +266,18 @@ export default function PromptNew() {
       // If this prompt was created from Menerio, trigger the link callback
       if (menerioNoteId && menerioCallback) {
         try {
-          const cbResponse = await supabase.functions.invoke("menerio-link-callback", {
-            // No user_id — the function derives it from the session JWT.
-            body: {
-              menerio_callback: menerioCallback,
-              menerio_note_id: menerioNoteId,
-              prompt_id: newPrompt.id,
-              prompt_slug: newPrompt.slug,
+          const cbResponse = await supabase.functions.invoke(
+            "menerio-link-callback",
+            {
+              // No user_id — the function derives it from the session JWT.
+              body: {
+                menerio_callback: menerioCallback,
+                menerio_note_id: menerioNoteId,
+                prompt_id: newPrompt.id,
+                prompt_slug: newPrompt.slug,
+              },
             },
-          });
+          );
           if (cbResponse.error) {
             console.error("Menerio link callback failed:", cbResponse.error);
             toast.error("Prompt created, but Menerio linking failed.");
@@ -272,10 +316,11 @@ export default function PromptNew() {
     }
   };
 
-
   // Coach panel element
   const workspaceScope = currentWorkspace ?? "personal";
-  const draftSessionId = user ? getOrCreateDraftSessionId(workspaceScope, user.id) : "draft";
+  const draftSessionId = user
+    ? getOrCreateDraftSessionId(workspaceScope, user.id)
+    : "draft";
 
   const coachPanel = (
     <PromptCoachPanel
@@ -380,7 +425,9 @@ export default function PromptNew() {
                       error={!!errors.content}
                     />
                     {errors.content && (
-                      <p className="text-sm text-destructive">{errors.content}</p>
+                      <p className="text-sm text-destructive">
+                        {errors.content}
+                      </p>
                     )}
                   </div>
 
@@ -407,7 +454,9 @@ export default function PromptNew() {
                       )}
                     </Button>
                     {metadataError && (
-                      <p className="text-sm text-destructive">{metadataError}</p>
+                      <p className="text-sm text-destructive">
+                        {metadataError}
+                      </p>
                     )}
                   </div>
 
@@ -435,10 +484,14 @@ export default function PromptNew() {
                       onChange={(e) => setShortDescription(e.target.value)}
                       placeholder="Briefly describe what this prompt does"
                       rows={2}
-                      className={errors.shortDescription ? "border-destructive" : ""}
+                      className={
+                        errors.shortDescription ? "border-destructive" : ""
+                      }
                     />
                     {errors.shortDescription && (
-                      <p className="text-sm text-destructive">{errors.shortDescription}</p>
+                      <p className="text-sm text-destructive">
+                        {errors.shortDescription}
+                      </p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       {shortDescription.length}/2000 characters
@@ -449,7 +502,9 @@ export default function PromptNew() {
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                      <SelectTrigger
+                        className={errors.category ? "border-destructive" : ""}
+                      >
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -461,7 +516,9 @@ export default function PromptNew() {
                       </SelectContent>
                     </Select>
                     {errors.category && (
-                      <p className="text-sm text-destructive">{errors.category}</p>
+                      <p className="text-sm text-destructive">
+                        {errors.category}
+                      </p>
                     )}
                   </div>
 
@@ -492,7 +549,11 @@ export default function PromptNew() {
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="gap-1 pr-1"
+                          >
                             {tag}
                             <button
                               type="button"
@@ -549,7 +610,10 @@ export default function PromptNew() {
 
             {/* Right: AI Coach Panel (desktop only) */}
             {!isMobile && (
-              <div className="w-[380px] shrink-0 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+              <div
+                className="w-[380px] shrink-0 sticky top-24 self-start"
+                style={{ height: "calc(100vh - 12rem)" }}
+              >
                 {coachPanel}
               </div>
             )}

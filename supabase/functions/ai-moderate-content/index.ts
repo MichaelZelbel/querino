@@ -8,7 +8,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
 import { resolveConfig, type DbLike } from "../_shared/llm-config.ts";
 import { callProvider } from "../_shared/llm-providers.ts";
-import { PROVIDER_SECRETS, DEFAULT_PROVIDER, DEFAULT_MODEL } from "../_shared/llm-registry.ts";
+import {
+  PROVIDER_SECRETS,
+  DEFAULT_PROVIDER,
+  DEFAULT_MODEL,
+} from "../_shared/llm-registry.ts";
 import { SYSTEM_PROMPT as systemPrompt } from "../_shared/prompts/ai-moderate-content.ts";
 
 const corsHeaders = {
@@ -44,7 +48,6 @@ interface AIClassification {
 }
 
 async function classifyContent(content: string): Promise<AIClassification> {
-
   // Deliberately no credit gate. This runs from cron or an admin button, the
   // cost is the platform's, and gating it on some user's balance would mean
   // moderation stops the moment that user runs dry.
@@ -65,7 +68,9 @@ async function classifyContent(content: string): Promise<AIClassification> {
   const secretName = PROVIDER_SECRETS[effective.provider];
   const apiKey = Deno.env.get(secretName);
   if (!apiKey) {
-    throw new Error(`${secretName} is not configured, which ai-moderate-content needs`);
+    throw new Error(
+      `${secretName} is not configured, which ai-moderate-content needs`,
+    );
   }
 
   const result = await callProvider({
@@ -76,7 +81,10 @@ async function classifyContent(content: string): Promise<AIClassification> {
     maxTokens: effective.max_tokens,
     messages: [
       { role: "system", content: effective.system_prompt ?? systemPrompt },
-      { role: "user", content: `Analyze this content for policy violations:\n\n${content.substring(0, 4000)}` },
+      {
+        role: "user",
+        content: `Analyze this content for policy violations:\n\n${content.substring(0, 4000)}`,
+      },
     ],
     tools: [
       {
@@ -87,10 +95,24 @@ async function classifyContent(content: string): Promise<AIClassification> {
           parameters: {
             type: "object",
             properties: {
-              safe: { type: "boolean", description: "true if content is safe, false if it violates policies" },
-              category: { type: "string", enum: ["none", "sexual", "hate", "malware", "pii", "injection"], description: "The violation category, or 'none' if safe" },
-              confidence: { type: "number", description: "Confidence score from 0.0 to 1.0" },
-              reason: { type: "string", description: "Brief explanation of the classification decision" },
+              safe: {
+                type: "boolean",
+                description:
+                  "true if content is safe, false if it violates policies",
+              },
+              category: {
+                type: "string",
+                enum: ["none", "sexual", "hate", "malware", "pii", "injection"],
+                description: "The violation category, or 'none' if safe",
+              },
+              confidence: {
+                type: "number",
+                description: "Confidence score from 0.0 to 1.0",
+              },
+              reason: {
+                type: "string",
+                description: "Brief explanation of the classification decision",
+              },
             },
             required: ["safe", "category", "confidence", "reason"],
             additionalProperties: false,
@@ -114,7 +136,7 @@ async function classifyContent(content: string): Promise<AIClassification> {
 async function unpublishArtifact(
   serviceClient: ReturnType<typeof createClient>,
   itemType: string,
-  itemId: string
+  itemId: string,
 ): Promise<string | null> {
   // Get artifact title for the email
   let title: string | null = null;
@@ -170,7 +192,7 @@ async function unpublishArtifact(
 
 async function incrementStrike(
   serviceClient: ReturnType<typeof createClient>,
-  userId: string
+  userId: string,
 ) {
   const { data: existing } = await serviceClient
     .from("user_suspensions")
@@ -206,7 +228,7 @@ async function sendViolationEmail(
   itemType: string,
   title: string | null,
   category: string,
-  serviceClient: ReturnType<typeof createClient>
+  serviceClient: ReturnType<typeof createClient>,
 ) {
   if (!RESEND_API_KEY || !LOVABLE_API_KEY) {
     console.warn("Resend not configured, skipping email notification");
@@ -214,7 +236,9 @@ async function sendViolationEmail(
   }
 
   // Get user email from auth
-  const { data: { user } } = await serviceClient.auth.admin.getUserById(userId);
+  const {
+    data: { user },
+  } = await serviceClient.auth.admin.getUserById(userId);
   if (!user?.email) {
     console.warn("No email found for user", userId);
     return;
@@ -295,13 +319,18 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!pendingItems || pendingItems.length === 0) {
-      return new Response(JSON.stringify({ processed: 0, message: "No pending items" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ processed: 0, message: "No pending items" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    console.log(`Processing ${pendingItems.length} items from AI moderation queue`);
+    console.log(
+      `Processing ${pendingItems.length} items from AI moderation queue`,
+    );
 
     let processed = 0;
     let violations = 0;
@@ -310,11 +339,20 @@ Deno.serve(async (req: Request) => {
     for (const item of pendingItems as QueueItem[]) {
       try {
         const classification = await classifyContent(item.content_snapshot);
-        console.log(`Item ${item.id}: safe=${classification.safe}, category=${classification.category}, confidence=${classification.confidence}`);
+        console.log(
+          `Item ${item.id}: safe=${classification.safe}, category=${classification.category}, confidence=${classification.confidence}`,
+        );
 
-        if (!classification.safe && classification.confidence >= CONFIDENCE_AUTO_UNPUBLISH) {
+        if (
+          !classification.safe &&
+          classification.confidence >= CONFIDENCE_AUTO_UNPUBLISH
+        ) {
           // HIGH confidence violation → auto-unpublish
-          const title = await unpublishArtifact(serviceClient, item.item_type, item.item_id);
+          const title = await unpublishArtifact(
+            serviceClient,
+            item.item_type,
+            item.item_id,
+          );
 
           // Log moderation event
           await serviceClient.from("moderation_events").insert({
@@ -338,7 +376,7 @@ Deno.serve(async (req: Request) => {
             item.item_type,
             title,
             classification.category,
-            serviceClient
+            serviceClient,
           );
 
           // Update queue item
@@ -378,7 +416,8 @@ Deno.serve(async (req: Request) => {
           .update({
             status: newRetryCount >= MAX_RETRIES ? "error" : "pending",
             retry_count: newRetryCount,
-            ai_reason: itemErr instanceof Error ? itemErr.message : "Unknown error",
+            ai_reason:
+              itemErr instanceof Error ? itemErr.message : "Unknown error",
           })
           .eq("id", item.id);
 
@@ -386,7 +425,9 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`AI moderation complete: ${processed} processed, ${violations} violations, ${errors} errors`);
+    console.log(
+      `AI moderation complete: ${processed} processed, ${violations} violations, ${errors} errors`,
+    );
 
     return new Response(JSON.stringify({ processed, violations, errors }), {
       status: 200,

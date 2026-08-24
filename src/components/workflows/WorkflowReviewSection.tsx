@@ -19,8 +19,14 @@ export function WorkflowReviewSection({
   ratingAvg,
   ratingCount,
 }: WorkflowReviewSectionProps) {
-  const { reviews, userReview, loading, submitting, submitReview, deleteReview } =
-    useWorkflowReviews(workflowId, userId);
+  const {
+    reviews,
+    userReview,
+    loading,
+    submitting,
+    submitReview,
+    deleteReview,
+  } = useWorkflowReviews(workflowId, userId);
 
   return (
     <GenericReviewSection

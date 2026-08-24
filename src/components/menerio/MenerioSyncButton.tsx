@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CloudUpload, RefreshCw, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -28,15 +33,20 @@ export function MenerioSyncButton({
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please log in");
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("render-for-menerio", {
-        body: { artifact_type: artifactType, artifact_id: artifactId },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "render-for-menerio",
+        {
+          body: { artifact_type: artifactType, artifact_id: artifactId },
+        },
+      );
 
       if (error) {
         toast.error(data?.error || error.message || "Sync failed");
@@ -89,7 +99,11 @@ export function MenerioSyncButton({
           {menerioSynced && syncedAgo && (
             <TooltipContent>
               <p>Last synced: {syncedAgo}</p>
-              {menerioNoteId && <p className="text-xs text-muted-foreground">Note ID: {menerioNoteId}</p>}
+              {menerioNoteId && (
+                <p className="text-xs text-muted-foreground">
+                  Note ID: {menerioNoteId}
+                </p>
+              )}
             </TooltipContent>
           )}
         </Tooltip>

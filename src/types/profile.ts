@@ -6,9 +6,9 @@ export interface Profile {
   website: string | null;
   twitter: string | null;
   github: string | null;
-  role: 'user' | 'admin';
-  plan_type: 'free' | 'premium';
-  plan_source: 'internal' | 'stripe' | 'gifted' | 'test';
+  role: "user" | "admin";
+  plan_type: "free" | "premium";
+  plan_source: "internal" | "stripe" | "gifted" | "test";
   github_repo: string | null;
   github_branch: string | null;
   github_folder: string | null;

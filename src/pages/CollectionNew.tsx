@@ -16,7 +16,7 @@ export default function CollectionNew() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const createCollection = useCreateCollection();
-  
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
@@ -47,7 +47,7 @@ export default function CollectionNew() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
         <Button
           variant="ghost"

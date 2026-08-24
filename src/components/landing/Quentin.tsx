@@ -17,7 +17,11 @@ interface QuentinProps {
   dark?: boolean;
 }
 
-export function Quentin({ size = 320, glasses = false, dark = false }: QuentinProps) {
+export function Quentin({
+  size = 320,
+  glasses = false,
+  dark = false,
+}: QuentinProps) {
   const id = "querio";
   const c0 = "#E5E5FF";
   const c1 = dark ? "#A5A4FF" : "#9594FF";
@@ -52,7 +56,11 @@ export function Quentin({ size = 320, glasses = false, dark = false }: QuentinPr
             <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </radialGradient>
           <radialGradient id={`${id}-halo`} cx=".5" cy=".5" r=".5">
-            <stop offset="0%" stopColor={c2} stopOpacity={dark ? "0.45" : "0.35"} />
+            <stop
+              offset="0%"
+              stopColor={c2}
+              stopOpacity={dark ? "0.45" : "0.35"}
+            />
             <stop offset="100%" stopColor={c2} stopOpacity="0" />
           </radialGradient>
         </defs>
@@ -61,31 +69,89 @@ export function Quentin({ size = 320, glasses = false, dark = false }: QuentinPr
         <circle cx="120" cy="125" r="105" fill={`url(#${id}-halo)`} />
 
         {/* prompt-glyph sparkles */}
-        <g style={{ animation: "querioSparkle 2.4s ease-in-out infinite", transformOrigin: "47px 68px" }}
-           fontFamily="JetBrains Mono, monospace" fontWeight={700} fill={c1}>
-          <text x="40" y="74" fontSize="18">{">"}</text>
+        <g
+          style={{
+            animation: "querioSparkle 2.4s ease-in-out infinite",
+            transformOrigin: "47px 68px",
+          }}
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight={700}
+          fill={c1}
+        >
+          <text x="40" y="74" fontSize="18">
+            {">"}
+          </text>
         </g>
-        <g style={{ animation: "querioSparkle 2.4s ease-in-out infinite", animationDelay: "0.6s", transformOrigin: "197px 86px" }}
-           fontFamily="JetBrains Mono, monospace" fontWeight={700} fill={c1}>
-          <text x="190" y="92" fontSize="16">{"{"}</text>
-          <text x="200" y="92" fontSize="16">{"}"}</text>
+        <g
+          style={{
+            animation: "querioSparkle 2.4s ease-in-out infinite",
+            animationDelay: "0.6s",
+            transformOrigin: "197px 86px",
+          }}
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight={700}
+          fill={c1}
+        >
+          <text x="190" y="92" fontSize="16">
+            {"{"}
+          </text>
+          <text x="200" y="92" fontSize="16">
+            {"}"}
+          </text>
         </g>
-        <g style={{ animation: "querioSparkle 2.4s ease-in-out infinite", animationDelay: "1.2s", transformOrigin: "57px 168px" }}
-           fontFamily="JetBrains Mono, monospace" fontWeight={700} fill={c1}>
-          <text x="50" y="174" fontSize="16">{">"}</text>
+        <g
+          style={{
+            animation: "querioSparkle 2.4s ease-in-out infinite",
+            animationDelay: "1.2s",
+            transformOrigin: "57px 168px",
+          }}
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight={700}
+          fill={c1}
+        >
+          <text x="50" y="174" fontSize="16">
+            {">"}
+          </text>
         </g>
-        <g style={{ animation: "querioSparkle 2.4s ease-in-out infinite", animationDelay: "1.8s", transformOrigin: "189px 160px" }}
-           fontFamily="JetBrains Mono, monospace" fontWeight={700} fill={c1}>
-          <text x="186" y="166" fontSize="14">/</text>
+        <g
+          style={{
+            animation: "querioSparkle 2.4s ease-in-out infinite",
+            animationDelay: "1.8s",
+            transformOrigin: "189px 160px",
+          }}
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight={700}
+          fill={c1}
+        >
+          <text x="186" y="166" fontSize="14">
+            /
+          </text>
         </g>
 
         {/* floor shadow — breathing rx (3.5s) */}
-        <ellipse cx="120" cy="218" rx="48" ry="6" fill="#06121F" opacity={dark ? "0.55" : "0.35"}>
-          <animate attributeName="rx" values="48;38;48" dur="3.5s" repeatCount="indefinite" />
+        <ellipse
+          cx="120"
+          cy="218"
+          rx="48"
+          ry="6"
+          fill="#06121F"
+          opacity={dark ? "0.55" : "0.35"}
+        >
+          <animate
+            attributeName="rx"
+            values="48;38;48"
+            dur="3.5s"
+            repeatCount="indefinite"
+          />
         </ellipse>
 
         {/* body — cloud-ghost with 4 wavy "feet" */}
-        <g style={{ animation: "querioBob 4s ease-in-out infinite", transformOrigin: "50% 100%" }}>
+        <g
+          style={{
+            animation: "querioBob 4s ease-in-out infinite",
+            transformOrigin: "50% 100%",
+          }}
+        >
           <path
             d="M75 110
                C 75 70, 165 70, 165 110
@@ -102,7 +168,12 @@ export function Quentin({ size = 320, glasses = false, dark = false }: QuentinPr
           <ellipse cx="98" cy="92" rx="22" ry="14" fill={`url(#${id}-shine)`} />
 
           {/* eyes */}
-          <g style={{ animation: "querioBlink 5s steps(1) infinite", transformOrigin: "50% 50%" }}>
+          <g
+            style={{
+              animation: "querioBlink 5s steps(1) infinite",
+              transformOrigin: "50% 50%",
+            }}
+          >
             <ellipse cx="103" cy="125" rx="6" ry="9" fill="#0E121B" />
             <ellipse cx="137" cy="125" rx="6" ry="9" fill="#0E121B" />
             <circle cx="105" cy="121" r="2.2" fill="#FFFFFF" />
@@ -111,14 +182,45 @@ export function Quentin({ size = 320, glasses = false, dark = false }: QuentinPr
 
           {/* round wireframe glasses */}
           {glasses && (
-            <g fill="none" stroke="#1A1830" strokeWidth="2.4" strokeLinecap="round">
-              <circle cx="103" cy="125" r="13" fill="#FFFFFF" fillOpacity="0.18" />
-              <circle cx="137" cy="125" r="13" fill="#FFFFFF" fillOpacity="0.18" />
+            <g
+              fill="none"
+              stroke="#1A1830"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            >
+              <circle
+                cx="103"
+                cy="125"
+                r="13"
+                fill="#FFFFFF"
+                fillOpacity="0.18"
+              />
+              <circle
+                cx="137"
+                cy="125"
+                r="13"
+                fill="#FFFFFF"
+                fillOpacity="0.18"
+              />
               <path d="M116 125 Q 120 122 124 125" />
               <path d="M90 124 L 84 122" />
               <path d="M150 124 L 156 122" />
-              <circle cx="99" cy="120" r="1.6" fill="#FFFFFF" stroke="none" opacity="0.9" />
-              <circle cx="133" cy="120" r="1.6" fill="#FFFFFF" stroke="none" opacity="0.9" />
+              <circle
+                cx="99"
+                cy="120"
+                r="1.6"
+                fill="#FFFFFF"
+                stroke="none"
+                opacity="0.9"
+              />
+              <circle
+                cx="133"
+                cy="120"
+                r="1.6"
+                fill="#FFFFFF"
+                stroke="none"
+                opacity="0.9"
+              />
             </g>
           )}
 
@@ -133,7 +235,14 @@ export function Quentin({ size = 320, glasses = false, dark = false }: QuentinPr
 
           {/* white cheeks */}
           <ellipse cx="93" cy="142" rx="5" ry="3" fill="#FFFFFF" opacity=".7" />
-          <ellipse cx="147" cy="142" rx="5" ry="3" fill="#FFFFFF" opacity=".7" />
+          <ellipse
+            cx="147"
+            cy="142"
+            rx="5"
+            ry="3"
+            fill="#FFFFFF"
+            opacity=".7"
+          />
         </g>
       </svg>
 

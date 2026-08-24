@@ -19,7 +19,12 @@
 
 import { test, expect } from "@playwright/test";
 import { ANON_KEY, REST_URL } from "./helpers/env";
-import { hasManagementToken, restAsService, restAsUser, signInTestUser } from "./helpers/api";
+import {
+  hasManagementToken,
+  restAsService,
+  restAsUser,
+  signInTestUser,
+} from "./helpers/api";
 
 test.describe("Activity is private, and the app now says so", () => {
   test("a logged-out visitor sees no activity at all", async () => {
@@ -36,10 +41,13 @@ test.describe("Activity is private, and the app now says so", () => {
 
   test("a logged-in user sees only their own events", async () => {
     const { userId } = await signInTestUser();
-    const res = await restAsUser<Array<{ actor_id: string; team_id: string | null }>>(
-      "activity_events?select=actor_id,team_id&limit=100",
-    );
-    expect(res.ok, `reading activity failed: ${JSON.stringify(res.error)}`).toBe(true);
+    const res = await restAsUser<
+      Array<{ actor_id: string; team_id: string | null }>
+    >("activity_events?select=actor_id,team_id&limit=100");
+    expect(
+      res.ok,
+      `reading activity failed: ${JSON.stringify(res.error)}`,
+    ).toBe(true);
 
     for (const row of res.data ?? []) {
       const mine = row.actor_id === userId;
@@ -52,7 +60,9 @@ test.describe("Activity is private, and the app now says so", () => {
   });
 
   test("there are events to be wrong about, so the checks above mean something", async () => {
-    const res = await restAsService<Array<{ id: string }>>("activity_events?select=id&limit=5");
+    const res = await restAsService<Array<{ id: string }>>(
+      "activity_events?select=id&limit=5",
+    );
     expect(
       (res.data ?? []).length,
       "the table is empty, so nothing above proves anything",
@@ -69,8 +79,13 @@ test.describe("Activity is private, and the app now says so", () => {
     expect(main, "no main bundle in the published HTML").toBeTruthy();
 
     const mainJs = await (await fetch(`https://querino.ai${main}`)).text();
-    const chunks = [...new Set(mainJs.match(/Activity[A-Za-z]*-[A-Za-z0-9_-]+\.js/g) ?? [])];
-    expect(chunks.length, "the site names no Activity chunk, so this checks nothing").toBeGreaterThan(0);
+    const chunks = [
+      ...new Set(mainJs.match(/Activity[A-Za-z]*-[A-Za-z0-9_-]+\.js/g) ?? []),
+    ];
+    expect(
+      chunks.length,
+      "the site names no Activity chunk, so this checks nothing",
+    ).toBeGreaterThan(0);
 
     let searched = 0;
     for (const chunk of chunks) {
@@ -83,17 +98,26 @@ test.describe("Activity is private, and the app now says so", () => {
         `${chunk} still promises a public activity feed that row-level security has never allowed`,
       ).toBe(false);
     }
-    expect(searched, "none of the Activity chunks could be fetched").toBeGreaterThan(0);
+    expect(
+      searched,
+      "none of the Activity chunks could be fetched",
+    ).toBeGreaterThan(0);
   });
 });
 
 test.describe("A coach conversation belongs to someone", () => {
   test("no message is ownerless", async () => {
-    for (const table of ["prompt_coach_messages", "prompt_kit_coach_messages"]) {
+    for (const table of [
+      "prompt_coach_messages",
+      "prompt_kit_coach_messages",
+    ]) {
       const res = await restAsService<Array<{ id: number }>>(
         `${table}?select=id&user_id=is.null`,
       );
-      expect(res.ok, `reading ${table} failed: ${JSON.stringify(res.error)}`).toBe(true);
+      expect(
+        res.ok,
+        `reading ${table} failed: ${JSON.stringify(res.error)}`,
+      ).toBe(true);
       expect(
         (res.data ?? []).length,
         `${table} holds conversations that their own authors cannot read`,
@@ -104,7 +128,10 @@ test.describe("A coach conversation belongs to someone", () => {
   test("an ownerless message cannot be written", async () => {
     const res = await restAsService("prompt_coach_messages", {
       method: "POST",
-      body: { session_id: "security-suite-probe", message: { type: "human", content: "probe" } },
+      body: {
+        session_id: "security-suite-probe",
+        message: { type: "human", content: "probe" },
+      },
     });
     expect(
       res.ok,
@@ -120,12 +147,17 @@ test.describe("A coach conversation belongs to someone", () => {
     );
     expect(res.ok).toBe(true);
     for (const row of res.data ?? []) {
-      expect(row.user_id, "somebody else's coach conversation came back").toBe(userId);
+      expect(row.user_id, "somebody else's coach conversation came back").toBe(
+        userId,
+      );
     }
   });
 
   test("deleting an account takes its coach history with it", async () => {
-    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
+    test.skip(
+      !hasManagementToken(),
+      "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
+    );
     // Checked as a constraint rather than by deleting an account: the cascade
     // is the mechanism, and nothing else in the codebase cleans these tables.
     const res = await restAsService<Array<{ count: number }>>(

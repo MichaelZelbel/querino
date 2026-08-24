@@ -52,18 +52,20 @@ export function PromptForm({
   const { user } = useAuthContext();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
-    initialData?.description || ""
+    initialData?.description || "",
   );
   const [content, setContent] = useState(initialData?.content || "");
   const [category, setCategory] = useState(initialData?.category || "");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [isPublic, setIsPublic] = useState(initialData?.is_public ?? true);
-  const [language, setLanguage] = useState(initialData?.language || DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(
+    initialData?.language || DEFAULT_LANGUAGE,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // AI metadata suggestion state
-  
+
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
@@ -78,16 +80,25 @@ export function PromptForm({
       is_public: isPublic,
       language,
     });
-  }, [title, description, content, category, tags, isPublic, language, onChange]);
+  }, [
+    title,
+    description,
+    content,
+    category,
+    tags,
+    isPublic,
+    language,
+    onChange,
+  ]);
 
   const normalizeTag = (tag: string): string => {
     return tag
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9\-\s]/g, '') // Remove special chars except hyphens
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Remove consecutive hyphens
-      .replace(/^-|-$/g, ''); // Trim leading/trailing hyphens
+      .replace(/[^a-z0-9\-\s]/g, "") // Remove special chars except hyphens
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Remove consecutive hyphens
+      .replace(/^-|-$/g, ""); // Trim leading/trailing hyphens
   };
 
   const handleAddTag = () => {
@@ -134,26 +145,25 @@ export function PromptForm({
 
       const result = response.data;
 
-      
       // Populate form fields with suggestions (always overwrite)
       if (result.title) {
         setTitle(result.title);
       }
-      
+
       if (result.description) {
         setDescription(result.description);
       }
-      
+
       // Set category if provided and valid
       if (result.category) {
-        const matchedCategory = categoryOptions.find(cat => 
-          cat.id.toLowerCase() === result.category.toLowerCase()
+        const matchedCategory = categoryOptions.find(
+          (cat) => cat.id.toLowerCase() === result.category.toLowerCase(),
         );
         if (matchedCategory) {
           setCategory(matchedCategory.id);
         }
       }
-      
+
       // Replace tags with suggested tags
       if (result.tags && Array.isArray(result.tags)) {
         const newTags = result.tags
@@ -253,7 +263,7 @@ export function PromptForm({
             </>
           )}
         </Button>
-        
+
         {metadataError && (
           <p className="text-sm text-destructive">{metadataError}</p>
         )}
@@ -297,7 +307,9 @@ export function PromptForm({
       <div className="space-y-2">
         <Label htmlFor="category">Category *</Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+          <SelectTrigger
+            className={errors.category ? "border-destructive" : ""}
+          >
             <SelectValue placeholder="Select a category" />
           </SelectTrigger>
           <SelectContent>
@@ -353,10 +365,7 @@ export function PromptForm({
             ))}
           </div>
         )}
-        <p className="text-xs text-muted-foreground">
-          {tags.length}/10 tags
-        </p>
-
+        <p className="text-xs text-muted-foreground">{tags.length}/10 tags</p>
       </div>
 
       {/* Visibility Toggle */}

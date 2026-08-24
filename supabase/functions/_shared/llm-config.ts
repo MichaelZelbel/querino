@@ -6,7 +6,12 @@
 // chooses among them as a pure function. Menerio's version does both at once
 // and therefore cannot be tested without a database.
 
-import { DEFAULT_PROVIDER, DEFAULT_MODEL, type Provider, type Tier } from "./llm-registry.ts";
+import {
+  DEFAULT_PROVIDER,
+  DEFAULT_MODEL,
+  type Provider,
+  type Tier,
+} from "./llm-registry.ts";
 
 export interface ConfigRow {
   call_site: string;
@@ -36,7 +41,8 @@ export interface EffectiveConfig {
   max_tokens: number | null;
 }
 
-export type ConfigSource = "db-free" | "db-premium" | "db-default" | "fallback-default";
+export type ConfigSource =
+  "db-free" | "db-premium" | "db-default" | "fallback-default";
 
 export interface ChatMessageLike {
   role: "system" | "user" | "assistant" | "tool";
@@ -52,7 +58,10 @@ export interface ChatMessageLike {
 export interface DbLike {
   from(table: string): {
     select(columns: string): {
-      eq(column: string, value: string): PromiseLike<{
+      eq(
+        column: string,
+        value: string,
+      ): PromiseLike<{
         data: unknown[] | null;
         error: { message: string } | null;
       }>;
@@ -77,7 +86,8 @@ export function pickConfig(
   defaults: CallDefaults,
 ): { effective: EffectiveConfig; source: ConfigSource } {
   const enabled = rows.filter((r) => r.enabled);
-  const exact = tier === "default" ? undefined : enabled.find((r) => r.tier === tier);
+  const exact =
+    tier === "default" ? undefined : enabled.find((r) => r.tier === tier);
   const chosen = exact ?? enabled.find((r) => r.tier === "default");
 
   if (!chosen) {
@@ -85,7 +95,9 @@ export function pickConfig(
       effective: {
         provider: defaults.provider,
         model: defaults.model,
-        system_prompt: usable(defaults.systemPrompt) ? defaults.systemPrompt! : null,
+        system_prompt: usable(defaults.systemPrompt)
+          ? defaults.systemPrompt!
+          : null,
         temperature: defaults.temperature ?? null,
         max_tokens: defaults.maxTokens ?? null,
       },
@@ -101,7 +113,9 @@ export function pickConfig(
       // cleared the box, which is "use the code default", not "send nothing".
       system_prompt: usable(chosen.system_prompt)
         ? chosen.system_prompt
-        : (usable(defaults.systemPrompt) ? defaults.systemPrompt! : null),
+        : usable(defaults.systemPrompt)
+          ? defaults.systemPrompt!
+          : null,
       temperature: chosen.temperature ?? defaults.temperature ?? null,
       max_tokens: chosen.max_tokens ?? defaults.maxTokens ?? null,
     },
@@ -114,7 +128,8 @@ export function pickConfig(
  * because the safe mistake is giving someone the cheaper model, not the dearer.
  */
 export function mapRoleToTier(role: string | null | undefined): Tier {
-  if (role === "premium" || role === "premium_gift" || role === "admin") return "premium";
+  if (role === "premium" || role === "premium_gift" || role === "admin")
+    return "premium";
   return "free";
 }
 
@@ -148,7 +163,9 @@ export function applySystemPrompt<T extends ChatMessageLike>(
   if (!usable(systemPrompt)) return messages;
   const hasSystem = messages.some((m) => m.role === "system");
   if (hasSystem) {
-    return messages.map((m) => (m.role === "system" ? { ...m, content: systemPrompt! } : m));
+    return messages.map((m) =>
+      m.role === "system" ? { ...m, content: systemPrompt! } : m,
+    );
   }
   return [{ role: "system", content: systemPrompt! } as T, ...messages];
 }
@@ -164,7 +181,10 @@ export function __clearConfigCache(): void {
 }
 
 /** Every tier row for one call site, in one query. At most three rows. */
-export async function loadConfigRows(db: DbLike, callSite: string): Promise<ConfigRow[]> {
+export async function loadConfigRows(
+  db: DbLike,
+  callSite: string,
+): Promise<ConfigRow[]> {
   const cached = configCache.get(callSite);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.rows;
 
@@ -189,15 +209,23 @@ export async function loadConfigRows(db: DbLike, callSite: string): Promise<Conf
 }
 
 /** The caller's tier, from user_roles. No user id means a machine caller. */
-export async function resolveTier(db: DbLike, userId: string | null): Promise<Tier> {
+export async function resolveTier(
+  db: DbLike,
+  userId: string | null,
+): Promise<Tier> {
   if (!userId) return "default";
 
   const cached = tierCache.get(userId);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.tier;
 
-  const { data, error } = await db.from("user_roles").select("role").eq("user_id", userId);
+  const { data, error } = await db
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
   if (error) {
-    console.warn(`[llm-config] role lookup failed for ${userId}: ${error.message}`);
+    console.warn(
+      `[llm-config] role lookup failed for ${userId}: ${error.message}`,
+    );
     return "free";
   }
   const first = (data ?? [])[0] as { role?: string } | undefined;

@@ -43,19 +43,27 @@ for (const f of common) {
   const pa = join(dirA, f);
   const pb = join(dirB, f);
   if (hash(pa) !== hash(pb)) {
-    differing.push({ file: f, bytesA: statSync(pa).size, bytesB: statSync(pb).size });
+    differing.push({
+      file: f,
+      bytesA: statSync(pa).size,
+      bytesB: statSync(pb).size,
+    });
   }
 }
 
 console.log(`${aName} -> ${bName}`);
-console.log(`  identical: ${common.length - differing.length}/${common.length}`);
+console.log(
+  `  identical: ${common.length - differing.length}/${common.length}`,
+);
 if (onlyA.length) console.log(`  only in ${aName}: ${onlyA.join(", ")}`);
 if (onlyB.length) console.log(`  only in ${bName}: ${onlyB.join(", ")}`);
 if (differing.length) {
   console.log(`  differing: ${differing.length}`);
   for (const d of differing) {
     const delta = d.bytesB - d.bytesA;
-    console.log(`    ${d.file}  ${d.bytesA} -> ${d.bytesB} bytes (${delta >= 0 ? "+" : ""}${delta})`);
+    console.log(
+      `    ${d.file}  ${d.bytesA} -> ${d.bytesB} bytes (${delta >= 0 ? "+" : ""}${delta})`,
+    );
   }
 }
 process.exitCode = differing.length || onlyA.length || onlyB.length ? 1 : 0;

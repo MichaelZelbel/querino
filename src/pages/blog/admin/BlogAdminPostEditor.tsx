@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBlogPost, useCreateBlogPost, useUpdateBlogPost } from "@/hooks/useBlogPosts";
+import {
+  useBlogPost,
+  useCreateBlogPost,
+  useUpdateBlogPost,
+} from "@/hooks/useBlogPosts";
 import { useBlogCategories } from "@/hooks/useBlogCategories";
 import { useBlogTags } from "@/hooks/useBlogTags";
 import { useAutosave } from "@/hooks/useAutosave";
@@ -27,40 +31,40 @@ import type { BlogPostFormData, BlogPostStatus } from "@/types/blog";
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .trim();
 }
 
 export default function BlogAdminPostEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isNew = !id || id === 'new';
+  const isNew = !id || id === "new";
 
-  const { data: post, isLoading: postLoading } = useBlogPost(id || '');
+  const { data: post, isLoading: postLoading } = useBlogPost(id || "");
   const { data: categories } = useBlogCategories();
   const { data: tags } = useBlogTags();
   const createMutation = useCreateBlogPost();
   const updateMutation = useUpdateBlogPost();
 
   const [formData, setFormData] = useState<BlogPostFormData>({
-    title: '',
-    slug: '',
-    content: '',
-    excerpt: '',
-    status: 'draft',
+    title: "",
+    slug: "",
+    content: "",
+    excerpt: "",
+    status: "draft",
     published_at: null,
     featured_image_id: null,
-    seo_title: '',
-    seo_description: '',
-    og_image_url: '',
+    seo_title: "",
+    seo_description: "",
+    og_image_url: "",
     category_ids: [],
     tag_ids: [],
   });
 
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const [previewTab, setPreviewTab] = useState<'edit' | 'preview'>('edit');
+  const [previewTab, setPreviewTab] = useState<"edit" | "preview">("edit");
 
   // Load post data
   useEffect(() => {
@@ -68,16 +72,16 @@ export default function BlogAdminPostEditor() {
       setFormData({
         title: post.title,
         slug: post.slug,
-        content: post.content || '',
-        excerpt: post.excerpt || '',
+        content: post.content || "",
+        excerpt: post.excerpt || "",
         status: post.status as BlogPostStatus,
         published_at: post.published_at,
         featured_image_id: post.featured_image_id,
-        seo_title: post.seo_title || '',
-        seo_description: post.seo_description || '',
-        og_image_url: post.og_image_url || '',
-        category_ids: post.categories?.map(c => c.id) || [],
-        tag_ids: post.tags?.map(t => t.id) || [],
+        seo_title: post.seo_title || "",
+        seo_description: post.seo_description || "",
+        og_image_url: post.og_image_url || "",
+        category_ids: post.categories?.map((c) => c.id) || [],
+        tag_ids: post.tags?.map((t) => t.id) || [],
       });
       setSlugManuallyEdited(true);
     }
@@ -86,22 +90,22 @@ export default function BlogAdminPostEditor() {
   // Auto-generate slug from title
   useEffect(() => {
     if (!slugManuallyEdited && formData.title) {
-      setFormData(prev => ({ ...prev, slug: generateSlug(prev.title) }));
+      setFormData((prev) => ({ ...prev, slug: generateSlug(prev.title) }));
     }
   }, [formData.title, slugManuallyEdited]);
 
   // Autosave for drafts
   const autosaveData = useMemo(() => formData, [formData]);
-  
+
   const { status: autosaveStatus, resetLastSaved } = useAutosave({
     data: autosaveData,
     onSave: async (data) => {
-      if (!isNew && post && data.status === 'draft') {
+      if (!isNew && post && data.status === "draft") {
         await updateMutation.mutateAsync({ id: post.id, data });
       }
     },
     delay: 3000,
-    enabled: !isNew && formData.status === 'draft',
+    enabled: !isNew && formData.status === "draft",
   });
 
   // Initialize autosave with loaded data
@@ -115,7 +119,10 @@ export default function BlogAdminPostEditor() {
     const dataToSave = {
       ...formData,
       status: newStatus || formData.status,
-      published_at: newStatus === 'published' ? new Date().toISOString() : formData.published_at,
+      published_at:
+        newStatus === "published"
+          ? new Date().toISOString()
+          : formData.published_at,
     };
 
     if (isNew) {
@@ -128,24 +135,27 @@ export default function BlogAdminPostEditor() {
     }
   };
 
-  const updateField = <K extends keyof BlogPostFormData>(key: K, value: BlogPostFormData[K]) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+  const updateField = <K extends keyof BlogPostFormData>(
+    key: K,
+    value: BlogPostFormData[K],
+  ) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const toggleCategory = (catId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       category_ids: prev.category_ids.includes(catId)
-        ? prev.category_ids.filter(id => id !== catId)
+        ? prev.category_ids.filter((id) => id !== catId)
         : [...prev.category_ids, catId],
     }));
   };
 
   const toggleTag = (tagId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       tag_ids: prev.tag_ids.includes(tagId)
-        ? prev.tag_ids.filter(id => id !== tagId)
+        ? prev.tag_ids.filter((id) => id !== tagId)
         : [...prev.tag_ids, tagId],
     }));
   };
@@ -164,25 +174,32 @@ export default function BlogAdminPostEditor() {
 
   return (
     <BlogAdminLayout
-      title={isNew ? 'New Post' : 'Edit Post'}
+      title={isNew ? "New Post" : "Edit Post"}
       actions={
         <div className="flex items-center gap-3">
-          {!isNew && formData.status === 'draft' && (
+          {!isNew && formData.status === "draft" && (
             <AutosaveIndicator status={autosaveStatus} />
           )}
-          <Button variant="outline" onClick={() => navigate('/blog/admin/posts')}>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/blog/admin/posts")}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          {formData.status !== 'published' && (
-            <Button variant="outline" onClick={() => handleSave('draft')} disabled={isSaving}>
+          {formData.status !== "published" && (
+            <Button
+              variant="outline"
+              onClick={() => handleSave("draft")}
+              disabled={isSaving}
+            >
               <Save className="h-4 w-4 mr-2" />
               Save Draft
             </Button>
           )}
-          <Button onClick={() => handleSave('published')} disabled={isSaving}>
+          <Button onClick={() => handleSave("published")} disabled={isSaving}>
             {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {formData.status === 'published' ? 'Update' : 'Publish'}
+            {formData.status === "published" ? "Update" : "Publish"}
           </Button>
         </div>
       }
@@ -196,7 +213,7 @@ export default function BlogAdminPostEditor() {
             <Input
               id="title"
               value={formData.title}
-              onChange={(e) => updateField('title', e.target.value)}
+              onChange={(e) => updateField("title", e.target.value)}
               placeholder="Enter post title..."
               className="text-lg"
             />
@@ -206,13 +223,15 @@ export default function BlogAdminPostEditor() {
           <div className="space-y-2">
             <Label htmlFor="slug">Slug</Label>
             <div className="flex gap-2">
-              <span className="flex items-center text-sm text-muted-foreground">/blog/</span>
+              <span className="flex items-center text-sm text-muted-foreground">
+                /blog/
+              </span>
               <Input
                 id="slug"
                 value={formData.slug}
                 onChange={(e) => {
                   setSlugManuallyEdited(true);
-                  updateField('slug', e.target.value);
+                  updateField("slug", e.target.value);
                 }}
                 placeholder="post-slug"
               />
@@ -223,9 +242,14 @@ export default function BlogAdminPostEditor() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Content</Label>
-              <Tabs value={previewTab} onValueChange={(v) => setPreviewTab(v as 'edit' | 'preview')}>
+              <Tabs
+                value={previewTab}
+                onValueChange={(v) => setPreviewTab(v as "edit" | "preview")}
+              >
                 <TabsList className="h-8">
-                  <TabsTrigger value="edit" className="text-xs px-3">Edit</TabsTrigger>
+                  <TabsTrigger value="edit" className="text-xs px-3">
+                    Edit
+                  </TabsTrigger>
                   <TabsTrigger value="preview" className="text-xs px-3">
                     <Eye className="h-3 w-3 mr-1" />
                     Preview
@@ -233,11 +257,11 @@ export default function BlogAdminPostEditor() {
                 </TabsList>
               </Tabs>
             </div>
-            
-            {previewTab === 'edit' ? (
+
+            {previewTab === "edit" ? (
               <Textarea
                 value={formData.content}
-                onChange={(e) => updateField('content', e.target.value)}
+                onChange={(e) => updateField("content", e.target.value)}
                 placeholder="Write your content in Markdown..."
                 className="min-h-[400px] font-mono text-sm"
               />
@@ -246,7 +270,9 @@ export default function BlogAdminPostEditor() {
                 {formData.content ? (
                   <ReactMarkdown>{formData.content}</ReactMarkdown>
                 ) : (
-                  <p className="text-muted-foreground">Nothing to preview yet...</p>
+                  <p className="text-muted-foreground">
+                    Nothing to preview yet...
+                  </p>
                 )}
               </div>
             )}
@@ -258,7 +284,7 @@ export default function BlogAdminPostEditor() {
             <Textarea
               id="excerpt"
               value={formData.excerpt}
-              onChange={(e) => updateField('excerpt', e.target.value)}
+              onChange={(e) => updateField("excerpt", e.target.value)}
               placeholder="Brief summary of the post..."
               className="min-h-[80px]"
             />
@@ -277,7 +303,9 @@ export default function BlogAdminPostEditor() {
                 <Label>Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(v) => updateField('status', v as BlogPostStatus)}
+                  onValueChange={(v) =>
+                    updateField("status", v as BlogPostStatus)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -290,13 +318,20 @@ export default function BlogAdminPostEditor() {
                 </Select>
               </div>
 
-              {formData.status === 'scheduled' && (
+              {formData.status === "scheduled" && (
                 <div className="space-y-2">
                   <Label>Publish Date</Label>
                   <Input
                     type="datetime-local"
-                    value={formData.published_at?.slice(0, 16) || ''}
-                    onChange={(e) => updateField('published_at', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    value={formData.published_at?.slice(0, 16) || ""}
+                    onChange={(e) =>
+                      updateField(
+                        "published_at",
+                        e.target.value
+                          ? new Date(e.target.value).toISOString()
+                          : null,
+                      )
+                    }
                   />
                 </div>
               )}
@@ -318,14 +353,19 @@ export default function BlogAdminPostEditor() {
                         checked={formData.category_ids.includes(cat.id)}
                         onCheckedChange={() => toggleCategory(cat.id)}
                       />
-                      <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
+                      <label
+                        htmlFor={`cat-${cat.id}`}
+                        className="text-sm cursor-pointer"
+                      >
                         {cat.name}
                       </label>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No categories yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No categories yet.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -345,8 +385,8 @@ export default function BlogAdminPostEditor() {
                       onClick={() => toggleTag(tag.id)}
                       className={`px-2 py-1 text-xs rounded-full border transition-colors ${
                         formData.tag_ids.includes(tag.id)
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'border-border hover:border-primary/50'
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/50"
                       }`}
                     >
                       {tag.name}
@@ -370,8 +410,8 @@ export default function BlogAdminPostEditor() {
                 <Input
                   id="seo_title"
                   value={formData.seo_title}
-                  onChange={(e) => updateField('seo_title', e.target.value)}
-                  placeholder={formData.title || 'SEO title...'}
+                  onChange={(e) => updateField("seo_title", e.target.value)}
+                  placeholder={formData.title || "SEO title..."}
                 />
                 <p className="text-xs text-muted-foreground">
                   {(formData.seo_title || formData.title).length}/60 characters
@@ -383,7 +423,9 @@ export default function BlogAdminPostEditor() {
                 <Textarea
                   id="seo_description"
                   value={formData.seo_description}
-                  onChange={(e) => updateField('seo_description', e.target.value)}
+                  onChange={(e) =>
+                    updateField("seo_description", e.target.value)
+                  }
                   placeholder="Brief description for search engines..."
                   className="min-h-[60px]"
                 />
@@ -397,7 +439,7 @@ export default function BlogAdminPostEditor() {
                 <Input
                   id="og_image_url"
                   value={formData.og_image_url}
-                  onChange={(e) => updateField('og_image_url', e.target.value)}
+                  onChange={(e) => updateField("og_image_url", e.target.value)}
                   placeholder="https://..."
                 />
               </div>

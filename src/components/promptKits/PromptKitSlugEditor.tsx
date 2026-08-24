@@ -3,7 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Pencil, Check, X, Loader2, Link as LinkIcon, AlertTriangle } from "lucide-react";
+import {
+  Pencil,
+  Check,
+  X,
+  Loader2,
+  Link as LinkIcon,
+  AlertTriangle,
+} from "lucide-react";
 import { useUpdatePromptKitSlug } from "@/hooks/useUpdatePromptKitSlug";
 import { toast } from "sonner";
 import { generateSlug } from "@/hooks/useGenerateSlug";
@@ -15,7 +22,12 @@ interface PromptKitSlugEditorProps {
   onSlugChanged: (newSlug: string) => void;
 }
 
-export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugChanged }: PromptKitSlugEditorProps) {
+export function PromptKitSlugEditor({
+  promptKitId,
+  currentSlug,
+  userId,
+  onSlugChanged,
+}: PromptKitSlugEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [slugInput, setSlugInput] = useState(currentSlug);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +92,10 @@ export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugCh
                 </span>
                 <Input
                   value={slugInput}
-                  onChange={(e) => { setSlugInput(e.target.value); setError(null); }}
+                  onChange={(e) => {
+                    setSlugInput(e.target.value);
+                    setError(null);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSave();
                     if (e.key === "Escape") handleCancel();
@@ -91,10 +106,26 @@ export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugCh
                 />
               </div>
             </div>
-            <Button size="icon" variant="default" onClick={handleSave} disabled={updating} aria-label="Save slug">
-              {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            <Button
+              size="icon"
+              variant="default"
+              onClick={handleSave}
+              disabled={updating}
+              aria-label="Save slug"
+            >
+              {updating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
             </Button>
-            <Button size="icon" variant="outline" onClick={handleCancel} disabled={updating} aria-label="Cancel">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={updating}
+              aria-label="Cancel"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -102,7 +133,8 @@ export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugCh
           <Alert variant="default" className="border-warning/50 bg-warning/10">
             <AlertTriangle className="h-4 w-4 text-warning" />
             <AlertDescription className="text-sm text-muted-foreground">
-              Changing this slug will update the public URL. Old links will redirect automatically.
+              Changing this slug will update the public URL. Old links will
+              redirect automatically.
             </AlertDescription>
           </Alert>
 
@@ -112,16 +144,25 @@ export function PromptKitSlugEditor({ promptKitId, currentSlug, userId, onSlugCh
         <div className="flex items-center gap-2">
           <div className="flex-1 rounded-md border border-input bg-muted/30 px-3 py-2">
             <span className="text-sm text-muted-foreground">/prompt-kits/</span>
-            <span className="text-sm font-medium text-foreground">{currentSlug}</span>
+            <span className="text-sm font-medium text-foreground">
+              {currentSlug}
+            </span>
           </div>
-          <Button size="icon" variant="ghost" onClick={handleStartEdit} title="Edit slug" aria-label="Edit slug">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleStartEdit}
+            title="Edit slug"
+            aria-label="Edit slug"
+          >
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
       )}
 
       <p className="text-xs text-muted-foreground">
-        The slug is the URL-friendly identifier for this prompt kit. It won't change when you edit the title.
+        The slug is the URL-friendly identifier for this prompt kit. It won't
+        change when you edit the title.
       </p>
     </div>
   );

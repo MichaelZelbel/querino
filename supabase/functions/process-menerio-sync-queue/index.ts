@@ -66,14 +66,22 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (!integration) {
-          await markCompleted(adminClient, item.id, "skipped: no active auto-sync integration");
+          await markCompleted(
+            adminClient,
+            item.id,
+            "skipped: no active auto-sync integration",
+          );
           processed++;
           continue;
         }
 
         // Check if artifact_type is in sync_artifact_types
         if (!integration.sync_artifact_types?.includes(item.artifact_type)) {
-          await markCompleted(adminClient, item.id, "skipped: artifact type not in sync list");
+          await markCompleted(
+            adminClient,
+            item.id,
+            "skipped: artifact type not in sync list",
+          );
           processed++;
           continue;
         }
@@ -88,7 +96,10 @@ Deno.serve(async (req) => {
 
         await adminClient
           .from("menerio_sync_queue")
-          .update({ status: "completed", processed_at: new Date().toISOString() })
+          .update({
+            status: "completed",
+            processed_at: new Date().toISOString(),
+          })
           .eq("id", item.id);
 
         processed++;
@@ -96,7 +107,11 @@ Deno.serve(async (req) => {
         const errMsg = err instanceof Error ? err.message : "Unknown error";
         await adminClient
           .from("menerio_sync_queue")
-          .update({ status: "failed", error_message: errMsg, processed_at: new Date().toISOString() })
+          .update({
+            status: "failed",
+            error_message: errMsg,
+            processed_at: new Date().toISOString(),
+          })
           .eq("id", item.id);
         failed++;
       }
@@ -113,14 +128,17 @@ Deno.serve(async (req) => {
     return json({ processed, failed, total: queue.length });
   } catch (err) {
     console.error("process-menerio-sync-queue error:", err);
-    return json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+    return json(
+      { error: err instanceof Error ? err.message : "Unknown error" },
+      500,
+    );
   }
 });
 
 async function handleSync(
   adminClient: ReturnType<typeof createClient>,
   integration: any,
-  item: any
+  item: any,
 ) {
   const tableName = tableFor(item.artifact_type);
 
@@ -173,7 +191,7 @@ async function handleSync(
 async function handleDelete(
   adminClient: ReturnType<typeof createClient>,
   integration: any,
-  item: any
+  item: any,
 ) {
   // Send a "deleted" marker to Menerio
   const notePayload = {
@@ -215,7 +233,8 @@ function buildNotePayload(artifactType: string, artifact: any) {
     ...(artifact.category ? [artifact.category] : []),
   ].filter(Boolean);
 
-  const isPublic = artifactType === "prompt" ? artifact.is_public : artifact.published;
+  const isPublic =
+    artifactType === "prompt" ? artifact.is_public : artifact.published;
 
   const structuredFields: Record<string, unknown> = {
     artifact_type: artifactType,
@@ -259,38 +278,47 @@ function buildBody(type: string, a: Record<string, unknown>): string {
   switch (type) {
     case "prompt":
       lines.push(
-        `\n**Typ:** Prompt`, `**Kategorie:** ${a.category || "—"}`,
-        `**Tags:** ${tagsStr}`, `**Öffentlich:** ${publicLabel}`,
-        `**Bewertung:** ${ratingStr}`, `**Kopien:** ${a.copies_count || 0}`,
+        `\n**Typ:** Prompt`,
+        `**Kategorie:** ${a.category || "—"}`,
+        `**Tags:** ${tagsStr}`,
+        `**Öffentlich:** ${publicLabel}`,
+        `**Bewertung:** ${ratingStr}`,
+        `**Kopien:** ${a.copies_count || 0}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Prompt-Text\n\n${a.content || "—"}`
+        `\n## Prompt-Text\n\n${a.content || "—"}`,
       );
       break;
     case "skill":
       lines.push(
-        `\n**Typ:** Skill`, `**Kategorie:** ${a.category || "—"}`,
-        `**Tags:** ${tagsStr}`, `**Veröffentlicht:** ${publicLabel}`,
+        `\n**Typ:** Skill`,
+        `**Kategorie:** ${a.category || "—"}`,
+        `**Tags:** ${tagsStr}`,
+        `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Skill-Inhalt\n\n${a.content || "—"}`
+        `\n## Skill-Inhalt\n\n${a.content || "—"}`,
       );
       break;
     case "prompt_kit":
       lines.push(
-        `\n**Typ:** Prompt Kit`, `**Kategorie:** ${a.category || "—"}`,
-        `**Tags:** ${tagsStr}`, `**Veröffentlicht:** ${publicLabel}`,
+        `\n**Typ:** Prompt Kit`,
+        `**Kategorie:** ${a.category || "—"}`,
+        `**Tags:** ${tagsStr}`,
+        `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Prompt-Kit-Inhalt\n\n${a.content || "—"}`
+        `\n## Prompt-Kit-Inhalt\n\n${a.content || "—"}`,
       );
       break;
     case "workflow":
       lines.push(
-        `\n**Typ:** Workflow`, `**Kategorie:** ${a.category || "—"}`,
-        `**Tags:** ${tagsStr}`, `**Veröffentlicht:** ${publicLabel}`,
+        `\n**Typ:** Workflow`,
+        `**Kategorie:** ${a.category || "—"}`,
+        `**Tags:** ${tagsStr}`,
+        `**Veröffentlicht:** ${publicLabel}`,
         `**Bewertung:** ${ratingStr}`,
         `\n## Beschreibung\n\n${a.description || "—"}`,
-        `\n## Workflow-Inhalt\n\n${a.content || "—"}`
+        `\n## Workflow-Inhalt\n\n${a.content || "—"}`,
       );
       break;
   }
@@ -298,10 +326,18 @@ function buildBody(type: string, a: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-async function markCompleted(client: ReturnType<typeof createClient>, id: string, note: string) {
+async function markCompleted(
+  client: ReturnType<typeof createClient>,
+  id: string,
+  note: string,
+) {
   await client
     .from("menerio_sync_queue")
-    .update({ status: "completed", error_message: note, processed_at: new Date().toISOString() })
+    .update({
+      status: "completed",
+      error_message: note,
+      processed_at: new Date().toISOString(),
+    })
     .eq("id", id);
 }
 

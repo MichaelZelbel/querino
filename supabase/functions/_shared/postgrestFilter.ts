@@ -104,7 +104,10 @@ export function ilikeContains(column: string, term: string): string {
  * The whole `or(...)` expression for "this term appears in any of these
  * columns". Pass the result straight to supabase-js `.or()`.
  */
-export function orIlikeContains(columns: readonly string[], term: string): string {
+export function orIlikeContains(
+  columns: readonly string[],
+  term: string,
+): string {
   return columns.map((column) => ilikeContains(column, term)).join(",");
 }
 
@@ -194,8 +197,13 @@ export function tokenizeSearchQuery(query: string): string[] {
  *   let q = sb.from("skills").select("*").eq("author_id", id);
  *   for (const f of allTermsFilters(SEARCH_COLUMNS, query)) q = q.or(f);
  */
-export function allTermsFilters(columns: readonly string[], query: string): string[] {
-  return tokenizeSearchQuery(query).map((term) => orIlikeContains(columns, term));
+export function allTermsFilters(
+  columns: readonly string[],
+  query: string,
+): string[] {
+  return tokenizeSearchQuery(query).map((term) =>
+    orIlikeContains(columns, term),
+  );
 }
 
 /**
@@ -210,7 +218,10 @@ export function allTermsFilters(columns: readonly string[], query: string): stri
  * Returns an empty string when there is nothing to search for; callers should
  * skip the query rather than send `or=()`, which is a parse error.
  */
-export function anyTermFilter(columns: readonly string[], query: string): string {
+export function anyTermFilter(
+  columns: readonly string[],
+  query: string,
+): string {
   return tokenizeSearchQuery(query)
     .flatMap((term) => columns.map((column) => ilikeContains(column, term)))
     .join(",");

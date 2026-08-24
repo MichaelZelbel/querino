@@ -21,19 +21,24 @@ function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== typeof b) return false;
   if (typeof a !== "object" || a === null || b === null) return false;
-  
+
   const keysA = Object.keys(a as object);
   const keysB = Object.keys(b as object);
-  
+
   if (keysA.length !== keysB.length) return false;
-  
+
   for (const key of keysA) {
     if (!keysB.includes(key)) return false;
-    if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) {
+    if (
+      !deepEqual(
+        (a as Record<string, unknown>)[key],
+        (b as Record<string, unknown>)[key],
+      )
+    ) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -51,36 +56,42 @@ export function useAutosave<T>({
 
   const hasChanges = lastSaved !== null && !deepEqual(data, lastSaved);
 
-  const performSave = useCallback(async (dataToSave: T) => {
-    if (isSavingRef.current) {
-      pendingDataRef.current = dataToSave;
-      return;
-    }
-
-    isSavingRef.current = true;
-    setStatus("saving");
-
-    try {
-      await onSave(dataToSave);
-      setLastSaved(dataToSave);
-      setStatus("saved");
-      
-      // Check if there's pending data that changed while we were saving
-      if (pendingDataRef.current && !deepEqual(pendingDataRef.current, dataToSave)) {
-        const pendingData = pendingDataRef.current;
-        pendingDataRef.current = null;
-        isSavingRef.current = false;
-        await performSave(pendingData);
+  const performSave = useCallback(
+    async (dataToSave: T) => {
+      if (isSavingRef.current) {
+        pendingDataRef.current = dataToSave;
         return;
       }
-    } catch (error) {
-      console.error("Autosave error:", error);
-      setStatus("error");
-    } finally {
-      isSavingRef.current = false;
-      pendingDataRef.current = null;
-    }
-  }, [onSave]);
+
+      isSavingRef.current = true;
+      setStatus("saving");
+
+      try {
+        await onSave(dataToSave);
+        setLastSaved(dataToSave);
+        setStatus("saved");
+
+        // Check if there's pending data that changed while we were saving
+        if (
+          pendingDataRef.current &&
+          !deepEqual(pendingDataRef.current, dataToSave)
+        ) {
+          const pendingData = pendingDataRef.current;
+          pendingDataRef.current = null;
+          isSavingRef.current = false;
+          await performSave(pendingData);
+          return;
+        }
+      } catch (error) {
+        console.error("Autosave error:", error);
+        setStatus("error");
+      } finally {
+        isSavingRef.current = false;
+        pendingDataRef.current = null;
+      }
+    },
+    [onSave],
+  );
 
   const forceSave = useCallback(async () => {
     if (timeoutRef.current) {

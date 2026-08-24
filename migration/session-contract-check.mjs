@@ -25,10 +25,16 @@ const env = Object.fromEntries(
   readFileSync(resolve(repo, ".env.test"), "utf8")
     .split(/\r?\n/)
     .filter((l) => l.includes("=") && !l.trim().startsWith("#"))
-    .map((l) => [l.slice(0, l.indexOf("=")).trim(), l.slice(l.indexOf("=") + 1).trim()]),
+    .map((l) => [
+      l.slice(0, l.indexOf("=")).trim(),
+      l.slice(l.indexOf("=") + 1).trim(),
+    ]),
 );
 
-const clientSrc = readFileSync(resolve(repo, "src/integrations/supabase/client.ts"), "utf8");
+const clientSrc = readFileSync(
+  resolve(repo, "src/integrations/supabase/client.ts"),
+  "utf8",
+);
 const SUPABASE_URL = /https:\/\/([a-z0-9]+)\.supabase\.co/.exec(clientSrc);
 const PROJECT_REF = SUPABASE_URL?.[1];
 const ANON_KEY = /eyJ[A-Za-z0-9._-]+/.exec(clientSrc)?.[0];
@@ -36,7 +42,9 @@ const ANON_KEY = /eyJ[A-Za-z0-9._-]+/.exec(clientSrc)?.[0];
 const results = [];
 const check = (name, ok, detail = "") => {
   results.push({ name, ok, detail });
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
+  console.log(
+    `${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`,
+  );
 };
 
 // Sign in over the auth API and hand the session to the browser the way supabase-js
@@ -53,10 +61,15 @@ async function signedInContext(browser) {
       }),
     },
   );
-  if (!res.ok) throw new Error(`sign-in failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(
+      `sign-in failed: ${res.status} ${(await res.text()).slice(0, 200)}`,
+    );
   const session = await res.json();
 
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const ctx = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+  });
   const storageKey = `sb-${PROJECT_REF}-auth-token`;
   await ctx.addInitScript(
     ([key, value]) => {
@@ -107,9 +120,17 @@ const ctx = await signedInContext(browser);
   // quirk and not something this migration did.
   const KEY = "querino_current_workspace";
   await page.evaluate((k) => localStorage.setItem(k, "personal"), KEY);
-  await page.locator('a[href="/discover"]').first().click().catch(() => {});
+  await page
+    .locator('a[href="/discover"]')
+    .first()
+    .click()
+    .catch(() => {});
   await page.waitForTimeout(1200);
-  await page.locator('a[href="/library"]').first().click().catch(() => {});
+  await page
+    .locator('a[href="/library"]')
+    .first()
+    .click()
+    .catch(() => {});
   await page.waitForTimeout(1200);
   const after = await page.evaluate((k) => localStorage.getItem(k), KEY);
   check(
@@ -120,7 +141,9 @@ const ctx = await signedInContext(browser);
   console.log(
     "      note: switching to an actual team needs an account that has one; only the",
   );
-  console.log("      persistence path is covered here, not the team-selection path.");
+  console.log(
+    "      persistence path is covered here, not the team-selection path.",
+  );
   await page.close();
 }
 
@@ -135,12 +158,20 @@ const ctx = await signedInContext(browser);
   const title = page.getByPlaceholder(/Your Name/i).first();
   const typed = await title.isVisible().catch(() => false);
   if (!typed) {
-    check("the unsaved-changes blocker stops navigation", false, "no editable field on /profile/edit");
+    check(
+      "the unsaved-changes blocker stops navigation",
+      false,
+      "no editable field on /profile/edit",
+    );
   } else {
     await title.fill("migration check, not saved");
     await page.waitForTimeout(600);
     // Navigating in-app must not silently leave the page.
-    await page.locator('a[href="/discover"]').first().click({ timeout: 5000 }).catch(() => {});
+    await page
+      .locator('a[href="/discover"]')
+      .first()
+      .click({ timeout: 5000 })
+      .catch(() => {});
     await page.waitForTimeout(1500);
     const stillHere = new URL(page.url()).pathname;
     // Staying put, or being asked, both satisfy the contract. Leaving silently does not.
@@ -161,7 +192,9 @@ const ctx = await signedInContext(browser);
 // 4. The OAuth round trip parks its destination where it can find it again.
 {
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/auth?redirect=/settings`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/auth?redirect=/settings`, {
+    waitUntil: "networkidle",
+  });
   await page.waitForTimeout(1200);
   // storeRedirectPath writes querino_redirect_path before handing off to the provider.
   const wrote = await page.evaluate(() => {
@@ -182,17 +215,25 @@ const ctx = await signedInContext(browser);
 // 5. A signed-in visitor sees author names, which row-level security decides.
 {
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/prompts/folder-to-memory`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/prompts/folder-to-memory`, {
+    waitUntil: "networkidle",
+  });
   await page.waitForTimeout(1800);
   const author = await page.evaluate(() =>
     document.body.innerText.includes("Author") ? "byline present" : "no byline",
   );
-  check("a signed-in visitor sees the author byline", author === "byline present", author);
+  check(
+    "a signed-in visitor sees the author byline",
+    author === "byline present",
+    author,
+  );
   await page.close();
 }
 
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);
-console.log(`\n${results.length - failed.length}/${results.length} behaviours hold.`);
+console.log(
+  `\n${results.length - failed.length}/${results.length} behaviours hold.`,
+);
 process.exitCode = failed.length ? 1 : 0;

@@ -44,20 +44,25 @@ export default function BlogAdminCategories() {
   const updateMutation = useUpdateBlogCategory();
   const deleteMutation = useDeleteBlogCategory();
 
-  const [editingCategory, setEditingCategory] = useState<BlogCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<BlogCategory | null>(
+    null,
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: "", description: "" });
 
   const openNewDialog = () => {
     setEditingCategory(null);
-    setFormData({ name: '', description: '' });
+    setFormData({ name: "", description: "" });
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (category: BlogCategory) => {
     setEditingCategory(category);
-    setFormData({ name: category.name, description: category.description || '' });
+    setFormData({
+      name: category.name,
+      description: category.description || "",
+    });
     setIsDialogOpen(true);
   };
 
@@ -117,11 +122,15 @@ export default function BlogAdminCategories() {
               categories.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{category.slug}</TableCell>
-                  <TableCell className="max-w-[300px] truncate text-muted-foreground">
-                    {category.description || '—'}
+                  <TableCell className="text-muted-foreground">
+                    {category.slug}
                   </TableCell>
-                  <TableCell className="text-center">{category.post_count}</TableCell>
+                  <TableCell className="max-w-[300px] truncate text-muted-foreground">
+                    {category.description || "—"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {category.post_count}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button
@@ -148,7 +157,10 @@ export default function BlogAdminCategories() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No categories yet. Click "Add Category" to create one.
                 </TableCell>
               </TableRow>
@@ -162,7 +174,7 @@ export default function BlogAdminCategories() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'Edit Category' : 'New Category'}
+              {editingCategory ? "Edit Category" : "New Category"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -171,7 +183,9 @@ export default function BlogAdminCategories() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Category name"
               />
             </div>
@@ -180,7 +194,12 @@ export default function BlogAdminCategories() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Optional description..."
               />
             </div>
@@ -189,9 +208,12 @@ export default function BlogAdminCategories() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name.trim() || isSaving}>
+            <Button
+              onClick={handleSave}
+              disabled={!formData.name.trim() || isSaving}
+            >
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingCategory ? 'Update' : 'Create'}
+              {editingCategory ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -203,7 +225,8 @@ export default function BlogAdminCategories() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Category</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this category? Posts in this category will not be deleted.
+              Are you sure you want to delete this category? Posts in this
+              category will not be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -11,13 +11,19 @@ export const Route = createFileRoute("/u/$username/")({
     const name = loaderData.display_name ?? "Querino member";
     return pageHead({
       title: name,
-      description: loaderData.bio || `Prompts, skills and workflows published by ${name} on Querino.`,
+      description:
+        loaderData.bio ||
+        `Prompts, skills and workflows published by ${name} on Querino.`,
       canonical: `/u/${encodeURIComponent(loaderData.display_name ?? "")}`,
       ogImage: loaderData.avatar_url,
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "ProfilePage",
-        mainEntity: { "@type": "Person", name, description: loaderData.bio || undefined },
+        mainEntity: {
+          "@type": "Person",
+          name,
+          description: loaderData.bio || undefined,
+        },
       },
     });
   },

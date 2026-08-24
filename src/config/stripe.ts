@@ -43,8 +43,8 @@ export const STRIPE_PRODUCTS = {
 
 export function getPriceId(billingCycle: "monthly" | "yearly"): string {
   const mode = getStripeMode();
-  return billingCycle === "yearly" 
-    ? STRIPE_PRICES[mode].premium_yearly 
+  return billingCycle === "yearly"
+    ? STRIPE_PRICES[mode].premium_yearly
     : STRIPE_PRICES[mode].premium_monthly;
 }
 

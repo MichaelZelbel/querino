@@ -68,12 +68,18 @@ export function useSemanticSearchPrompts({
 
   // Perform semantic search
   const searchResults = useQuery({
-    queryKey: ["semantic-search", "prompts", searchQuery, matchThreshold, matchCount],
+    queryKey: [
+      "semantic-search",
+      "prompts",
+      searchQuery,
+      matchThreshold,
+      matchCount,
+    ],
     queryFn: async (): Promise<SemanticPromptResult[]> => {
       if (!queryEmbedding) return [];
 
       const embeddingStr = `[${queryEmbedding.join(",")}]`;
-      
+
       const { data, error } = await supabase.rpc("search_prompts_semantic", {
         query_embedding: embeddingStr,
         match_threshold: matchThreshold,
@@ -86,20 +92,25 @@ export function useSemanticSearchPrompts({
       }
 
       // Fetch author profiles for results
-      const authorIds = [...new Set((data || []).map((p: any) => p.author_id).filter(Boolean))];
+      const authorIds = [
+        ...new Set((data || []).map((p: any) => p.author_id).filter(Boolean)),
+      ];
       let profilesMap: Record<string, PromptAuthor> = {};
-      
+
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, display_name, avatar_url")
           .in("id", authorIds);
-        
+
         if (profiles) {
-          profilesMap = profiles.reduce((acc, p) => {
-            acc[p.id] = p;
-            return acc;
-          }, {} as Record<string, PromptAuthor>);
+          profilesMap = profiles.reduce(
+            (acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            },
+            {} as Record<string, PromptAuthor>,
+          );
         }
       }
 
@@ -144,12 +155,18 @@ export function useSemanticSearchSkills({
   });
 
   const searchResults = useQuery({
-    queryKey: ["semantic-search", "skills", searchQuery, matchThreshold, matchCount],
+    queryKey: [
+      "semantic-search",
+      "skills",
+      searchQuery,
+      matchThreshold,
+      matchCount,
+    ],
     queryFn: async (): Promise<SemanticSkillResult[]> => {
       if (!queryEmbedding) return [];
 
       const embeddingStr = `[${queryEmbedding.join(",")}]`;
-      
+
       const { data, error } = await supabase.rpc("search_skills_semantic", {
         query_embedding: embeddingStr,
         match_threshold: matchThreshold,
@@ -198,12 +215,18 @@ export function useSemanticSearchWorkflows({
   });
 
   const searchResults = useQuery({
-    queryKey: ["semantic-search", "workflows", searchQuery, matchThreshold, matchCount],
+    queryKey: [
+      "semantic-search",
+      "workflows",
+      searchQuery,
+      matchThreshold,
+      matchCount,
+    ],
     queryFn: async (): Promise<SemanticWorkflowResult[]> => {
       if (!queryEmbedding) return [];
 
       const embeddingStr = `[${queryEmbedding.join(",")}]`;
-      
+
       const { data, error } = await supabase.rpc("search_workflows_semantic", {
         query_embedding: embeddingStr,
         match_threshold: matchThreshold,

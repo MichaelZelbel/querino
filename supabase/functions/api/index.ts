@@ -34,16 +34,16 @@ Deno.serve(async (req) => {
     }
 
     // 404 for unknown routes
-    return new Response(
-      JSON.stringify({ error: "Not found", path }),
-      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Not found", path }), {
+      status: 404,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("[api] Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
@@ -54,24 +54,26 @@ async function handleGetRSS(supabase: any) {
 
   const { data: posts, error } = await supabase
     .from("blog_posts")
-    .select(`
+    .select(
+      `
       title,
       slug,
       excerpt,
       content,
       published_at,
       author:profiles!blog_posts_author_id_fkey(display_name)
-    `)
+    `,
+    )
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .limit(20);
 
   if (error) {
     console.error("[api] RSS query error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to generate RSS" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Failed to generate RSS" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const items = (posts || [])
@@ -81,7 +83,9 @@ async function handleGetRSS(supabase: any) {
         : new Date().toUTCString();
       const link = `${siteUrl}/blog/${post.slug}`;
       const author = post.author?.display_name || "Anonymous";
-      const description = escapeXml(post.excerpt || post.content?.slice(0, 300) || "");
+      const description = escapeXml(
+        post.excerpt || post.content?.slice(0, 300) || "",
+      );
 
       return `
     <item>
@@ -119,13 +123,13 @@ async function handleGetRSS(supabase: any) {
 
 async function handleGetSitemap(supabase: any) {
   const siteUrl = "https://querino.ai";
-  
+
   // Static pages with their priorities
   const staticPages = [
     { loc: "/", priority: "1.0", changefreq: "daily" },
     { loc: "/discover", priority: "0.9", changefreq: "daily" },
     { loc: "/blog", priority: "0.8", changefreq: "daily" },
-    
+
     // /auth intentionally excluded — login pages should not be advertised for indexing
     { loc: "/terms", priority: "0.3", changefreq: "yearly" },
     { loc: "/privacy", priority: "0.3", changefreq: "yearly" },
@@ -134,33 +138,35 @@ async function handleGetSitemap(supabase: any) {
   ];
 
   // Fetch dynamic content in parallel
-  const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all([
-    supabase
-      .from("blog_posts")
-      .select("slug, updated_at")
-      .eq("status", "published")
-      .order("updated_at", { ascending: false }),
-    supabase
-      .from("prompts")
-      .select("slug, updated_at")
-      .eq("is_public", true)
-      .order("updated_at", { ascending: false }),
-    supabase
-      .from("skills")
-      .select("slug, updated_at")
-      .eq("published", true)
-      .order("updated_at", { ascending: false }),
-    supabase
-      .from("workflows")
-      .select("slug, updated_at")
-      .eq("published", true)
-      .order("updated_at", { ascending: false }),
-    supabase
-      .from("prompt_kits")
-      .select("slug, updated_at")
-      .eq("published", true)
-      .order("updated_at", { ascending: false }),
-  ]);
+  const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all(
+    [
+      supabase
+        .from("blog_posts")
+        .select("slug, updated_at")
+        .eq("status", "published")
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("prompts")
+        .select("slug, updated_at")
+        .eq("is_public", true)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("skills")
+        .select("slug, updated_at")
+        .eq("published", true)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("workflows")
+        .select("slug, updated_at")
+        .eq("published", true)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("prompt_kits")
+        .select("slug, updated_at")
+        .eq("published", true)
+        .order("updated_at", { ascending: false }),
+    ],
+  );
 
   // Build URL entries
   const urls: string[] = [];
@@ -178,7 +184,9 @@ async function handleGetSitemap(supabase: any) {
   // Add blog posts
   for (const post of blogPosts.data || []) {
     if (post.slug) {
-      const lastmod = post.updated_at ? formatDate(post.updated_at) : formatDate(new Date().toISOString());
+      const lastmod = post.updated_at
+        ? formatDate(post.updated_at)
+        : formatDate(new Date().toISOString());
       urls.push(`
   <url>
     <loc>${siteUrl}/blog/${escapeXml(post.slug)}</loc>
@@ -192,7 +200,9 @@ async function handleGetSitemap(supabase: any) {
   // Add public prompts
   for (const prompt of prompts.data || []) {
     if (prompt.slug) {
-      const lastmod = prompt.updated_at ? formatDate(prompt.updated_at) : formatDate(new Date().toISOString());
+      const lastmod = prompt.updated_at
+        ? formatDate(prompt.updated_at)
+        : formatDate(new Date().toISOString());
       urls.push(`
   <url>
     <loc>${siteUrl}/prompts/${escapeXml(prompt.slug)}</loc>
@@ -206,7 +216,9 @@ async function handleGetSitemap(supabase: any) {
   // Add public skills
   for (const skill of skills.data || []) {
     if (skill.slug) {
-      const lastmod = skill.updated_at ? formatDate(skill.updated_at) : formatDate(new Date().toISOString());
+      const lastmod = skill.updated_at
+        ? formatDate(skill.updated_at)
+        : formatDate(new Date().toISOString());
       urls.push(`
   <url>
     <loc>${siteUrl}/skills/${escapeXml(skill.slug)}</loc>
@@ -220,7 +232,9 @@ async function handleGetSitemap(supabase: any) {
   // Add public workflows
   for (const workflow of workflows.data || []) {
     if (workflow.slug) {
-      const lastmod = workflow.updated_at ? formatDate(workflow.updated_at) : formatDate(new Date().toISOString());
+      const lastmod = workflow.updated_at
+        ? formatDate(workflow.updated_at)
+        : formatDate(new Date().toISOString());
       urls.push(`
   <url>
     <loc>${siteUrl}/workflows/${escapeXml(workflow.slug)}</loc>
@@ -234,7 +248,9 @@ async function handleGetSitemap(supabase: any) {
   // Add public prompt kits
   for (const kit of promptKits.data || []) {
     if (kit.slug) {
-      const lastmod = kit.updated_at ? formatDate(kit.updated_at) : formatDate(new Date().toISOString());
+      const lastmod = kit.updated_at
+        ? formatDate(kit.updated_at)
+        : formatDate(new Date().toISOString());
       urls.push(`
   <url>
     <loc>${siteUrl}/prompt-kits/${escapeXml(kit.slug)}</loc>

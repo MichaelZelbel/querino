@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   // Remove /blog-api prefix and any query string from path matching
   const fullPath = url.pathname.replace("/blog-api", "");
   const path = fullPath.split("?")[0];
-  
+
   console.log(`[blog-api] ${req.method} ${path}`);
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -53,16 +53,16 @@ Deno.serve(async (req) => {
     }
 
     // 404 for unknown routes
-    return new Response(
-      JSON.stringify({ error: "Not found", path }),
-      { status: 404, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Not found", path }), {
+      status: 404,
+      headers: corsHeaders,
+    });
   } catch (error) {
     console.error("[blog-api] Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
 
@@ -76,7 +76,8 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
 
   let query = supabase
     .from("blog_posts")
-    .select(`
+    .select(
+      `
       id,
       title,
       slug,
@@ -90,7 +91,9 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
       og_image_url,
       author:profiles!blog_posts_author_id_fkey(id, display_name, avatar_url),
       featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text, width, height)
-    `, { count: "exact" })
+    `,
+      { count: "exact" },
+    )
     .eq("status", status)
     .order("published_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -115,7 +118,7 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
       } else {
         return new Response(
           JSON.stringify({ data: [], meta: { total: 0, limit, offset } }),
-          { headers: corsHeaders }
+          { headers: corsHeaders },
         );
       }
     }
@@ -141,7 +144,7 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
       } else {
         return new Response(
           JSON.stringify({ data: [], meta: { total: 0, limit, offset } }),
-          { headers: corsHeaders }
+          { headers: corsHeaders },
         );
       }
     }
@@ -151,10 +154,10 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
 
   if (error) {
     console.error("[blog-api] Posts query error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to fetch posts" }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Failed to fetch posts" }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 
   // Fetch categories and tags for each post
@@ -176,7 +179,7 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
         categories: categories.data?.map((c: any) => c.category) || [],
         tags: tags.data?.map((t: any) => t.tag) || [],
       };
-    })
+    }),
   );
 
   return new Response(
@@ -188,14 +191,15 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
         offset,
       },
     }),
-    { headers: corsHeaders }
+    { headers: corsHeaders },
   );
 }
 
 async function handleGetPost(supabase: any, slug: string) {
   const { data: post, error } = await supabase
     .from("blog_posts")
-    .select(`
+    .select(
+      `
       id,
       title,
       slug,
@@ -210,24 +214,25 @@ async function handleGetPost(supabase: any, slug: string) {
       og_image_url,
       author:profiles!blog_posts_author_id_fkey(id, display_name, avatar_url),
       featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text, width, height)
-    `)
+    `,
+    )
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
 
   if (error) {
     console.error("[blog-api] Post query error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to fetch post" }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Failed to fetch post" }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 
   if (!post) {
-    return new Response(
-      JSON.stringify({ error: "Post not found" }),
-      { status: 404, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Post not found" }), {
+      status: 404,
+      headers: corsHeaders,
+    });
   }
 
   // Fetch categories and tags
@@ -250,7 +255,7 @@ async function handleGetPost(supabase: any, slug: string) {
         tags: tags.data?.map((t: any) => t.tag) || [],
       },
     }),
-    { headers: corsHeaders }
+    { headers: corsHeaders },
   );
 }
 
@@ -264,7 +269,7 @@ async function handleGetCategories(supabase: any) {
     console.error("[blog-api] Categories query error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to fetch categories" }),
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeaders },
     );
   }
 
@@ -277,13 +282,12 @@ async function handleGetCategories(supabase: any) {
         .eq("category_id", category.id);
 
       return { ...category, post_count: count || 0 };
-    })
+    }),
   );
 
-  return new Response(
-    JSON.stringify({ data: categoriesWithCounts }),
-    { headers: corsHeaders }
-  );
+  return new Response(JSON.stringify({ data: categoriesWithCounts }), {
+    headers: corsHeaders,
+  });
 }
 
 async function handleGetTags(supabase: any) {
@@ -294,10 +298,10 @@ async function handleGetTags(supabase: any) {
 
   if (error) {
     console.error("[blog-api] Tags query error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to fetch tags" }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Failed to fetch tags" }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 
   // Get post counts for each tag
@@ -309,13 +313,12 @@ async function handleGetTags(supabase: any) {
         .eq("tag_id", tag.id);
 
       return { ...tag, post_count: count || 0 };
-    })
+    }),
   );
 
-  return new Response(
-    JSON.stringify({ data: tagsWithCounts }),
-    { headers: corsHeaders }
-  );
+  return new Response(JSON.stringify({ data: tagsWithCounts }), {
+    headers: corsHeaders,
+  });
 }
 
 async function handleGetRSS(supabase: any, origin: string) {
@@ -325,24 +328,26 @@ async function handleGetRSS(supabase: any, origin: string) {
 
   const { data: posts, error } = await supabase
     .from("blog_posts")
-    .select(`
+    .select(
+      `
       title,
       slug,
       excerpt,
       content,
       published_at,
       author:profiles!blog_posts_author_id_fkey(display_name)
-    `)
+    `,
+    )
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .limit(20);
 
   if (error) {
     console.error("[blog-api] RSS query error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to generate RSS" }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Failed to generate RSS" }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 
   const items = (posts || [])
@@ -352,7 +357,9 @@ async function handleGetRSS(supabase: any, origin: string) {
         : new Date().toUTCString();
       const link = `${siteUrl}/blog/${post.slug}`;
       const author = post.author?.display_name || "Anonymous";
-      const description = escapeXml(post.excerpt || post.content?.slice(0, 300) || "");
+      const description = escapeXml(
+        post.excerpt || post.content?.slice(0, 300) || "",
+      );
 
       return `
     <item>

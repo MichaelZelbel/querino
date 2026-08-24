@@ -18,7 +18,9 @@ interface CloneConfig<S> {
  * Shared clone hook. The four per-type clone hooks differed only in table,
  * insert fields and post-clone route; they now delegate here.
  */
-export function createCloneHook<S extends { id: string; title: string }>(config: CloneConfig<S>) {
+export function createCloneHook<S extends { id: string; title: string }>(
+  config: CloneConfig<S>,
+) {
   return function useCloneArtifact() {
     const navigate = useNavigate();
     const [cloning, setCloning] = useState(false);
@@ -27,7 +29,9 @@ export function createCloneHook<S extends { id: string; title: string }>(config:
       setCloning(true);
 
       try {
-        const { data, error } = await (supabase.from(config.table as any) as any)
+        const { data, error } = await (
+          supabase.from(config.table as any) as any
+        )
           .insert({
             ...config.buildInsert(source),
             title: `Copy of ${source.title}`,
@@ -42,7 +46,9 @@ export function createCloneHook<S extends { id: string; title: string }>(config:
           return null;
         }
 
-        toast.success(`${config.label[0].toUpperCase()}${config.label.slice(1)} cloned to your library!`);
+        toast.success(
+          `${config.label[0].toUpperCase()}${config.label.slice(1)} cloned to your library!`,
+        );
         navigate(config.editPath(data));
         return data.id as string;
       } catch (err) {

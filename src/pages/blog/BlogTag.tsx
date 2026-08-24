@@ -43,7 +43,9 @@ export default function BlogTag() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Tag not found</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-4">
+              Tag not found
+            </h1>
             <p className="text-muted-foreground mb-6">
               The tag you're looking for doesn't exist.
             </p>
@@ -110,8 +112,12 @@ export default function BlogTag() {
                 ) : (
                   <div className="text-center py-16">
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold text-foreground mb-2">No posts with this tag</h2>
-                    <p className="text-muted-foreground">Check back soon for new content.</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-2">
+                      No posts with this tag
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Check back soon for new content.
+                    </p>
                   </div>
                 )}
               </div>

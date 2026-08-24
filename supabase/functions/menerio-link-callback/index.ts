@@ -21,15 +21,15 @@ Deno.serve(async (req) => {
     try {
       user_id = await getCallerUserId(req);
     } catch {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { menerio_callback, menerio_note_id, prompt_id, prompt_slug } =
@@ -37,8 +37,14 @@ Deno.serve(async (req) => {
 
     if (!menerio_callback || !menerio_note_id || !prompt_id) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: menerio_callback, menerio_note_id, prompt_id" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error:
+            "Missing required fields: menerio_callback, menerio_note_id, prompt_id",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -51,13 +57,19 @@ Deno.serve(async (req) => {
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid menerio_callback URL" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
     if (callbackUrl.protocol !== "https:") {
       return new Response(
         JSON.stringify({ error: "menerio_callback must use https" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -72,8 +84,13 @@ Deno.serve(async (req) => {
     if (integrationError || !integration) {
       console.error("Menerio integration lookup failed:", integrationError);
       return new Response(
-        JSON.stringify({ error: "No active Menerio connection found for this user" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "No active Menerio connection found for this user",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -82,18 +99,28 @@ Deno.serve(async (req) => {
       const baseUrl = new URL(integration.menerio_base_url);
       if (baseUrl.host !== callbackUrl.host) {
         return new Response(
-          JSON.stringify({ error: "menerio_callback host does not match registered Menerio base URL" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error:
+              "menerio_callback host does not match registered Menerio base URL",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
     } catch {
       return new Response(
         JSON.stringify({ error: "Stored Menerio base URL is invalid" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    const PUBLIC_SITE_URL = Deno.env.get("PUBLIC_SITE_URL") || "https://querino.lovable.app";
+    const PUBLIC_SITE_URL =
+      Deno.env.get("PUBLIC_SITE_URL") || "https://querino.lovable.app";
 
     // Call back to Menerio to create the bidirectional link
     const callbackRes = await fetch(menerio_callback, {
@@ -116,27 +143,43 @@ Deno.serve(async (req) => {
 
     if (!callbackRes.ok) {
       return new Response(
-        JSON.stringify({ error: "Menerio callback failed", status: callbackRes.status, body: callbackBody }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Menerio callback failed",
+          status: callbackRes.status,
+          body: callbackBody,
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     // Optionally update the prompt with the menerio_note_id for future syncs
     await supabase
       .from("prompts")
-      .update({ menerio_note_id, menerio_synced: true, menerio_synced_at: new Date().toISOString() })
+      .update({
+        menerio_note_id,
+        menerio_synced: true,
+        menerio_synced_at: new Date().toISOString(),
+      })
       .eq("id", prompt_id)
       .eq("author_id", user_id);
 
-    return new Response(
-      JSON.stringify({ ok: true }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("menerio-link-callback error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: err instanceof Error ? err.message : String(err),
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

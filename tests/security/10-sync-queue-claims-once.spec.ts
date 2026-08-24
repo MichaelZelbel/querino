@@ -49,10 +49,13 @@ async function queueRows(count: number, status = "pending"): Promise<string[]> {
 }
 
 async function claim(batchSize: number): Promise<ClaimedRow[]> {
-  const res = await restAsService<ClaimedRow[]>("rpc/claim_menerio_sync_queue", {
-    method: "POST",
-    body: { batch_size: batchSize },
-  });
+  const res = await restAsService<ClaimedRow[]>(
+    "rpc/claim_menerio_sync_queue",
+    {
+      method: "POST",
+      body: { batch_size: batchSize },
+    },
+  );
   if (!res.ok) throw new Error(`Claiming failed: ${JSON.stringify(res.error)}`);
   return res.data ?? [];
 }
@@ -89,11 +92,17 @@ test.describe("M4 — a queued sync is claimed once, never twice", () => {
     const first = await claim(10);
     const second = await claim(10);
 
-    const takenTwice = first.map((r) => r.id).filter((id) => second.some((r) => r.id === id));
-    expect(takenTwice, "a row was still claimable after being claimed").toEqual([]);
+    const takenTwice = first
+      .map((r) => r.id)
+      .filter((id) => second.some((r) => r.id === id));
+    expect(takenTwice, "a row was still claimable after being claimed").toEqual(
+      [],
+    );
 
     // And the rows really did change state rather than merely being hidden.
-    const res = await restAsService<Array<{ id: string; status: string; claimed_at: string | null }>>(
+    const res = await restAsService<
+      Array<{ id: string; status: string; claimed_at: string | null }>
+    >(
       `menerio_sync_queue?id=in.(${mine.join(",")})&select=id,status,claimed_at`,
     );
     for (const row of res.data ?? []) {

@@ -9,8 +9,10 @@ import {
   callLovableAI,
 } from "../_shared/llm.ts";
 import { interpolatePrompt } from "../_shared/llm-config.ts";
-import { SYSTEM_PROMPT, modeInstructions } from "../_shared/prompts/canvas-ai.ts";
-
+import {
+  SYSTEM_PROMPT,
+  modeInstructions,
+} from "../_shared/prompts/canvas-ai.ts";
 
 /**
  * The prompt this call site sends when nobody has overridden it.
@@ -24,12 +26,14 @@ function buildSystemPrompt(
   artifactType: string,
   canvasContent: string,
 ): string {
-  return interpolatePrompt(SYSTEM_PROMPT, {
-    mode,
-    artifactType,
-    canvasContent,
-    modeInstructions: modeInstructions(mode),
-  }) ?? "";
+  return (
+    interpolatePrompt(SYSTEM_PROMPT, {
+      mode,
+      artifactType,
+      canvasContent,
+      modeInstructions: modeInstructions(mode),
+    }) ?? ""
+  );
 }
 
 serve(async (req) => {
@@ -44,7 +48,8 @@ serve(async (req) => {
       user_id = await getCallerUserId(req);
     } catch {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     try {
@@ -52,23 +57,37 @@ serve(async (req) => {
     } catch (e) {
       if (e instanceof CreditsExhaustedError) {
         return new Response(JSON.stringify({ error: e.message }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       throw e;
     }
 
-    const { artifactType, artifactId, mode, message, canvasContent, selection } =
-      await req.json();
+    const {
+      artifactType,
+      artifactId,
+      mode,
+      message,
+      canvasContent,
+      selection,
+    } = await req.json();
 
     if (!message) {
       return new Response(
         JSON.stringify({ error: "message and canvasContent are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    const systemPrompt = buildSystemPrompt(mode || "chat_only", artifactType || "prompt", canvasContent);
+    const systemPrompt = buildSystemPrompt(
+      mode || "chat_only",
+      artifactType || "prompt",
+      canvasContent,
+    );
 
     let userMessage = message;
     if (selection?.text) {
@@ -101,14 +120,24 @@ serve(async (req) => {
     } catch (e) {
       if (e instanceof RateLimitedError) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          JSON.stringify({
+            error: "Rate limit exceeded. Please try again in a moment.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
       if (e instanceof CreditsExhaustedError) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          JSON.stringify({
+            error: "AI credits exhausted. Please add credits to continue.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
       if (e instanceof GatewayError) {
@@ -119,13 +148,18 @@ serve(async (req) => {
     }
 
     // Parse the JSON response safely
-    let result: { assistantMessage: string; canvas?: { updated: boolean; content?: string; changeNote?: string } };
+    let result: {
+      assistantMessage: string;
+      canvas?: { updated: boolean; content?: string; changeNote?: string };
+    };
 
     try {
       // Strip markdown code fences if present
       let jsonStr = rawContent.trim();
       if (jsonStr.startsWith("```")) {
-        jsonStr = jsonStr.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+        jsonStr = jsonStr
+          .replace(/^```(?:json)?\s*/, "")
+          .replace(/\s*```$/, "");
       }
       result = JSON.parse(jsonStr);
     } catch {
@@ -138,7 +172,10 @@ serve(async (req) => {
     }
 
     // Validate structure
-    if (!result.assistantMessage || typeof result.assistantMessage !== "string") {
+    if (
+      !result.assistantMessage ||
+      typeof result.assistantMessage !== "string"
+    ) {
       result.assistantMessage = rawContent || "I processed your request.";
     }
     if (!result.canvas) {
@@ -151,8 +188,13 @@ serve(async (req) => {
   } catch (error) {
     console.error("[canvas-ai] Error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Canvas AI failed" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Canvas AI failed",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

@@ -18,7 +18,13 @@
 // move.
 
 import { test, expect } from "@playwright/test";
-import { hasManagementToken, restAsService, restAsUser, signInTestUser, sqlProbe } from "./helpers/api";
+import {
+  hasManagementToken,
+  restAsService,
+  restAsUser,
+  signInTestUser,
+  sqlProbe,
+} from "./helpers/api";
 
 interface Allowance {
   id: string;
@@ -32,12 +38,16 @@ interface Allowance {
   created: boolean;
 }
 
-async function ensure(userId: string, extra: Record<string, unknown> = {}): Promise<Allowance> {
+async function ensure(
+  userId: string,
+  extra: Record<string, unknown> = {},
+): Promise<Allowance> {
   const res = await restAsService<Allowance[]>("rpc/ensure_ai_allowance", {
     method: "POST",
     body: { _user_id: userId, _created_by: "security-suite", ...extra },
   });
-  if (!res.ok) throw new Error(`ensure_ai_allowance failed: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(`ensure_ai_allowance failed: ${JSON.stringify(res.error)}`);
   return res.data![0];
 }
 
@@ -50,16 +60,25 @@ async function periodsOf(userId: string) {
 
 test.describe("M6 — one conversion rate, and it refuses to guess", () => {
   test("tokens_per_credit() is a single positive number", async () => {
-    const res = await restAsService<number>("rpc/tokens_per_credit", { method: "POST", body: {} });
-    expect(res.ok, `tokens_per_credit() failed: ${JSON.stringify(res.error)}`).toBe(true);
+    const res = await restAsService<number>("rpc/tokens_per_credit", {
+      method: "POST",
+      body: {},
+    });
+    expect(
+      res.ok,
+      `tokens_per_credit() failed: ${JSON.stringify(res.error)}`,
+    ).toBe(true);
     expect(Number(res.data)).toBeGreaterThan(0);
   });
 
   test("the settings row cannot be emptied to a guess", async () => {
-    const res = await restAsService("ai_credit_settings?key=eq.tokens_per_credit", {
-      method: "PATCH",
-      body: { value_int: null },
-    });
+    const res = await restAsService(
+      "ai_credit_settings?key=eq.tokens_per_credit",
+      {
+        method: "PATCH",
+        body: { value_int: null },
+      },
+    );
     expect(
       res.ok,
       "tokens_per_credit was set to NULL, which is what put the grant path and the charge path ten times apart",
@@ -68,7 +87,12 @@ test.describe("M6 — one conversion rate, and it refuses to guess", () => {
 
   test("the grant path and the charge path agree on the rate", async () => {
     const rate = Number(
-      (await restAsService<number>("rpc/tokens_per_credit", { method: "POST", body: {} })).data,
+      (
+        await restAsService<number>("rpc/tokens_per_credit", {
+          method: "POST",
+          body: {},
+        })
+      ).data,
     );
 
     const view = await restAsUser<Array<{ tokens_per_credit: number }>>(
@@ -139,7 +163,10 @@ test.describe("M1 — user_roles decides who is premium, not a profile column", 
   // credits is worse than the bug it is checking for. It runs inside a
   // transaction that is rolled back instead.
   test("plan_type='premium' without the role buys nothing", async () => {
-    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
+    test.skip(
+      !hasManagementToken(),
+      "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
+    );
     const out = await sqlProbe(`
       DO $probe$
       DECLARE
@@ -172,12 +199,17 @@ test.describe("M1 — user_roles decides who is premium, not a profile column", 
       END $probe$;
     `);
 
-    expect(out, `the second source of truth is still alive: ${out}`).toContain("PROBE OK");
+    expect(out, `the second source of truth is still alive: ${out}`).toContain(
+      "PROBE OK",
+    );
     expect(out).toContain("source=free_tier");
   });
 
   test("a premium role grants the premium amount", async () => {
-    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
+    test.skip(
+      !hasManagementToken(),
+      "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
+    );
     const out = await sqlProbe(`
       DO $probe$
       DECLARE
@@ -212,11 +244,17 @@ test.describe("M1 — user_roles decides who is premium, not a profile column", 
       END $probe$;
     `);
 
-    expect(out, `a premium role did not buy the premium grant: ${out}`).toContain("PROBE OK");
+    expect(
+      out,
+      `a premium role did not buy the premium grant: ${out}`,
+    ).toContain("PROBE OK");
   });
 
   test("unused tokens roll over, capped at one month", async () => {
-    test.skip(!hasManagementToken(), "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose");
+    test.skip(
+      !hasManagementToken(),
+      "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
+    );
     const out = await sqlProbe(`
       DO $probe$
       DECLARE

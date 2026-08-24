@@ -13,7 +13,7 @@ export interface TeamMember {
   id: string;
   team_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'member';
+  role: "owner" | "admin" | "member";
   created_at: string | null;
 }
 
@@ -26,5 +26,5 @@ export interface TeamMemberWithProfile extends TeamMember {
 }
 
 export interface TeamWithRole extends Team {
-  role: 'owner' | 'admin' | 'member';
+  role: "owner" | "admin" | "member";
 }

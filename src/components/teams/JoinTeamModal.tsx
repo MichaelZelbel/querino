@@ -37,7 +37,10 @@ function extractToken(input: string): string {
 export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
   const [inviteInput, setInviteInput] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-  const [joinedTeam, setJoinedTeam] = useState<{ teamId: string; teamName: string } | null>(null);
+  const [joinedTeam, setJoinedTeam] = useState<{
+    teamId: string;
+    teamName: string;
+  } | null>(null);
   const { user } = useAuthContext();
   const { switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
@@ -52,13 +55,14 @@ export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
       await queryClient.invalidateQueries({ queryKey: ["user-teams"] });
       setJoinedTeam({ teamId: result.team_id, teamName: result.team_name });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to join team";
+      const message =
+        err instanceof Error ? err.message : "Failed to join team";
       toast.error(
         message.includes("expired")
           ? "This invite has expired. Ask a team admin for a new one."
           : message.includes("not found")
             ? "This invite is invalid or has been revoked."
-            : message
+            : message,
       );
     } finally {
       setIsJoining(false);
@@ -143,10 +147,17 @@ export function JoinTeamModal({ open, onOpenChange }: JoinTeamModalProps) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)} disabled={isJoining}>
+          <Button
+            variant="outline"
+            onClick={() => handleClose(false)}
+            disabled={isJoining}
+          >
             Cancel
           </Button>
-          <Button onClick={handleJoin} disabled={isJoining || !inviteInput.trim()}>
+          <Button
+            onClick={handleJoin}
+            disabled={isJoining || !inviteInput.trim()}
+          >
             {isJoining ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

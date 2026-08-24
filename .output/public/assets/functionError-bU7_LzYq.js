@@ -1,0 +1,1 @@
+import{r as e}from"./client-JNFkalRR.js";async function t(t,n=`AI request failed`){if(t instanceof e)try{let e=await t.context.json(),n=e?.error??e?.message;if(typeof n==`string`&&n.trim())return n}catch{try{let e=await t.context.text?.();if(typeof e==`string`&&e.trim())return e}catch{}}return t instanceof Error&&t.message?t.message:n}export{t};

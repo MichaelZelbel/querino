@@ -17,8 +17,12 @@ interface UsePinnedPromptsOptions {
 export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
   const { user } = useAuthContext();
   const { teamId, personalOnly } = options;
-  const [pinnedPromptIds, setPinnedPromptIds] = useState<Set<string>>(new Set());
-  const [pinnedPrompts, setPinnedPrompts] = useState<PinnedPromptWithAuthor[]>([]);
+  const [pinnedPromptIds, setPinnedPromptIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [pinnedPrompts, setPinnedPrompts] = useState<PinnedPromptWithAuthor[]>(
+    [],
+  );
   const [loading, setLoading] = useState(false);
 
   // Fetch all pinned prompt IDs for the current user
@@ -77,14 +81,16 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
       // Build the query with workspace filtering
       let query = supabase
         .from("prompts")
-        .select(`
+        .select(
+          `
           *,
           profiles:author_id (
             id,
             display_name,
             avatar_url
           )
-        `)
+        `,
+        )
         .in("id", promptIds);
 
       // Apply workspace filter
@@ -107,7 +113,10 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
 
       // Map prompts to maintain pin order
       const promptMap = new Map(
-        (prompts || []).map((p) => [p.id, { ...p, author: (p as any).profiles || null }])
+        (prompts || []).map((p) => [
+          p.id,
+          { ...p, author: (p as any).profiles || null },
+        ]),
       );
       const orderedPrompts = promptIds
         .map((id) => promptMap.get(id))
@@ -115,7 +124,7 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
 
       setPinnedPrompts(orderedPrompts);
       // Keep pinnedPromptIds as all pins (for checking if a prompt is pinned)
-      setPinnedPromptIds(new Set(pins.map(p => p.prompt_id)));
+      setPinnedPromptIds(new Set(pins.map((p) => p.prompt_id)));
     } catch (err) {
       console.error("Error fetching pinned prompts:", err);
     } finally {
@@ -129,7 +138,7 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
   // Check if a specific prompt is pinned
   const isPromptPinned = useCallback(
     (promptId: string) => pinnedPromptIds.has(promptId),
-    [pinnedPromptIds]
+    [pinnedPromptIds],
   );
 
   // Pin a prompt
@@ -157,7 +166,7 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
         return { error: err as Error };
       }
     },
-    [user]
+    [user],
   );
 
   // Unpin a prompt
@@ -187,7 +196,7 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
         return { error: err as Error };
       }
     },
-    [user]
+    [user],
   );
 
   // Toggle pin state
@@ -199,7 +208,7 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
         return pinPrompt(promptId);
       }
     },
-    [isPromptPinned, pinPrompt, unpinPrompt]
+    [isPromptPinned, pinPrompt, unpinPrompt],
   );
 
   return {

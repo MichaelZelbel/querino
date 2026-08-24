@@ -15,7 +15,10 @@ import { Loader2, Globe, Sparkles } from "lucide-react";
 interface PublishPromptModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPublish: (data: { summary: string; exampleOutput: string }) => Promise<void>;
+  onPublish: (data: {
+    summary: string;
+    exampleOutput: string;
+  }) => Promise<void>;
   isPublishing: boolean;
 }
 
@@ -39,7 +42,8 @@ export function PublishPromptModal({
     }
 
     if (exampleOutput.length > 1000) {
-      newErrors.exampleOutput = "Example output must be less than 1000 characters";
+      newErrors.exampleOutput =
+        "Example output must be less than 1000 characters";
     }
 
     setErrors(newErrors);
@@ -74,8 +78,9 @@ export function PublishPromptModal({
           </div>
           <DialogTitle className="text-xl">Publish Your Prompt</DialogTitle>
           <DialogDescription className="text-base">
-            Publishing your prompt makes it discoverable by all users on Querino.
-            Add some details to help others find and understand your prompt.
+            Publishing your prompt makes it discoverable by all users on
+            Querino. Add some details to help others find and understand your
+            prompt.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,7 +110,9 @@ export function PublishPromptModal({
           <div className="space-y-2">
             <Label htmlFor="exampleOutput" className="flex items-center gap-2">
               Example Output
-              <span className="text-xs font-normal text-muted-foreground">(recommended)</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                (recommended)
+              </span>
             </Label>
             <Textarea
               id="exampleOutput"
@@ -127,7 +134,9 @@ export function PublishPromptModal({
           <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-4">
             <Sparkles className="h-5 w-5 text-primary mt-0.5" />
             <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">What happens when you publish?</p>
+              <p className="font-medium text-foreground">
+                What happens when you publish?
+              </p>
               <ul className="mt-1 list-disc list-inside space-y-1">
                 <li>Your prompt appears on the Discover page</li>
                 <li>Anyone can copy and use your prompt</li>
@@ -145,7 +154,11 @@ export function PublishPromptModal({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPublishing} className="gap-2">
+          <Button
+            onClick={handleSubmit}
+            disabled={isPublishing}
+            className="gap-2"
+          >
             {isPublishing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

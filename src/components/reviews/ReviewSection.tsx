@@ -20,7 +20,10 @@ interface ReviewSectionProps {
   userReview: ReviewWithUser | null;
   loading: boolean;
   submitting: boolean;
-  onSubmitReview: (rating: number, comment?: string) => Promise<{ error: Error | null }>;
+  onSubmitReview: (
+    rating: number,
+    comment?: string,
+  ) => Promise<{ error: Error | null }>;
   onDeleteReview: () => Promise<{ error: Error | null }>;
 }
 
@@ -115,7 +118,9 @@ export function ReviewSection({
   };
 
   // Get reviews excluding user's own for display
-  const displayReviews = reviews.filter((r) => r.user_id !== userId).slice(0, 5);
+  const displayReviews = reviews
+    .filter((r) => r.user_id !== userId)
+    .slice(0, 5);
 
   return (
     <div className="space-y-4">
@@ -183,7 +188,9 @@ export function ReviewSection({
                 disabled={submitting || selectedRating === 0}
                 size="sm"
               >
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {userReview ? "Update" : "Submit"}
               </Button>
               {!userReview && showForm && (
@@ -223,11 +230,17 @@ export function ReviewSection({
       ) : reviews.length > 0 ? (
         <div className="space-y-3">
           {/* User's own review first */}
-          {userReview && <ReviewCard review={userReview} isOwn getInitials={getInitials} />}
+          {userReview && (
+            <ReviewCard review={userReview} isOwn getInitials={getInitials} />
+          )}
 
           {/* Other reviews */}
           {displayReviews.map((review) => (
-            <ReviewCard key={review.id} review={review} getInitials={getInitials} />
+            <ReviewCard
+              key={review.id}
+              review={review}
+              getInitials={getInitials}
+            />
           ))}
 
           {reviews.length > 5 && (
@@ -277,7 +290,9 @@ function ReviewCard({
             <StarRating rating={review.rating} readonly size="sm" />
           </div>
           {review.comment && (
-            <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {review.comment}
+            </p>
           )}
         </div>
       </div>

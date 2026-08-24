@@ -10,7 +10,8 @@ export const Route = createFileRoute("/blog/category/$slug")({
     if (!loaderData) return privateHead("Category Not Found");
     return pageHead({
       title: `${loaderData.name} - Blog`,
-      description: loaderData.description || `Posts in the ${loaderData.name} category`,
+      description:
+        loaderData.description || `Posts in the ${loaderData.name} category`,
       canonical: `/blog/category/${loaderData.slug}`,
       rss: true,
     });

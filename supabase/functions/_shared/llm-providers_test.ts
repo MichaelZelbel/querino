@@ -1,8 +1,18 @@
-import { assertEquals, assertRejects } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import {
+  assertEquals,
+  assertRejects,
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { callProvider, ProviderHttpError } from "./llm-providers.ts";
 
-function stubFetch(status: number, body: unknown, capture?: { url?: string; init?: RequestInit }) {
-  return (url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+function stubFetch(
+  status: number,
+  body: unknown,
+  capture?: { url?: string; init?: RequestInit },
+) {
+  return (
+    url: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> => {
     if (capture) {
       capture.url = String(url);
       capture.init = init;
@@ -28,11 +38,15 @@ Deno.test("openai-compatible providers parse content and usage", async () => {
     model: "openai/gpt-4o-mini",
     messages: MESSAGES,
     apiKey: "k",
-    fetchImpl: stubFetch(200, {
-      choices: [{ message: { content: "hi there" } }],
-      usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
-      model: "openai/gpt-4o-mini",
-    }, cap),
+    fetchImpl: stubFetch(
+      200,
+      {
+        choices: [{ message: { content: "hi there" } }],
+        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
+        model: "openai/gpt-4o-mini",
+      },
+      cap,
+    ),
   });
   assertEquals(result.content, "hi there");
   assertEquals(result.usage.total_tokens, 5);
@@ -48,7 +62,11 @@ Deno.test("each openai-compatible provider uses its own base url", async () => {
       model: "m",
       messages: MESSAGES,
       apiKey: "k",
-      fetchImpl: stubFetch(200, { choices: [{ message: { content: "x" } }] }, cap),
+      fetchImpl: stubFetch(
+        200,
+        { choices: [{ message: { content: "x" } }] },
+        cap,
+      ),
     });
     seen.push(cap.url!);
   }
@@ -59,25 +77,32 @@ Deno.test("each openai-compatible provider uses its own base url", async () => {
   ]);
 });
 
-Deno.test("anthropic lifts the system message out of the message list", async () => {
-  const cap: { url?: string; init?: RequestInit } = {};
-  const result = await callProvider({
-    provider: "anthropic",
-    model: "claude-3-5-haiku-20241022",
-    messages: MESSAGES,
-    apiKey: "k",
-    fetchImpl: stubFetch(200, {
-      content: [{ type: "text", text: "brief answer" }],
-      usage: { input_tokens: 4, output_tokens: 1 },
+Deno.test(
+  "anthropic lifts the system message out of the message list",
+  async () => {
+    const cap: { url?: string; init?: RequestInit } = {};
+    const result = await callProvider({
+      provider: "anthropic",
       model: "claude-3-5-haiku-20241022",
-    }, cap),
-  });
-  assertEquals(result.content, "brief answer");
-  assertEquals(result.usage.total_tokens, 5);
-  const body = JSON.parse(String(cap.init!.body));
-  assertEquals(body.system, "be brief");
-  assertEquals(body.messages, [{ role: "user", content: "hello" }]);
-});
+      messages: MESSAGES,
+      apiKey: "k",
+      fetchImpl: stubFetch(
+        200,
+        {
+          content: [{ type: "text", text: "brief answer" }],
+          usage: { input_tokens: 4, output_tokens: 1 },
+          model: "claude-3-5-haiku-20241022",
+        },
+        cap,
+      ),
+    });
+    assertEquals(result.content, "brief answer");
+    assertEquals(result.usage.total_tokens, 5);
+    const body = JSON.parse(String(cap.init!.body));
+    assertEquals(body.system, "be brief");
+    assertEquals(body.messages, [{ role: "user", content: "hello" }]);
+  },
+);
 
 Deno.test("gemini maps roles and reads its own usage shape", async () => {
   const cap: { url?: string; init?: RequestInit } = {};
@@ -86,10 +111,18 @@ Deno.test("gemini maps roles and reads its own usage shape", async () => {
     model: "gemini-2.0-flash",
     messages: MESSAGES,
     apiKey: "k",
-    fetchImpl: stubFetch(200, {
-      candidates: [{ content: { parts: [{ text: "ok" }] } }],
-      usageMetadata: { promptTokenCount: 6, candidatesTokenCount: 1, totalTokenCount: 7 },
-    }, cap),
+    fetchImpl: stubFetch(
+      200,
+      {
+        candidates: [{ content: { parts: [{ text: "ok" }] } }],
+        usageMetadata: {
+          promptTokenCount: 6,
+          candidatesTokenCount: 1,
+          totalTokenCount: 7,
+        },
+      },
+      cap,
+    ),
   });
   assertEquals(result.content, "ok");
   assertEquals(result.usage.total_tokens, 7);
@@ -98,16 +131,19 @@ Deno.test("gemini maps roles and reads its own usage shape", async () => {
   assertEquals(body.contents[0].role, "user");
 });
 
-Deno.test("a non-2xx response throws ProviderHttpError carrying the status", async () => {
-  await assertRejects(
-    () =>
-      callProvider({
-        provider: "openai",
-        model: "gpt-4o-mini",
-        messages: MESSAGES,
-        apiKey: "k",
-        fetchImpl: stubFetch(429, { error: "slow down" }),
-      }),
-    ProviderHttpError,
-  );
-});
+Deno.test(
+  "a non-2xx response throws ProviderHttpError carrying the status",
+  async () => {
+    await assertRejects(
+      () =>
+        callProvider({
+          provider: "openai",
+          model: "gpt-4o-mini",
+          messages: MESSAGES,
+          apiKey: "k",
+          fetchImpl: stubFetch(429, { error: "slow down" }),
+        }),
+      ProviderHttpError,
+    );
+  },
+);

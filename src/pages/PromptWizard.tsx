@@ -17,7 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Wand2, Copy, ArrowRight, Loader2, Check, Info, Lock, Crown } from "lucide-react";
+import {
+  Wand2,
+  Copy,
+  ArrowRight,
+  Loader2,
+  Check,
+  Info,
+  Lock,
+  Crown,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   formatWizardInputForApi,
@@ -40,7 +49,12 @@ export default function PromptWizard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const { isPremium } = usePremiumCheck();
-  const { checkCredits, hasCredits, isLoading: creditsLoading, credits } = useAICreditsGate();
+  const {
+    checkCredits,
+    hasCredits,
+    isLoading: creditsLoading,
+    credits,
+  } = useAICreditsGate();
 
   // Form state
   const [goal, setGoal] = useState("");
@@ -67,7 +81,9 @@ export default function PromptWizard() {
     }
   }, [user, authLoading, navigate]);
 
-  const selectedFrameworkOption = FRAMEWORK_OPTIONS.find((f) => f.value === framework);
+  const selectedFrameworkOption = FRAMEWORK_OPTIONS.find(
+    (f) => f.value === framework,
+  );
 
   const handleGenerate = async () => {
     // Check credits before making AI call
@@ -102,7 +118,10 @@ export default function PromptWizard() {
         body: { structured_input: structuredInput },
       });
 
-      if (error) throw new Error(await getFunctionErrorMessage(error, "Failed to generate prompt"));
+      if (error)
+        throw new Error(
+          await getFunctionErrorMessage(error, "Failed to generate prompt"),
+        );
 
       const promptText = (data?.prompt || "").trim();
       if (!promptText) {
@@ -113,7 +132,10 @@ export default function PromptWizard() {
       toast.success("Prompt generated!");
     } catch (error: any) {
       console.error("Wizard error:", error);
-      const msg = error?.context?.body?.error || error?.message || "Failed to generate prompt";
+      const msg =
+        error?.context?.body?.error ||
+        error?.message ||
+        "Failed to generate prompt";
       toast.error(msg);
     } finally {
       setIsGenerating(false);
@@ -166,20 +188,28 @@ export default function PromptWizard() {
                 Kickstart Template
               </h1>
               <p className="mt-2 text-muted-foreground">
-                The Kickstart Template uses AI to craft powerful prompts tailored to your needs.
-                It's part of Querino Premium — contact support to learn more.
+                The Kickstart Template uses AI to craft powerful prompts
+                tailored to your needs. It's part of Querino Premium — contact
+                support to learn more.
               </p>
             </div>
 
             <div className="mb-8 space-y-2">
               {premiumFeatures.map(({ icon: Icon, label, description }) => (
-                <div key={label} className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                <div
+                  key={label}
+                  className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3"
+                >
                   <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
                     <Icon className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{label}</p>
-                    <p className="text-xs text-muted-foreground">{description}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {description}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -225,7 +255,8 @@ export default function PromptWizard() {
               Kickstart Template
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Answer a few questions and let Querino draft a powerful prompt for you.
+              Answer a few questions and let Querino draft a powerful prompt for
+              you.
             </p>
           </div>
 
@@ -250,7 +281,10 @@ export default function PromptWizard() {
             {/* Prompt Framework Selector */}
             <div className="space-y-2">
               <Label htmlFor="framework">Prompt Framework</Label>
-              <Select value={framework} onValueChange={(v) => setFramework(v as PromptFramework)}>
+              <Select
+                value={framework}
+                onValueChange={(v) => setFramework(v as PromptFramework)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a framework" />
                 </SelectTrigger>
@@ -272,7 +306,9 @@ export default function PromptWizard() {
 
             {/* Target LLM */}
             <div className="space-y-2">
-              <Label htmlFor="targetLlm">Which LLM or environment is this for?</Label>
+              <Label htmlFor="targetLlm">
+                Which LLM or environment is this for?
+              </Label>
               <Select value={targetLlm} onValueChange={setTargetLlm}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select target LLM" />
@@ -308,7 +344,9 @@ export default function PromptWizard() {
 
             {/* Tone & Style */}
             <div className="space-y-2">
-              <Label htmlFor="toneStyle">Preferred tone & style (optional)</Label>
+              <Label htmlFor="toneStyle">
+                Preferred tone & style (optional)
+              </Label>
               <Input
                 id="toneStyle"
                 value={toneStyle}
@@ -319,7 +357,9 @@ export default function PromptWizard() {
 
             {/* Inputs */}
             <div className="space-y-2">
-              <Label htmlFor="inputs">What kind of input will the model receive? (optional)</Label>
+              <Label htmlFor="inputs">
+                What kind of input will the model receive? (optional)
+              </Label>
               <Textarea
                 id="inputs"
                 value={inputs}
@@ -331,7 +371,9 @@ export default function PromptWizard() {
 
             {/* Output format */}
             <div className="space-y-2">
-              <Label htmlFor="outputFormat">How should the output look? (optional)</Label>
+              <Label htmlFor="outputFormat">
+                How should the output look? (optional)
+              </Label>
               <Textarea
                 id="outputFormat"
                 value={outputFormat}
@@ -343,7 +385,9 @@ export default function PromptWizard() {
 
             {/* Constraints */}
             <div className="space-y-2">
-              <Label htmlFor="constraints">Constraints / Rules (optional)</Label>
+              <Label htmlFor="constraints">
+                Constraints / Rules (optional)
+              </Label>
               <Textarea
                 id="constraints"
                 value={constraints}
@@ -355,7 +399,9 @@ export default function PromptWizard() {
 
             {/* Additional notes */}
             <div className="space-y-2">
-              <Label htmlFor="additionalNotes">Additional examples or notes (optional)</Label>
+              <Label htmlFor="additionalNotes">
+                Additional examples or notes (optional)
+              </Label>
               <Textarea
                 id="additionalNotes"
                 value={additionalNotes}

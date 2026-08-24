@@ -46,11 +46,11 @@ export default function BlogAdminTags() {
   const [editingTag, setEditingTag] = useState<BlogTag | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [tagName, setTagName] = useState('');
+  const [tagName, setTagName] = useState("");
 
   const openNewDialog = () => {
     setEditingTag(null);
-    setTagName('');
+    setTagName("");
     setIsDialogOpen(true);
   };
 
@@ -115,8 +115,12 @@ export default function BlogAdminTags() {
               tags.map((tag) => (
                 <TableRow key={tag.id}>
                   <TableCell className="font-medium">{tag.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{tag.slug}</TableCell>
-                  <TableCell className="text-center">{tag.post_count}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tag.slug}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {tag.post_count}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button
@@ -143,7 +147,10 @@ export default function BlogAdminTags() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={4}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No tags yet. Click "Add Tag" to create one.
                 </TableCell>
               </TableRow>
@@ -156,9 +163,7 @@ export default function BlogAdminTags() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingTag ? 'Edit Tag' : 'New Tag'}
-            </DialogTitle>
+            <DialogTitle>{editingTag ? "Edit Tag" : "New Tag"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -168,7 +173,7 @@ export default function BlogAdminTags() {
                 value={tagName}
                 onChange={(e) => setTagName(e.target.value)}
                 placeholder="Tag name"
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                onKeyDown={(e) => e.key === "Enter" && handleSave()}
               />
             </div>
           </div>
@@ -178,7 +183,7 @@ export default function BlogAdminTags() {
             </Button>
             <Button onClick={handleSave} disabled={!tagName.trim() || isSaving}>
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingTag ? 'Update' : 'Create'}
+              {editingTag ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -190,7 +195,8 @@ export default function BlogAdminTags() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this tag? Posts with this tag will not be deleted.
+              Are you sure you want to delete this tag? Posts with this tag will
+              not be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

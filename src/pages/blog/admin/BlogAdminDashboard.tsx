@@ -15,15 +15,41 @@ export default function BlogAdminDashboard() {
   const { data: tags } = useBlogTags();
   const { data: media } = useBlogMedia();
 
-  const draftCount = posts?.filter(p => p.status === 'draft').length || 0;
-  const publishedCount = posts?.filter(p => p.status === 'published').length || 0;
+  const draftCount = posts?.filter((p) => p.status === "draft").length || 0;
+  const publishedCount =
+    posts?.filter((p) => p.status === "published").length || 0;
 
   const stats = [
-    { label: "Published", value: publishedCount, icon: FileText, color: "text-green-500" },
-    { label: "Drafts", value: draftCount, icon: FileText, color: "text-amber-500" },
-    { label: "Categories", value: categories?.length || 0, icon: FolderOpen, color: "text-blue-500" },
-    { label: "Tags", value: tags?.length || 0, icon: Tags, color: "text-purple-500" },
-    { label: "Media", value: media?.length || 0, icon: Image, color: "text-pink-500" },
+    {
+      label: "Published",
+      value: publishedCount,
+      icon: FileText,
+      color: "text-green-500",
+    },
+    {
+      label: "Drafts",
+      value: draftCount,
+      icon: FileText,
+      color: "text-amber-500",
+    },
+    {
+      label: "Categories",
+      value: categories?.length || 0,
+      icon: FolderOpen,
+      color: "text-blue-500",
+    },
+    {
+      label: "Tags",
+      value: tags?.length || 0,
+      icon: Tags,
+      color: "text-purple-500",
+    },
+    {
+      label: "Media",
+      value: media?.length || 0,
+      icon: Image,
+      color: "text-pink-500",
+    },
   ];
 
   return (
@@ -48,7 +74,9 @@ export default function BlogAdminDashboard() {
                   <stat.icon className={`h-5 w-5 ${stat.color}`} />
                   <div>
                     <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {stat.label}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -80,16 +108,18 @@ export default function BlogAdminDashboard() {
                         {post.title}
                       </Link>
                       <p className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(post.created_at), {
+                          addSuffix: true,
+                        })}
                       </p>
                     </div>
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
-                        post.status === 'published'
-                          ? 'bg-green-500/10 text-green-600'
-                          : post.status === 'scheduled'
-                          ? 'bg-blue-500/10 text-blue-600'
-                          : 'bg-amber-500/10 text-amber-600'
+                        post.status === "published"
+                          ? "bg-green-500/10 text-green-600"
+                          : post.status === "scheduled"
+                            ? "bg-blue-500/10 text-blue-600"
+                            : "bg-amber-500/10 text-amber-600"
                       }`}
                     >
                       {post.status}
@@ -99,8 +129,11 @@ export default function BlogAdminDashboard() {
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-8">
-                No posts yet.{' '}
-                <Link to="/blog/admin/posts/new" className="text-primary hover:underline">
+                No posts yet.{" "}
+                <Link
+                  to="/blog/admin/posts/new"
+                  className="text-primary hover:underline"
+                >
                   Create your first post
                 </Link>
               </p>
@@ -111,25 +144,37 @@ export default function BlogAdminDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Button variant="outline" className="h-auto py-4" asChild>
-            <Link to="/blog/admin/posts/new" className="flex flex-col items-center gap-2">
+            <Link
+              to="/blog/admin/posts/new"
+              className="flex flex-col items-center gap-2"
+            >
               <FileText className="h-5 w-5" />
               <span>New Post</span>
             </Link>
           </Button>
           <Button variant="outline" className="h-auto py-4" asChild>
-            <Link to="/blog/admin/categories" className="flex flex-col items-center gap-2">
+            <Link
+              to="/blog/admin/categories"
+              className="flex flex-col items-center gap-2"
+            >
               <FolderOpen className="h-5 w-5" />
               <span>Categories</span>
             </Link>
           </Button>
           <Button variant="outline" className="h-auto py-4" asChild>
-            <Link to="/blog/admin/tags" className="flex flex-col items-center gap-2">
+            <Link
+              to="/blog/admin/tags"
+              className="flex flex-col items-center gap-2"
+            >
               <Tags className="h-5 w-5" />
               <span>Tags</span>
             </Link>
           </Button>
           <Button variant="outline" className="h-auto py-4" asChild>
-            <Link to="/blog/admin/media" className="flex flex-col items-center gap-2">
+            <Link
+              to="/blog/admin/media"
+              className="flex flex-col items-center gap-2"
+            >
               <Image className="h-5 w-5" />
               <span>Media</span>
             </Link>

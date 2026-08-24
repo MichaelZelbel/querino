@@ -22,7 +22,23 @@ import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Library as LibraryIcon, Sparkles, Search, Github, FileText, Workflow, Building2, Pin, FolderOpen, Plus, ExternalLink, CheckCircle2, Package, CheckSquare } from "lucide-react";
+import {
+  Loader2,
+  Library as LibraryIcon,
+  Sparkles,
+  Search,
+  Github,
+  FileText,
+  Workflow,
+  Building2,
+  Pin,
+  FolderOpen,
+  Plus,
+  ExternalLink,
+  CheckCircle2,
+  Package,
+  CheckSquare,
+} from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
@@ -30,7 +46,10 @@ import { usePromptKits } from "@/hooks/usePromptKits";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import { SectionHeader } from "@/components/library/SectionHeader";
 import { BulkActionBar } from "@/components/library/BulkActionBar";
-import { BulkAddToCollectionModal, type BulkSelectionItem } from "@/components/library/BulkAddToCollectionModal";
+import {
+  BulkAddToCollectionModal,
+  type BulkSelectionItem,
+} from "@/components/library/BulkAddToCollectionModal";
 import { usePinnedPrompts } from "@/hooks/usePinnedPrompts";
 import { useCollections } from "@/hooks/useCollections";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
@@ -49,7 +68,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { UpsellModal } from "@/components/premium/UpsellModal";
 
 type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
-const TABLE_BY_TYPE: Record<ArtifactType, "prompts" | "skills" | "workflows" | "prompt_kits"> = {
+const TABLE_BY_TYPE: Record<
+  ArtifactType,
+  "prompts" | "skills" | "workflows" | "prompt_kits"
+> = {
   prompt: "prompts",
   skill: "skills",
   workflow: "workflows",
@@ -123,20 +145,28 @@ export default function Library() {
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   // --- Sort / filter controls (state persisted in URL) ---
-  const ALL_TYPES = ["prompts", "skills", "workflows", "kits", "saved", "collections"] as const;
+  const ALL_TYPES = [
+    "prompts",
+    "skills",
+    "workflows",
+    "kits",
+    "saved",
+    "collections",
+  ] as const;
   type LibType = (typeof ALL_TYPES)[number];
   const [searchParams, setSearchParams] = useSearchParams();
   const sort = (searchParams.get("sort") || "recent") as
-    | "recent"
-    | "oldest"
-    | "az"
-    | "za"
-    | "rating";
+    "recent" | "oldest" | "az" | "za" | "rating";
   const typesParam = searchParams.get("types");
   const activeTypes: LibType[] = typesParam
-    ? (typesParam.split(",").filter((t) => (ALL_TYPES as readonly string[]).includes(t)) as LibType[])
+    ? (typesParam
+        .split(",")
+        .filter((t) =>
+          (ALL_TYPES as readonly string[]).includes(t),
+        ) as LibType[])
     : [...ALL_TYPES];
-  const menerioFilter = (searchParams.get("menerio") || "all") as "all" | "synced" | "unsynced";
+  const menerioFilter = (searchParams.get("menerio") || "all") as
+    "all" | "synced" | "unsynced";
 
   const updateParam = useCallback(
     (key: string, value: string | null) => {
@@ -153,7 +183,8 @@ export default function Library() {
     [setSearchParams],
   );
 
-  const setSort = (value: string) => updateParam("sort", value === "recent" ? null : value);
+  const setSort = (value: string) =>
+    updateParam("sort", value === "recent" ? null : value);
   const setTypes = (values: string[]) => {
     if (values.length === 0 || values.length === ALL_TYPES.length) {
       updateParam("types", null);
@@ -166,9 +197,9 @@ export default function Library() {
 
   const isTypeVisible = (t: LibType) => activeTypes.includes(t);
 
-  function sortItems<T extends { title: string; created_at: string; rating_avg?: number }>(
-    items: T[],
-  ): T[] {
+  function sortItems<
+    T extends { title: string; created_at: string; rating_avg?: number },
+  >(items: T[]): T[] {
     const copy = [...items];
     switch (sort) {
       case "oldest":
@@ -185,21 +216,25 @@ export default function Library() {
     }
   }
 
-  function applyMenerio<T extends { menerio_synced?: boolean }>(items: T[]): T[] {
+  function applyMenerio<T extends { menerio_synced?: boolean }>(
+    items: T[],
+  ): T[] {
     if (menerioFilter === "all") return items;
-    if (menerioFilter === "synced") return items.filter((i) => i.menerio_synced);
+    if (menerioFilter === "synced")
+      return items.filter((i) => i.menerio_synced);
     return items.filter((i) => !i.menerio_synced);
   }
-  const [githubSettings, setGithubSettings] = useState<GithubSyncSettings | null>(null);
+  const [githubSettings, setGithubSettings] =
+    useState<GithubSyncSettings | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncSuccessDialogOpen, setSyncSuccessDialogOpen] = useState(false);
 
   // Fetch user's skills and workflows - filtered by workspace
-  const { data: mySkills, isLoading: skillsLoading } = useSkills({ 
+  const { data: mySkills, isLoading: skillsLoading } = useSkills({
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
-  const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({ 
+  const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
@@ -209,19 +244,21 @@ export default function Library() {
   });
 
   // Fetch pinned prompts - filtered by workspace
-  const { 
-    pinnedPromptIds, 
-    pinnedPrompts, 
-    loading: pinnedLoading, 
+  const {
+    pinnedPromptIds,
+    pinnedPrompts,
+    loading: pinnedLoading,
     isPromptPinned,
-    refetch: refetchPinned 
+    refetch: refetchPinned,
   } = usePinnedPrompts({
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
     personalOnly: !isTeamWorkspace,
   });
 
   // Fetch user's collections
-  const { data: myCollections, isLoading: collectionsLoading } = useCollections(user?.id);
+  const { data: myCollections, isLoading: collectionsLoading } = useCollections(
+    user?.id,
+  );
 
   // Check Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
@@ -302,11 +339,17 @@ export default function Library() {
         }
       }
       if (totalDeleted > 0) {
-        toast.success(`Deleted ${totalDeleted} item${totalDeleted === 1 ? "" : "s"}.`);
+        toast.success(
+          `Deleted ${totalDeleted} item${totalDeleted === 1 ? "" : "s"}.`,
+        );
       }
       // Refresh local + cached lists
-      setMyPrompts((prev) => prev.filter((p) => !groupSelected.prompt.includes(p.id)));
-      setSavedPrompts((prev) => prev.filter((p) => !groupSelected.prompt.includes(p.id)));
+      setMyPrompts((prev) =>
+        prev.filter((p) => !groupSelected.prompt.includes(p.id)),
+      );
+      setSavedPrompts((prev) =>
+        prev.filter((p) => !groupSelected.prompt.includes(p.id)),
+      );
       queryClient.invalidateQueries({ queryKey: ["skills"] });
       queryClient.invalidateQueries({ queryKey: ["workflows"] });
       queryClient.invalidateQueries({ queryKey: ["prompt_kits"] });
@@ -337,7 +380,9 @@ export default function Library() {
         console.error("Bulk Menerio sync failed:", error);
         toast.error("Failed to queue Menerio sync");
       } else {
-        toast.success(`${rows.length} item${rows.length === 1 ? "" : "s"} queued for Menerio sync.`);
+        toast.success(
+          `${rows.length} item${rows.length === 1 ? "" : "s"} queued for Menerio sync.`,
+        );
         exitSelectMode();
       }
     } finally {
@@ -354,7 +399,8 @@ export default function Library() {
         prompt.title.toLowerCase().includes(search) ||
         prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
-        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ??
+          false),
     );
   }, [myPrompts, debouncedSearch]);
 
@@ -367,7 +413,8 @@ export default function Library() {
         prompt.title.toLowerCase().includes(search) ||
         prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
-        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ??
+          false),
     );
   }, [pinnedPrompts, debouncedSearch]);
 
@@ -379,7 +426,8 @@ export default function Library() {
         prompt.title.toLowerCase().includes(search) ||
         prompt.description.toLowerCase().includes(search) ||
         prompt.content.toLowerCase().includes(search) ||
-        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+        (prompt.tags?.some((tag) => tag.toLowerCase().includes(search)) ??
+          false),
     );
   }, [savedPrompts, debouncedSearch]);
 
@@ -391,7 +439,8 @@ export default function Library() {
         skill.title.toLowerCase().includes(search) ||
         (skill.description?.toLowerCase().includes(search) ?? false) ||
         skill.content.toLowerCase().includes(search) ||
-        (skill.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+        (skill.tags?.some((tag) => tag.toLowerCase().includes(search)) ??
+          false),
     );
   }, [mySkills, debouncedSearch]);
 
@@ -402,7 +451,8 @@ export default function Library() {
       (workflow) =>
         workflow.title.toLowerCase().includes(search) ||
         (workflow.description?.toLowerCase().includes(search) ?? false) ||
-        (workflow.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+        (workflow.tags?.some((tag) => tag.toLowerCase().includes(search)) ??
+          false),
     );
   }, [myWorkflows, debouncedSearch]);
 
@@ -414,7 +464,7 @@ export default function Library() {
         kit.title.toLowerCase().includes(search) ||
         (kit.description?.toLowerCase().includes(search) ?? false) ||
         (kit.content?.toLowerCase().includes(search) ?? false) ||
-        (kit.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false)
+        (kit.tags?.some((tag) => tag.toLowerCase().includes(search)) ?? false),
     );
   }, [myKits, debouncedSearch]);
 
@@ -451,9 +501,6 @@ export default function Library() {
     [filteredSavedPrompts, sort, menerioFilter],
   );
 
-
-
-
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
@@ -465,7 +512,7 @@ export default function Library() {
   useEffect(() => {
     async function loadGithubSettings() {
       if (!user) return;
-      
+
       if (isTeamWorkspace && currentTeam) {
         // Use team GitHub settings
         setGithubSettings({
@@ -478,16 +525,18 @@ export default function Library() {
         // Use personal GitHub settings
         const { data, error } = await supabase
           .from("profiles")
-          .select("github_repo, github_branch, github_folder, github_sync_enabled")
+          .select(
+            "github_repo, github_branch, github_folder, github_sync_enabled",
+          )
           .eq("id", user.id)
           .single();
-        
+
         if (!error && data) {
           setGithubSettings(data);
         }
       }
     }
-    
+
     if (user) {
       loadGithubSettings();
     }
@@ -495,12 +544,12 @@ export default function Library() {
 
   const handleSyncToGithub = async () => {
     if (!user || !githubSettings?.github_repo) return;
-    
+
     setSyncing(true);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke("github-sync", {
-        body: { 
+        body: {
           teamId: isTeamWorkspace ? currentWorkspace : undefined,
         },
       });
@@ -514,7 +563,11 @@ export default function Library() {
       }
     } catch (error) {
       console.error("GitHub sync error:", error);
-      toast.error(error instanceof Error ? error.message : "GitHub sync failed. Please check your settings.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "GitHub sync failed. Please check your settings.",
+      );
     } finally {
       setSyncing(false);
     }
@@ -523,7 +576,8 @@ export default function Library() {
   const getGithubFolderUrl = () => {
     if (!githubSettings?.github_repo) return "";
     const branch = githubSettings.github_branch || "main";
-    const folder = githubSettings.github_folder?.replace(/^\/+|\/+$/g, "") || "";
+    const folder =
+      githubSettings.github_folder?.replace(/^\/+|\/+$/g, "") || "";
     const baseUrl = `https://github.com/${githubSettings.github_repo}/tree/${branch}`;
     return folder ? `${baseUrl}/${folder}` : baseUrl;
   };
@@ -536,11 +590,13 @@ export default function Library() {
     setSyncSuccessDialogOpen(false);
   };
 
-  const canSyncToGithub = 
-    githubSettings?.github_sync_enabled && 
-    githubSettings?.github_repo;
+  const canSyncToGithub =
+    githubSettings?.github_sync_enabled && githubSettings?.github_repo;
 
-  const hasContent = myPrompts.length > 0 || (mySkills?.length || 0) > 0 || (myWorkflows?.length || 0) > 0;
+  const hasContent =
+    myPrompts.length > 0 ||
+    (mySkills?.length || 0) > 0 ||
+    (myWorkflows?.length || 0) > 0;
 
   const libraryIsEmpty =
     myPrompts.length === 0 &&
@@ -559,7 +615,7 @@ export default function Library() {
       try {
         // Fetch prompts based on workspace
         let promptsQuery = supabase.from("prompts").select("*");
-        
+
         if (isTeamWorkspace) {
           // Team workspace: get prompts with this team_id
           promptsQuery = promptsQuery.eq("team_id", currentWorkspace);
@@ -569,8 +625,11 @@ export default function Library() {
             .eq("author_id", user.id)
             .is("team_id", null);
         }
-        
-        const { data: ownPrompts, error: ownError } = await promptsQuery.order("created_at", { ascending: false });
+
+        const { data: ownPrompts, error: ownError } = await promptsQuery.order(
+          "created_at",
+          { ascending: false },
+        );
 
         if (ownError) {
           console.error("Error fetching prompts:", ownError);
@@ -650,12 +709,18 @@ export default function Library() {
     return null; // Will redirect
   }
 
-  const isLoading = loading || skillsLoading || workflowsLoading || kitsLoading || pinnedLoading || collectionsLoading;
+  const isLoading =
+    loading ||
+    skillsLoading ||
+    workflowsLoading ||
+    kitsLoading ||
+    pinnedLoading ||
+    collectionsLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12">
           {/* Page Header */}
@@ -673,7 +738,7 @@ export default function Library() {
                 )}
               </div>
               <p className="mt-1 text-muted-foreground">
-                {isTeamWorkspace 
+                {isTeamWorkspace
                   ? "Team shared prompts, skills, and workflows"
                   : `Welcome back${profile?.display_name ? `, ${profile.display_name}` : ""}!`}
               </p>
@@ -718,7 +783,10 @@ export default function Library() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Select value={sort} onValueChange={setSort}>
-                <SelectTrigger className="h-9 w-[170px]" aria-label="Sort library">
+                <SelectTrigger
+                  className="h-9 w-[170px]"
+                  aria-label="Sort library"
+                >
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -757,11 +825,17 @@ export default function Library() {
                 </ToggleGroupItem>
                 {!isTeamWorkspace && (
                   <>
-                    <ToggleGroupItem value="saved" aria-label="Show saved prompts">
+                    <ToggleGroupItem
+                      value="saved"
+                      aria-label="Show saved prompts"
+                    >
                       <LibraryIcon className="mr-1 h-3.5 w-3.5" />
                       Saved
                     </ToggleGroupItem>
-                    <ToggleGroupItem value="collections" aria-label="Show collections">
+                    <ToggleGroupItem
+                      value="collections"
+                      aria-label="Show collections"
+                    >
                       <FolderOpen className="mr-1 h-3.5 w-3.5" />
                       Collections
                     </ToggleGroupItem>
@@ -771,7 +845,10 @@ export default function Library() {
 
               {hasMenerio && (
                 <Select value={menerioFilter} onValueChange={setMenerioFilter}>
-                  <SelectTrigger className="h-9 w-[180px]" aria-label="Filter by Menerio sync">
+                  <SelectTrigger
+                    className="h-9 w-[180px]"
+                    aria-label="Filter by Menerio sync"
+                  >
                     <SelectValue placeholder="Menerio" />
                   </SelectTrigger>
                   <SelectContent>
@@ -799,8 +876,6 @@ export default function Library() {
             </div>
           </div>
 
-
-
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -808,15 +883,27 @@ export default function Library() {
           ) : libraryIsEmpty ? (
             <EmptyState
               icon={LibraryIcon}
-              title={isTeamWorkspace ? "This team's library is empty" : "Your library is empty"}
+              title={
+                isTeamWorkspace
+                  ? "This team's library is empty"
+                  : "Your library is empty"
+              }
               description="Create your first prompt, or explore the community to find something worth saving."
-              primaryAction={{ label: "Create Prompt", to: "/prompts/new", icon: Plus }}
-              secondaryAction={{ label: "Explore Discover", to: "/discover", icon: Sparkles }}
+              primaryAction={{
+                label: "Create Prompt",
+                to: "/prompts/new",
+                icon: Plus,
+              }}
+              secondaryAction={{
+                label: "Explore Discover",
+                to: "/discover",
+                icon: Sparkles,
+              }}
             />
           ) : (
             <div className="space-y-12">
               {/* Pinned Section - only show if user has pinned items */}
-              {isTypeVisible('prompts') && pinnedPrompts.length > 0 && (
+              {isTypeVisible("prompts") && pinnedPrompts.length > 0 && (
                 <section>
                   <SectionHeader
                     iconNode={<Pin className="h-5 w-5 text-warning" />}
@@ -856,7 +943,7 @@ export default function Library() {
               )}
 
               {/* My Prompts Section - count includes ALL owned prompts, but renders only unpinned to avoid duplication */}
-              {isTypeVisible('prompts') && myPrompts.length > 0 && (
+              {isTypeVisible("prompts") && myPrompts.length > 0 && (
                 <section>
                   <SectionHeader
                     icon={Sparkles}
@@ -869,11 +956,28 @@ export default function Library() {
                     <EmptyState
                       variant="compact"
                       icon={Search}
-                      title={debouncedSearch ? "No prompts match your search" : "No prompts yet"}
-                      description={debouncedSearch ? "Try a different keyword or clear your search." : "Create your first prompt to see it here."}
-                      primaryAction={debouncedSearch
-                        ? { label: "Clear search", onClick: () => setSearchQuery("") }
-                        : { label: "New Prompt", to: "/prompts/new", icon: Plus }}
+                      title={
+                        debouncedSearch
+                          ? "No prompts match your search"
+                          : "No prompts yet"
+                      }
+                      description={
+                        debouncedSearch
+                          ? "Try a different keyword or clear your search."
+                          : "Create your first prompt to see it here."
+                      }
+                      primaryAction={
+                        debouncedSearch
+                          ? {
+                              label: "Clear search",
+                              onClick: () => setSearchQuery(""),
+                            }
+                          : {
+                              label: "New Prompt",
+                              to: "/prompts/new",
+                              icon: Plus,
+                            }
+                      }
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -902,7 +1006,7 @@ export default function Library() {
               )}
 
               {/* My Skills Section */}
-              {isTypeVisible('skills') && (mySkills?.length || 0) > 0 && (
+              {isTypeVisible("skills") && (mySkills?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={FileText}
@@ -917,7 +1021,10 @@ export default function Library() {
                       icon={Search}
                       title="No skills match your search"
                       description="Try a different keyword or clear your search."
-                      primaryAction={{ label: "Clear search", onClick: () => setSearchQuery("") }}
+                      primaryAction={{
+                        label: "Clear search",
+                        onClick: () => setSearchQuery(""),
+                      }}
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -929,7 +1036,12 @@ export default function Library() {
                           onToggle={() => toggleSelect("skill", skill.id)}
                           label={skill.title}
                         >
-                          <SkillCard skill={skill} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                          <SkillCard
+                            skill={skill}
+                            showEditButton
+                            currentUserId={user?.id}
+                            showMenerioStatus={hasMenerio}
+                          />
                         </SelectableCard>
                       ))}
                     </div>
@@ -938,7 +1050,7 @@ export default function Library() {
               )}
 
               {/* My Workflows Section */}
-              {isTypeVisible('workflows') && (myWorkflows?.length || 0) > 0 && (
+              {isTypeVisible("workflows") && (myWorkflows?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={Workflow}
@@ -953,7 +1065,10 @@ export default function Library() {
                       icon={Search}
                       title="No workflows match your search"
                       description="Try a different keyword or clear your search."
-                      primaryAction={{ label: "Clear search", onClick: () => setSearchQuery("") }}
+                      primaryAction={{
+                        label: "Clear search",
+                        onClick: () => setSearchQuery(""),
+                      }}
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -965,7 +1080,12 @@ export default function Library() {
                           onToggle={() => toggleSelect("workflow", workflow.id)}
                           label={workflow.title}
                         >
-                          <WorkflowCard workflow={workflow} showEditButton currentUserId={user?.id} showMenerioStatus={hasMenerio} />
+                          <WorkflowCard
+                            workflow={workflow}
+                            showEditButton
+                            currentUserId={user?.id}
+                            showMenerioStatus={hasMenerio}
+                          />
                         </SelectableCard>
                       ))}
                     </div>
@@ -974,11 +1094,13 @@ export default function Library() {
               )}
 
               {/* My Prompt Kits Section */}
-              {isTypeVisible('kits') && (myKits?.length || 0) > 0 && (
+              {isTypeVisible("kits") && (myKits?.length || 0) > 0 && (
                 <section>
                   <SectionHeader
                     icon={Package}
-                    title={isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"}
+                    title={
+                      isTeamWorkspace ? "Team Prompt Kits" : "My Prompt Kits"
+                    }
                     count={displayMyKits.length}
                     total={myKits?.length}
                     showFraction={!!debouncedSearch}
@@ -989,7 +1111,10 @@ export default function Library() {
                       icon={Search}
                       title="No prompt kits match your search"
                       description="Try a different keyword or clear your search."
-                      primaryAction={{ label: "Clear search", onClick: () => setSearchQuery("") }}
+                      primaryAction={{
+                        label: "Clear search",
+                        onClick: () => setSearchQuery(""),
+                      }}
                     />
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -1001,7 +1126,11 @@ export default function Library() {
                           onToggle={() => toggleSelect("prompt_kit", kit.id)}
                           label={kit.title}
                         >
-                          <PromptKitCard kit={kit} showEditButton currentUserId={user?.id} />
+                          <PromptKitCard
+                            kit={kit}
+                            showEditButton
+                            currentUserId={user?.id}
+                          />
                         </SelectableCard>
                       ))}
                     </div>
@@ -1028,7 +1157,8 @@ export default function Library() {
                         No saved prompts yet
                       </h3>
                       <p className="mb-6 max-w-md text-muted-foreground">
-                        Discover and save prompts you love to build your collection.
+                        Discover and save prompts you love to build your
+                        collection.
                       </p>
                       <Link to="/discover">
                         <Button variant="secondary" className="gap-2">
@@ -1073,7 +1203,7 @@ export default function Library() {
                       </Link>
                     }
                   />
-                  {(!myCollections || myCollections.length === 0) ? (
+                  {!myCollections || myCollections.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border">
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                         <FolderOpen className="h-8 w-8 text-primary" />
@@ -1082,7 +1212,8 @@ export default function Library() {
                         No collections yet
                       </h3>
                       <p className="mb-6 max-w-md text-muted-foreground">
-                        Create collections to organize your prompts, skills, and workflows.
+                        Create collections to organize your prompts, skills, and
+                        workflows.
                       </p>
                       <Link to="/collections/new">
                         <Button variant="secondary" className="gap-2">
@@ -1094,7 +1225,11 @@ export default function Library() {
                   ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {myCollections.map((collection) => (
-                        <CollectionCard key={collection.id} collection={collection} showOwner={false} />
+                        <CollectionCard
+                          key={collection.id}
+                          collection={collection}
+                          showOwner={false}
+                        />
                       ))}
                     </div>
                   )}
@@ -1108,7 +1243,10 @@ export default function Library() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Current Plan: <span className="capitalize">{profile?.plan_type || "Free"}</span>
+                  Current Plan:{" "}
+                  <span className="capitalize">
+                    {profile?.plan_type || "Free"}
+                  </span>
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {profile?.plan_type === "free"
@@ -1117,7 +1255,11 @@ export default function Library() {
                 </p>
               </div>
               {profile?.plan_type === "free" && (
-                <Button variant="outline" size="sm" onClick={() => setShowPlanUpsell(true)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPlanUpsell(true)}
+                >
                   See what Premium includes
                 </Button>
               )}
@@ -1147,10 +1289,11 @@ export default function Library() {
         onDone={exitSelectMode}
       />
 
-
-
       {/* GitHub Sync Success Dialog */}
-      <Dialog open={syncSuccessDialogOpen} onOpenChange={setSyncSuccessDialogOpen}>
+      <Dialog
+        open={syncSuccessDialogOpen}
+        onOpenChange={setSyncSuccessDialogOpen}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1158,11 +1301,15 @@ export default function Library() {
               Sync Successful
             </DialogTitle>
             <DialogDescription>
-              Your {isTeamWorkspace ? "team" : "library"} has been successfully synced to GitHub.
+              Your {isTeamWorkspace ? "team" : "library"} has been successfully
+              synced to GitHub.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={() => setSyncSuccessDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setSyncSuccessDialogOpen(false)}
+            >
               Close
             </Button>
             <Button onClick={handleOpenGithub} className="gap-2">

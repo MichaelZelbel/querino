@@ -13,7 +13,6 @@ import {
 import { interpolatePrompt } from "../_shared/llm-config.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/translate-artifact.ts";
 
-
 const TOOL: ToolDefinition = {
   type: "function",
   function: {
@@ -24,7 +23,11 @@ const TOOL: ToolDefinition = {
       properties: {
         title: { type: "string", description: "Translated title" },
         description: { type: "string", description: "Translated description" },
-        content: { type: "string", description: "Translated content (preserve markdown, code blocks, and {{variables}})" },
+        content: {
+          type: "string",
+          description:
+            "Translated content (preserve markdown, code blocks, and {{variables}})",
+        },
         tags: {
           type: "array",
           items: { type: "string" },
@@ -39,7 +42,8 @@ const TOOL: ToolDefinition = {
 
 serve(async (req) => {
   const corsHeaders = corsHeadersFor(req);
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS")
+    return new Response(null, { headers: corsHeaders });
 
   try {
     const user_id = await getCallerUserId(req);
@@ -55,14 +59,24 @@ serve(async (req) => {
 
     if (!sourceLanguage || !targetLanguage) {
       return new Response(
-        JSON.stringify({ error: "sourceLanguage and targetLanguage are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "sourceLanguage and targetLanguage are required",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
     if (sourceLanguage === targetLanguage) {
       return new Response(
-        JSON.stringify({ error: "sourceLanguage and targetLanguage must differ" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "sourceLanguage and targetLanguage must differ",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -98,7 +112,10 @@ ${truncatedContent}`;
         { role: "user", content: userPrompt },
       ],
       tools: [TOOL],
-      tool_choice: { type: "function", function: { name: "translate_artifact" } },
+      tool_choice: {
+        type: "function",
+        function: { name: "translate_artifact" },
+      },
       temperature: 0.2,
       templateVars,
       metadata: {
@@ -111,21 +128,32 @@ ${truncatedContent}`;
 
     const call = result.tool_calls[0];
     if (!call?.function?.arguments) {
-      return new Response(JSON.stringify({ error: "Translation returned no result" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Translation returned no result" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    let parsed: { title?: string; description?: string; content?: string; tags?: string[] };
+    let parsed: {
+      title?: string;
+      description?: string;
+      content?: string;
+      tags?: string[];
+    };
     try {
       parsed = JSON.parse(call.function.arguments);
     } catch (e) {
       console.error("[translate-artifact] JSON parse error:", e);
-      return new Response(JSON.stringify({ error: "Invalid translation response" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Invalid translation response" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response(
@@ -133,7 +161,9 @@ ${truncatedContent}`;
         title: (parsed.title ?? "").toString(),
         description: (parsed.description ?? "").toString(),
         content: (parsed.content ?? "").toString(),
-        tags: Array.isArray(parsed.tags) ? parsed.tags.map((t) => String(t)) : [],
+        tags: Array.isArray(parsed.tags)
+          ? parsed.tags.map((t) => String(t))
+          : [],
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
@@ -145,17 +175,27 @@ ${truncatedContent}`;
       });
     }
     if (error instanceof RateLimitedError) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     if (error instanceof GatewayError) {
-      console.error("[translate-artifact] Gateway error:", error.status, error.message);
-      return new Response(JSON.stringify({ error: "Upstream AI gateway error" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error(
+        "[translate-artifact] Gateway error:",
+        error.status,
+        error.message,
+      );
+      return new Response(
+        JSON.stringify({ error: "Upstream AI gateway error" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     const message = error instanceof Error ? error.message : "Unknown error";
     if (

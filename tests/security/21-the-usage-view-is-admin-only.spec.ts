@@ -14,7 +14,13 @@
 //      actually uses.
 
 import { test, expect } from "@playwright/test";
-import { asAnonKey, asUser, callFunction, restAsService, signInTestUser } from "./helpers/api";
+import {
+  asAnonKey,
+  asUser,
+  callFunction,
+  restAsService,
+  signInTestUser,
+} from "./helpers/api";
 import { ANON_KEY, REST_URL } from "./helpers/env";
 
 interface CallSiteUsage {
@@ -35,7 +41,10 @@ async function setRole(role: "free" | "admin"): Promise<void> {
     body: { role },
     headers: { Prefer: "return=minimal" },
   });
-  if (!res.ok) throw new Error(`Could not set role to ${role}: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(
+      `Could not set role to ${role}: ${JSON.stringify(res.error)}`,
+    );
 }
 
 test.beforeAll(async () => {
@@ -94,7 +103,11 @@ test.describe("the AI usage view is admin-only", () => {
   });
 
   test("the usage action refuses the anon key outright", async () => {
-    const res = await callFunction("admin-llm-config", { action: "usage", days: 30 }, asAnonKey);
+    const res = await callFunction(
+      "admin-llm-config",
+      { action: "usage", days: 30 },
+      asAnonKey,
+    );
     expect(res.status).toBeGreaterThanOrEqual(400);
   });
 });
@@ -111,7 +124,10 @@ test.describe("the AI usage view answers the question it was built for", () => {
     await setRole("free");
 
     expect(res.status, `usage failed: ${res.text.slice(0, 300)}`).toBe(200);
-    const body = res.body as { call_sites?: CallSiteUsage[]; totals?: { calls: number } };
+    const body = res.body as {
+      call_sites?: CallSiteUsage[];
+      totals?: { calls: number };
+    };
     const sites = body.call_sites ?? [];
 
     // Every configured call site appears whether or not anyone has used it. A
@@ -131,7 +147,8 @@ test.describe("the AI usage view answers the question it was built for", () => {
     );
     await setRole("free");
 
-    const sites = (res.body as { call_sites?: CallSiteUsage[] }).call_sites ?? [];
+    const sites =
+      (res.body as { call_sites?: CallSiteUsage[] }).call_sites ?? [];
     const used = sites.filter((s) => s.calls > 0);
 
     // Roughly half the rows on record predate the `feature` column being

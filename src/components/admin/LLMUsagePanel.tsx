@@ -1,10 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 type CallerBucket = "free" | "premium" | "admin" | "machine";
@@ -58,7 +77,10 @@ const CALLER_LABEL: Record<CallerBucket, string> = {
   machine: "Machine",
 };
 
-const CALLER_VARIANT: Record<CallerBucket, "default" | "secondary" | "outline"> = {
+const CALLER_VARIANT: Record<
+  CallerBucket,
+  "default" | "secondary" | "outline"
+> = {
   free: "secondary",
   premium: "default",
   admin: "outline",
@@ -90,14 +112,19 @@ export default function LLMUsagePanel() {
     const load = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.functions.invoke("admin-llm-config", {
-          body: { action: "usage", days: Number(days) },
-        });
+        const { data, error } = await supabase.functions.invoke(
+          "admin-llm-config",
+          {
+            body: { action: "usage", days: Number(days) },
+          },
+        );
         if (error) throw error;
         if (!cancelled) setUsage(data as UsageResponse);
       } catch (e) {
         if (!cancelled) {
-          toast.error("Failed to load AI usage", { description: (e as Error).message });
+          toast.error("Failed to load AI usage", {
+            description: (e as Error).message,
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -130,16 +157,19 @@ export default function LLMUsagePanel() {
       <CardHeader>
         <CardTitle>AI usage by call site</CardTitle>
         <CardDescription>
-          Which call sites actually spend money, and who spends it. Per-tier configuration (cheaper
-          models for free users) was decided against on 23 August 2026, because free callers had cost
-          half a cent in seven months. This is the view that would reverse that decision: roughly{" "}
-          {num(TIERING_THRESHOLD_CALLS_PER_MONTH)} free calls a month, or the arrival of real paying
-          users. Cost is shown in tokens and credits rather than currency, because no price list is
-          stored and a hardcoded one goes stale. A row marked <em>not configured</em> spent tokens
-          under a name the table above does not carry: either the name the earlier logging used for
-          the same work (counted separately, because the old and new names cannot be matched up
-          reliably), or a feature such as embeddings that does not go through a configurable call
-          site at all.
+          Which call sites actually spend money, and who spends it. Per-tier
+          configuration (cheaper models for free users) was decided against on
+          23 August 2026, because free callers had cost half a cent in seven
+          months. This is the view that would reverse that decision: roughly{" "}
+          {num(TIERING_THRESHOLD_CALLS_PER_MONTH)} free calls a month, or the
+          arrival of real paying users. Cost is shown in tokens and credits
+          rather than currency, because no price list is stored and a hardcoded
+          one goes stale. A row marked <em>not configured</em> spent tokens
+          under a name the table above does not carry: either the name the
+          earlier logging used for the same work (counted separately, because
+          the old and new names cannot be matched up reliably), or a feature
+          such as embeddings that does not go through a configurable call site
+          at all.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -163,14 +193,18 @@ export default function LLMUsagePanel() {
             <div className="rounded-md border bg-muted/40 p-4 text-sm">
               {headline && (
                 <p>
-                  <strong>Free callers: {num(headline.freeCalls)} calls</strong> (
-                  {num(headline.freeTokens)} tokens, {headline.share.toFixed(1)}% of everything the
-                  app spent in this window). Paying callers: {num(headline.payingCalls)} calls.
+                  <strong>Free callers: {num(headline.freeCalls)} calls</strong>{" "}
+                  ({num(headline.freeTokens)} tokens,{" "}
+                  {headline.share.toFixed(1)}% of everything the app spent in
+                  this window). Paying callers: {num(headline.payingCalls)}{" "}
+                  calls.
                 </p>
               )}
               <p className="mt-1 text-muted-foreground">
-                {num(usage.totals.calls)} calls in total, {num(usage.totals.total_tokens)} tokens (
-                {num(usage.totals.prompt_tokens)} in, {num(usage.totals.completion_tokens)} out),{" "}
+                {num(usage.totals.calls)} calls in total,{" "}
+                {num(usage.totals.total_tokens)} tokens (
+                {num(usage.totals.prompt_tokens)} in,{" "}
+                {num(usage.totals.completion_tokens)} out),{" "}
                 {usage.totals.credits.toFixed(2)} credits.
               </p>
             </div>
@@ -188,20 +222,32 @@ export default function LLMUsagePanel() {
                 </TableHeader>
                 <TableBody>
                   {usage.call_sites.map((c) => (
-                    <TableRow key={c.call_site} className={c.calls === 0 ? "opacity-50" : undefined}>
+                    <TableRow
+                      key={c.call_site}
+                      className={c.calls === 0 ? "opacity-50" : undefined}
+                    >
                       <TableCell className="font-mono text-xs">
                         {c.call_site}
                         {!c.is_configured && (
-                          <Badge variant="outline" className="ml-2 text-[10px] font-sans">
+                          <Badge
+                            variant="outline"
+                            className="ml-2 text-[10px] font-sans"
+                          >
                             not configured
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right text-xs">{num(c.calls)}</TableCell>
-                      <TableCell className="text-right text-xs">{num(c.total_tokens)}</TableCell>
+                      <TableCell className="text-right text-xs">
+                        {num(c.calls)}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {num(c.total_tokens)}
+                      </TableCell>
                       <TableCell>
                         {c.by_caller.length === 0 ? (
-                          <span className="text-xs italic text-muted-foreground">Never called</span>
+                          <span className="text-xs italic text-muted-foreground">
+                            Never called
+                          </span>
                         ) : (
                           <div className="flex flex-wrap gap-1">
                             {c.by_caller.map((b) => (
@@ -218,11 +264,17 @@ export default function LLMUsagePanel() {
                       </TableCell>
                       <TableCell>
                         {c.by_source.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">not used yet</span>
+                          <span className="text-xs text-muted-foreground">
+                            not used yet
+                          </span>
                         ) : (
                           <div className="flex flex-wrap gap-1">
                             {c.by_source.map((s) => (
-                              <Badge key={s.source} variant="outline" className="text-[10px]">
+                              <Badge
+                                key={s.source}
+                                variant="outline"
+                                className="text-[10px]"
+                              >
                                 {s.source} {num(s.calls)}
                               </Badge>
                             ))}

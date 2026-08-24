@@ -14,10 +14,15 @@ import type { ChatMessageLike } from "./llm-config.ts";
 
 export interface ToolDefinition {
   type: "function";
-  function: { name: string; description?: string; parameters: Record<string, unknown> };
+  function: {
+    name: string;
+    description?: string;
+    parameters: Record<string, unknown>;
+  };
 }
 
-export type ToolChoice = "auto" | "required" | { type: "function"; function: { name: string } };
+export type ToolChoice =
+  "auto" | "required" | { type: "function"; function: { name: string } };
 
 export interface ToolCall {
   id: string;
@@ -40,7 +45,11 @@ export interface ProviderRequest {
 export interface ProviderResult {
   content: string | null;
   tool_calls: ToolCall[];
-  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
   model: string;
   raw: unknown;
 }
@@ -62,7 +71,10 @@ const OPENAI_COMPATIBLE_URLS: Partial<Record<Provider, string>> = {
 
 export function providerAvailability(): Record<Provider, boolean> {
   const out = {} as Record<Provider, boolean>;
-  for (const [p, env] of Object.entries(PROVIDER_SECRETS) as [Provider, string][]) {
+  for (const [p, env] of Object.entries(PROVIDER_SECRETS) as [
+    Provider,
+    string,
+  ][]) {
     out[p] = !!Deno.env.get(env);
   }
   return out;
@@ -71,12 +83,17 @@ export function providerAvailability(): Record<Provider, boolean> {
 async function readOrThrow(response: Response): Promise<unknown> {
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new ProviderHttpError(response.status, text || `Provider error ${response.status}`);
+    throw new ProviderHttpError(
+      response.status,
+      text || `Provider error ${response.status}`,
+    );
   }
   return await response.json();
 }
 
-async function callOpenAICompatible(req: ProviderRequest): Promise<ProviderResult> {
+async function callOpenAICompatible(
+  req: ProviderRequest,
+): Promise<ProviderResult> {
   const doFetch = req.fetchImpl ?? fetch;
   const url = OPENAI_COMPATIBLE_URLS[req.provider]!;
 
@@ -85,22 +102,33 @@ async function callOpenAICompatible(req: ProviderRequest): Promise<ProviderResul
     messages: req.messages,
     stream: false,
   };
-  if (req.temperature !== undefined && req.temperature !== null) body.temperature = req.temperature;
-  if (req.maxTokens !== undefined && req.maxTokens !== null) body.max_tokens = req.maxTokens;
+  if (req.temperature !== undefined && req.temperature !== null)
+    body.temperature = req.temperature;
+  if (req.maxTokens !== undefined && req.maxTokens !== null)
+    body.max_tokens = req.maxTokens;
   if (req.tools && req.tools.length > 0) {
     body.tools = req.tools;
     body.tool_choice = req.toolChoice ?? "auto";
   }
 
-  const json = await readOrThrow(
+  const json = (await readOrThrow(
     await doFetch(url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${req.apiKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${req.apiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
     }),
-  ) as {
-    choices?: Array<{ message?: { content?: string | null; tool_calls?: ToolCall[] } }>;
-    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+  )) as {
+    choices?: Array<{
+      message?: { content?: string | null; tool_calls?: ToolCall[] };
+    }>;
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
     model?: string;
   };
 
@@ -122,7 +150,10 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
   const doFetch = req.fetchImpl ?? fetch;
 
   // Anthropic takes the system prompt as its own field, not as a message.
-  const system = req.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const system = req.messages
+    .filter((m) => m.role === "system")
+    .map((m) => m.content)
+    .join("\n\n");
   const rest = req.messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({ role: m.role, content: m.content }));
@@ -133,9 +164,10 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     max_tokens: req.maxTokens ?? 4096,
   };
   if (system.length > 0) body.system = system;
-  if (req.temperature !== undefined && req.temperature !== null) body.temperature = req.temperature;
+  if (req.temperature !== undefined && req.temperature !== null)
+    body.temperature = req.temperature;
 
-  const json = await readOrThrow(
+  const json = (await readOrThrow(
     await doFetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -145,13 +177,16 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
       },
       body: JSON.stringify(body),
     }),
-  ) as {
+  )) as {
     content?: Array<{ type: string; text?: string }>;
     usage?: { input_tokens?: number; output_tokens?: number };
     model?: string;
   };
 
-  const text = (json.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("");
+  const text = (json.content ?? [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("");
   const prompt = Number(json.usage?.input_tokens ?? 0);
   const completion = Number(json.usage?.output_tokens ?? 0);
   return {
@@ -170,7 +205,10 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
 async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
   const doFetch = req.fetchImpl ?? fetch;
 
-  const system = req.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const system = req.messages
+    .filter((m) => m.role === "system")
+    .map((m) => m.content)
+    .join("\n\n");
   const contents = req.messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
@@ -187,16 +225,20 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
   if (req.maxTokens !== undefined && req.maxTokens !== null) {
     generationConfig.maxOutputTokens = req.maxTokens;
   }
-  if (Object.keys(generationConfig).length > 0) body.generationConfig = generationConfig;
+  if (Object.keys(generationConfig).length > 0)
+    body.generationConfig = generationConfig;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${req.model}:generateContent`;
-  const json = await readOrThrow(
+  const json = (await readOrThrow(
     await doFetch(url, {
       method: "POST",
-      headers: { "x-goog-api-key": req.apiKey, "Content-Type": "application/json" },
+      headers: {
+        "x-goog-api-key": req.apiKey,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
     }),
-  ) as {
+  )) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
     usageMetadata?: {
       promptTokenCount?: number;
@@ -205,7 +247,9 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
     };
   };
 
-  const text = (json.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
+  const text = (json.candidates?.[0]?.content?.parts ?? [])
+    .map((p) => p.text ?? "")
+    .join("");
   return {
     content: text.length > 0 ? text : null,
     tool_calls: [],

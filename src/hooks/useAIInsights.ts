@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useLogActivity } from './useLogActivity';
-import type { AIInsights, AIQuality } from '@/types/aiInsights';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useLogActivity } from "./useLogActivity";
+import type { AIInsights, AIQuality } from "@/types/aiInsights";
 import { getFunctionErrorMessage } from "@/lib/functionError";
 
-type ItemType = 'prompt' | 'skill' | 'workflow' | 'prompt_kit';
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 interface ArtefactData {
   title: string;
@@ -23,14 +23,14 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
   const fetchCachedInsights = useCallback(async () => {
     try {
       const { data, error: fetchError } = await supabase
-        .from('ai_insights')
-        .select('*')
-        .eq('item_type', itemType)
-        .eq('item_id', itemId)
+        .from("ai_insights")
+        .select("*")
+        .eq("item_type", itemType)
+        .eq("item_id", itemId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
-      
+
       if (data) {
         setInsights({
           ...data,
@@ -42,44 +42,64 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       }
       return data;
     } catch (err) {
-      console.error('Error fetching cached insights:', err);
+      console.error("Error fetching cached insights:", err);
       return null;
     }
   }, [itemType, itemId]);
 
   const fetchArtefact = useCallback(async (): Promise<ArtefactData | null> => {
     try {
-      if (itemType === 'prompt') {
+      if (itemType === "prompt") {
         const { data, error } = await supabase
-          .from('prompts')
-          .select('title, description, content, tags')
-          .eq('id', itemId)
+          .from("prompts")
+          .select("title, description, content, tags")
+          .eq("id", itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content, tags: data.tags };
-      } else if (itemType === 'skill') {
+        return {
+          title: data.title,
+          description: data.description,
+          content: data.content,
+          tags: data.tags,
+        };
+      } else if (itemType === "skill") {
         const { data, error } = await supabase
-          .from('skills')
-          .select('title, description, content, tags')
-          .eq('id', itemId)
+          .from("skills")
+          .select("title, description, content, tags")
+          .eq("id", itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content, tags: data.tags };
-      } else if (itemType === 'workflow') {
+        return {
+          title: data.title,
+          description: data.description,
+          content: data.content,
+          tags: data.tags,
+        };
+      } else if (itemType === "workflow") {
         const { data, error } = await supabase
-          .from('workflows')
-          .select('title, description, content, tags')
-          .eq('id', itemId)
+          .from("workflows")
+          .select("title, description, content, tags")
+          .eq("id", itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content || '', tags: data.tags };
-      } else if (itemType === 'prompt_kit') {
-        const { data, error } = await (supabase.from('prompt_kits') as any)
-          .select('title, description, content, tags')
-          .eq('id', itemId)
+        return {
+          title: data.title,
+          description: data.description,
+          content: data.content || "",
+          tags: data.tags,
+        };
+      } else if (itemType === "prompt_kit") {
+        const { data, error } = await (supabase.from("prompt_kits") as any)
+          .select("title, description, content, tags")
+          .eq("id", itemId)
           .single();
         if (error || !data) return null;
-        return { title: data.title, description: data.description, content: data.content || '', tags: data.tags };
+        return {
+          title: data.title,
+          description: data.description,
+          content: data.content || "",
+          tags: data.tags,
+        };
       }
       return null;
     } catch {
@@ -87,91 +107,104 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
     }
   }, [itemType, itemId]);
 
-  const generateInsights = useCallback(async (isRefresh = false) => {
-    setGenerating(true);
-    setError(null);
+  const generateInsights = useCallback(
+    async (isRefresh = false) => {
+      setGenerating(true);
+      setError(null);
 
-    try {
-      // Get current user for tracking
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        // Get current user for tracking
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      // Fetch artefact data
-      const artefact = await fetchArtefact();
-      if (!artefact) {
-        throw new Error('Failed to fetch artefact data');
-      }
+        // Fetch artefact data
+        const artefact = await fetchArtefact();
+        if (!artefact) {
+          throw new Error("Failed to fetch artefact data");
+        }
 
-      // Call edge function instead of direct n8n webhook
-      const { data: response, error: fnError } = await supabase.functions.invoke('ai-insights', {
-        body: {
+        // Call edge function instead of direct n8n webhook
+        const { data: response, error: fnError } =
+          await supabase.functions.invoke("ai-insights", {
+            body: {
+              item_type: itemType,
+              title: artefact.title,
+              description: artefact.description || "",
+              content: artefact.content,
+              tags: artefact.tags || [],
+              metadata: { id: itemId },
+              user_id: user?.id,
+            },
+          });
+
+        if (fnError) {
+          console.error("Edge function error:", fnError);
+          throw new Error(
+            await getFunctionErrorMessage(
+              fnError,
+              "Failed to generate insights",
+            ),
+          );
+        }
+
+        // Edge function already normalizes the response
+        const summary = response.summary || null;
+        const tags: string[] = response.tags || [];
+        const recommendations: string[] = response.recommendations || [];
+        const quality: AIQuality | null = response.quality || null;
+
+        // Upsert into cache
+        const insightData = {
           item_type: itemType,
-          title: artefact.title,
-          description: artefact.description || '',
-          content: artefact.content,
-          tags: artefact.tags || [],
-          metadata: { id: itemId },
-          user_id: user?.id,
-        },
-      });
+          item_id: itemId,
+          summary,
+          tags,
+          recommendations,
+          quality,
+          updated_at: new Date().toISOString(),
+        };
 
-      if (fnError) {
-        console.error('Edge function error:', fnError);
-        throw new Error(await getFunctionErrorMessage(fnError, 'Failed to generate insights'));
+        const { data: upserted, error: upsertError } = await supabase
+          .from("ai_insights")
+          .upsert(insightData as any, { onConflict: "item_type,item_id" })
+          .select()
+          .single();
+
+        if (upsertError) throw upsertError;
+
+        setInsights({
+          ...upserted,
+          item_type: upserted.item_type as ItemType,
+          tags: (upserted.tags as string[]) || [],
+          recommendations: (upserted.recommendations as string[]) || [],
+          quality: (upserted.quality as unknown as AIQuality) || null,
+        });
+
+        await logActivity({
+          action: isRefresh ? "ai_insights_refreshed" : "ai_insights_generated",
+          itemType: itemType as any,
+          itemId,
+        });
+      } catch (err) {
+        console.error("Error generating insights:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to generate insights",
+        );
+      } finally {
+        setGenerating(false);
       }
-
-      // Edge function already normalizes the response
-      const summary = response.summary || null;
-      const tags: string[] = response.tags || [];
-      const recommendations: string[] = response.recommendations || [];
-      const quality: AIQuality | null = response.quality || null;
-
-      // Upsert into cache
-      const insightData = {
-        item_type: itemType,
-        item_id: itemId,
-        summary,
-        tags,
-        recommendations,
-        quality,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data: upserted, error: upsertError } = await supabase
-        .from('ai_insights')
-        .upsert(insightData as any, { onConflict: 'item_type,item_id' })
-        .select()
-        .single();
-
-      if (upsertError) throw upsertError;
-
-      setInsights({
-        ...upserted,
-        item_type: upserted.item_type as ItemType,
-        tags: (upserted.tags as string[]) || [],
-        recommendations: (upserted.recommendations as string[]) || [],
-        quality: (upserted.quality as unknown as AIQuality) || null,
-      });
-
-      await logActivity({
-        action: isRefresh ? 'ai_insights_refreshed' : 'ai_insights_generated',
-        itemType: itemType as any,
-        itemId,
-      });
-    } catch (err) {
-      console.error('Error generating insights:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate insights');
-    } finally {
-      setGenerating(false);
-    }
-  }, [itemType, itemId, fetchArtefact, logActivity]);
+    },
+    [itemType, itemId, fetchArtefact, logActivity],
+  );
 
   const refreshInsights = useCallback(async () => {
     // Delete existing cache
     await supabase
-      .from('ai_insights')
+      .from("ai_insights")
       .delete()
-      .eq('item_type', itemType)
-      .eq('item_id', itemId);
+      .eq("item_type", itemType)
+      .eq("item_id", itemId);
 
     setInsights(null);
     await generateInsights(true);

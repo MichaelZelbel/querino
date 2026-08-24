@@ -1,0 +1,34 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /
+
+# Private/app surfaces — useless in search, often require auth
+Disallow: /auth
+Disallow: /library
+Disallow: /settings
+Disallow: /admin
+Disallow: /studio
+Disallow: /coach
+Disallow: /prompts/new
+Disallow: /prompts/*/edit
+Disallow: /skills/new
+Disallow: /skills/*/edit
+Disallow: /workflows/new
+Disallow: /workflows/*/edit
+Disallow: /prompt-kits/new
+Disallow: /prompt-kits/*/edit
+Disallow: /collections/new
+
+# Dynamic sitemap served by Supabase Edge Function (always up-to-date with public artifacts)
+Sitemap: https://zvuwkffneqxqsihlnfsd.supabase.co/functions/v1/api/sitemap.xml

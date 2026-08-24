@@ -109,11 +109,17 @@ export function serializeEditorToMarkdown(editor: {
     }
   }
 
-  return parts.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+  return parts
+    .join("\n\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function renderSingleNodeMarkdown(
-  editor: { storage: { markdown?: { getMarkdown: () => string } }; getJSON: () => JSONContent },
+  editor: {
+    storage: { markdown?: { getMarkdown: () => string } };
+    getJSON: () => JSONContent;
+  },
   _node: JSONContent,
 ): string {
   // tiptap-markdown serializes the whole doc; for a single node we'd need
@@ -154,11 +160,14 @@ export function buildKitMarkdown(editor: {
   let i = 0;
   // Replace each occurrence of an empty prompt-block div (in any
   // attribute order, possibly self-closing) with the markdown heading.
-  const replaced = md.replace(/<div[^>]*data-prompt-block[^>]*>\s*<\/div>/gi, () => {
-    const p = promptNodes[i++];
-    if (!p) return "";
-    return `## Prompt: ${p.title}\n\n${p.body}\n`;
-  });
+  const replaced = md.replace(
+    /<div[^>]*data-prompt-block[^>]*>\s*<\/div>/gi,
+    () => {
+      const p = promptNodes[i++];
+      if (!p) return "";
+      return `## Prompt: ${p.title}\n\n${p.body}\n`;
+    },
+  );
 
   return replaced.replace(/\n{3,}/g, "\n\n").trim();
 }

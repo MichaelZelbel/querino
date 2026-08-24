@@ -17,7 +17,11 @@ interface CopyWorkflowToTeamModalProps {
   };
 }
 
-export function CopyWorkflowToTeamModal({ open, onOpenChange, workflow }: CopyWorkflowToTeamModalProps) {
+export function CopyWorkflowToTeamModal({
+  open,
+  onOpenChange,
+  workflow,
+}: CopyWorkflowToTeamModalProps) {
   const { copyWorkflowToTeam, copying } = useCopyWorkflowToTeam();
 
   return (

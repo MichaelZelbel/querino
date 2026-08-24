@@ -15,7 +15,7 @@ export async function moderateContent(
   contentFields: Record<string, string | null | undefined>,
   action: "publish" | "edit_public" | "comment",
   itemType: "prompt" | "skill" | "claw" | "workflow" | "comment",
-  itemId?: string
+  itemId?: string,
 ): Promise<ModerationResult> {
   try {
     // Filter out null/undefined values
@@ -24,14 +24,17 @@ export async function moderateContent(
       if (val) cleanFields[key] = val;
     }
 
-    const { data, error } = await supabase.functions.invoke("moderate-content", {
-      body: {
-        content_fields: cleanFields,
-        action,
-        item_type: itemType,
-        item_id: itemId,
+    const { data, error } = await supabase.functions.invoke(
+      "moderate-content",
+      {
+        body: {
+          content_fields: cleanFields,
+          action,
+          item_type: itemType,
+          item_id: itemId,
+        },
       },
-    });
+    );
 
     if (error) {
       console.warn("[Moderation] Edge function error — failing open:", error);
@@ -39,7 +42,10 @@ export async function moderateContent(
     }
 
     if (!data || typeof data.approved === "undefined") {
-      console.warn("[Moderation] Unexpected response shape — failing open:", data);
+      console.warn(
+        "[Moderation] Unexpected response shape — failing open:",
+        data,
+      );
       return { approved: true };
     }
 

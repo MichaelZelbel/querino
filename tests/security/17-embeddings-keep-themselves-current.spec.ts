@@ -29,7 +29,8 @@ async function publishedWithoutEmbedding(table: string): Promise<number> {
   const res = await restAsService<Array<{ id: string }>>(
     `${table}?select=id&embedding=is.null&${flag}=is.true&limit=200`,
   );
-  if (!res.ok) throw new Error(`counting ${table} failed: ${JSON.stringify(res.error)}`);
+  if (!res.ok)
+    throw new Error(`counting ${table} failed: ${JSON.stringify(res.error)}`);
   return res.data?.length ?? 0;
 }
 
@@ -58,12 +59,18 @@ test.describe("editing an artifact re-embeds it", () => {
   test("changing the text clears the embedding, and a bare re-save does not", async () => {
     // The trigger is the whole guarantee that a future write path cannot
     // forget: the condition lives in the database, not in each caller.
-    const found = await restAsService<Array<{ id: string; language: string | null }>>(
-      "skills?select=id,language&embedding=not.is.null&limit=1",
-    );
-    expect(found.ok, `could not read a skill: ${JSON.stringify(found.error)}`).toBe(true);
+    const found = await restAsService<
+      Array<{ id: string; language: string | null }>
+    >("skills?select=id,language&embedding=not.is.null&limit=1");
+    expect(
+      found.ok,
+      `could not read a skill: ${JSON.stringify(found.error)}`,
+    ).toBe(true);
     const row = found.data?.[0];
-    test.skip(!row, "no skill has an embedding yet, so there is nothing to invalidate");
+    test.skip(
+      !row,
+      "no skill has an embedding yet, so there is nothing to invalidate",
+    );
 
     // Touch a column the embedding is NOT built from, writing back the value
     // that is already there. This is somebody's real artifact, so the test

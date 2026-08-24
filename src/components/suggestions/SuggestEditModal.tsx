@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,22 +6,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, GitPullRequest } from 'lucide-react';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, GitPullRequest } from "lucide-react";
+import { toast } from "sonner";
 
 interface SuggestEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  itemType: 'prompt' | 'skill' | 'workflow' | 'prompt_kit' | 'claw';
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
   currentTitle: string;
   currentDescription: string;
   currentContent: string;
-  onSubmit: (data: { title?: string; description?: string; content: string }) => Promise<any>;
+  onSubmit: (data: {
+    title?: string;
+    description?: string;
+    content: string;
+  }) => Promise<any>;
 }
 
 export function SuggestEditModal({
@@ -31,7 +35,7 @@ export function SuggestEditModal({
   currentTitle,
   currentDescription,
   currentContent,
-  onSubmit
+  onSubmit,
 }: SuggestEditModalProps) {
   const [title, setTitle] = useState(currentTitle);
   const [description, setDescription] = useState(currentDescription);
@@ -50,7 +54,7 @@ export function SuggestEditModal({
 
   const handleSubmit = async () => {
     if (!content.trim()) {
-      toast.error('Content is required');
+      toast.error("Content is required");
       return;
     }
 
@@ -58,13 +62,14 @@ export function SuggestEditModal({
     try {
       await onSubmit({
         title: title !== currentTitle ? title : undefined,
-        description: description !== currentDescription ? description : undefined,
-        content
+        description:
+          description !== currentDescription ? description : undefined,
+        content,
       });
-      toast.success('Edit suggestion submitted');
+      toast.success("Edit suggestion submitted");
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to submit suggestion');
+      toast.error(err.message || "Failed to submit suggestion");
     } finally {
       setIsSubmitting(false);
     }
@@ -76,10 +81,12 @@ export function SuggestEditModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitPullRequest className="h-5 w-5" />
-            Suggest Edit to {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
+            Suggest Edit to{" "}
+            {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
           </DialogTitle>
           <DialogDescription>
-            Propose changes to this {itemType}. The owner will review your suggestions.
+            Propose changes to this {itemType}. The owner will review your
+            suggestions.
           </DialogDescription>
         </DialogHeader>
 

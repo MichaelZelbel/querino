@@ -1,6 +1,6 @@
-import { useAICredits } from './useAICredits';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { useAICredits } from "./useAICredits";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 /**
  * Hook to gate AI calls based on remaining credits.
@@ -13,7 +13,8 @@ export function useAICreditsGate() {
 
   // Low-credit signal — exposed so callers can show inline upsell UI.
   const totalCredits = credits
-    ? (credits.planBaseCredits ?? 0) + credits.rolloverTokens / (credits.tokensPerCredit || 200)
+    ? (credits.planBaseCredits ?? 0) +
+      credits.rolloverTokens / (credits.tokensPerCredit || 200)
     : 0;
   const isLowCredits =
     !!credits &&

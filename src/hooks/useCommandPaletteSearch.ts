@@ -26,7 +26,10 @@ function withAllTerms<T extends { or(filters: string): T }>(
   columns: readonly string[],
   query: string,
 ): T {
-  return allTermsFilters(columns, query).reduce((acc, filter) => acc.or(filter), builder);
+  return allTermsFilters(columns, query).reduce(
+    (acc, filter) => acc.or(filter),
+    builder,
+  );
 }
 
 export interface SearchResult {
@@ -64,12 +67,17 @@ export function useCommandPaletteSearch(query: string) {
 
       try {
         // Build team IDs to search
-        const teamIds = teams.map(t => t.id);
+        const teamIds = teams.map((t) => t.id);
 
         // "Mine, or one of my teams'". With no teams this drops the team
         // clause rather than emitting team_id.in.(), which is a syntax error
         // that used to fail the whole query silently (finding M3).
-        const scope = ownedByUserOrTeams("author_id", user.id, "team_id", teamIds);
+        const scope = ownedByUserOrTeams(
+          "author_id",
+          user.id,
+          "team_id",
+          teamIds,
+        );
 
         // Search prompts
         let promptQuery = supabase
@@ -79,7 +87,9 @@ export function useCommandPaletteSearch(query: string) {
         promptQuery = withAllTerms(promptQuery, SEARCH_COLUMNS, debouncedQuery);
 
         if (currentWorkspace === "personal") {
-          promptQuery = promptQuery.eq("author_id", user.id).is("team_id", null);
+          promptQuery = promptQuery
+            .eq("author_id", user.id)
+            .is("team_id", null);
         } else {
           promptQuery = promptQuery.or(scope);
         }
@@ -94,7 +104,7 @@ export function useCommandPaletteSearch(query: string) {
             description: p.description,
             isPublic: p.is_public,
             teamId: p.team_id,
-            teamName: teams.find(t => t.id === p.team_id)?.name,
+            teamName: teams.find((t) => t.id === p.team_id)?.name,
           });
         });
 
@@ -121,7 +131,7 @@ export function useCommandPaletteSearch(query: string) {
             description: s.description,
             isPublic: s.published,
             teamId: s.team_id,
-            teamName: teams.find(t => t.id === s.team_id)?.name,
+            teamName: teams.find((t) => t.id === s.team_id)?.name,
           });
         });
 
@@ -130,10 +140,16 @@ export function useCommandPaletteSearch(query: string) {
           .from("workflows")
           .select("id, title, description, published, team_id")
           .limit(10);
-        workflowQuery = withAllTerms(workflowQuery, SEARCH_COLUMNS, debouncedQuery);
+        workflowQuery = withAllTerms(
+          workflowQuery,
+          SEARCH_COLUMNS,
+          debouncedQuery,
+        );
 
         if (currentWorkspace === "personal") {
-          workflowQuery = workflowQuery.eq("author_id", user.id).is("team_id", null);
+          workflowQuery = workflowQuery
+            .eq("author_id", user.id)
+            .is("team_id", null);
         } else {
           workflowQuery = workflowQuery.or(scope);
         }
@@ -148,7 +164,7 @@ export function useCommandPaletteSearch(query: string) {
             description: w.description,
             isPublic: w.published,
             teamId: w.team_id,
-            teamName: teams.find(t => t.id === w.team_id)?.name,
+            teamName: teams.find((t) => t.id === w.team_id)?.name,
           });
         });
 
@@ -174,7 +190,7 @@ export function useCommandPaletteSearch(query: string) {
             description: k.description,
             isPublic: k.published,
             teamId: k.team_id,
-            teamName: teams.find(t => t.id === k.team_id)?.name,
+            teamName: teams.find((t) => t.id === k.team_id)?.name,
           });
         });
 
@@ -203,7 +219,10 @@ export function useCommandPaletteSearch(query: string) {
     const searchPublic = async () => {
       try {
         const publicQuery = withAllTerms(
-          supabase.from("prompts").select("id, title, description").eq("is_public", true),
+          supabase
+            .from("prompts")
+            .select("id, title, description")
+            .eq("is_public", true),
           SEARCH_COLUMNS,
           debouncedQuery,
         );
@@ -219,7 +238,7 @@ export function useCommandPaletteSearch(query: string) {
             type: "prompt" as ArtefactType,
             description: p.description,
             isPublic: true,
-          }))
+          })),
         );
       } catch (err) {
         console.error("Public search error:", err);

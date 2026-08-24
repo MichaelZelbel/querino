@@ -17,43 +17,49 @@ interface SubscriptionStatus {
 
 export function useSubscription() {
   const { user } = useAuthContext();
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastCheckRef = useRef<number>(0);
 
-  const checkSubscription = useCallback(async (force = false) => {
-    if (!user) {
-      setSubscription(null);
-      return;
-    }
-
-    const now = Date.now();
-    if (!force && now - lastCheckRef.current < 5000) {
-      return;
-    }
-    lastCheckRef.current = now;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-
-      if (error) {
-        console.error("[Subscription] Check error:", error);
-        setError(error.message);
+  const checkSubscription = useCallback(
+    async (force = false) => {
+      if (!user) {
+        setSubscription(null);
         return;
       }
 
-      setSubscription(data);
-    } catch (err) {
-      console.error("[Subscription] Unexpected error:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+      const now = Date.now();
+      if (!force && now - lastCheckRef.current < 5000) {
+        return;
+      }
+      lastCheckRef.current = now;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const { data, error } =
+          await supabase.functions.invoke("check-subscription");
+
+        if (error) {
+          console.error("[Subscription] Check error:", error);
+          setError(error.message);
+          return;
+        }
+
+        setSubscription(data);
+      } catch (err) {
+        console.error("[Subscription] Unexpected error:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user],
+  );
 
   // POLICY: Stripe customer portal deliberately disabled — no self-serve
   // billing anywhere in Querino. Do NOT restore without owner instruction.
@@ -84,9 +90,10 @@ export function useSubscription() {
     }
   }, [checkSubscription]);
 
-  const isPremium = subscription?.role === "premium" || 
-                    subscription?.role === "premium_gift" || 
-                    subscription?.role === "admin";
+  const isPremium =
+    subscription?.role === "premium" ||
+    subscription?.role === "premium_gift" ||
+    subscription?.role === "admin";
 
   return {
     subscription,

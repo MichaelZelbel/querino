@@ -1,10 +1,27 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "@/lib/router-compat";
-import { ArrowLeft, Trash2, UserPlus, Crown, Shield, User as UserIcon, Activity, Link as LinkIcon, Copy, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Trash2,
+  UserPlus,
+  Crown,
+  Shield,
+  User as UserIcon,
+  Activity,
+  Link as LinkIcon,
+  Copy,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
@@ -26,7 +43,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useTeamInvites, useCreateTeamInvite, useRevokeTeamInvite, inviteUrl } from "@/hooks/useTeamInvites";
+import {
+  useTeamInvites,
+  useCreateTeamInvite,
+  useRevokeTeamInvite,
+  inviteUrl,
+} from "@/hooks/useTeamInvites";
 import { format } from "date-fns";
 import {
   useTeam,
@@ -44,7 +66,8 @@ export default function TeamSettings() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { data: team, isLoading: teamLoading } = useTeam(teamId);
-  const { data: members = [], isLoading: membersLoading } = useTeamMembers(teamId);
+  const { data: members = [], isLoading: membersLoading } =
+    useTeamMembers(teamId);
   const { data: userRole } = useCurrentUserTeamRole(teamId);
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
@@ -85,7 +108,9 @@ export default function TeamSettings() {
   if (!team) {
     return (
       <main className="container max-w-4xl py-8">
-        <p className="text-muted-foreground">Team not found or you don't have access.</p>
+        <p className="text-muted-foreground">
+          Team not found or you don't have access.
+        </p>
       </main>
     );
   }
@@ -93,7 +118,9 @@ export default function TeamSettings() {
   if (!canManage) {
     return (
       <main className="container max-w-4xl py-8">
-        <p className="text-muted-foreground">You don't have permission to manage this team.</p>
+        <p className="text-muted-foreground">
+          You don't have permission to manage this team.
+        </p>
       </main>
     );
   }
@@ -115,8 +142,13 @@ export default function TeamSettings() {
   const handleCreateInvite = async () => {
     if (!user || !team) return;
     try {
-      const invite = await createInvite.mutateAsync({ teamId: team.id, userId: user.id });
-      await navigator.clipboard.writeText(inviteUrl(invite.token)).catch(() => {});
+      const invite = await createInvite.mutateAsync({
+        teamId: team.id,
+        userId: user.id,
+      });
+      await navigator.clipboard
+        .writeText(inviteUrl(invite.token))
+        .catch(() => {});
       toast.success("Invite link created and copied to clipboard");
     } catch (error) {
       console.error("Error creating invite:", error);
@@ -153,7 +185,10 @@ export default function TeamSettings() {
     }
   };
 
-  const handleRoleChange = async (memberId: string, newRole: "admin" | "member") => {
+  const handleRoleChange = async (
+    memberId: string,
+    newRole: "admin" | "member",
+  ) => {
     try {
       await updateMemberRole.mutateAsync({ memberId, role: newRole });
       toast.success("Role updated");
@@ -219,7 +254,10 @@ export default function TeamSettings() {
                 onChange={(e) => setTeamName(e.target.value)}
               />
             </div>
-            <Button onClick={handleSaveSettings} disabled={updateTeam.isPending}>
+            <Button
+              onClick={handleSaveSettings}
+              disabled={updateTeam.isPending}
+            >
               {updateTeam.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </CardContent>
@@ -229,7 +267,9 @@ export default function TeamSettings() {
         <Card>
           <CardHeader>
             <CardTitle>Team Members</CardTitle>
-            <CardDescription>Manage who has access to this team</CardDescription>
+            <CardDescription>
+              Manage who has access to this team
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {members.map((member) => (
@@ -239,9 +279,12 @@ export default function TeamSettings() {
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={member.profile?.avatar_url || undefined} />
+                    <AvatarImage
+                      src={member.profile?.avatar_url || undefined}
+                    />
                     <AvatarFallback>
-                      {member.profile?.display_name?.charAt(0).toUpperCase() || "U"}
+                      {member.profile?.display_name?.charAt(0).toUpperCase() ||
+                        "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -323,7 +366,8 @@ export default function TeamSettings() {
                           {expired
                             ? "Expired"
                             : `Expires ${format(new Date(invite.expires_at), "MMM d")}`}
-                          {invite.used_count > 0 && ` · ${invite.used_count} joined`}
+                          {invite.used_count > 0 &&
+                            ` · ${invite.used_count} joined`}
                         </span>
                         <Button
                           variant="ghost"
@@ -349,7 +393,8 @@ export default function TeamSettings() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Anyone with a link can join as a member until it expires (14 days) or is revoked.
+                Anyone with a link can join as a member until it expires (14
+                days) or is revoked.
               </p>
             </div>
           </CardContent>
@@ -367,7 +412,8 @@ export default function TeamSettings() {
           <CardContent className="space-y-3">
             {team.github_repo ? (
               <p className="text-sm text-muted-foreground">
-                Syncing to <strong>{team.github_repo}</strong> ({team.github_branch || "main"}
+                Syncing to <strong>{team.github_repo}</strong> (
+                {team.github_branch || "main"}
                 {team.github_folder ? `, /${team.github_folder}` : ""}).
               </p>
             ) : (
@@ -381,7 +427,9 @@ export default function TeamSettings() {
               the Library's "Sync to GitHub" button.
             </p>
             <Link to="/settings">
-              <Button variant="outline" size="sm">Open GitHub Sync Settings</Button>
+              <Button variant="outline" size="sm">
+                Open GitHub Sync Settings
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -410,15 +458,24 @@ export default function TeamSettings() {
                       <div className="space-y-2">
                         <p>
                           This will permanently delete the team{" "}
-                          <span className="font-medium text-foreground">"{team.name}"</span>. This action cannot be undone.
+                          <span className="font-medium text-foreground">
+                            "{team.name}"
+                          </span>
+                          . This action cannot be undone.
                         </p>
                         <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                           <li>All members will be removed from the team</li>
-                          <li>Pending invitations and join requests will be cancelled</li>
-                          <li>Team activity feed and shared pins will be deleted</li>
                           <li>
-                            Artifacts created in this team workspace will remain in their authors' personal libraries,
-                            but will no longer be shared with other team members
+                            Pending invitations and join requests will be
+                            cancelled
+                          </li>
+                          <li>
+                            Team activity feed and shared pins will be deleted
+                          </li>
+                          <li>
+                            Artifacts created in this team workspace will remain
+                            in their authors' personal libraries, but will no
+                            longer be shared with other team members
                           </li>
                         </ul>
                       </div>

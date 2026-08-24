@@ -1,17 +1,17 @@
-import { 
-  Plus, 
-  Pencil, 
-  Save, 
-  Globe, 
-  EyeOff, 
-  Copy, 
-  Trash2, 
-  RotateCcw, 
-  Star, 
-  GitBranch, 
-  Users, 
-  UserPlus, 
-  UserMinus, 
+import {
+  Plus,
+  Pencil,
+  Save,
+  Globe,
+  EyeOff,
+  Copy,
+  Trash2,
+  RotateCcw,
+  Star,
+  GitBranch,
+  Users,
+  UserPlus,
+  UserMinus,
   Crown,
   Github,
   Sparkles,
@@ -20,7 +20,7 @@ import {
   FolderOpen,
   User,
   Grab,
-  LucideIcon
+  LucideIcon,
 } from "lucide-react";
 
 const actionIcons: Record<string, LucideIcon> = {
@@ -57,19 +57,32 @@ interface ActivityIconProps {
   className?: string;
 }
 
-export function ActivityIcon({ action, itemType, className = "h-4 w-4" }: ActivityIconProps) {
+export function ActivityIcon({
+  action,
+  itemType,
+  className = "h-4 w-4",
+}: ActivityIconProps) {
   const Icon = actionIcons[action] || Pencil;
   return <Icon className={className} />;
 }
 
-export function ItemTypeIcon({ itemType, className = "h-4 w-4" }: { itemType: string; className?: string }) {
+export function ItemTypeIcon({
+  itemType,
+  className = "h-4 w-4",
+}: {
+  itemType: string;
+  className?: string;
+}) {
   const Icon = itemTypeIcons[itemType] || Sparkles;
   return <Icon className={className} />;
 }
 
-export function getActionLabel(action: string, itemType?: string | null): string {
+export function getActionLabel(
+  action: string,
+  itemType?: string | null,
+): string {
   const itemLabel = itemType || "item";
-  
+
   const labels: Record<string, string> = {
     create: `created a ${itemLabel}`,
     update: `updated a ${itemLabel}`,

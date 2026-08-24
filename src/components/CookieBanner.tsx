@@ -54,7 +54,10 @@ export const CookieBanner = () => {
   if (!isVisible) return null;
 
   return (
-    <div ref={bannerRef} className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in">
+    <div
+      ref={bannerRef}
+      className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in"
+    >
       <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-4 shadow-lg backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
@@ -62,17 +65,17 @@ export const CookieBanner = () => {
               Our site uses cookies.
             </h3>
             <p className="mt-1 font-sans text-sm text-muted-foreground">
-              Think of them as harmless little prompts that help us remember what you like.
-              Tap Accept to let the algorithm treat you right.{" "}
-              <a 
-                href="/cookies" 
+              Think of them as harmless little prompts that help us remember
+              what you like. Tap Accept to let the algorithm treat you right.{" "}
+              <a
+                href="/cookies"
                 className="rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Learn more
               </a>
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3 shrink-0">
             <Button
               variant="outline"

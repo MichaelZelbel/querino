@@ -6,9 +6,17 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeadersFor } from "../_shared/cors.ts";
-import { assertCredits, CreditsExhaustedError, getCallerUserId, getServiceClient } from "../_shared/llm.ts";
-import { createEmbedding, EMBEDDING_DIMENSIONS, type EmbeddingResult } from "../_shared/embeddings.ts";
-
+import {
+  assertCredits,
+  CreditsExhaustedError,
+  getCallerUserId,
+  getServiceClient,
+} from "../_shared/llm.ts";
+import {
+  createEmbedding,
+  EMBEDDING_DIMENSIONS,
+  type EmbeddingResult,
+} from "../_shared/embeddings.ts";
 
 // EMBEDDING_MODEL, EMBEDDING_DIMENSIONS and MAX_INPUT_CHARS now live in
 // _shared/embeddings.ts, so the two functions that embed cannot disagree.
@@ -47,10 +55,18 @@ Deno.serve(async (req) => {
       return json({ error: "Missing 'text'" }, 400);
     }
     if (itemType && !VALID_TYPES.includes(itemType)) {
-      return json({ error: `Invalid itemType. Must be one of: ${VALID_TYPES.join(", ")}` }, 400);
+      return json(
+        {
+          error: `Invalid itemType. Must be one of: ${VALID_TYPES.join(", ")}`,
+        },
+        400,
+      );
     }
     if ((itemType && !itemId) || (!itemType && itemId)) {
-      return json({ error: "itemType and itemId must be provided together" }, 400);
+      return json(
+        { error: "itemType and itemId must be provided together" },
+        400,
+      );
     }
 
     // 3. Credit gate — usage is ledgered below, but without this check a
@@ -100,7 +116,8 @@ Deno.serve(async (req) => {
         p_total_tokens: totalTokens,
         p_metadata: { itemType: itemType ?? null, itemId: itemId ?? null },
       });
-      if (logErr) console.error("[generate-embedding] record_llm_usage error:", logErr);
+      if (logErr)
+        console.error("[generate-embedding] record_llm_usage error:", logErr);
     } catch (e) {
       console.error("[generate-embedding] usage logging threw:", e);
     }
@@ -142,24 +159,30 @@ Deno.serve(async (req) => {
       });
       if (updErr) {
         console.error("[generate-embedding] update_embedding error:", updErr);
-        return json({
-          error: "Failed to persist embedding",
-          details: updErr.message,
-          embedding,
-          dimensions: EMBEDDING_DIMENSIONS,
-          written: false,
-        }, 500);
+        return json(
+          {
+            error: "Failed to persist embedding",
+            details: updErr.message,
+            embedding,
+            dimensions: EMBEDDING_DIMENSIONS,
+            written: false,
+          },
+          500,
+        );
       }
       written = true;
     }
 
-    return json({
-      embedding,
-      dimensions: EMBEDDING_DIMENSIONS,
-      model: result.model,
-      tokens: totalTokens,
-      written,
-    }, 200);
+    return json(
+      {
+        embedding,
+        dimensions: EMBEDDING_DIMENSIONS,
+        model: result.model,
+        tokens: totalTokens,
+        written,
+      },
+      200,
+    );
   } catch (e) {
     console.error("[generate-embedding] unhandled:", e);
     return json({ error: "Internal error", details: String(e) }, 500);

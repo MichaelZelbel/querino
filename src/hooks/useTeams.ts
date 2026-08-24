@@ -1,7 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
-import type { Team, TeamMember, TeamMemberWithProfile, TeamWithRole } from "@/types/team";
+import type {
+  Team,
+  TeamMember,
+  TeamMemberWithProfile,
+  TeamWithRole,
+} from "@/types/team";
 
 export function useUserTeams() {
   const { user } = useAuthContext();
@@ -29,7 +34,8 @@ export function useUserTeams() {
 
       return (teams || []).map((team) => ({
         ...team,
-        role: memberships.find((m) => m.team_id === team.id)?.role as 'owner' | 'admin' | 'member',
+        role: memberships.find((m) => m.team_id === team.id)?.role as
+          "owner" | "admin" | "member",
       }));
     },
     enabled: !!user,
@@ -79,7 +85,7 @@ export function useTeamMembers(teamId: string | undefined) {
 
       return members.map((member) => ({
         ...member,
-        role: member.role as 'owner' | 'admin' | 'member',
+        role: member.role as "owner" | "admin" | "member",
         profile: profiles?.find((p) => p.id === member.user_id),
       }));
     },
@@ -128,7 +134,9 @@ export function useUpdateTeam() {
       updates,
     }: {
       teamId: string;
-      updates: Partial<Pick<Team, "name" | "github_repo" | "github_branch" | "github_folder">>;
+      updates: Partial<
+        Pick<Team, "name" | "github_repo" | "github_branch" | "github_folder">
+      >;
     }) => {
       const { error } = await supabase
         .from("teams")
@@ -234,7 +242,7 @@ export function useCurrentUserTeamRole(teamId: string | undefined) {
 
   return useQuery({
     queryKey: ["team-role", teamId, user?.id],
-    queryFn: async (): Promise<'owner' | 'admin' | 'member' | null> => {
+    queryFn: async (): Promise<"owner" | "admin" | "member" | null> => {
       if (!teamId || !user) return null;
 
       const { data, error } = await supabase
@@ -245,7 +253,7 @@ export function useCurrentUserTeamRole(teamId: string | undefined) {
         .maybeSingle();
 
       if (error) throw error;
-      return data?.role as 'owner' | 'admin' | 'member' | null;
+      return data?.role as "owner" | "admin" | "member" | null;
     },
     enabled: !!teamId && !!user,
   });

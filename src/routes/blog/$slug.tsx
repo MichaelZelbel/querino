@@ -20,7 +20,8 @@ export const Route = createFileRoute("/blog/$slug")({
         "@context": "https://schema.org",
         "@type": "BlogPosting",
         headline: loaderData.title,
-        description: loaderData.seo_description || loaderData.excerpt || undefined,
+        description:
+          loaderData.seo_description || loaderData.excerpt || undefined,
         datePublished: loaderData.published_at || undefined,
         dateModified: loaderData.updated_at || undefined,
         publisher: { "@type": "Organization", name: "Querino" },

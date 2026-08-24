@@ -7,7 +7,11 @@ interface BlogPaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPaginationProps) {
+export function BlogPagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: BlogPaginationProps) {
   if (totalPages <= 1) return null;
 
   const pages: number[] = [];
@@ -23,7 +27,11 @@ export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPa
     if (showEllipsisStart) {
       pages.push(-1); // ellipsis
     }
-    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+    for (
+      let i = Math.max(2, currentPage - 1);
+      i <= Math.min(totalPages - 1, currentPage + 1);
+      i++
+    ) {
       if (!pages.includes(i)) pages.push(i);
     }
     if (showEllipsisEnd) {
@@ -35,7 +43,10 @@ export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPa
   }
 
   return (
-    <nav className="flex items-center justify-center gap-1" aria-label="Blog pagination">
+    <nav
+      className="flex items-center justify-center gap-1"
+      aria-label="Blog pagination"
+    >
       <Button
         variant="ghost"
         size="icon"
@@ -49,7 +60,10 @@ export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPa
       {pages.map((page, idx) => {
         if (page < 0) {
           return (
-            <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
+            <span
+              key={`ellipsis-${idx}`}
+              className="px-2 text-muted-foreground"
+            >
               …
             </span>
           );

@@ -94,14 +94,17 @@ export function VersionHistoryPanel({
 }: VersionHistoryPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  
+
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [selectedVersion, setSelectedVersion] = useState<PromptVersion | null>(null);
-  
+  const [selectedVersion, setSelectedVersion] = useState<PromptVersion | null>(
+    null,
+  );
+
   // Restore dialog state
-  const [restoringVersion, setRestoringVersion] = useState<PromptVersion | null>(null);
+  const [restoringVersion, setRestoringVersion] =
+    useState<PromptVersion | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
   // Fetch versions when panel opens
@@ -111,8 +114,8 @@ export function VersionHistoryPanel({
 
       setLoading(true);
       try {
-        const { data, error } = await (supabase
-          .from(tableConfig.versionsTable as any))
+        const { data, error } = await supabase
+          .from(tableConfig.versionsTable as any)
           .select("*")
           .eq(tableConfig.idColumn, promptId)
           .order("version_number", { ascending: false });
@@ -165,8 +168,8 @@ export function VersionHistoryPanel({
     try {
       // Fetch the latest version fresh so the next number can't collide
       // with inserts made since the panel loaded.
-      const { data: latestRow, error: latestError } = await (supabase
-        .from(tableConfig.versionsTable as any))
+      const { data: latestRow, error: latestError } = await supabase
+        .from(tableConfig.versionsTable as any)
         .select("version_number, title, description, content, tags")
         .eq(tableConfig.idColumn, promptId)
         .order("version_number", { ascending: false })
@@ -191,8 +194,8 @@ export function VersionHistoryPanel({
         latest.content === currentPrompt.content;
 
       if (!currentMatchesLatest) {
-        const { error: snapshotError } = await (supabase
-          .from(tableConfig.versionsTable as any))
+        const { error: snapshotError } = await supabase
+          .from(tableConfig.versionsTable as any)
           .insert({
             [tableConfig.idColumn]: promptId,
             version_number: nextVersionNumber,
@@ -212,8 +215,8 @@ export function VersionHistoryPanel({
       }
 
       // Create a new version entry for the restoration
-      const { error: versionError } = await (supabase
-        .from(tableConfig.versionsTable as any))
+      const { error: versionError } = await supabase
+        .from(tableConfig.versionsTable as any)
         .insert({
           [tableConfig.idColumn]: promptId,
           version_number: nextVersionNumber,
@@ -231,8 +234,8 @@ export function VersionHistoryPanel({
       }
 
       // Update the live artifact with restored content
-      const { error: updateError } = await (supabase
-        .from(tableConfig.artifactTable as any))
+      const { error: updateError } = await supabase
+        .from(tableConfig.artifactTable as any)
         .update({
           title: restoringVersion.title,
           description: restoringVersion.description || "",
@@ -250,7 +253,7 @@ export function VersionHistoryPanel({
 
       toast.success(`Restored to version v${restoringVersion.version_number}`);
       onOpenChange(false);
-      
+
       if (onRestoreComplete) {
         onRestoreComplete();
       } else {
@@ -313,7 +316,8 @@ export function VersionHistoryPanel({
             No versions yet
           </h3>
           <p className="text-sm text-muted-foreground max-w-[280px]">
-            Create versions when editing to track changes and safely roll back if needed.
+            Create versions when editing to track changes and safely roll back
+            if needed.
           </p>
         </div>
       );
@@ -342,18 +346,21 @@ export function VersionHistoryPanel({
                       </Badge>
                     )}
                   </div>
-                  
+
                   <h4 className="text-sm font-medium text-foreground truncate">
                     {version.title}
                   </h4>
-                  
+
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                     <Clock className="h-3 w-3" />
                     <span>
-                      {format(new Date(version.created_at), "MMM d, yyyy 'at' h:mm a")}
+                      {format(
+                        new Date(version.created_at),
+                        "MMM d, yyyy 'at' h:mm a",
+                      )}
                     </span>
                   </div>
-                  
+
                   {version.change_notes && (
                     <p className="text-xs text-muted-foreground mt-1.5 italic line-clamp-1">
                       "{version.change_notes}"
@@ -418,19 +425,26 @@ export function VersionHistoryPanel({
               Version History
             </SheetTitle>
           </SheetHeader>
-          
+
           {renderContent()}
         </SheetContent>
       </Sheet>
 
       {/* Restore Confirmation Dialog */}
-      <AlertDialog open={!!restoringVersion} onOpenChange={() => setRestoringVersion(null)}>
+      <AlertDialog
+        open={!!restoringVersion}
+        onOpenChange={() => setRestoringVersion(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore version v{restoringVersion?.version_number}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Restore version v{restoringVersion?.version_number}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will update your prompt with the content from version v{restoringVersion?.version_number} 
-              and create a new version entry. Your current changes will be preserved in the version history.
+              This will update your prompt with the content from version v
+              {restoringVersion?.version_number}
+              and create a new version entry. Your current changes will be
+              preserved in the version history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

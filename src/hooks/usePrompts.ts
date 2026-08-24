@@ -12,14 +12,16 @@ export function usePrompts() {
     queryFn: async (): Promise<PromptWithAuthor[]> => {
       const { data, error } = await supabase
         .from("prompts")
-        .select(`
+        .select(
+          `
           *,
           profiles:author_id (
             id,
             display_name,
             avatar_url
           )
-        `)
+        `,
+        )
         .eq("is_public", true)
         .order("rating_avg", { ascending: false })
         .order("rating_count", { ascending: false })

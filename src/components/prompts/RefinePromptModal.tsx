@@ -65,7 +65,12 @@ export function RefinePromptModal({
   const [refinedPrompt, setRefinedPrompt] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const { checkCredits, hasCredits, isLoading: creditsLoading, credits } = useAICreditsGate();
+  const {
+    checkCredits,
+    hasCredits,
+    isLoading: creditsLoading,
+    credits,
+  } = useAICreditsGate();
 
   const handleRefine = async () => {
     // Check credits before making AI call
@@ -89,7 +94,9 @@ export function RefinePromptModal({
 
       if (error) {
         console.error("Edge function error:", error);
-        throw new Error(await getFunctionErrorMessage(error, "Failed to refine prompt"));
+        throw new Error(
+          await getFunctionErrorMessage(error, "Failed to refine prompt"),
+        );
       }
 
       if (!data?.refinedPrompt) {
@@ -137,12 +144,12 @@ export function RefinePromptModal({
           { title: promptTitle, content: refinedPrompt },
           "edit_public",
           "prompt",
-          promptId
+          promptId,
         );
         if (!result.approved) {
           toast.error(
             result.reason ||
-              "This content was blocked by moderation and cannot be saved to a public prompt."
+              "This content was blocked by moderation and cannot be saved to a public prompt.",
           );
           return;
         }
@@ -150,7 +157,10 @@ export function RefinePromptModal({
 
       const { error } = await supabase
         .from("prompts")
-        .update({ content: refinedPrompt, updated_at: new Date().toISOString() })
+        .update({
+          content: refinedPrompt,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", promptId);
 
       if (error) {
@@ -176,7 +186,9 @@ export function RefinePromptModal({
     onClose();
   };
 
-  const selectedFrameworkOption = FRAMEWORK_OPTIONS.find((f) => f.value === framework);
+  const selectedFrameworkOption = FRAMEWORK_OPTIONS.find(
+    (f) => f.value === framework,
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -187,7 +199,8 @@ export function RefinePromptModal({
             Refine Prompt
           </DialogTitle>
           <DialogDescription>
-            Querino will rewrite this prompt using best practices and the chosen framework.
+            Querino will rewrite this prompt using best practices and the chosen
+            framework.
           </DialogDescription>
         </DialogHeader>
 
@@ -206,7 +219,10 @@ export function RefinePromptModal({
           {!refinedPrompt && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">Prompt Framework</Label>
-              <Select value={framework} onValueChange={(v) => setFramework(v as PromptFramework)}>
+              <Select
+                value={framework}
+                onValueChange={(v) => setFramework(v as PromptFramework)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -231,7 +247,9 @@ export function RefinePromptModal({
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-primary">Refined Prompt</Label>
+                  <Label className="text-sm font-medium text-primary">
+                    Refined Prompt
+                  </Label>
                   <span className="text-xs text-muted-foreground">
                     Framework: {selectedFrameworkOption?.label || framework}
                   </span>
@@ -308,7 +326,11 @@ export function RefinePromptModal({
                 </Button>
               )}
               {promptId && (
-                <Button onClick={handleUpdatePrompt} disabled={isUpdating} className="gap-2">
+                <Button
+                  onClick={handleUpdatePrompt}
+                  disabled={isUpdating}
+                  className="gap-2"
+                >
                   {isUpdating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />

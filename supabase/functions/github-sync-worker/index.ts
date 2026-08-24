@@ -55,13 +55,14 @@ function yamlValue(value: unknown): string {
 }
 
 function buildFrontmatter(fields: Record<string, unknown>): string {
-  const lines = Object.entries(fields).map(
-    ([k, v]) => `${k}: ${yamlValue(v)}`,
-  );
+  const lines = Object.entries(fields).map(([k, v]) => `${k}: ${yamlValue(v)}`);
   return `---\n${lines.join("\n")}\n---\n`;
 }
 
-function generateMarkdown(type: ArtifactType, row: Record<string, any>): string {
+function generateMarkdown(
+  type: ArtifactType,
+  row: Record<string, any>,
+): string {
   const common = {
     id: row.id,
     title: row.title ?? "",
@@ -148,7 +149,9 @@ async function ghGetFile(
   );
   if (res.status === 404) return null;
   if (!res.ok) {
-    throw new Error(`GitHub GET ${path} failed: ${res.status} ${await res.text()}`);
+    throw new Error(
+      `GitHub GET ${path} failed: ${res.status} ${await res.text()}`,
+    );
   }
   const data = await res.json();
   return { sha: data.sha };
@@ -184,7 +187,9 @@ async function ghPutFile(
     },
   );
   if (!res.ok) {
-    throw new Error(`GitHub PUT ${path} failed: ${res.status} ${await res.text()}`);
+    throw new Error(
+      `GitHub PUT ${path} failed: ${res.status} ${await res.text()}`,
+    );
   }
   const data = await res.json();
   return { sha: data.content.sha };
@@ -212,7 +217,9 @@ async function ghDeleteFile(
     },
   );
   if (!res.ok && res.status !== 404 && res.status !== 422) {
-    throw new Error(`GitHub DELETE ${path} failed: ${res.status} ${await res.text()}`);
+    throw new Error(
+      `GitHub DELETE ${path} failed: ${res.status} ${await res.text()}`,
+    );
   }
 }
 
@@ -289,7 +296,11 @@ async function loadArtifact(
   id: string,
 ): Promise<Record<string, any> | null> {
   const table = TABLE_FOR_TYPE[type];
-  const { data } = await supabase.from(table).select("*").eq("id", id).maybeSingle();
+  const { data } = await supabase
+    .from(table)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   return (data as Record<string, any> | null) ?? null;
 }
 
@@ -297,7 +308,12 @@ async function loadArtifact(
 
 async function processQueue(
   supabase: ReturnType<typeof createClient>,
-): Promise<{ processed: number; done: number; failed: number; skipped: number }> {
+): Promise<{
+  processed: number;
+  done: number;
+  failed: number;
+  skipped: number;
+}> {
   const { data: pending, error: fetchErr } = await supabase
     .from("github_sync_queue")
     .select("*")
@@ -350,7 +366,10 @@ async function processQueue(
       if (!settings) {
         await supabase
           .from("github_sync_queue")
-          .update({ status: "skipped", last_error: "github_sync_not_configured" })
+          .update({
+            status: "skipped",
+            last_error: "github_sync_not_configured",
+          })
           .eq("id", job.id);
         skipped++;
         continue;

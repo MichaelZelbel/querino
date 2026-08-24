@@ -1,18 +1,18 @@
-import { ReactNode } from 'react';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
-import { Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { ReactNode } from "react";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export type PlanRequirement = 'premium' | 'team';
+export type PlanRequirement = "premium" | "team";
 
 interface PremiumGateProps {
   requires: PlanRequirement;
   featureName: string;
   children: ReactNode;
   className?: string;
-  variant?: 'card' | 'inline' | 'sidebar';
+  variant?: "card" | "inline" | "sidebar";
 }
 
 export function PremiumGate({
@@ -20,11 +20,10 @@ export function PremiumGate({
   featureName,
   children,
   className,
-  variant = 'card',
+  variant = "card",
 }: PremiumGateProps) {
   const { user } = useAuthContext();
   const { isPremium, isLoading } = useUserRole();
-  
 
   // Show nothing while loading to prevent flash
   if (isLoading) {
@@ -35,7 +34,7 @@ export function PremiumGate({
   // Premium plan (premium, premium_gift, admin) grants access to both 'premium' and 'team' features
   const hasAccess = (() => {
     if (!user) return false;
-    if (requires === 'premium' || requires === 'team') {
+    if (requires === "premium" || requires === "team") {
       return isPremium;
     }
     return false;
@@ -48,13 +47,20 @@ export function PremiumGate({
 
   // Locked state for logged-in users without premium
   if (user && !hasAccess) {
-    if (variant === 'sidebar') {
+    if (variant === "sidebar") {
       return (
-        <div className={cn("flex flex-col items-center justify-center p-6 text-center", className)}>
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center p-6 text-center",
+            className,
+          )}
+        >
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Lock className="h-6 w-6 text-primary" />
           </div>
-          <h4 className="font-semibold text-foreground mb-2">Premium Feature</h4>
+          <h4 className="font-semibold text-foreground mb-2">
+            Premium Feature
+          </h4>
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
             {featureName} is a Premium feature. Contact support to learn more.
           </p>
@@ -67,11 +73,18 @@ export function PremiumGate({
       );
     }
 
-    if (variant === 'inline') {
+    if (variant === "inline") {
       return (
-        <div className={cn("flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border", className)}>
+        <div
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border",
+            className,
+          )}
+        >
           <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground flex-1">{featureName} requires Premium</span>
+          <span className="text-sm text-muted-foreground flex-1">
+            {featureName} requires Premium
+          </span>
           <a href="mailto:support@querino.ai">
             <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
               Contact Support
@@ -93,7 +106,8 @@ export function PremiumGate({
             {featureName}
           </h4>
           <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
-            This feature requires Querino Premium. Contact support for more information.
+            This feature requires Querino Premium. Contact support for more
+            information.
           </p>
           <a href="mailto:support@querino.ai">
             <Button variant="outline" className="gap-2">

@@ -1,0 +1,1 @@
+import{t as e}from"./useCloneArtifact-DeRbVHQj.js";var t=e({table:`prompts`,label:`prompt`,buildInsert:e=>({description:e.description,content:e.content,category:e.category,tags:e.tags||[],is_public:!1,rating_avg:0,rating_count:0,copies_count:0}),editPath:e=>`/library/${e.slug}/edit`});function n(){let{clone:e,cloning:n}=t();return{clonePrompt:e,cloning:n}}export{n as t};

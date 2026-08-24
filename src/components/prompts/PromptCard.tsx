@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,11 +29,11 @@ interface PromptCardProps {
   showMenerioStatus?: boolean;
 }
 
-export function PromptCard({ 
-  prompt, 
-  showAuthorBadge, 
+export function PromptCard({
+  prompt,
+  showAuthorBadge,
   showAuthorInfo = false,
-  currentUserId, 
+  currentUserId,
   editPath = "prompts",
   userRating,
   showSendToLLM = false,
@@ -113,7 +118,11 @@ export function PromptCard({
         {prompt.tags && prompt.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {prompt.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs font-normal">
+              <Badge
+                key={tag}
+                variant="outline"
+                className="text-xs font-normal"
+              >
                 {tag}
               </Badge>
             ))}
@@ -140,93 +149,99 @@ export function PromptCard({
             </div>
           </Link>
         )}
-        
-        <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          {/* Author Info */}
-          {showAuthorInfo && prompt.author && (
-            <Link 
-              to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Avatar className="h-5 w-5">
-                <AvatarImage src={prompt.author.avatar_url || undefined} />
-                <AvatarFallback className="text-[10px] bg-muted">
-                  {getAuthorInitials()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
-                {prompt.author.display_name || "Anonymous"}
-              </span>
-            </Link>
-          )}
-          
-          {/* Rating */}
-          {prompt.rating_count > 0 ? (
-            <div className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-              <span className="font-medium">{Number(prompt.rating_avg).toFixed(1)}</span>
-              <span className="text-muted-foreground">({prompt.rating_count})</span>
-            </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">No ratings yet</span>
-          )}
-          
-          {!showAuthorInfo && prompt.rating_count > 0 && (
-            <>
-              <span className="text-border">•</span>
-              <span>{prompt.copies_count.toLocaleString()} copies</span>
-            </>
-          )}
-        </div>
 
-        <div className="flex items-center gap-1">
-          {isAuthor && (
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            {/* Author Info */}
+            {showAuthorInfo && prompt.author && (
+              <Link
+                to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={prompt.author.avatar_url || undefined} />
+                  <AvatarFallback className="text-[10px] bg-muted">
+                    {getAuthorInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                  {prompt.author.display_name || "Anonymous"}
+                </span>
+              </Link>
+            )}
+
+            {/* Rating */}
+            {prompt.rating_count > 0 ? (
+              <div className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                <span className="font-medium">
+                  {Number(prompt.rating_avg).toFixed(1)}
+                </span>
+                <span className="text-muted-foreground">
+                  ({prompt.rating_count})
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                No ratings yet
+              </span>
+            )}
+
+            {!showAuthorInfo && prompt.rating_count > 0 && (
+              <>
+                <span className="text-border">•</span>
+                <span>{prompt.copies_count.toLocaleString()} copies</span>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1">
+            {isAuthor && (
               <Link to={editUrl}>
                 <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </Link>
-          )}
-          {currentUserId && !isAuthor && (
+            )}
+            {currentUserId && !isAuthor && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => clonePrompt(prompt, currentUserId)}
+                disabled={cloning}
+                className="gap-1.5 h-8 px-2"
+                title="Clone to my library"
+              >
+                <Files className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {showSendToLLM && (
+              <SendToLLMButtons
+                title={prompt.title}
+                content={prompt.content}
+                variant="compact"
+              />
+            )}
             <Button
               size="sm"
-              variant="ghost"
-              onClick={() => clonePrompt(prompt, currentUserId)}
-              disabled={cloning}
-              className="gap-1.5 h-8 px-2"
-              title="Clone to my library"
+              variant={copied ? "success" : "default"}
+              onClick={handleCopy}
+              className="gap-1.5"
             >
-              <Files className="h-3.5 w-3.5" />
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy
+                </>
+              )}
             </Button>
-          )}
-          {showSendToLLM && (
-            <SendToLLMButtons
-              title={prompt.title}
-              content={prompt.content}
-              variant="compact"
-            />
-          )}
-          <Button
-            size="sm"
-            variant={copied ? "success" : "default"}
-            onClick={handleCopy}
-            className="gap-1.5"
-          >
-            {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5" />
-                Copied
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" />
-                Copy
-              </>
-            )}
-          </Button>
-        </div>
+          </div>
         </div>
       </CardFooter>
     </Card>

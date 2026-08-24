@@ -41,4 +41,4 @@ export const categories = [
   { id: "education", label: "Education", icon: "GraduationCap" },
 ] as const;
 
-export const categoryOptions = categories.filter(c => c.id !== "all");
+export const categoryOptions = categories.filter((c) => c.id !== "all");

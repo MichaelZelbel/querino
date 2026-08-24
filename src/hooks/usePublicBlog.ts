@@ -10,16 +10,21 @@ interface UsePublicPostsOptions {
   tagSlug?: string;
 }
 
-export function usePublicPosts({ page = 1, categorySlug, tagSlug }: UsePublicPostsOptions = {}) {
+export function usePublicPosts({
+  page = 1,
+  categorySlug,
+  tagSlug,
+}: UsePublicPostsOptions = {}) {
   return useQuery({
-    queryKey: ['public-blog-posts', page, categorySlug, tagSlug],
+    queryKey: ["public-blog-posts", page, categorySlug, tagSlug],
     queryFn: async () => {
       const from = (page - 1) * POSTS_PER_PAGE;
       const to = from + POSTS_PER_PAGE - 1;
 
       let query = supabase
-        .from('blog_posts')
-        .select(`
+        .from("blog_posts")
+        .select(
+          `
           id,
           title,
           slug,
@@ -31,27 +36,29 @@ export function usePublicPosts({ page = 1, categorySlug, tagSlug }: UsePublicPos
           created_at,
           author:profiles!blog_posts_author_id_fkey(id, display_name, avatar_url),
           featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text)
-        `, { count: 'exact' })
-        .eq('status', 'published')
-        .order('published_at', { ascending: false });
+        `,
+          { count: "exact" },
+        )
+        .eq("status", "published")
+        .order("published_at", { ascending: false });
 
       // Filter by category if provided
       if (categorySlug) {
         const { data: category } = await supabase
-          .from('blog_categories')
-          .select('id')
-          .eq('slug', categorySlug)
+          .from("blog_categories")
+          .select("id")
+          .eq("slug", categorySlug)
           .maybeSingle();
 
         if (category) {
           const { data: postIds } = await supabase
-            .from('blog_post_categories')
-            .select('post_id')
-            .eq('category_id', category.id);
+            .from("blog_post_categories")
+            .select("post_id")
+            .eq("category_id", category.id);
 
-          const ids = postIds?.map(p => p.post_id) || [];
+          const ids = postIds?.map((p) => p.post_id) || [];
           if (ids.length > 0) {
-            query = query.in('id', ids);
+            query = query.in("id", ids);
           } else {
             return { posts: [], totalPages: 0, currentPage: page };
           }
@@ -61,20 +68,20 @@ export function usePublicPosts({ page = 1, categorySlug, tagSlug }: UsePublicPos
       // Filter by tag if provided
       if (tagSlug) {
         const { data: tag } = await supabase
-          .from('blog_tags')
-          .select('id')
-          .eq('slug', tagSlug)
+          .from("blog_tags")
+          .select("id")
+          .eq("slug", tagSlug)
           .maybeSingle();
 
         if (tag) {
           const { data: postIds } = await supabase
-            .from('blog_post_tags')
-            .select('post_id')
-            .eq('tag_id', tag.id);
+            .from("blog_post_tags")
+            .select("post_id")
+            .eq("tag_id", tag.id);
 
-          const ids = postIds?.map(p => p.post_id) || [];
+          const ids = postIds?.map((p) => p.post_id) || [];
           if (ids.length > 0) {
-            query = query.in('id', ids);
+            query = query.in("id", ids);
           } else {
             return { posts: [], totalPages: 0, currentPage: page };
           }
@@ -97,17 +104,19 @@ export function usePublicPosts({ page = 1, categorySlug, tagSlug }: UsePublicPos
 
 export function usePublicPost(slug: string) {
   return useQuery({
-    queryKey: ['public-blog-post', slug],
+    queryKey: ["public-blog-post", slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('blog_posts')
-        .select(`
+        .from("blog_posts")
+        .select(
+          `
           *,
           author:profiles!blog_posts_author_id_fkey(id, display_name, avatar_url),
           featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text, width, height)
-        `)
-        .eq('slug', slug)
-        .eq('status', 'published')
+        `,
+        )
+        .eq("slug", slug)
+        .eq("status", "published")
         .maybeSingle();
 
       if (error) throw error;
@@ -115,20 +124,20 @@ export function usePublicPost(slug: string) {
 
       // Fetch categories
       const { data: categoryLinks } = await supabase
-        .from('blog_post_categories')
-        .select('category_id, category:blog_categories(*)')
-        .eq('post_id', data.id);
+        .from("blog_post_categories")
+        .select("category_id, category:blog_categories(*)")
+        .eq("post_id", data.id);
 
       // Fetch tags
       const { data: tagLinks } = await supabase
-        .from('blog_post_tags')
-        .select('tag_id, tag:blog_tags(*)')
-        .eq('post_id', data.id);
+        .from("blog_post_tags")
+        .select("tag_id, tag:blog_tags(*)")
+        .eq("post_id", data.id);
 
       return {
         ...data,
-        categories: categoryLinks?.map(l => l.category) || [],
-        tags: tagLinks?.map(l => l.tag) || [],
+        categories: categoryLinks?.map((l) => l.category) || [],
+        tags: tagLinks?.map((l) => l.tag) || [],
       } as BlogPost;
     },
     enabled: !!slug,
@@ -137,12 +146,12 @@ export function usePublicPost(slug: string) {
 
 export function usePublicCategory(slug: string) {
   return useQuery({
-    queryKey: ['public-blog-category', slug],
+    queryKey: ["public-blog-category", slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('blog_categories')
-        .select('*')
-        .eq('slug', slug)
+        .from("blog_categories")
+        .select("*")
+        .eq("slug", slug)
         .maybeSingle();
 
       if (error) throw error;
@@ -154,12 +163,12 @@ export function usePublicCategory(slug: string) {
 
 export function usePublicTag(slug: string) {
   return useQuery({
-    queryKey: ['public-blog-tag', slug],
+    queryKey: ["public-blog-tag", slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('blog_tags')
-        .select('*')
-        .eq('slug', slug)
+        .from("blog_tags")
+        .select("*")
+        .eq("slug", slug)
         .maybeSingle();
 
       if (error) throw error;
@@ -171,12 +180,12 @@ export function usePublicTag(slug: string) {
 
 export function usePublicCategories() {
   return useQuery({
-    queryKey: ['public-blog-categories'],
+    queryKey: ["public-blog-categories"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('blog_categories')
-        .select('*')
-        .order('name');
+        .from("blog_categories")
+        .select("*")
+        .order("name");
 
       if (error) throw error;
       return data as BlogCategory[];
@@ -186,12 +195,12 @@ export function usePublicCategories() {
 
 export function usePublicTags() {
   return useQuery({
-    queryKey: ['public-blog-tags'],
+    queryKey: ["public-blog-tags"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('blog_tags')
-        .select('*')
-        .order('name');
+        .from("blog_tags")
+        .select("*")
+        .order("name");
 
       if (error) throw error;
       return data as BlogTag[];

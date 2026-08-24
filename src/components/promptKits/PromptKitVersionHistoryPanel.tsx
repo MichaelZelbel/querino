@@ -2,10 +2,21 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +55,11 @@ interface PromptKitVersionHistoryPanelProps {
 }
 
 export function PromptKitVersionHistoryPanel({
-  open, onOpenChange, promptKitId, currentKit, onRestoreComplete,
+  open,
+  onOpenChange,
+  promptKitId,
+  currentKit,
+  onRestoreComplete,
 }: PromptKitVersionHistoryPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -58,7 +73,9 @@ export function PromptKitVersionHistoryPanel({
       if (!open || !promptKitId) return;
       setLoading(true);
       try {
-        const { data, error } = await (supabase.from("prompt_kit_versions") as any)
+        const { data, error } = await (
+          supabase.from("prompt_kit_versions") as any
+        )
           .select("*")
           .eq("prompt_kit_id", promptKitId)
           .order("version_number", { ascending: false });
@@ -79,9 +96,12 @@ export function PromptKitVersionHistoryPanel({
     if (!restoring || !user) return;
     setIsRestoring(true);
     try {
-      const nextVersion = versions.length > 0 ? versions[0].version_number + 1 : 1;
+      const nextVersion =
+        versions.length > 0 ? versions[0].version_number + 1 : 1;
 
-      const { error: vErr } = await (supabase.from("prompt_kit_versions") as any).insert({
+      const { error: vErr } = await (
+        supabase.from("prompt_kit_versions") as any
+      ).insert({
         prompt_kit_id: promptKitId,
         version_number: nextVersion,
         title: restoring.title,
@@ -145,26 +165,46 @@ export function PromptKitVersionHistoryPanel({
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                 <FileText className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-foreground">No versions yet</h3>
+              <h3 className="mb-2 text-lg font-semibold text-foreground">
+                No versions yet
+              </h3>
               <p className="text-sm text-muted-foreground max-w-[280px]">
-                Create versions when editing to track changes and safely roll back if needed.
+                Create versions when editing to track changes and safely roll
+                back if needed.
               </p>
             </div>
           ) : (
             <ScrollArea className="h-[calc(100vh-120px)]">
               <div className="space-y-3 p-4">
                 {versions.map((version, index) => (
-                  <div key={version.id} className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30">
+                  <div
+                    key={version.id}
+                    className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30"
+                  >
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
+                      <Badge
+                        variant={index === 0 ? "default" : "secondary"}
+                        className="text-xs"
+                      >
                         v{version.version_number}
                       </Badge>
-                      {index === 0 && <Badge variant="outline" className="text-xs">Latest</Badge>}
+                      {index === 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          Latest
+                        </Badge>
+                      )}
                     </div>
-                    <h4 className="text-sm font-medium text-foreground truncate">{version.title}</h4>
+                    <h4 className="text-sm font-medium text-foreground truncate">
+                      {version.title}
+                    </h4>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                       <Clock className="h-3 w-3" />
-                      <span>{format(new Date(version.created_at), "MMM d, yyyy 'at' h:mm a")}</span>
+                      <span>
+                        {format(
+                          new Date(version.created_at),
+                          "MMM d, yyyy 'at' h:mm a",
+                        )}
+                      </span>
                     </div>
                     {version.change_notes && (
                       <p className="text-xs text-muted-foreground mt-1.5 italic line-clamp-1">
@@ -173,7 +213,8 @@ export function PromptKitVersionHistoryPanel({
                     )}
                     <div className="mt-3 pt-3 border-t border-border">
                       <Button
-                        variant="secondary" size="sm"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setRestoring(version)}
                         className="gap-1.5 text-xs w-full"
                       >
@@ -192,14 +233,21 @@ export function PromptKitVersionHistoryPanel({
       <AlertDialog open={!!restoring} onOpenChange={() => setRestoring(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore version v{restoring?.version_number}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Restore version v{restoring?.version_number}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will update your prompt kit with the content from version v{restoring?.version_number} and create a new version entry.
+              This will update your prompt kit with the content from version v
+              {restoring?.version_number} and create a new version entry.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRestore} disabled={isRestoring} className="gap-2">
+            <AlertDialogAction
+              onClick={handleRestore}
+              disabled={isRestoring}
+              className="gap-2"
+            >
               {isRestoring && <Loader2 className="h-4 w-4 animate-spin" />}
               Restore
             </AlertDialogAction>

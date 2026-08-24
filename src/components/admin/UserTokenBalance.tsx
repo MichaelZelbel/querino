@@ -16,13 +16,17 @@ interface UserTokenBalanceProps {
   onUpdate: (userId: string, newAllowance: AllowancePeriod) => void;
 }
 
-export function UserTokenBalance({ userId, allowances, onUpdate }: UserTokenBalanceProps) {
+export function UserTokenBalance({
+  userId,
+  allowances,
+  onUpdate,
+}: UserTokenBalanceProps) {
   const allowance = allowances[userId];
   const [value, setValue] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Calculate remaining tokens
-  const remainingTokens = allowance 
+  const remainingTokens = allowance
     ? Math.max(allowance.tokens_granted - allowance.tokens_used, 0)
     : null;
 
@@ -63,9 +67,9 @@ export function UserTokenBalance({ userId, allowances, onUpdate }: UserTokenBala
 
       const { error } = await supabase
         .from("ai_allowance_periods")
-        .update({ 
+        .update({
           tokens_granted: newTokensGranted,
-          tokens_used: newTokensUsed 
+          tokens_used: newTokensUsed,
         })
         .eq("id", allowance.id);
 

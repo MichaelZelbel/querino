@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Terminal, Copy, Check, ExternalLink } from "lucide-react";
@@ -82,8 +88,17 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 shrink-0">
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleCopy}
+      className="gap-1.5 shrink-0"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
       {copied ? "Copied" : "Copy"}
     </Button>
   );
@@ -93,11 +108,14 @@ export function McpSetupSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-foreground mb-1">MCP Server</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-1">
+          MCP Server
+        </h2>
         <p className="text-muted-foreground text-sm">
-          Connect AI agents and MCP-compatible clients like OpenClaw, Manus, Claude Desktop, or Cursor
-          to manage your Querino data via the Model Context Protocol. Authentication uses long-lived
-          personal tokens that you create below.
+          Connect AI agents and MCP-compatible clients like OpenClaw, Manus,
+          Claude Desktop, or Cursor to manage your Querino data via the Model
+          Context Protocol. Authentication uses long-lived personal tokens that
+          you create below.
         </p>
       </div>
 
@@ -109,13 +127,16 @@ export function McpSetupSection() {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Terminal className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Send this prompt to your agent</CardTitle>
+            <CardTitle className="text-lg">
+              Send this prompt to your agent
+            </CardTitle>
           </div>
           <CardDescription>
-            Copy the prompt below and send it to your AI agent or MCP-compatible client
-            (for example: OpenClaw, Manus, Claude Desktop, Cursor). The agent will ask you for your
-            token, install the server permanently, save behavior rules for future sessions, and verify
-            the connection end-to-end.
+            Copy the prompt below and send it to your AI agent or MCP-compatible
+            client (for example: OpenClaw, Manus, Claude Desktop, Cursor). The
+            agent will ask you for your token, install the server permanently,
+            save behavior rules for future sessions, and verify the connection
+            end-to-end.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -129,7 +150,9 @@ export function McpSetupSection() {
           </div>
 
           <div className="flex items-center gap-3 pt-2">
-            <span className="text-sm text-muted-foreground shrink-0">MCP Endpoint (for manual setup):</span>
+            <span className="text-sm text-muted-foreground shrink-0">
+              MCP Endpoint (for manual setup):
+            </span>
             <code className="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs font-mono text-muted-foreground truncate">
               {MCP_ENDPOINT}
             </code>
@@ -146,15 +169,26 @@ export function McpSetupSection() {
             <CardTitle className="text-lg">Compatible MCP Clients</CardTitle>
           </div>
           <CardDescription>
-            Any client that supports the Model Context Protocol (MCP) over HTTP can connect to Querino.
-            Examples include OpenClaw, Manus, and other MCP-enabled agents or tools that let you add a
-            custom MCP server endpoint and send an Authorization header.
+            Any client that supports the Model Context Protocol (MCP) over HTTP
+            can connect to Querino. Examples include OpenClaw, Manus, and other
+            MCP-enabled agents or tools that let you add a custom MCP server
+            endpoint and send an Authorization header.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {["OpenClaw", "Manus", "Claude Desktop", "Cursor", "Any MCP Client"].map((client) => (
-              <Badge key={client} variant="secondary" className="text-sm px-3 py-1">
+            {[
+              "OpenClaw",
+              "Manus",
+              "Claude Desktop",
+              "Cursor",
+              "Any MCP Client",
+            ].map((client) => (
+              <Badge
+                key={client}
+                variant="secondary"
+                className="text-sm px-3 py-1"
+              >
                 {client}
               </Badge>
             ))}

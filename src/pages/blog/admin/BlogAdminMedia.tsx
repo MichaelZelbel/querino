@@ -26,13 +26,21 @@ import {
   useUpdateBlogMedia,
   useDeleteBlogMedia,
 } from "@/hooks/useBlogMedia";
-import { Upload, Copy, Pencil, Trash2, Loader2, Image as ImageIcon, Check } from "lucide-react";
+import {
+  Upload,
+  Copy,
+  Pencil,
+  Trash2,
+  Loader2,
+  Image as ImageIcon,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { BlogMedia } from "@/types/blog";
 import { formatDistanceToNow } from "date-fns";
 
 function formatFileSize(bytes: number | null): string {
-  if (!bytes) return '—';
+  if (!bytes) return "—";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -48,7 +56,7 @@ export default function BlogAdminMedia() {
   const [editingMedia, setEditingMedia] = useState<BlogMedia | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [altText, setAltText] = useState('');
+  const [altText, setAltText] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,13 +68,13 @@ export default function BlogAdminMedia() {
     }
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const openEditDialog = (item: BlogMedia) => {
     setEditingMedia(item);
-    setAltText(item.alt_text || '');
+    setAltText(item.alt_text || "");
     setIsEditDialogOpen(true);
   };
 
@@ -89,7 +97,7 @@ export default function BlogAdminMedia() {
   const copyUrl = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
-    toast.success('URL copied to clipboard');
+    toast.success("URL copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -106,7 +114,10 @@ export default function BlogAdminMedia() {
             className="hidden"
             onChange={handleFileChange}
           />
-          <Button onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadMutation.isPending}
+          >
             {uploadMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -130,10 +141,10 @@ export default function BlogAdminMedia() {
             >
               {/* Image */}
               <div className="aspect-square bg-muted flex items-center justify-center">
-                {item.mime_type?.startsWith('image/') ? (
+                {item.mime_type?.startsWith("image/") ? (
                   <img
                     src={item.url}
-                    alt={item.alt_text || ''}
+                    alt={item.alt_text || ""}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -179,10 +190,13 @@ export default function BlogAdminMedia() {
               {/* Info */}
               <div className="p-2">
                 <p className="text-xs text-muted-foreground truncate">
-                  {item.alt_text || 'No alt text'}
+                  {item.alt_text || "No alt text"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {item.width && item.height ? `${item.width}×${item.height}` : '—'} • {formatFileSize(item.file_size)}
+                  {item.width && item.height
+                    ? `${item.width}×${item.height}`
+                    : "—"}{" "}
+                  • {formatFileSize(item.file_size)}
                 </p>
               </div>
             </div>
@@ -210,7 +224,7 @@ export default function BlogAdminMedia() {
               <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                 <img
                   src={editingMedia.url}
-                  alt={editingMedia.alt_text || ''}
+                  alt={editingMedia.alt_text || ""}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -225,17 +239,29 @@ export default function BlogAdminMedia() {
               </div>
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p>Size: {formatFileSize(editingMedia.file_size)}</p>
-                <p>Dimensions: {editingMedia.width}×{editingMedia.height}</p>
-                <p>Uploaded: {formatDistanceToNow(new Date(editingMedia.created_at), { addSuffix: true })}</p>
+                <p>
+                  Dimensions: {editingMedia.width}×{editingMedia.height}
+                </p>
+                <p>
+                  Uploaded:{" "}
+                  {formatDistanceToNow(new Date(editingMedia.created_at), {
+                    addSuffix: true,
+                  })}
+                </p>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
-              {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {updateMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
               Save
             </Button>
           </DialogFooter>
@@ -248,7 +274,8 @@ export default function BlogAdminMedia() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Media</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this file? This action cannot be undone.
+              Are you sure you want to delete this file? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

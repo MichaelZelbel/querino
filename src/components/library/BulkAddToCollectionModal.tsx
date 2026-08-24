@@ -64,7 +64,10 @@ export function BulkAddToCollectionModal({
       }
     }
     setBusyId(null);
-    if (added > 0) toast.success(`Added ${added} item${added === 1 ? "" : "s"} to collection.`);
+    if (added > 0)
+      toast.success(
+        `Added ${added} item${added === 1 ? "" : "s"} to collection.`,
+      );
     if (skipped > 0) toast.info(`${skipped} already in collection.`);
     if (failed > 0) toast.error(`${failed} failed to add.`);
     onOpenChange(false);
@@ -91,7 +94,9 @@ export function BulkAddToCollectionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add {items.length} item{items.length === 1 ? "" : "s"} to Collection</DialogTitle>
+          <DialogTitle>
+            Add {items.length} item{items.length === 1 ? "" : "s"} to Collection
+          </DialogTitle>
           <DialogDescription>
             Pick an existing collection or create a new one.
           </DialogDescription>
@@ -125,7 +130,9 @@ export function BulkAddToCollectionModal({
                   <Button
                     className="flex-1"
                     onClick={handleCreateAndAdd}
-                    disabled={!newTitle.trim() || createCollection.isPending || !!busyId}
+                    disabled={
+                      !newTitle.trim() || createCollection.isPending || !!busyId
+                    }
                   >
                     {createCollection.isPending || busyId ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -162,7 +169,9 @@ export function BulkAddToCollectionModal({
                       ) : (
                         <Folder className="h-4 w-4" />
                       )}
-                      <span className="flex-1 text-left truncate">{collection.title}</span>
+                      <span className="flex-1 text-left truncate">
+                        {collection.title}
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {collection.item_count || 0} items
                       </span>

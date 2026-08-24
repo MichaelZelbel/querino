@@ -60,23 +60,25 @@ import { useWorkflows } from "@/hooks/useWorkflows";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
-
 // A collection holds prompts, skills, workflows and prompt kits. They are different
 // types, but this view reads only the fields all four share. Naming that shape stops
 // `data` being inferred as null-only, which is what made every read of it an error.
-type CollectionItemData = { id: string; title: string; description: string | null } | null | undefined;
+type CollectionItemData =
+  { id: string; title: string; description: string | null } | null | undefined;
 
 export default function CollectionEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  
-  const { data: collection, isLoading: loadingCollection } = useCollection(id || "");
+
+  const { data: collection, isLoading: loadingCollection } = useCollection(
+    id || "",
+  );
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
   const { data: prompts } = usePrompts();
   const { data: skills } = useSkills();
   const { data: workflows } = useWorkflows();
-  
+
   const updateCollection = useUpdateCollection();
   const deleteCollection = useDeleteCollection();
   const addToCollection = useAddToCollection();
@@ -87,9 +89,11 @@ export default function CollectionEdit() {
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [initialized, setInitialized] = useState(false);
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addItemType, setAddItemType] = useState<'prompt' | 'skill' | 'workflow'>('prompt');
+  const [addItemType, setAddItemType] = useState<
+    "prompt" | "skill" | "workflow"
+  >("prompt");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize form when collection loads
@@ -101,7 +105,10 @@ export default function CollectionEdit() {
   }
 
   // Authorization check
-  if (!authLoading && (!user || (collection && user.id !== collection.owner_id))) {
+  if (
+    !authLoading &&
+    (!user || (collection && user.id !== collection.owner_id))
+  ) {
     navigate("/collections");
     return null;
   }
@@ -134,15 +141,16 @@ export default function CollectionEdit() {
   // Get user's artefacts for adding
   const userPrompts = prompts?.filter((p) => p.author_id === user?.id) || [];
   const userSkills = skills?.filter((s) => s.author_id === user?.id) || [];
-  const userWorkflows = workflows?.filter((w) => w.author_id === user?.id) || [];
+  const userWorkflows =
+    workflows?.filter((w) => w.author_id === user?.id) || [];
 
   const getAvailableItems = () => {
     const existingIds = new Set(items?.map((i) => i.item_id) || []);
     let available: any[] = [];
 
-    if (addItemType === 'prompt') {
+    if (addItemType === "prompt") {
       available = userPrompts.filter((p) => !existingIds.has(p.id));
-    } else if (addItemType === 'skill') {
+    } else if (addItemType === "skill") {
       available = userSkills.filter((s) => !existingIds.has(s.id));
     } else {
       available = userWorkflows.filter((w) => !existingIds.has(w.id));
@@ -151,7 +159,7 @@ export default function CollectionEdit() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       available = available.filter((item) =>
-        item.title.toLowerCase().includes(query)
+        item.title.toLowerCase().includes(query),
       );
     }
 
@@ -223,7 +231,7 @@ export default function CollectionEdit() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <Button
           variant="ghost"
@@ -300,8 +308,8 @@ export default function CollectionEdit() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Collection?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete
-                        the collection and remove all items from it.
+                        This action cannot be undone. This will permanently
+                        delete the collection and remove all items from it.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

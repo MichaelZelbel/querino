@@ -19,8 +19,14 @@ export function SkillReviewSection({
   ratingAvg,
   ratingCount,
 }: SkillReviewSectionProps) {
-  const { reviews, userReview, loading, submitting, submitReview, deleteReview } =
-    useSkillReviews(skillId, userId);
+  const {
+    reviews,
+    userReview,
+    loading,
+    submitting,
+    submitReview,
+    deleteReview,
+  } = useSkillReviews(skillId, userId);
 
   return (
     <GenericReviewSection

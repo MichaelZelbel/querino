@@ -1,6 +1,6 @@
-import { useUserRole, type AppRole } from '@/hooks/useUserRole';
-import { useAuthContext } from '@/contexts/AuthContext';
-import type { PlanRequirement } from './PremiumGate';
+import { useUserRole, type AppRole } from "@/hooks/useUserRole";
+import { useAuthContext } from "@/contexts/AuthContext";
+import type { PlanRequirement } from "./PremiumGate";
 
 /**
  * Hook to check if user has premium access based on user_roles table.
@@ -8,7 +8,8 @@ import type { PlanRequirement } from './PremiumGate';
  */
 export function usePremiumCheck() {
   const { user } = useAuthContext();
-  const { role, isLoading, isPremium, isAdmin, isFree, refetch } = useUserRole();
+  const { role, isLoading, isPremium, isAdmin, isFree, refetch } =
+    useUserRole();
 
   const isAnonymous = !user;
 
@@ -16,7 +17,7 @@ export function usePremiumCheck() {
     if (!user || !role) return false;
     // Both 'premium' and 'team' requirements are satisfied by premium access
     // (premium, premium_gift, or admin roles all grant premium access)
-    if (requires === 'premium' || requires === 'team') return isPremium;
+    if (requires === "premium" || requires === "team") return isPremium;
     return false;
   };
 

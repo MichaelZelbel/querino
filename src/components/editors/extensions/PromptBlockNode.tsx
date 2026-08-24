@@ -1,5 +1,9 @@
 import { Node, mergeAttributes } from "@tiptap/core";
-import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+import {
+  ReactNodeViewRenderer,
+  NodeViewWrapper,
+  type NodeViewProps,
+} from "@tiptap/react";
 import { Trash2, Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +12,10 @@ import { Button } from "@/components/ui/button";
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     promptBlock: {
-      insertPromptBlock: (attrs?: { title?: string; body?: string }) => ReturnType;
+      insertPromptBlock: (attrs?: {
+        title?: string;
+        body?: string;
+      }) => ReturnType;
     };
   }
 }
@@ -78,7 +85,10 @@ export const PromptBlock = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-prompt-block": "true" })];
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { "data-prompt-block": "true" }),
+    ];
   },
 
   addNodeView() {

@@ -16,7 +16,9 @@ export default function BlogCategory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1", 10);
 
-  const { data: category, isLoading: loadingCategory } = usePublicCategory(slug || "");
+  const { data: category, isLoading: loadingCategory } = usePublicCategory(
+    slug || "",
+  );
   const { data, isLoading } = usePublicPosts({ page, categorySlug: slug });
 
   const handlePageChange = (newPage: number) => {
@@ -45,7 +47,9 @@ export default function BlogCategory() {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Category not found</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-4">
+              Category not found
+            </h1>
             <p className="text-muted-foreground mb-6">
               The category you're looking for doesn't exist.
             </p>
@@ -77,7 +81,9 @@ export default function BlogCategory() {
             </Link>
 
             <header className="mb-10">
-              <h1 className="text-3xl font-bold text-foreground mb-2">{category.name}</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {category.name}
+              </h1>
               {category.description && (
                 <p className="text-muted-foreground">{category.description}</p>
               )}
@@ -113,8 +119,12 @@ export default function BlogCategory() {
                 ) : (
                   <div className="text-center py-16">
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold text-foreground mb-2">No posts in this category</h2>
-                    <p className="text-muted-foreground">Check back soon for new content.</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-2">
+                      No posts in this category
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Check back soon for new content.
+                    </p>
                   </div>
                 )}
               </div>

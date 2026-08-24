@@ -8,17 +8,17 @@ interface UseEmbeddingsReturn {
   generateEmbedding: (
     text: string,
     itemType?: EmbeddingItemType,
-    itemId?: string
+    itemId?: string,
   ) => Promise<number[] | null>;
   updateEmbedding: (
     itemType: EmbeddingItemType,
     itemId: string,
-    embedding: number[]
+    embedding: number[],
   ) => Promise<boolean>;
   refreshEmbedding: (
     itemType: EmbeddingItemType,
     itemId: string,
-    text: string
+    text: string,
   ) => Promise<boolean>;
   isGenerating: boolean;
 }
@@ -34,16 +34,19 @@ export function useEmbeddings(): UseEmbeddingsReturn {
   const generateEmbedding = async (
     text: string,
     itemType?: EmbeddingItemType,
-    itemId?: string
+    itemId?: string,
   ): Promise<number[] | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke("generate-embedding", {
-        body: {
-          text: text.slice(0, 8000),
-          itemType,
-          itemId,
+      const { data, error } = await supabase.functions.invoke(
+        "generate-embedding",
+        {
+          body: {
+            text: text.slice(0, 8000),
+            itemType,
+            itemId,
+          },
         },
-      });
+      );
 
       if (error) {
         console.error("generate-embedding error:", error);
@@ -72,17 +75,17 @@ export function useEmbeddings(): UseEmbeddingsReturn {
   const updateEmbedding = async (
     itemType: EmbeddingItemType,
     itemId: string,
-    _embedding: number[]
+    _embedding: number[],
   ): Promise<boolean> => {
     throw new Error(
-      "Writing embeddings from the client is not allowed. Use generateEmbedding(text, itemType, itemId)."
+      "Writing embeddings from the client is not allowed. Use generateEmbedding(text, itemType, itemId).",
     );
   };
 
   const refreshEmbedding = async (
     itemType: EmbeddingItemType,
     itemId: string,
-    text: string
+    text: string,
   ): Promise<boolean> => {
     setIsGenerating(true);
     try {

@@ -12,7 +12,6 @@ interface MyPlanRow {
   plan_source: string | null;
 }
 
-
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -21,35 +20,35 @@ export function useAuth() {
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
 
-          // Post-login check for OAuth signups that exceeded the cap
-          if (event === "SIGNED_IN") {
-            setTimeout(() => {
-              checkOAuthSignupAllowed(session.user);
-            }, 0);
-          }
-        } else {
-          setProfile(null);
-          setLoading(false);
+      // Defer profile fetch to avoid deadlock
+      if (session?.user) {
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
+
+        // Post-login check for OAuth signups that exceeded the cap
+        if (event === "SIGNED_IN") {
+          setTimeout(() => {
+            checkOAuthSignupAllowed(session.user);
+          }, 0);
         }
+      } else {
+        setProfile(null);
+        setLoading(false);
       }
-    );
+    });
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
@@ -73,11 +72,15 @@ export function useAuth() {
         return;
       }
 
-      const result = data as unknown as { allowed: boolean; current_count: number; max_count: number };
+      const result = data as unknown as {
+        allowed: boolean;
+        current_count: number;
+        max_count: number;
+      };
       if (result && !result.allowed) {
         toast.error(
           "We've reached our early access limit. Join the waitlist at support@querino.ai.",
-          { duration: 8000 }
+          { duration: 8000 },
         );
         await supabase.auth.signOut();
       }
@@ -95,7 +98,7 @@ export function useAuth() {
         supabase
           .from("profiles")
           .select(
-            "id, display_name, avatar_url, bio, website, twitter, github, created_at, updated_at, github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at"
+            "id, display_name, avatar_url, bio, website, twitter, github, created_at, updated_at, github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at",
           )
           .eq("id", userId)
           .maybeSingle(),
@@ -125,19 +128,31 @@ export function useAuth() {
 
   const signUpWithEmail = async (email: string, password: string) => {
     // Check signup cap before attempting registration
-    const { data: capCheck, error: capError } = await supabase.rpc("check_signup_allowed");
+    const { data: capCheck, error: capError } = await supabase.rpc(
+      "check_signup_allowed",
+    );
     if (capError) {
-      return { error: new Error("Unable to verify signup availability. Please try again.") };
+      return {
+        error: new Error(
+          "Unable to verify signup availability. Please try again.",
+        ),
+      };
     }
-    const capResult = capCheck as unknown as { allowed: boolean; current_count: number; max_count: number };
+    const capResult = capCheck as unknown as {
+      allowed: boolean;
+      current_count: number;
+      max_count: number;
+    };
     if (capResult && !capResult.allowed) {
       return {
-        error: new Error("We've reached our early access limit. Join the waitlist at support@querino.ai."),
+        error: new Error(
+          "We've reached our early access limit. Join the waitlist at support@querino.ai.",
+        ),
       };
     }
 
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,

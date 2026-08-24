@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface Prompt {
@@ -81,7 +82,7 @@ interface GitHubTreeEntry {
   path: string;
   mode: "100644";
   type: "blob";
-  sha: string | null;  // null = delete file
+  sha: string | null; // null = delete file
 }
 
 // Generate markdown content with YAML frontmatter
@@ -105,7 +106,10 @@ ${Object.entries(frontmatter)
     if (Array.isArray(value)) {
       return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
     }
-    if (typeof value === "string" && (value.includes(":") || value.includes('"'))) {
+    if (
+      typeof value === "string" &&
+      (value.includes(":") || value.includes('"'))
+    ) {
       return `${key}: "${value.replace(/"/g, '\\"')}"`;
     }
     return `${key}: ${value}`;
@@ -145,7 +149,10 @@ ${Object.entries(frontmatter)
     if (Array.isArray(value)) {
       return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
     }
-    if (typeof value === "string" && (value.includes(":") || value.includes('"'))) {
+    if (
+      typeof value === "string" &&
+      (value.includes(":") || value.includes('"'))
+    ) {
       return `${key}: "${value.replace(/"/g, '\\"')}"`;
     }
     return `${key}: ${value}`;
@@ -183,7 +190,10 @@ ${Object.entries(frontmatter)
     if (Array.isArray(value)) {
       return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
     }
-    if (typeof value === "string" && (value.includes(":") || value.includes('"'))) {
+    if (
+      typeof value === "string" &&
+      (value.includes(":") || value.includes('"'))
+    ) {
       return `${key}: "${value.replace(/"/g, '\\"')}"`;
     }
     return `${key}: ${value}`;
@@ -223,7 +233,10 @@ ${Object.entries(frontmatter)
     if (Array.isArray(value)) {
       return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
     }
-    if (typeof value === "string" && (value.includes(":") || value.includes('"'))) {
+    if (
+      typeof value === "string" &&
+      (value.includes(":") || value.includes('"'))
+    ) {
       return `${key}: "${value.replace(/"/g, '\\"')}"`;
     }
     return `${key}: ${value}`;
@@ -253,7 +266,7 @@ async function getRef(
   owner: string,
   repo: string,
   branch: string,
-  token: string
+  token: string,
 ): Promise<string | null> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`,
@@ -263,14 +276,16 @@ async function getRef(
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
       },
-    }
+    },
   );
 
   if (!response.ok) {
     const error = await response.text();
     // 409 means empty repo, 404 means branch doesn't exist
     if (response.status === 409 || response.status === 404) {
-      console.log("Repository is empty or branch doesn't exist, will create initial commit");
+      console.log(
+        "Repository is empty or branch doesn't exist, will create initial commit",
+      );
       return null;
     }
     console.error("Failed to get ref:", error);
@@ -285,7 +300,7 @@ async function getTree(
   owner: string,
   repo: string,
   treeSha: string,
-  token: string
+  token: string,
 ): Promise<GitHubTreeItem[]> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`,
@@ -295,7 +310,7 @@ async function getTree(
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
       },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -311,7 +326,7 @@ async function createBlob(
   owner: string,
   repo: string,
   content: string,
-  token: string
+  token: string,
 ): Promise<string> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/blobs`,
@@ -327,7 +342,7 @@ async function createBlob(
         content: btoa(unescape(encodeURIComponent(content))),
         encoding: "base64",
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -345,7 +360,7 @@ async function createTreeWithDeletions(
   repo: string,
   baseTree: string | null,
   entries: GitHubTreeEntry[],
-  token: string
+  token: string,
 ): Promise<string> {
   const body: Record<string, unknown> = { tree: entries };
   if (baseTree) {
@@ -363,7 +378,7 @@ async function createTreeWithDeletions(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -382,13 +397,13 @@ async function createCommit(
   message: string,
   treeSha: string,
   parentSha: string | null,
-  token: string
+  token: string,
 ): Promise<string> {
   const body: Record<string, unknown> = {
     message,
     tree: treeSha,
   };
-  
+
   if (parentSha) {
     body.parents = [parentSha];
   } else {
@@ -406,7 +421,7 @@ async function createCommit(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -424,7 +439,7 @@ async function updateRef(
   repo: string,
   branch: string,
   commitSha: string,
-  token: string
+  token: string,
 ): Promise<void> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`,
@@ -439,7 +454,7 @@ async function updateRef(
       body: JSON.stringify({
         sha: commitSha,
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -454,7 +469,7 @@ async function createRef(
   repo: string,
   branch: string,
   commitSha: string,
-  token: string
+  token: string,
 ): Promise<void> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs`,
@@ -470,7 +485,7 @@ async function createRef(
         ref: `refs/heads/${branch}`,
         sha: commitSha,
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -488,7 +503,7 @@ async function createFileViaContentsApi(
   content: string,
   message: string,
   branch: string,
-  token: string
+  token: string,
 ): Promise<void> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
@@ -505,7 +520,7 @@ async function createFileViaContentsApi(
         content: btoa(unescape(encodeURIComponent(content))),
         branch,
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -520,10 +535,10 @@ async function initializeEmptyRepo(
   owner: string,
   repo: string,
   branch: string,
-  token: string
+  token: string,
 ): Promise<string> {
   console.log("Initializing empty repository with README...");
-  
+
   const readmeContent = `# Querino Sync
 
 This repository is synced from [Querino](https://querino.lovable.app).
@@ -553,7 +568,7 @@ Each file contains YAML frontmatter with metadata and the content in Markdown fo
         content: btoa(unescape(encodeURIComponent(readmeContent))),
         branch,
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -576,27 +591,33 @@ Deno.serve(async (req) => {
     // Get auth token from request
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Create Supabase clients
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     // User client for auth and RLS-protected queries
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    
+
     // Admin client for fetching team credentials (bypasses RLS)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
     if (userError || !user) {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -626,10 +647,13 @@ Deno.serve(async (req) => {
 
       if (memberError || !membership) {
         console.error("Team membership check failed:", memberError);
-        return new Response(JSON.stringify({ error: "You are not a member of this team" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "You are not a member of this team" }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       // Get team settings
@@ -703,15 +727,27 @@ Deno.serve(async (req) => {
     // Validate settings
     if (!githubToken) {
       return new Response(
-        JSON.stringify({ error: "GitHub token not configured. Please add your Personal Access Token in Settings." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error:
+            "GitHub token not configured. Please add your Personal Access Token in Settings.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     if (!githubRepo) {
       return new Response(
-        JSON.stringify({ error: "GitHub repository not configured. Please add your repository in Settings." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error:
+            "GitHub repository not configured. Please add your repository in Settings.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -719,7 +755,10 @@ Deno.serve(async (req) => {
     if (!owner || !repo) {
       return new Response(
         JSON.stringify({ error: "Invalid repository format. Use owner/repo" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -735,22 +774,28 @@ Deno.serve(async (req) => {
               Accept: "application/vnd.github+json",
               "X-GitHub-Api-Version": "2022-11-28",
             },
-          }
+          },
         );
-        
+
         if (!repoResponse.ok) {
           throw new Error(`Cannot access repository: ${repoResponse.status}`);
         }
-        
+
         return new Response(
           JSON.stringify({ success: true, message: "Connection successful" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       } catch (error) {
         console.error("Connection test failed:", error);
         return new Response(
-          JSON.stringify({ error: "Failed to connect to repository. Check your token and repository settings." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error:
+              "Failed to connect to repository. Check your token and repository settings.",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
     }
@@ -765,12 +810,15 @@ Deno.serve(async (req) => {
 
     if (teamId) {
       // Team artefacts
-      const [promptsResult, skillsResult, workflowsResult, kitsResult] = await Promise.all([
-        supabase.from("prompts").select("*").eq("team_id", teamId),
-        supabase.from("skills").select("*").eq("team_id", teamId),
-        supabase.from("workflows").select("*").eq("team_id", teamId),
-        (supabase.from("prompt_kits") as any).select("*").eq("team_id", teamId),
-      ]);
+      const [promptsResult, skillsResult, workflowsResult, kitsResult] =
+        await Promise.all([
+          supabase.from("prompts").select("*").eq("team_id", teamId),
+          supabase.from("skills").select("*").eq("team_id", teamId),
+          supabase.from("workflows").select("*").eq("team_id", teamId),
+          (supabase.from("prompt_kits") as any)
+            .select("*")
+            .eq("team_id", teamId),
+        ]);
 
       prompts = (promptsResult.data as Prompt[]) || [];
       skills = (skillsResult.data as Skill[]) || [];
@@ -778,12 +826,28 @@ Deno.serve(async (req) => {
       promptKits = (kitsResult.data as PromptKit[]) || [];
     } else {
       // Personal artefacts
-      const [promptsResult, skillsResult, workflowsResult, kitsResult] = await Promise.all([
-        supabase.from("prompts").select("*").eq("author_id", user.id).is("team_id", null),
-        supabase.from("skills").select("*").eq("author_id", user.id).is("team_id", null),
-        supabase.from("workflows").select("*").eq("author_id", user.id).is("team_id", null),
-        (supabase.from("prompt_kits") as any).select("*").eq("author_id", user.id).is("team_id", null),
-      ]);
+      const [promptsResult, skillsResult, workflowsResult, kitsResult] =
+        await Promise.all([
+          supabase
+            .from("prompts")
+            .select("*")
+            .eq("author_id", user.id)
+            .is("team_id", null),
+          supabase
+            .from("skills")
+            .select("*")
+            .eq("author_id", user.id)
+            .is("team_id", null),
+          supabase
+            .from("workflows")
+            .select("*")
+            .eq("author_id", user.id)
+            .is("team_id", null),
+          (supabase.from("prompt_kits") as any)
+            .select("*")
+            .eq("author_id", user.id)
+            .is("team_id", null),
+        ]);
 
       prompts = (promptsResult.data as Prompt[]) || [];
       skills = (skillsResult.data as Skill[]) || [];
@@ -791,12 +855,19 @@ Deno.serve(async (req) => {
       promptKits = (kitsResult.data as PromptKit[]) || [];
     }
 
-    console.log(`Found ${prompts.length} prompts, ${skills.length} skills, ${workflows.length} workflows, ${promptKits.length} prompt kits`);
+    console.log(
+      `Found ${prompts.length} prompts, ${skills.length} skills, ${workflows.length} workflows, ${promptKits.length} prompt kits`,
+    );
 
-    if (prompts.length === 0 && skills.length === 0 && workflows.length === 0 && promptKits.length === 0) {
+    if (
+      prompts.length === 0 &&
+      skills.length === 0 &&
+      workflows.length === 0 &&
+      promptKits.length === 0
+    ) {
       return new Response(
         JSON.stringify({ success: true, message: "No artefacts to sync" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -805,18 +876,21 @@ Deno.serve(async (req) => {
     const basePath = githubFolder ? `${githubFolder}/` : "";
 
     // Helper to generate locally-unique filenames within a folder
-    function generateUniqueFilename(title: string, existingNames: Set<string>): string {
+    function generateUniqueFilename(
+      title: string,
+      existingNames: Set<string>,
+    ): string {
       let baseName = slugify(title);
       if (!baseName) baseName = "untitled";
-      
+
       let filename = baseName;
       let counter = 1;
-      
+
       while (existingNames.has(filename)) {
         filename = `${baseName}-${counter}`;
         counter++;
       }
-      
+
       existingNames.add(filename);
       return filename;
     }
@@ -847,7 +921,10 @@ Deno.serve(async (req) => {
 
     // Generate workflow files
     for (const workflow of workflows) {
-      const filename = generateUniqueFilename(workflow.title, workflowFilenames);
+      const filename = generateUniqueFilename(
+        workflow.title,
+        workflowFilenames,
+      );
       files.push({
         path: `${basePath}workflows/${filename}.md`,
         content: generateWorkflowMarkdown(workflow),
@@ -872,20 +949,38 @@ Deno.serve(async (req) => {
     // If repo is empty, initialize it first with a README
     if (!currentCommitSha) {
       console.log("Empty repository detected, initializing...");
-      currentCommitSha = await initializeEmptyRepo(owner, repo, githubBranch, githubToken);
+      currentCommitSha = await initializeEmptyRepo(
+        owner,
+        repo,
+        githubBranch,
+        githubToken,
+      );
       console.log("Repository initialized, new commit SHA:", currentCommitSha);
     }
 
     // Get current tree to find files to delete in our managed folders
-    const existingTree = await getTree(owner, repo, currentCommitSha!, githubToken);
-    const managedPaths = [`${basePath}prompts/`, `${basePath}skills/`, `${basePath}workflows/`, `${basePath}prompt-kits/`];
-    
-    // Find existing files in our managed folders that should be deleted
-    const existingManagedFiles = existingTree.filter((item) => 
-      item.type === "blob" && 
-      managedPaths.some((mp) => item.path.startsWith(mp))
+    const existingTree = await getTree(
+      owner,
+      repo,
+      currentCommitSha!,
+      githubToken,
     );
-    console.log(`Found ${existingManagedFiles.length} existing files in managed folders`);
+    const managedPaths = [
+      `${basePath}prompts/`,
+      `${basePath}skills/`,
+      `${basePath}workflows/`,
+      `${basePath}prompt-kits/`,
+    ];
+
+    // Find existing files in our managed folders that should be deleted
+    const existingManagedFiles = existingTree.filter(
+      (item) =>
+        item.type === "blob" &&
+        managedPaths.some((mp) => item.path.startsWith(mp)),
+    );
+    console.log(
+      `Found ${existingManagedFiles.length} existing files in managed folders`,
+    );
 
     // Build a set of new file paths for quick lookup
     const newFilePaths = new Set(files.map((f) => f.path));
@@ -901,7 +996,7 @@ Deno.serve(async (req) => {
           path: existingFile.path,
           mode: "100644",
           type: "blob",
-          sha: null,  // null sha = delete
+          sha: null, // null sha = delete
         });
       }
     }
@@ -925,10 +1020,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Tree entries: ${treeEntries.filter(e => e.sha === null).length} deletions, ${blobs.length} additions`);
+    console.log(
+      `Tree entries: ${treeEntries.filter((e) => e.sha === null).length} deletions, ${blobs.length} additions`,
+    );
 
     // Create new tree with deletions and additions
-    const treeSha = await createTreeWithDeletions(owner, repo, currentCommitSha, treeEntries, githubToken);
+    const treeSha = await createTreeWithDeletions(
+      owner,
+      repo,
+      currentCommitSha,
+      treeEntries,
+      githubToken,
+    );
     console.log("Created tree:", treeSha);
 
     // Create commit
@@ -949,7 +1052,7 @@ Synced by: ${user.email}`;
       commitMessage,
       treeSha,
       currentCommitSha,
-      githubToken
+      githubToken,
     );
     console.log("Created commit:", newCommitSha);
 
@@ -977,14 +1080,15 @@ Synced by: ${user.email}`;
         commitSha: newCommitSha,
         filesUpdated: files.length,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("GitHub sync error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

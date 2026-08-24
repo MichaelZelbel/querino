@@ -11,7 +11,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
-import { Globe, Twitter, Github, UserPlus, Sparkles, BookOpen, Workflow, Activity } from "lucide-react";
+import {
+  Globe,
+  Twitter,
+  Github,
+  UserPlus,
+  Sparkles,
+  BookOpen,
+  Workflow,
+  Activity,
+} from "lucide-react";
 import type { Prompt } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { Workflow as WorkflowType } from "@/types/workflow";
@@ -47,11 +56,11 @@ export default function UserProfile() {
 
       try {
         // Find user by display_name using the public_profiles view (no sensitive fields)
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData, error: profileError } = (await supabase
           .from("profiles")
           .select("id, display_name, avatar_url, bio, website, twitter, github")
           .or(`display_name.ilike.${username}`)
-          .maybeSingle() as any;
+          .maybeSingle()) as any;
 
         if (profileError || !profileData) {
           setNotFound(true);
@@ -151,7 +160,8 @@ export default function UserProfile() {
               Creator Not Found
             </h1>
             <p className="mb-8 text-lg text-muted-foreground">
-              The creator you're looking for doesn't exist or hasn't published anything yet.
+              The creator you're looking for doesn't exist or hasn't published
+              anything yet.
             </p>
             <Link to="/discover">
               <Button>Browse Discover</Button>
@@ -176,23 +186,27 @@ export default function UserProfile() {
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex-1 text-center sm:text-left">
               <h1 className="mb-2 text-display-sm font-bold text-foreground">
                 {profile.display_name || "Anonymous Creator"}
               </h1>
-              
+
               {profile.bio && (
                 <p className="mb-4 text-muted-foreground max-w-xl">
                   {profile.bio}
                 </p>
               )}
-              
+
               {/* Social Links */}
               <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
                 {profile.website && (
                   <a
-                    href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
+                    href={
+                      profile.website.startsWith("http")
+                        ? profile.website
+                        : `https://${profile.website}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -208,8 +222,8 @@ export default function UserProfile() {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <Twitter className="h-4 w-4" />
-                    @{profile.twitter.replace("@", "")}
+                    <Twitter className="h-4 w-4" />@
+                    {profile.twitter.replace("@", "")}
                   </a>
                 )}
                 {profile.github && (
@@ -241,7 +255,11 @@ export default function UserProfile() {
           </div>
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="prompts" className="gap-2">
                 <Sparkles className="h-4 w-4" />

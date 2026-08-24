@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useNavigate, Link } from "@/lib/router-compat";
-import { Building2, ChevronDown, Plus, User, Settings, Check, Crown, Lock } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  Plus,
+  User,
+  Settings,
+  Check,
+  Crown,
+  Lock,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +36,14 @@ import { cn } from "@/lib/utils";
 
 export function WorkspacePicker() {
   const navigate = useNavigate();
-  const { currentWorkspace, currentTeam, teams, switchWorkspace, canManageTeam, isTeamWorkspace } = useWorkspace();
+  const {
+    currentWorkspace,
+    currentTeam,
+    teams,
+    switchWorkspace,
+    canManageTeam,
+    isTeamWorkspace,
+  } = useWorkspace();
   const createTeam = useCreateTeam();
   const { isPremium, user } = usePremiumCheck();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -35,9 +51,11 @@ export function WorkspacePicker() {
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
-    
+
     if (!isPremium) {
-      toast.error("Teams are available on Premium. Please upgrade to create teams.");
+      toast.error(
+        "Teams are available on Premium. Please upgrade to create teams.",
+      );
       return;
     }
 
@@ -58,9 +76,8 @@ export function WorkspacePicker() {
     }
   };
 
-  const displayName = currentWorkspace === "personal" 
-    ? "Personal" 
-    : currentTeam?.name || "Team";
+  const displayName =
+    currentWorkspace === "personal" ? "Personal" : currentTeam?.name || "Team";
 
   // If not logged in, don't show the workspace picker
   if (!user) return null;
@@ -69,11 +86,11 @@ export function WorkspacePicker() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className={cn(
               "gap-2 px-3 h-9 border-dashed",
-              isTeamWorkspace && "border-primary/50 bg-primary/5"
+              isTeamWorkspace && "border-primary/50 bg-primary/5",
             )}
           >
             {currentWorkspace === "personal" ? (
@@ -81,9 +98,14 @@ export function WorkspacePicker() {
             ) : (
               <Building2 className="h-4 w-4 text-primary" />
             )}
-            <span className="max-w-[140px] truncate font-medium">{displayName}</span>
+            <span className="max-w-[140px] truncate font-medium">
+              {displayName}
+            </span>
             {isTeamWorkspace && (
-              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-0">
+              <Badge
+                variant="secondary"
+                className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-0"
+              >
                 Team
               </Badge>
             )}
@@ -101,7 +123,9 @@ export function WorkspacePicker() {
             <User className="h-4 w-4" />
             <div className="flex-1">
               <p className="font-medium">Personal Workspace</p>
-              <p className="text-xs text-muted-foreground">Your private prompts & settings</p>
+              <p className="text-xs text-muted-foreground">
+                Your private prompts & settings
+              </p>
             </div>
             {currentWorkspace === "personal" && (
               <Check className="h-4 w-4 text-primary" />
@@ -118,22 +142,25 @@ export function WorkspacePicker() {
             </>
           )}
 
-          {isPremium && teams.map((team) => (
-            <DropdownMenuItem
-              key={team.id}
-              onClick={() => switchWorkspace(team.id)}
-              className="gap-2 py-2.5"
-            >
-              <Building2 className="h-4 w-4" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{team.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{team.role}</p>
-              </div>
-              {currentWorkspace === team.id && (
-                <Check className="h-4 w-4 text-primary" />
-              )}
-            </DropdownMenuItem>
-          ))}
+          {isPremium &&
+            teams.map((team) => (
+              <DropdownMenuItem
+                key={team.id}
+                onClick={() => switchWorkspace(team.id)}
+                className="gap-2 py-2.5"
+              >
+                <Building2 className="h-4 w-4" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{team.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {team.role}
+                  </p>
+                </div>
+                {currentWorkspace === team.id && (
+                  <Check className="h-4 w-4 text-primary" />
+                )}
+              </DropdownMenuItem>
+            ))}
 
           <DropdownMenuSeparator />
 
@@ -149,10 +176,7 @@ export function WorkspacePicker() {
 
           {/* Premium users can create teams */}
           {isPremium ? (
-            <DropdownMenuItem
-              onClick={handleCreateTeamClick}
-              className="gap-2"
-            >
+            <DropdownMenuItem onClick={handleCreateTeamClick} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Team
             </DropdownMenuItem>
@@ -162,14 +186,20 @@ export function WorkspacePicker() {
               <div className="flex items-start gap-2 mb-2">
                 <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="text-sm">
-                  <p className="text-foreground font-medium">Teams require Premium</p>
+                  <p className="text-foreground font-medium">
+                    Teams require Premium
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Collaborate with shared team libraries
                   </p>
                 </div>
               </div>
               <a href="mailto:support@querino.ai" className="block">
-                <Button size="sm" variant="outline" className="w-full gap-1.5 h-8">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full gap-1.5 h-8"
+                >
                   Contact Support
                 </Button>
               </a>
@@ -195,7 +225,10 @@ export function WorkspacePicker() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateDialog(false)}
+            >
               Cancel
             </Button>
             <Button

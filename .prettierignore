@@ -1,0 +1,28 @@
+# Build output. Prettier would otherwise rewrite 430 files here that nobody reads and
+# that the next build throws away.
+dist
+.output
+.wrangler
+node_modules
+coverage
+test-results
+playwright-report
+
+# Generated, and regenerated on every build or type pull. Formatting them creates a diff
+# that the generator undoes.
+src/routeTree.gen.ts
+src/integrations/supabase/types.ts
+bun.lock
+package-lock.json
+
+# Migration evidence. The screenshots are binary and the JSON is a recorded measurement,
+# not source: reformatting it would make every future diff of it unreadable.
+migration/baseline
+migration/baseline-v2
+migration/after-migration
+migration/after-seo
+migration/*.json
+
+# Markdown. eslint.config.js only lints **/*.{ts,tsx}, so formatting prose buys the lint
+# gate nothing and would rewrite every document in docs/ and migration/ for no reason.
+*.md

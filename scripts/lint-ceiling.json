@@ -1,7 +1,5 @@
 {
-  "rule": [
-    "@typescript-eslint/no-explicit-any"
-  ],
+  "rule": ["@typescript-eslint/no-explicit-any"],
   "note": "The ceiling on `any`. It may be lowered, never raised. See scripts/lint-ratchet.mjs.",
   "total": 205,
   "perFile": {

@@ -17,7 +17,11 @@ const useBase = createCopyToTeamHook<SourcePromptKit>({
     content: source.content,
     published: false,
     ...(includeMetadata
-      ? { description: source.description, category: source.category, tags: source.tags || [] }
+      ? {
+          description: source.description,
+          category: source.category,
+          tags: source.tags || [],
+        }
       : { description: "", tags: [] }),
   }),
 });

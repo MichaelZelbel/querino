@@ -15,7 +15,10 @@ import { resolve } from "node:path";
 type Entry = { route: string; url: string | null; guard: string; name: string };
 
 const entries: Entry[] = JSON.parse(
-  readFileSync(resolve(process.cwd(), "migration/screenshot-urls.json"), "utf8"),
+  readFileSync(
+    resolve(process.cwd(), "migration/screenshot-urls.json"),
+    "utf8",
+  ),
 );
 
 type Captured = {
@@ -52,14 +55,17 @@ for (const entry of entries) {
       const attr = (sel: string, a = "content") =>
         document.querySelector(sel)?.getAttribute(a) ?? null;
       const jsonLdTypes: string[] = [];
-      document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => {
-        try {
-          const parsed = JSON.parse(el.textContent ?? "");
-          for (const o of [parsed].flat()) jsonLdTypes.push(String(o["@type"] ?? "unknown"));
-        } catch {
-          jsonLdTypes.push("unparseable");
-        }
-      });
+      document
+        .querySelectorAll('script[type="application/ld+json"]')
+        .forEach((el) => {
+          try {
+            const parsed = JSON.parse(el.textContent ?? "");
+            for (const o of [parsed].flat())
+              jsonLdTypes.push(String(o["@type"] ?? "unknown"));
+          } catch {
+            jsonLdTypes.push("unparseable");
+          }
+        });
       return {
         title: document.title,
         description: attr('meta[name="description"]'),
@@ -82,7 +88,10 @@ for (const entry of entries) {
 test.afterAll(() => {
   captured.sort((a, b) => a.route.localeCompare(b.route));
   const out = resolve(process.cwd(), "migration");
-  writeFileSync(resolve(out, "seo-inventory.json"), JSON.stringify(captured, null, 2) + "\n");
+  writeFileSync(
+    resolve(out, "seo-inventory.json"),
+    JSON.stringify(captured, null, 2) + "\n",
+  );
 
   const withTitle = captured.filter((c) => c.title && c.title !== "Querino");
   const withCanonical = captured.filter((c) => c.canonical);
@@ -109,13 +118,21 @@ test.afterAll(() => {
     lines.push("");
     lines.push(`- captured at: \`${c.url}\``);
     lines.push(`- title: ${c.title ? `\`${c.title}\`` : "(none)"}`);
-    lines.push(`- description: ${c.description ? `\`${c.description}\`` : "(none)"}`);
+    lines.push(
+      `- description: ${c.description ? `\`${c.description}\`` : "(none)"}`,
+    );
     lines.push(`- canonical: ${c.canonical ? `\`${c.canonical}\`` : "(none)"}`);
     if (c.robots) lines.push(`- robots: \`${c.robots}\``);
-    lines.push(`- og: type \`${c.ogType ?? "-"}\`, image ${c.ogImage ? `\`${c.ogImage}\`` : "(none)"}, url ${c.ogUrl ? `\`${c.ogUrl}\`` : "(none)"}`);
-    lines.push(`- twitter card: ${c.twitterCard ? `\`${c.twitterCard}\`` : "(none)"}`);
+    lines.push(
+      `- og: type \`${c.ogType ?? "-"}\`, image ${c.ogImage ? `\`${c.ogImage}\`` : "(none)"}, url ${c.ogUrl ? `\`${c.ogUrl}\`` : "(none)"}`,
+    );
+    lines.push(
+      `- twitter card: ${c.twitterCard ? `\`${c.twitterCard}\`` : "(none)"}`,
+    );
     if (c.rss) lines.push(`- rss link: \`${c.rss}\``);
-    lines.push(`- structured data: ${c.jsonLdTypes.length ? c.jsonLdTypes.map((t) => `\`${t}\``).join(", ") : "(none)"}`);
+    lines.push(
+      `- structured data: ${c.jsonLdTypes.length ? c.jsonLdTypes.map((t) => `\`${t}\``).join(", ") : "(none)"}`,
+    );
     lines.push("");
   }
   writeFileSync(resolve(out, "seo-inventory.md"), lines.join("\n"));

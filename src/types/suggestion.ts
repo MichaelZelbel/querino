@@ -1,5 +1,6 @@
-export type SuggestionStatus = 'open' | 'changes_requested' | 'accepted' | 'rejected';
-export type SuggestionItemType = 'prompt' | 'skill' | 'workflow' | 'prompt_kit';
+export type SuggestionStatus =
+  "open" | "changes_requested" | "accepted" | "rejected";
+export type SuggestionItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 export interface Suggestion {
   id: string;

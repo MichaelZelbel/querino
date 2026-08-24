@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ThemeToggleProps {
   /** When true, render a labeled button suitable for the mobile menu. */
@@ -10,7 +14,10 @@ interface ThemeToggleProps {
   className?: string;
 }
 
-export function ThemeToggle({ withLabel = false, className }: ThemeToggleProps) {
+export function ThemeToggle({
+  withLabel = false,
+  className,
+}: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 

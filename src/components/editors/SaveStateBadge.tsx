@@ -18,7 +18,12 @@ function formatRelative(date: Date): string {
   return date.toLocaleDateString();
 }
 
-export function SaveStateBadge({ isDirty, isSaving, savedAt, className }: SaveStateBadgeProps) {
+export function SaveStateBadge({
+  isDirty,
+  isSaving,
+  savedAt,
+  className,
+}: SaveStateBadgeProps) {
   const [, tick] = useState(0);
 
   // Refresh relative time every 30s while a savedAt exists.
@@ -31,7 +36,10 @@ export function SaveStateBadge({ isDirty, isSaving, savedAt, className }: SaveSt
   if (isSaving) {
     return (
       <div
-        className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", className)}
+        className={cn(
+          "flex items-center gap-1.5 text-xs text-muted-foreground",
+          className,
+        )}
         aria-live="polite"
       >
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -43,7 +51,10 @@ export function SaveStateBadge({ isDirty, isSaving, savedAt, className }: SaveSt
   if (isDirty) {
     return (
       <div
-        className={cn("flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400", className)}
+        className={cn(
+          "flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400",
+          className,
+        )}
         aria-live="polite"
         title="Press ⌘S / Ctrl+S to save"
       >
@@ -56,7 +67,10 @@ export function SaveStateBadge({ isDirty, isSaving, savedAt, className }: SaveSt
   if (savedAt) {
     return (
       <div
-        className={cn("flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400", className)}
+        className={cn(
+          "flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400",
+          className,
+        )}
         aria-live="polite"
       >
         <Check className="h-3.5 w-3.5" />

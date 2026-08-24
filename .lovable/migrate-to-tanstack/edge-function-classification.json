@@ -1,39 +1,214 @@
 {
   "functions": [
-    { "name": "admin-llm-config", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "ai-insights", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "ai-moderate-content", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "api", "classification": "left-by-user-constraint", "signal": "public REST API + sitemap/RSS at fixed URL; user hard constraint", "outcome": "left" },
-    { "name": "backfill-embeddings", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "blog-api", "classification": "left-by-user-constraint", "signal": "public blog API at fixed URL; user hard constraint", "outcome": "left" },
-    { "name": "canvas-ai", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "check-subscription", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "create-checkout", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "customer-portal", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "delete-my-account", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "delete-user", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "ensure-token-allowance", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "fetch-skill-md", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "generate-embedding", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "generate-slug", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "github-sync-worker", "classification": "left-by-user-constraint", "signal": "pg_cron target; user hard constraint", "outcome": "left" },
-    { "name": "github-sync", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "mcp-server", "classification": "left-by-user-constraint", "signal": "MCP server at fixed URL (mcp.querino.ai); user hard constraint", "outcome": "left" },
-    { "name": "menerio-link-callback", "classification": "left-by-user-constraint", "signal": "external callback at fixed URL; user hard constraint", "outcome": "left" },
-    { "name": "moderate-content", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "notify-admin", "classification": "left-by-user-constraint", "signal": "DB trigger target; user hard constraint", "outcome": "left" },
-    { "name": "process-menerio-sync-queue", "classification": "left-by-user-constraint", "signal": "cron/queue worker; user hard constraint", "outcome": "left" },
-    { "name": "prompt-coach", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "prompt-kit-coach", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "prompt-wizard", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "refine-prompt", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "render-for-menerio", "classification": "left-by-user-constraint", "signal": "external integration endpoint; user hard constraint", "outcome": "left" },
-    { "name": "skill-coach", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "suggest-metadata", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "suggest-promptkit-metadata", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "suggest-skill-metadata", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "suggest-workflow-metadata", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "translate-artifact", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" },
-    { "name": "workflow-coach", "classification": "left-by-user-constraint", "signal": "user hard constraint: do not touch supabase/functions/**", "outcome": "left" }
+    {
+      "name": "admin-llm-config",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "ai-insights",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "ai-moderate-content",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "api",
+      "classification": "left-by-user-constraint",
+      "signal": "public REST API + sitemap/RSS at fixed URL; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "backfill-embeddings",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "blog-api",
+      "classification": "left-by-user-constraint",
+      "signal": "public blog API at fixed URL; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "canvas-ai",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "check-subscription",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "create-checkout",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "customer-portal",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "delete-my-account",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "delete-user",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "ensure-token-allowance",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "fetch-skill-md",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "generate-embedding",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "generate-slug",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "github-sync-worker",
+      "classification": "left-by-user-constraint",
+      "signal": "pg_cron target; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "github-sync",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "mcp-server",
+      "classification": "left-by-user-constraint",
+      "signal": "MCP server at fixed URL (mcp.querino.ai); user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "menerio-link-callback",
+      "classification": "left-by-user-constraint",
+      "signal": "external callback at fixed URL; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "moderate-content",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "notify-admin",
+      "classification": "left-by-user-constraint",
+      "signal": "DB trigger target; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "process-menerio-sync-queue",
+      "classification": "left-by-user-constraint",
+      "signal": "cron/queue worker; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "prompt-coach",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "prompt-kit-coach",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "prompt-wizard",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "refine-prompt",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "render-for-menerio",
+      "classification": "left-by-user-constraint",
+      "signal": "external integration endpoint; user hard constraint",
+      "outcome": "left"
+    },
+    {
+      "name": "skill-coach",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "suggest-metadata",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "suggest-promptkit-metadata",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "suggest-skill-metadata",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "suggest-workflow-metadata",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "translate-artifact",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    },
+    {
+      "name": "workflow-coach",
+      "classification": "left-by-user-constraint",
+      "signal": "user hard constraint: do not touch supabase/functions/**",
+      "outcome": "left"
+    }
   ]
 }

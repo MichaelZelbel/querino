@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,7 +70,9 @@ export function PromptKitCard({
                   {kit.title}
                 </h3>
                 {showAuthorBadge && isAuthor && (
-                  <Badge variant="secondary" className="text-xs">Your kit</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Your kit
+                  </Badge>
                 )}
                 <Badge variant="outline" className="text-xs">
                   {promptCount} {promptCount === 1 ? "prompt" : "prompts"}
@@ -89,7 +96,11 @@ export function PromptKitCard({
         {kit.tags && kit.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {kit.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs font-normal">
+              <Badge
+                key={tag}
+                variant="outline"
+                className="text-xs font-normal"
+              >
                 {tag}
               </Badge>
             ))}
@@ -120,11 +131,17 @@ export function PromptKitCard({
             {kit.rating_count && kit.rating_count > 0 ? (
               <div className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                <span className="font-medium">{Number(kit.rating_avg || 0).toFixed(1)}</span>
-                <span className="text-muted-foreground">({kit.rating_count})</span>
+                <span className="font-medium">
+                  {Number(kit.rating_avg || 0).toFixed(1)}
+                </span>
+                <span className="text-muted-foreground">
+                  ({kit.rating_count})
+                </span>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">No ratings yet</span>
+              <span className="text-xs text-muted-foreground">
+                No ratings yet
+              </span>
             )}
           </div>
 
@@ -143,9 +160,15 @@ export function PromptKitCard({
               className="gap-1.5"
             >
               {copied ? (
-                <><Check className="h-3.5 w-3.5" />Copied</>
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Copied
+                </>
               ) : (
-                <><Copy className="h-3.5 w-3.5" />Copy</>
+                <>
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy
+                </>
               )}
             </Button>
           </div>

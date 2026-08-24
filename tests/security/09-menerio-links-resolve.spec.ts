@@ -35,7 +35,9 @@ async function publishedBundle(): Promise<string> {
 
 test.describe("M7 — the link Menerio is given is a route the site declares", () => {
   test("a prompt kit is announced under the hyphenated route", () => {
-    expect(publicUrlFor("prompt_kit", "my-kit")).toBe("https://querino.ai/prompt-kits/my-kit");
+    expect(publicUrlFor("prompt_kit", "my-kit")).toBe(
+      "https://querino.ai/prompt-kits/my-kit",
+    );
     expect(publicUrlFor("prompt_kit", "my-kit")).not.toContain("prompt_kits");
   });
 

@@ -25,7 +25,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ArrowLeft, Loader2, X, Save, Sparkles, Bot, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  X,
+  Save,
+  Sparkles,
+  Bot,
+  FileText,
+} from "lucide-react";
 import { toast } from "sonner";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
@@ -36,7 +44,10 @@ import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getOrCreateDraftSessionId, promoteDraftSession } from "@/lib/runCanvasAI";
+import {
+  getOrCreateDraftSessionId,
+  promoteDraftSession,
+} from "@/lib/runCanvasAI";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateSlug } from "@/hooks/useGenerateSlug";
 
@@ -53,21 +64,30 @@ export default function WorkflowNew() {
   const [content, setContent] = useState(searchParams.get("content") || "");
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [description, setDescription] = useState(searchParams.get("description") || "");
+  const [description, setDescription] = useState(
+    searchParams.get("description") || "",
+  );
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>(searchParams.get("tags")?.split(",").filter(Boolean) || []);
+  const [tags, setTags] = useState<string[]>(
+    searchParams.get("tags")?.split(",").filter(Boolean) || [],
+  );
   const [isPublic, setIsPublic] = useState(false);
-  const [language, setLanguage] = useState(searchParams.get("language") || DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(
+    searchParams.get("language") || DEFAULT_LANGUAGE,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [moderationBlock, setModerationBlock] = useState<ModerationResult | null>(null);
+  const [moderationBlock, setModerationBlock] =
+    useState<ModerationResult | null>(null);
 
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
   const workspaceScope = currentWorkspace ?? "personal";
-  const draftSessionId = user ? getOrCreateDraftSessionId(workspaceScope, user.id, "workflow") : "draft";
+  const draftSessionId = user
+    ? getOrCreateDraftSessionId(workspaceScope, user.id, "workflow")
+    : "draft";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -88,7 +108,11 @@ export default function WorkflowNew() {
   };
 
   const normalizeTag = (tag: string) => {
-    return tag.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    return tag
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -124,19 +148,29 @@ export default function WorkflowNew() {
     setIsGeneratingMetadata(true);
     setMetadataError(null);
     try {
-      const { data: result, error } = await supabase.functions.invoke("suggest-workflow-metadata", {
-        body: { workflow_content: content.trim(), user_id: user?.id },
-      });
+      const { data: result, error } = await supabase.functions.invoke(
+        "suggest-workflow-metadata",
+        {
+          body: { workflow_content: content.trim(), user_id: user?.id },
+        },
+      );
       if (error) throw new Error("Failed to generate suggestions");
       const data = result.output || result;
       if (data.title) setTitle(data.title);
       if (data.description) setDescription(data.description);
       if (data.category) {
-        const matched = categoryOptions.find(c => c.id.toLowerCase() === data.category.toLowerCase());
+        const matched = categoryOptions.find(
+          (c) => c.id.toLowerCase() === data.category.toLowerCase(),
+        );
         if (matched) setCategory(matched.id);
       }
       if (data.tags && Array.isArray(data.tags)) {
-        setTags(data.tags.map((t: string) => normalizeTag(t)).filter(Boolean).slice(0, 10));
+        setTags(
+          data.tags
+            .map((t: string) => normalizeTag(t))
+            .filter(Boolean)
+            .slice(0, 10),
+        );
       }
       toast.success("Metadata suggestions applied!");
     } catch {
@@ -154,7 +188,7 @@ export default function WorkflowNew() {
       const result = await moderateContent(
         { title, description, content },
         "publish",
-        "workflow"
+        "workflow",
       );
       if (!result.approved) {
         setModerationBlock(result);
@@ -166,7 +200,9 @@ export default function WorkflowNew() {
     try {
       const slug = await generateSlug(title.trim());
 
-      const { data: newWorkflow, error } = await (supabase.from("workflows") as any)
+      const { data: newWorkflow, error } = await (
+        supabase.from("workflows") as any
+      )
         .insert({
           title: title.trim(),
           description: description.trim() || null,
@@ -189,7 +225,12 @@ export default function WorkflowNew() {
 
       // Promote draft session to deterministic session for the new workflow
       if (newWorkflow?.id) {
-        promoteDraftSession(workspaceScope, user.id, newWorkflow.id, "workflow");
+        promoteDraftSession(
+          workspaceScope,
+          user.id,
+          newWorkflow.id,
+          "workflow",
+        );
       }
 
       toast.success("Workflow created!");
@@ -259,8 +300,16 @@ export default function WorkflowNew() {
                   </SheetContent>
                 </Sheet>
               )}
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Create Workflow
               </Button>
             </div>
@@ -271,7 +320,9 @@ export default function WorkflowNew() {
             {/* Left: Editor */}
             <div className="flex-1 min-w-0">
               <div className="rounded-xl border border-border bg-card p-6">
-                <h1 className="mb-6 text-xl font-semibold text-foreground">Create New Workflow</h1>
+                <h1 className="mb-6 text-xl font-semibold text-foreground">
+                  Create New Workflow
+                </h1>
 
                 <div className="space-y-6">
                   {/* Workflow Content */}
@@ -287,8 +338,14 @@ export default function WorkflowNew() {
                       placeholder={`# My Workflow\n\n## Description\nDescribe what this workflow does...\n\n## Steps\n1. First step...\n2. Second step...`}
                       error={!!errors.content}
                     />
-                    {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
-                    <p className="text-xs text-muted-foreground">Write your workflow instructions in Markdown format.</p>
+                    {errors.content && (
+                      <p className="text-sm text-destructive">
+                        {errors.content}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Write your workflow instructions in Markdown format.
+                    </p>
                   </div>
 
                   {/* AI Metadata Suggestion */}
@@ -302,12 +359,22 @@ export default function WorkflowNew() {
                       className="gap-1.5"
                     >
                       {isGeneratingMetadata ? (
-                        <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generating…</>
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Generating…
+                        </>
                       ) : (
-                        <><Sparkles className="h-3.5 w-3.5" />Suggest title, description, category & tags</>
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Suggest title, description, category & tags
+                        </>
                       )}
                     </Button>
-                    {metadataError && <p className="text-sm text-destructive">{metadataError}</p>}
+                    {metadataError && (
+                      <p className="text-sm text-destructive">
+                        {metadataError}
+                      </p>
+                    )}
                   </div>
 
                   {/* Title */}
@@ -320,7 +387,9 @@ export default function WorkflowNew() {
                       placeholder="e.g., Code Review Workflow"
                       className={errors.title ? "border-destructive" : ""}
                     />
-                    {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                    {errors.title && (
+                      <p className="text-sm text-destructive">{errors.title}</p>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -339,16 +408,24 @@ export default function WorkflowNew() {
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                      <SelectTrigger
+                        className={errors.category ? "border-destructive" : ""}
+                      >
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categoryOptions.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
+                    {errors.category && (
+                      <p className="text-sm text-destructive">
+                        {errors.category}
+                      </p>
+                    )}
                   </div>
 
                   {/* Tags */}
@@ -364,9 +441,17 @@ export default function WorkflowNew() {
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="gap-1">
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="gap-1"
+                          >
                             {tag}
-                            <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="ml-1 hover:text-destructive"
+                            >
                               <X className="h-3 w-3" />
                             </button>
                           </Badge>
@@ -381,12 +466,20 @@ export default function WorkflowNew() {
                   {/* Visibility Toggle */}
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>
-                      <Label htmlFor="visibility" className="text-base">Make this workflow public</Label>
+                      <Label htmlFor="visibility" className="text-base">
+                        Make this workflow public
+                      </Label>
                       <p className="text-sm text-muted-foreground">
-                        {isPublic ? "Anyone can discover and use this workflow" : "Only you can see this workflow"}
+                        {isPublic
+                          ? "Anyone can discover and use this workflow"
+                          : "Only you can see this workflow"}
                       </p>
                     </div>
-                    <Switch id="visibility" checked={isPublic} onCheckedChange={setIsPublic} />
+                    <Switch
+                      id="visibility"
+                      checked={isPublic}
+                      onCheckedChange={setIsPublic}
+                    />
                   </div>
 
                   {/* Bottom Create Button */}
@@ -396,7 +489,11 @@ export default function WorkflowNew() {
                     className="w-full gap-2"
                     size="lg"
                   >
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     Create Workflow
                   </Button>
                 </div>
@@ -405,7 +502,10 @@ export default function WorkflowNew() {
 
             {/* Right: AI Coach Panel (desktop only) */}
             {!isMobile && (
-              <div className="w-[380px] shrink-0 sticky top-24 self-start" style={{ height: "calc(100vh - 12rem)" }}>
+              <div
+                className="w-[380px] shrink-0 sticky top-24 self-start"
+                style={{ height: "calc(100vh - 12rem)" }}
+              >
                 {coachPanel}
               </div>
             )}

@@ -26,7 +26,6 @@ import {
   type ToolDefinition,
 } from "./llm.ts";
 
-
 const MAX_HISTORY_TURNS = 20; // last 20 user+assistant pairs
 const CANVAS_TRUNCATE = 16000;
 
@@ -54,7 +53,8 @@ const RESPOND_TOOL: ToolDefinition = {
           properties: {
             updated: {
               type: "boolean",
-              description: "true if the canvas content was modified, false otherwise.",
+              description:
+                "true if the canvas content was modified, false otherwise.",
             },
             content: {
               type: "string",
@@ -63,7 +63,8 @@ const RESPOND_TOOL: ToolDefinition = {
             },
             changeNote: {
               type: "string",
-              description: "Short (≤80 chars) human-readable summary of the change. REQUIRED when updated=true.",
+              description:
+                "Short (≤80 chars) human-readable summary of the change. REQUIRED when updated=true.",
             },
           },
           required: ["updated"],
@@ -75,7 +76,6 @@ const RESPOND_TOOL: ToolDefinition = {
     },
   },
 };
-
 
 /** What a coach actually sends: its own text plus the block all four share. */
 export function buildSystemPrompt(cfg: CoachConfig): string {
@@ -92,7 +92,10 @@ interface StoredMessage {
   response_metadata?: Record<string, unknown>;
 }
 
-async function loadHistory(sessionId: string, userId: string): Promise<ChatMessage[]> {
+async function loadHistory(
+  sessionId: string,
+  userId: string,
+): Promise<ChatMessage[]> {
   const sb = getServiceClient();
   const { data, error } = await sb
     .from("prompt_coach_messages")
@@ -107,11 +110,15 @@ async function loadHistory(sessionId: string, userId: string): Promise<ChatMessa
   }
 
   const messages: ChatMessage[] = [];
-  for (const row of (data ?? []) as Array<{ id: number; message: StoredMessage }>) {
+  for (const row of (data ?? []) as Array<{
+    id: number;
+    message: StoredMessage;
+  }>) {
     const m = row.message;
     if (!m || typeof m.content !== "string") continue;
     if (m.type === "human") messages.push({ role: "user", content: m.content });
-    else if (m.type === "ai") messages.push({ role: "assistant", content: m.content });
+    else if (m.type === "ai")
+      messages.push({ role: "assistant", content: m.content });
   }
 
   // Cap to last N turns (keep ordering)
@@ -129,8 +136,26 @@ async function appendHistory(
 ): Promise<void> {
   const sb = getServiceClient();
   const rows = [
-    { session_id: sessionId, user_id: userId, message: { type: "human", content: human, additional_kwargs: {}, response_metadata: {} } },
-    { session_id: sessionId, user_id: userId, message: { type: "ai", content: ai, additional_kwargs: {}, response_metadata: {} } },
+    {
+      session_id: sessionId,
+      user_id: userId,
+      message: {
+        type: "human",
+        content: human,
+        additional_kwargs: {},
+        response_metadata: {},
+      },
+    },
+    {
+      session_id: sessionId,
+      user_id: userId,
+      message: {
+        type: "ai",
+        content: ai,
+        additional_kwargs: {},
+        response_metadata: {},
+      },
+    },
   ];
   const { error } = await sb.from("prompt_coach_messages").insert(rows);
   if (error) console.error("[coach.appendHistory] error:", error);
@@ -141,7 +166,8 @@ export function startCoachServer(cfg: CoachConfig) {
 
   serve(async (req) => {
     const corsHeaders = corsHeadersFor(req);
-    if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+    if (req.method === "OPTIONS")
+      return new Response(null, { headers: corsHeaders });
 
     try {
       const user_id = await getCallerUserId(req);
@@ -156,10 +182,13 @@ export function startCoachServer(cfg: CoachConfig) {
       } = body ?? {};
 
       if (!session_id || typeof session_id !== "string") {
-        return new Response(JSON.stringify({ error: "session_id is required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "session_id is required" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       if (!message || typeof message !== "string" || !message.trim()) {
         return new Response(JSON.stringify({ error: "message is required" }), {
@@ -168,17 +197,22 @@ export function startCoachServer(cfg: CoachConfig) {
         });
       }
       if (mode !== "chat_only" && mode !== "collab_edit") {
-        return new Response(JSON.stringify({ error: "mode must be chat_only or collab_edit" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "mode must be chat_only or collab_edit" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       await assertCredits(user_id);
 
       const history = await loadHistory(session_id, user_id);
 
-      const truncatedCanvas = (canvas_content ?? "").toString().slice(0, CANVAS_TRUNCATE);
+      const truncatedCanvas = (canvas_content ?? "")
+        .toString()
+        .slice(0, CANVAS_TRUNCATE);
       const selectionBlock = selection?.text
         ? `\nselection: ${JSON.stringify(String(selection.text).slice(0, 2000))}`
         : "";
@@ -215,10 +249,13 @@ ${truncatedCanvas}
 
       const call = result.tool_calls[0];
       if (!call?.function?.arguments) {
-        return new Response(JSON.stringify({ error: "Coach returned no response" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Coach returned no response" }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       let parsed: {
@@ -228,14 +265,22 @@ ${truncatedCanvas}
       try {
         parsed = JSON.parse(call.function.arguments);
       } catch (e) {
-        console.error(`[${cfg.feature}] JSON parse error:`, e, call.function.arguments?.slice(0, 200));
-        return new Response(JSON.stringify({ error: "Coach returned invalid JSON" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        console.error(
+          `[${cfg.feature}] JSON parse error:`,
+          e,
+          call.function.arguments?.slice(0, 200),
+        );
+        return new Response(
+          JSON.stringify({ error: "Coach returned invalid JSON" }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
-      const assistantMessage = (parsed.assistantMessage ?? "").toString().trim() || "Done.";
+      const assistantMessage =
+        (parsed.assistantMessage ?? "").toString().trim() || "Done.";
       const canvas = parsed.canvas ?? { updated: false };
       // Force chat_only to never edit
       if (mode === "chat_only") canvas.updated = false;
@@ -255,7 +300,9 @@ ${truncatedCanvas}
           canvas: {
             updated: !!canvas.updated,
             content: canvas.updated ? canvas.content : undefined,
-            changeNote: canvas.updated ? (canvas.changeNote || "Updated") : undefined,
+            changeNote: canvas.updated
+              ? canvas.changeNote || "Updated"
+              : undefined,
           },
           session: { id: session_id },
         }),
@@ -269,17 +316,29 @@ ${truncatedCanvas}
         });
       }
       if (error instanceof RateLimitedError) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded, please retry shortly.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       if (error instanceof GatewayError) {
-        console.error(`[${cfg.feature}] Gateway error:`, error.status, error.message);
-        return new Response(JSON.stringify({ error: "Upstream AI gateway error" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        console.error(
+          `[${cfg.feature}] Gateway error:`,
+          error.status,
+          error.message,
+        );
+        return new Response(
+          JSON.stringify({ error: "Upstream AI gateway error" }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       const msg = error instanceof Error ? error.message : "Unknown error";
       if (

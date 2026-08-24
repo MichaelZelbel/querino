@@ -23,11 +23,36 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
-  Bold, Italic, Underline, Strikethrough, Code, Heading1, Heading2, Heading3,
-  List, ListOrdered, ListChecks, Quote, Minus, Link as LinkIcon, Unlink,
-  AlignLeft, AlignCenter, AlignRight, AlignJustify, Highlighter,
-  Superscript, Subscript, Undo, Redo, ChevronDown, Type, Pilcrow,
-  RemoveFormatting, Code2, Plus,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  ListChecks,
+  Quote,
+  Minus,
+  Link as LinkIcon,
+  Unlink,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Highlighter,
+  Superscript,
+  Subscript,
+  Undo,
+  Redo,
+  ChevronDown,
+  Type,
+  Pilcrow,
+  RemoveFormatting,
+  Code2,
+  Plus,
 } from "lucide-react";
 
 const TEXT_COLORS = [
@@ -43,7 +68,11 @@ const TEXT_COLORS = [
 ];
 
 function ToolbarButton({
-  onClick, active, disabled, title, children,
+  onClick,
+  active,
+  disabled,
+  title,
+  children,
 }: {
   onClick: () => void;
   active?: boolean;
@@ -77,24 +106,33 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
   const currentBlock = editor.isActive("heading", { level: 1 })
     ? "Heading 1"
     : editor.isActive("heading", { level: 2 })
-    ? "Heading 2"
-    : editor.isActive("heading", { level: 3 })
-    ? "Heading 3"
-    : "Normal text";
+      ? "Heading 2"
+      : editor.isActive("heading", { level: 3 })
+        ? "Heading 3"
+        : "Normal text";
 
   const setLink = () => {
     if (!linkUrl.trim()) {
       editor.chain().focus().unsetLink().run();
     } else {
       const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
-      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: url })
+        .run();
     }
     setLinkUrl("");
     setLinkOpen(false);
   };
 
   const insertPrompt = () => {
-    editor.chain().focus().insertPromptBlock({ title: "Untitled", body: "" }).run();
+    editor
+      .chain()
+      .focus()
+      .insertPromptBlock({ title: "Untitled", body: "" })
+      .run();
   };
 
   return (
@@ -103,23 +141,41 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
         {/* Block type dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-normal px-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs font-normal px-2"
+            >
               <Pilcrow className="h-3.5 w-3.5" />
               {currentBlock}
               <ChevronDown className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setParagraph().run()}
+            >
               <Type className="mr-2 h-4 w-4" /> Normal text
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+            <DropdownMenuItem
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 1 }).run()
+              }
+            >
               <Heading1 className="mr-2 h-4 w-4" /> Heading 1
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+            <DropdownMenuItem
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+            >
               <Heading2 className="mr-2 h-4 w-4" /> Heading 2
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+            <DropdownMenuItem
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 3 }).run()
+              }
+            >
               <Heading3 className="mr-2 h-4 w-4" /> Heading 3
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -128,28 +184,60 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
         <Separator orientation="vertical" className="h-5 mx-1" />
 
         {/* Inline formatting */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold (Ctrl+B)">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive("bold")}
+          title="Bold (Ctrl+B)"
+        >
           <Bold className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic (Ctrl+I)">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive("italic")}
+          title="Italic (Ctrl+I)"
+        >
           <Italic className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline (Ctrl+U)">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={editor.isActive("underline")}
+          title="Underline (Ctrl+U)"
+        >
           <Underline className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Strikethrough">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={editor.isActive("strike")}
+          title="Strikethrough"
+        >
           <Strikethrough className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive("code")} title="Inline code">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          active={editor.isActive("code")}
+          title="Inline code"
+        >
           <Code className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive("highlight")} title="Highlight">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          active={editor.isActive("highlight")}
+          title="Highlight"
+        >
           <Highlighter className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleSuperscript().run()} active={editor.isActive("superscript")} title="Superscript">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          active={editor.isActive("superscript")}
+          title="Superscript"
+        >
           <Superscript className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleSubscript().run()} active={editor.isActive("subscript")} title="Subscript">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+          active={editor.isActive("subscript")}
+          title="Subscript"
+        >
           <Subscript className="h-3.5 w-3.5" />
         </ToolbarButton>
 
@@ -158,8 +246,21 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
         {/* Text color */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-7 sm:w-7" title="Text color" aria-label="Text color">
-              <span className="text-xs font-bold" style={{ color: editor.getAttributes("textStyle").color || "inherit" }}>A</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 sm:h-7 sm:w-7"
+              title="Text color"
+              aria-label="Text color"
+            >
+              <span
+                className="text-xs font-bold"
+                style={{
+                  color: editor.getAttributes("textStyle").color || "inherit",
+                }}
+              >
+                A
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -174,7 +275,10 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
               >
                 <span
                   className="mr-2 h-3 w-3 rounded-full inline-block border border-border"
-                  style={{ backgroundColor: c.value === "inherit" ? "currentColor" : c.value }}
+                  style={{
+                    backgroundColor:
+                      c.value === "inherit" ? "currentColor" : c.value,
+                  }}
                 />
                 {c.label}
               </DropdownMenuItem>
@@ -185,42 +289,81 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
         <Separator orientation="vertical" className="h-5 mx-1" />
 
         {/* Lists */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet list">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive("bulletList")}
+          title="Bullet list"
+        >
           <List className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered list">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={editor.isActive("orderedList")}
+          title="Numbered list"
+        >
           <ListOrdered className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Checklist">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+          active={editor.isActive("taskList")}
+          title="Checklist"
+        >
           <ListChecks className="h-3.5 w-3.5" />
         </ToolbarButton>
 
         <Separator orientation="vertical" className="h-5 mx-1" />
 
         {/* Block formatting */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Quote">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive("blockquote")}
+          title="Quote"
+        >
           <Quote className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal rule">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Horizontal rule"
+        >
           <Minus className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code block">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          active={editor.isActive("codeBlock")}
+          title="Code block"
+        >
           <Code2 className="h-3.5 w-3.5" />
         </ToolbarButton>
 
         <Separator orientation="vertical" className="h-5 mx-1" />
 
         {/* Alignment */}
-        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Align left">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          active={editor.isActive({ textAlign: "left" })}
+          title="Align left"
+        >
           <AlignLeft className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Align center">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          active={editor.isActive({ textAlign: "center" })}
+          title="Align center"
+        >
           <AlignCenter className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Align right">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          active={editor.isActive({ textAlign: "right" })}
+          title="Align right"
+        >
           <AlignRight className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("justify").run()} active={editor.isActive({ textAlign: "justify" })} title="Justify">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+          active={editor.isActive({ textAlign: "justify" })}
+          title="Justify"
+        >
           <AlignJustify className="h-3.5 w-3.5" />
         </ToolbarButton>
 
@@ -261,7 +404,10 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
           </PopoverContent>
         </Popover>
         {editor.isActive("link") && (
-          <ToolbarButton onClick={() => editor.chain().focus().unsetLink().run()} title="Remove link">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().unsetLink().run()}
+            title="Remove link"
+          >
             <Unlink className="h-3.5 w-3.5" />
           </ToolbarButton>
         )}
@@ -284,7 +430,9 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
 
         {/* Clear formatting */}
         <ToolbarButton
-          onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+          onClick={() =>
+            editor.chain().focus().clearNodes().unsetAllMarks().run()
+          }
           title="Clear formatting"
         >
           <RemoveFormatting className="h-3.5 w-3.5" />
@@ -293,10 +441,18 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
         <div className="flex-1" />
 
         {/* Undo / Redo */}
-        <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo (Ctrl+Z)">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          title="Undo (Ctrl+Z)"
+        >
           <Undo className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo (Ctrl+Shift+Z)">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          title="Redo (Ctrl+Shift+Z)"
+        >
           <Redo className="h-3.5 w-3.5" />
         </ToolbarButton>
       </div>

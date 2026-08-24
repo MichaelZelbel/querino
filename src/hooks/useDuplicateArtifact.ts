@@ -9,7 +9,10 @@ type ArtifactType = "prompt" | "skill" | "workflow";
  * Generates a Windows Explorer-style duplicate title.
  * Given "My Title" and existing titles, returns "My Title (1)", "My Title (2)", etc.
  */
-function generateDuplicateTitle(originalTitle: string, existingTitles: string[]): string {
+function generateDuplicateTitle(
+  originalTitle: string,
+  existingTitles: string[],
+): string {
   // Strip existing (N) suffix to get base title
   const baseMatch = originalTitle.match(/^(.*?)\s*\((\d+)\)$/);
   const baseTitle = baseMatch ? baseMatch[1] : originalTitle;
@@ -17,7 +20,7 @@ function generateDuplicateTitle(originalTitle: string, existingTitles: string[])
   // Find all existing numbers for this base title
   const usedNumbers = new Set<number>();
   const pattern = new RegExp(`^${escapeRegex(baseTitle)}\\s*\\((\\d+)\\)$`);
-  
+
   for (const title of existingTitles) {
     const match = title.match(pattern);
     if (match) {
@@ -45,12 +48,17 @@ export function useDuplicateArtifact() {
   const duplicateArtifact = async (
     type: ArtifactType,
     artifact: Record<string, any>,
-    userId: string
+    userId: string,
   ) => {
     setDuplicating(true);
 
     try {
-      const table = type === "prompt" ? "prompts" : type === "skill" ? "skills" : "workflows";
+      const table =
+        type === "prompt"
+          ? "prompts"
+          : type === "skill"
+            ? "skills"
+            : "workflows";
 
       // Fetch existing titles for this user to determine numbering
       const { data: existing } = await supabase
@@ -117,11 +125,9 @@ export function useDuplicateArtifact() {
             filename: artifact.filename || null,
           };
           break;
-
       }
 
-      const { data, error } = await (supabase
-        .from(table) as any)
+      const { data, error } = await (supabase.from(table) as any)
         .insert(insertData)
         .select("id, slug")
         .single();

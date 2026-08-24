@@ -32,7 +32,7 @@ export default function TeamJoin() {
     if (!user) {
       navigate(
         `/auth?redirect=${encodeURIComponent(`/team/join?token=${encodeURIComponent(token)}`)}`,
-        { replace: true }
+        { replace: true },
       );
       return;
     }
@@ -48,13 +48,14 @@ export default function TeamJoin() {
         toast.success(`Welcome to ${result.team_name}!`);
         navigate("/library", { replace: true });
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to join team";
+        const message =
+          err instanceof Error ? err.message : "Failed to join team";
         setError(
           message.includes("expired")
             ? "This invite link has expired. Ask a team admin for a new one."
             : message.includes("not found")
               ? "This invite link is invalid or has been revoked."
-              : message
+              : message,
         );
       }
     })();
@@ -71,16 +72,22 @@ export default function TeamJoin() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
                 <XCircle className="h-8 w-8 text-destructive" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold text-foreground">Couldn't join team</h1>
+              <h1 className="mb-2 text-2xl font-bold text-foreground">
+                Couldn't join team
+              </h1>
               <p className="mb-6 max-w-md text-muted-foreground">{error}</p>
-              <Button onClick={() => navigate("/library")}>Go to My Library</Button>
+              <Button onClick={() => navigate("/library")}>
+                Go to My Library
+              </Button>
             </>
           ) : (
             <>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Users className="h-8 w-8 text-primary" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold text-foreground">Joining team…</h1>
+              <h1 className="mb-2 text-2xl font-bold text-foreground">
+                Joining team…
+              </h1>
               <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
             </>
           )}
