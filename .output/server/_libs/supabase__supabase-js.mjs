@@ -1,9 +1,10 @@
-import { a as __toCommonJS, o as __toESM, t as __commonJSMin } from "../_runtime.mjs";
+import { a as __toESM, i as __toCommonJS, t as __commonJSMin } from "../_runtime.mjs";
 import { n as module_exports, t as init_module } from "./supabase__functions-js.mjs";
-import { t as require_cjs } from "./supabase__postgrest-js.mjs";
+import { t as require_cjs } from "./@supabase/postgrest-js+[...].mjs";
 import { n as module_exports$1, t as init_module$1 } from "./supabase__realtime-js.mjs";
 import { n as module_exports$2, t as init_module$2 } from "./@supabase/storage-js+[...].mjs";
 import { n as module_exports$3, t as init_module$3 } from "./supabase__auth-js.mjs";
+import processModule from "node:process";
 //#region node_modules/@supabase/supabase-js/dist/main/lib/version.js
 var require_version = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -434,8 +435,8 @@ var import_main = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((expor
 	exports.createClient = createClient;
 	function shouldShowDeprecationWarning() {
 		if (typeof window !== "undefined") return false;
-		if (typeof process === "undefined") return false;
-		const processVersion = process["version"];
+		if (typeof processModule === "undefined") return false;
+		const processVersion = processModule["version"];
 		if (processVersion === void 0 || processVersion === null) return false;
 		const versionMatch = processVersion.match(/^v(\d+)\./);
 		if (!versionMatch) return false;

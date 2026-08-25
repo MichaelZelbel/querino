@@ -38,7 +38,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Play, RotateCcw, Save } from "lucide-react";
+import { AlertTriangle, Loader2, Play, RotateCcw, Save } from "lucide-react";
 
 type Provider = "lovable" | "openrouter" | "openai" | "anthropic" | "gemini";
 
@@ -47,6 +47,32 @@ interface ProviderPreset {
   label: string;
   models: { value: string; label: string }[];
 }
+
+/**
+ * What the nightly catalogue sync found and did. Unresolved rows are the
+ * banner: a job that quietly repointed an AI call and told nobody would be a
+ * worse feature than no job at all.
+ */
+interface ModelAlert {
+  id: string;
+  created_at: string;
+  kind:
+    "retired" | "lost_tool_support" | "code_default_retired" | "sync_failed";
+  provider: string | null;
+  model_id: string | null;
+  call_site: string | null;
+  tier: string | null;
+  detail: { reason?: string } | null;
+  action_taken: string | null;
+}
+
+const ALERT_WORDING: Record<ModelAlert["kind"], string> = {
+  retired: "the model it was set to is no longer offered",
+  lost_tool_support: "the model it was set to stopped supporting tool calling",
+  code_default_retired:
+    "the model in the code was retired, so falling back no longer helps and this needs a code change",
+  sync_failed: "the catalogue could not be refreshed, so nothing was changed",
+};
 
 interface Config {
   call_site: string;
@@ -92,6 +118,7 @@ export default function LLMConfigPanel() {
   const [configs, setConfigs] = useState<Config[]>([]);
   const [presets, setPresets] = useState<ProviderPreset[]>([]);
   const [availability, setAvailability] = useState<Record<string, boolean>>({});
+  const [alerts, setAlerts] = useState<ModelAlert[]>([]);
   const [editing, setEditing] = useState<Config | null>(null);
   const [filter, setFilter] = useState("");
 
@@ -108,12 +135,25 @@ export default function LLMConfigPanel() {
       setConfigs(data.configs ?? []);
       setPresets(data.providers ?? []);
       setAvailability(data.availability ?? {});
+      setAlerts(data.alerts ?? []);
     } catch (e) {
       toast.error("Failed to load LLM configs", {
         description: (e as Error).message,
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const dismiss = async (id: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("admin-llm-config", {
+        body: { action: "resolve_alert", alert_id: id },
+      });
+      if (error) throw error;
+      setAlerts((a) => a.filter((x) => x.id !== id));
+    } catch (e) {
+      toast.error("Could not dismiss", { description: (e as Error).message });
     }
   };
 
@@ -128,6 +168,14 @@ export default function LLMConfigPanel() {
       ),
     [configs, filter],
   );
+
+  // So a row the job switched off can say so, instead of looking like somebody
+  // turned it off by hand and forgot.
+  const alertsByCallSite = useMemo(() => {
+    const map = new Map<string, ModelAlert>();
+    for (const a of alerts) if (a.call_site) map.set(a.call_site, a);
+    return map;
+  }, [alerts]);
 
   return (
     <Card>
@@ -156,6 +204,43 @@ export default function LLMConfigPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {alerts.length > 0 && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              The nightly model check found{" "}
+              {alerts.length === 1 ? "something" : `${alerts.length} things`}
+            </div>
+            {alerts.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-start justify-between gap-3 text-xs"
+              >
+                <div>
+                  <span className="font-mono">
+                    {a.call_site ?? a.model_id ?? a.provider}
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {a.detail?.reason ?? ALERT_WORDING[a.kind]}
+                  </span>
+                  {a.action_taken && (
+                    <div className="text-muted-foreground italic">
+                      {a.action_taken}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0"
+                  onClick={() => void dismiss(a.id)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <Input
           placeholder="Filter by call site…"
           value={filter}
@@ -204,7 +289,17 @@ export default function LLMConfigPanel() {
                         <span className="italic">Code default</span>
                       )}
                     </TableCell>
-                    <TableCell>{c.enabled ? "✓" : "—"}</TableCell>
+                    <TableCell>
+                      {c.enabled ? (
+                        "✓"
+                      ) : alertsByCallSite.get(c.call_site) ? (
+                        <Badge variant="destructive" className="text-[10px]">
+                          auto
+                        </Badge>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Button
                         size="sm"
@@ -267,6 +362,14 @@ function EditDialog({
   const models =
     presets.find((p) => p.provider === draft.provider)?.models ?? [];
   const isCustomModel = !models.some((m) => m.value === draft.model);
+
+  // The catalogue labels a model without tool support, so the warning can be
+  // shown before the save rather than discovered by a user whose coach replied
+  // with prose. Only meaningful for a model the catalogue knows: a hand-typed
+  // id gets no warning, because absence of evidence is not evidence here.
+  const lacksToolCalling = models.some(
+    (m) => m.value === draft.model && m.label.includes("no tool calling"),
+  );
 
   // What the badge says, and what the server will conclude on save. An empty box
   // and an untouched default are both "keep using the code".
@@ -410,6 +513,12 @@ function EditDialog({
                 onChange={(e) => setDraft({ ...draft, model: e.target.value })}
                 placeholder="e.g. openai/gpt-4o-mini"
               />
+              {lacksToolCalling && (
+                <p className="text-[11px] text-destructive mt-1">
+                  This model does not support tool calling. It will not error,
+                  it will answer in prose, and the reply will fail to parse.
+                </p>
+              )}
             </div>
           </div>
 

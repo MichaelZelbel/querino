@@ -1,7 +1,7 @@
-import { o as __toESM } from "../_runtime.mjs";
+import { a as __toESM } from "../_runtime.mjs";
+import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { n as supabase } from "./client-Bi_X_zk2.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { a as CardHeader, n as CardContent, o as CardTitle, r as CardDescription, t as Card } from "./card-4AsKRAzx.mjs";
 import { t as Button } from "./button-DfDjtN4g.mjs";
 import { t as Input } from "./input-DZABqqwC.mjs";
@@ -11,13 +11,19 @@ import { t as Switch } from "./switch-BXNTxolN.mjs";
 import { t as Badge } from "./badge-DDdsxPGp.mjs";
 import { t as Skeleton } from "./skeleton-cOr9hq3l.mjs";
 import { a as TableHeader, i as TableHead, n as TableBody, o as TableRow, r as TableCell, t as Table } from "./table-DReQYbEM.mjs";
-import { H as RotateCcw, V as Save, X as Play, gt as LoaderCircle } from "../_libs/lucide-react.mjs";
+import { H as RotateCcw, V as Save, X as Play, gt as LoaderCircle, v as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-Byrv14ho.mjs";
 import { a as DialogHeader, i as DialogFooter, n as DialogContent, o as DialogTitle, r as DialogDescription, t as Dialog } from "./dialog-s-1huv4W.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/LLMConfigPanel-CQRzRAu4.js
+//#region node_modules/.nitro/vite/services/ssr/assets/LLMConfigPanel-DmI-LtO-.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
+var ALERT_WORDING = {
+	retired: "the model it was set to is no longer offered",
+	lost_tool_support: "the model it was set to stopped supporting tool calling",
+	code_default_retired: "the model in the code was retired, so falling back no longer helps and this needs a code change",
+	sync_failed: "the catalogue could not be refreshed, so nothing was changed"
+};
 /**
 * Whether the box still holds the code default, ignoring surrounding whitespace.
 *
@@ -34,6 +40,7 @@ function LLMConfigPanel() {
 	const [configs, setConfigs] = (0, import_react.useState)([]);
 	const [presets, setPresets] = (0, import_react.useState)([]);
 	const [availability, setAvailability] = (0, import_react.useState)({});
+	const [alerts, setAlerts] = (0, import_react.useState)([]);
 	const [editing, setEditing] = (0, import_react.useState)(null);
 	const [filter, setFilter] = (0, import_react.useState)("");
 	const load = async () => {
@@ -44,16 +51,34 @@ function LLMConfigPanel() {
 			setConfigs(data.configs ?? []);
 			setPresets(data.providers ?? []);
 			setAvailability(data.availability ?? {});
+			setAlerts(data.alerts ?? []);
 		} catch (e) {
 			toast.error("Failed to load LLM configs", { description: e.message });
 		} finally {
 			setLoading(false);
 		}
 	};
+	const dismiss = async (id) => {
+		try {
+			const { error } = await supabase.functions.invoke("admin-llm-config", { body: {
+				action: "resolve_alert",
+				alert_id: id
+			} });
+			if (error) throw error;
+			setAlerts((a) => a.filter((x) => x.id !== id));
+		} catch (e) {
+			toast.error("Could not dismiss", { description: e.message });
+		}
+	};
 	(0, import_react.useEffect)(() => {
 		load();
 	}, []);
 	const filtered = (0, import_react.useMemo)(() => configs.filter((c) => c.call_site.toLowerCase().includes(filter.toLowerCase())), [configs, filter]);
+	const alertsByCallSite = (0, import_react.useMemo)(() => {
+		const map = /* @__PURE__ */ new Map();
+		for (const a of alerts) if (a.call_site) map.set(a.call_site, a);
+		return map;
+	}, [alerts]);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [
 		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "LLM Call Configuration" }),
 		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardDescription, { children: [
@@ -73,6 +98,41 @@ function LLMConfigPanel() {
 	] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
 		className: "space-y-4",
 		children: [
+			alerts.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "rounded-md border border-destructive/50 bg-destructive/5 p-3 space-y-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-center gap-2 text-sm font-medium text-destructive",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, { className: "h-4 w-4" }),
+						"The nightly model check found",
+						" ",
+						alerts.length === 1 ? "something" : `${alerts.length} things`
+					]
+				}), alerts.map((a) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-start justify-between gap-3 text-xs",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-mono",
+							children: a.call_site ?? a.model_id ?? a.provider
+						}),
+						" ",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "text-muted-foreground",
+							children: a.detail?.reason ?? ALERT_WORDING[a.kind]
+						}),
+						a.action_taken && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "text-muted-foreground italic",
+							children: a.action_taken
+						})
+					] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						size: "sm",
+						variant: "ghost",
+						className: "shrink-0",
+						onClick: () => void dismiss(a.id),
+						children: "Dismiss"
+					})]
+				}, a.id))]
+			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
 				placeholder: "Filter by call site…",
 				value: filter,
@@ -109,7 +169,11 @@ function LLMConfigPanel() {
 							children: "Code default"
 						})
 					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: c.enabled ? "✓" : "—" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: c.enabled ? "✓" : alertsByCallSite.get(c.call_site) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
+						variant: "destructive",
+						className: "text-[10px]",
+						children: "auto"
+					}) : "—" }),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 						size: "sm",
 						variant: "outline",
@@ -142,6 +206,7 @@ function EditDialog({ config, presets, availability, onClose, onSaved }) {
 	const [testResult, setTestResult] = (0, import_react.useState)(null);
 	const models = presets.find((p) => p.provider === draft.provider)?.models ?? [];
 	const isCustomModel = !models.some((m) => m.value === draft.model);
+	const lacksToolCalling = models.some((m) => m.value === draft.model && m.label.includes("no tool calling"));
 	const promptText = draft.system_prompt ?? "";
 	const isOverride = promptText.trim().length > 0 && !isStillTheDefault(promptText, config.default_system_prompt);
 	const save = async () => {
@@ -251,6 +316,10 @@ function EditDialog({ config, presets, availability, onClose, onSaved }) {
 										model: e.target.value
 									}),
 									placeholder: "e.g. openai/gpt-4o-mini"
+								}),
+								lacksToolCalling && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									className: "text-[11px] text-destructive mt-1",
+									children: "This model does not support tool calling. It will not error, it will answer in prose, and the reply will fail to parse."
 								})
 							] })]
 						}),

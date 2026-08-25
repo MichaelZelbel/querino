@@ -1,7 +1,65 @@
-import { o as __toESM, t as __commonJSMin } from "../../_runtime.mjs";
+import { a as __toESM, n as __esmMin, t as __commonJSMin } from "../../_runtime.mjs";
 import { l as require_react_dom, u as require_react } from "../@floating-ui/react-dom+[...].mjs";
 import { o as composeEventHandlers$1, p as composeEventHandlers } from "../radix-ui__primitive.mjs";
-import { __assign, __rest, __spreadArray } from "tslib";
+//#region node_modules/tslib/tslib.es6.mjs
+function __rest(s, e) {
+	var t = {};
+	for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
+	if (s != null && typeof Object.getOwnPropertySymbols === "function") {
+		for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+	}
+	return t;
+}
+function __awaiter(thisArg, _arguments, P, generator) {
+	function adopt(value) {
+		return value instanceof P ? value : new P(function(resolve) {
+			resolve(value);
+		});
+	}
+	return new (P || (P = Promise))(function(resolve, reject) {
+		function fulfilled(value) {
+			try {
+				step(generator.next(value));
+			} catch (e) {
+				reject(e);
+			}
+		}
+		function rejected(value) {
+			try {
+				step(generator["throw"](value));
+			} catch (e) {
+				reject(e);
+			}
+		}
+		function step(result) {
+			result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+		}
+		step((generator = generator.apply(thisArg, _arguments || [])).next());
+	});
+}
+function __spreadArray(to, from, pack) {
+	if (pack || arguments.length === 2) {
+		for (var i = 0, l = from.length, ar; i < l; i++) if (ar || !(i in from)) {
+			if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+			ar[i] = from[i];
+		}
+	}
+	return to.concat(ar || Array.prototype.slice.call(from));
+}
+var __assign;
+var init_tslib_es6 = __esmMin((() => {
+	__assign = function() {
+		__assign = Object.assign || function __assign(t) {
+			for (var s, i = 1, n = arguments.length; i < n; i++) {
+				s = arguments[i];
+				for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+			}
+			return t;
+		};
+		return __assign.apply(this, arguments);
+	};
+}));
+//#endregion
 //#region node_modules/react/cjs/react-jsx-runtime.production.js
 /**
 * @license React
@@ -43,6 +101,7 @@ var require_jsx_runtime = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 }));
 //#endregion
 //#region node_modules/@radix-ui/react-slot/node_modules/@radix-ui/react-compose-refs/dist/index.mjs
+init_tslib_es6();
 var import_jsx_runtime = require_jsx_runtime();
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var __defProp$20 = Object.defineProperty;
@@ -855,6 +914,7 @@ function createSidecarMedium(options) {
 }
 //#endregion
 //#region node_modules/use-sidecar/dist/es2015/exports.js
+init_tslib_es6();
 var SideCar = function(_a) {
 	var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
 	if (!sideCar) throw new Error("Sidecar: please provide `sideCar` property to import the right car");
@@ -872,6 +932,7 @@ function exportSidecar(medium, exported) {
 var effectCar = createSidecarMedium();
 //#endregion
 //#region node_modules/react-remove-scroll/dist/es2015/UI.js
+init_tslib_es6();
 var nothing = function() {};
 /**
 * Removes scrollbar from the page and contain the scroll within the Lock
@@ -1183,6 +1244,7 @@ var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
 };
 //#endregion
 //#region node_modules/react-remove-scroll/dist/es2015/SideEffect.js
+init_tslib_es6();
 var getTouchXY = function(event) {
 	return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
 };
@@ -1341,6 +1403,7 @@ function getOutermostShadowParent(node) {
 var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
 //#endregion
 //#region node_modules/react-remove-scroll/dist/es2015/Combination.js
+init_tslib_es6();
 var ReactRemoveScroll = import_react.forwardRef(function(props, ref) {
 	return import_react.createElement(RemoveScroll, __assign({}, props, {
 		ref,
@@ -2595,4 +2658,4 @@ var Cancel = AlertDialogCancel;
 var Title2 = AlertDialogTitle;
 var Description2 = AlertDialogDescription;
 //#endregion
-export { Slot$1 as C, require_jsx_runtime as E, useFocusGuards as S, createSlottable as T, DialogTrigger as _, Overlay2 as a, useId as b, Title2 as c, DialogClose as d, DialogContent as f, DialogTitle as g, DialogPortal as h, Description2 as i, Trigger2 as l, DialogOverlay as m, Cancel as n, Portal2 as o, DialogDescription as p, Content2 as r, Root2 as s, Action as t, Dialog as u, ReactRemoveScroll as v, createSlot as w, FocusScope as x, hideOthers as y };
+export { Slot$1 as C, __awaiter as D, require_jsx_runtime as E, __rest as O, useFocusGuards as S, createSlottable as T, DialogTrigger as _, Overlay2 as a, useId as b, Title2 as c, DialogClose as d, DialogContent as f, DialogTitle as g, DialogPortal as h, Description2 as i, init_tslib_es6 as k, Trigger2 as l, DialogOverlay as m, Cancel as n, Portal2 as o, DialogDescription as p, Content2 as r, Root2 as s, Action as t, Dialog as u, ReactRemoveScroll as v, createSlot as w, FocusScope as x, hideOthers as y };

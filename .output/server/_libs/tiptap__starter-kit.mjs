@@ -1,3 +1,4 @@
+import { a as UndoRedo, i as TrailingNode, n as Dropcursor, r as Gapcursor } from "./@tiptap/extension-placeholder+[...].mjs";
 import { r as Extension } from "./@tiptap/core+[...].mjs";
 import { t as Blockquote } from "./tiptap__extension-blockquote.mjs";
 import { t as Bold } from "./tiptap__extension-bold.mjs";
@@ -14,7 +15,6 @@ import { t as Paragraph } from "./tiptap__extension-paragraph.mjs";
 import { t as Strike } from "./tiptap__extension-strike.mjs";
 import { t as Text } from "./tiptap__extension-text.mjs";
 import { t as Underline } from "./tiptap__extension-underline.mjs";
-import { a as UndoRedo, i as TrailingNode, n as Dropcursor, r as Gapcursor } from "./@tiptap/extension-placeholder+[...].mjs";
 var index_default = Extension.create({
 	name: "starterKit",
 	addExtensions() {

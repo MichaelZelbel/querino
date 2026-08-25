@@ -1380,13 +1380,13 @@ function looksLikeANode(value) {
 	return value !== null && typeof value === "object" && "type" in value;
 }
 //#endregion
-//#region node_modules/unist-util-visit-parents/lib/color.node.js
+//#region node_modules/unist-util-visit-parents/lib/color.js
 /**
 * @param {string} d
 * @returns {string}
 */
 function color(d) {
-	return "\x1B[33m" + d + "\x1B[39m";
+	return d;
 }
 //#endregion
 //#region node_modules/unist-util-visit-parents/lib/index.js

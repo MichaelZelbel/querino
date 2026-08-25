@@ -1,6 +1,6 @@
-import { o as __toESM } from "../../_runtime.mjs";
-import { l as require_react_dom, u as require_react } from "../@floating-ui/react-dom+[...].mjs";
+import { a as __toESM } from "../../_runtime.mjs";
 import { E as require_jsx_runtime, b as useId, w as createSlot } from "./react-alert-dialog+[...].mjs";
+import { l as require_react_dom, u as require_react } from "../@floating-ui/react-dom+[...].mjs";
 import { r as composeEventHandlers } from "../radix-ui__primitive.mjs";
 //#region node_modules/@radix-ui/react-collapsible/node_modules/@radix-ui/react-context/dist/index.mjs
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);

@@ -32,6 +32,14 @@ export interface CallSiteMeta {
   model: string;
   /** Names usable as {{name}} in a custom system prompt. */
   placeholders: string[];
+  /**
+   * True when this call site sends a tools array, so a model without tool
+   * support breaks it. Eleven of the seventeen do. Such a model does not
+   * error: it answers in prose and the JSON parse fails downstream, which is
+   * why the nightly catalogue sync acts on this flag rather than guessing.
+   * llm-registry_test.ts is what holds it level with the code.
+   */
+  requiresTools: boolean;
 }
 
 export const CALL_SITES: CallSiteMeta[] = [
@@ -41,6 +49,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "prompt-kit-coach",
@@ -48,6 +57,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "skill-coach",
@@ -55,6 +65,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "workflow-coach",
@@ -62,6 +73,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "suggest-metadata",
@@ -69,6 +81,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "suggest-promptkit-metadata",
@@ -76,6 +89,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "suggest-skill-metadata",
@@ -83,6 +97,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "suggest-workflow-metadata",
@@ -90,6 +105,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "ai-insights-prompt",
@@ -97,6 +113,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: false,
   },
   {
     call_site: "ai-insights-skill",
@@ -104,6 +121,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: false,
   },
   {
     call_site: "ai-insights-workflow",
@@ -111,6 +129,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: false,
   },
   {
     call_site: "ai-insights-prompt_kit",
@@ -118,6 +137,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: BACKGROUND_MODEL,
     placeholders: [],
+    requiresTools: false,
   },
   {
     call_site: "prompt-wizard",
@@ -125,6 +145,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: false,
   },
   {
     call_site: "prompt-refinement",
@@ -132,6 +153,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
   {
     call_site: "translate-artifact",
@@ -139,6 +161,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: TRANSLATION_MODEL,
     placeholders: ["artifactType", "sourceLanguage", "targetLanguage"],
+    requiresTools: true,
   },
   {
     call_site: "canvas-ai",
@@ -146,6 +169,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: ["mode", "artifactType", "canvasContent", "modeInstructions"],
+    requiresTools: false,
   },
   {
     call_site: "ai-moderate-content",
@@ -153,6 +177,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
     placeholders: [],
+    requiresTools: true,
   },
 ];
 

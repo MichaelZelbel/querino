@@ -1,6 +1,6 @@
-import { o as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "./@floating-ui/react-dom+[...].mjs";
+import { a as __toESM } from "../_runtime.mjs";
 import { E as require_jsx_runtime } from "./@radix-ui/react-alert-dialog+[...].mjs";
+import { u as require_react } from "./@floating-ui/react-dom+[...].mjs";
 import "./devlop.mjs";
 import { n as VFileMessage, t as toJsxRuntime } from "./hast-util-to-jsx-runtime+[...].mjs";
 import { t as urlAttributes } from "./html-url-attributes.mjs";
@@ -9,9 +9,6 @@ import { n as visit, t as toHast } from "./mdast-util-to-hast+[...].mjs";
 import { t as bail } from "./bail.mjs";
 import { t as require_extend } from "./extend.mjs";
 import { t as isPlainObject } from "./is-plain-obj.mjs";
-import { fileURLToPath as urlToPath } from "node:url";
-import minpath from "node:path";
-import minproc from "node:process";
 //#region node_modules/remark-parse/lib/index.js
 /**
 * @typedef {import('mdast').Root} Root
@@ -370,6 +367,246 @@ function wrap(middleware, callback) {
 	}
 }
 //#endregion
+//#region node_modules/vfile/lib/minpath.browser.js
+var minpath = {
+	basename,
+	dirname,
+	extname,
+	join,
+	sep: "/"
+};
+/**
+* Get the basename from a path.
+*
+* @param {string} path
+*   File path.
+* @param {string | null | undefined} [extname]
+*   Extension to strip.
+* @returns {string}
+*   Stem or basename.
+*/
+function basename(path, extname) {
+	if (extname !== void 0 && typeof extname !== "string") throw new TypeError("\"ext\" argument must be a string");
+	assertPath$1(path);
+	let start = 0;
+	let end = -1;
+	let index = path.length;
+	/** @type {boolean | undefined} */
+	let seenNonSlash;
+	if (extname === void 0 || extname.length === 0 || extname.length > path.length) {
+		while (index--) if (path.codePointAt(index) === 47) {
+			if (seenNonSlash) {
+				start = index + 1;
+				break;
+			}
+		} else if (end < 0) {
+			seenNonSlash = true;
+			end = index + 1;
+		}
+		return end < 0 ? "" : path.slice(start, end);
+	}
+	if (extname === path) return "";
+	let firstNonSlashEnd = -1;
+	let extnameIndex = extname.length - 1;
+	while (index--) if (path.codePointAt(index) === 47) {
+		if (seenNonSlash) {
+			start = index + 1;
+			break;
+		}
+	} else {
+		if (firstNonSlashEnd < 0) {
+			seenNonSlash = true;
+			firstNonSlashEnd = index + 1;
+		}
+		if (extnameIndex > -1) if (path.codePointAt(index) === extname.codePointAt(extnameIndex--)) {
+			if (extnameIndex < 0) end = index;
+		} else {
+			extnameIndex = -1;
+			end = firstNonSlashEnd;
+		}
+	}
+	if (start === end) end = firstNonSlashEnd;
+	else if (end < 0) end = path.length;
+	return path.slice(start, end);
+}
+/**
+* Get the dirname from a path.
+*
+* @param {string} path
+*   File path.
+* @returns {string}
+*   File path.
+*/
+function dirname(path) {
+	assertPath$1(path);
+	if (path.length === 0) return ".";
+	let end = -1;
+	let index = path.length;
+	/** @type {boolean | undefined} */
+	let unmatchedSlash;
+	while (--index) if (path.codePointAt(index) === 47) {
+		if (unmatchedSlash) {
+			end = index;
+			break;
+		}
+	} else if (!unmatchedSlash) unmatchedSlash = true;
+	return end < 0 ? path.codePointAt(0) === 47 ? "/" : "." : end === 1 && path.codePointAt(0) === 47 ? "//" : path.slice(0, end);
+}
+/**
+* Get an extname from a path.
+*
+* @param {string} path
+*   File path.
+* @returns {string}
+*   Extname.
+*/
+function extname(path) {
+	assertPath$1(path);
+	let index = path.length;
+	let end = -1;
+	let startPart = 0;
+	let startDot = -1;
+	let preDotState = 0;
+	/** @type {boolean | undefined} */
+	let unmatchedSlash;
+	while (index--) {
+		const code = path.codePointAt(index);
+		if (code === 47) {
+			if (unmatchedSlash) {
+				startPart = index + 1;
+				break;
+			}
+			continue;
+		}
+		if (end < 0) {
+			unmatchedSlash = true;
+			end = index + 1;
+		}
+		if (code === 46) {
+			if (startDot < 0) startDot = index;
+			else if (preDotState !== 1) preDotState = 1;
+		} else if (startDot > -1) preDotState = -1;
+	}
+	if (startDot < 0 || end < 0 || preDotState === 0 || preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) return "";
+	return path.slice(startDot, end);
+}
+/**
+* Join segments from a path.
+*
+* @param {Array<string>} segments
+*   Path segments.
+* @returns {string}
+*   File path.
+*/
+function join(...segments) {
+	let index = -1;
+	/** @type {string | undefined} */
+	let joined;
+	while (++index < segments.length) {
+		assertPath$1(segments[index]);
+		if (segments[index]) joined = joined === void 0 ? segments[index] : joined + "/" + segments[index];
+	}
+	return joined === void 0 ? "." : normalize(joined);
+}
+/**
+* Normalize a basic file path.
+*
+* @param {string} path
+*   File path.
+* @returns {string}
+*   File path.
+*/
+function normalize(path) {
+	assertPath$1(path);
+	const absolute = path.codePointAt(0) === 47;
+	let value = normalizeString(path, !absolute);
+	if (value.length === 0 && !absolute) value = ".";
+	if (value.length > 0 && path.codePointAt(path.length - 1) === 47) value += "/";
+	return absolute ? "/" + value : value;
+}
+/**
+* Resolve `.` and `..` elements in a path with directory names.
+*
+* @param {string} path
+*   File path.
+* @param {boolean} allowAboveRoot
+*   Whether `..` can move above root.
+* @returns {string}
+*   File path.
+*/
+function normalizeString(path, allowAboveRoot) {
+	let result = "";
+	let lastSegmentLength = 0;
+	let lastSlash = -1;
+	let dots = 0;
+	let index = -1;
+	/** @type {number | undefined} */
+	let code;
+	/** @type {number} */
+	let lastSlashIndex;
+	while (++index <= path.length) {
+		if (index < path.length) code = path.codePointAt(index);
+		else if (code === 47) break;
+		else code = 47;
+		if (code === 47) {
+			if (lastSlash === index - 1 || dots === 1) {} else if (lastSlash !== index - 1 && dots === 2) {
+				if (result.length < 2 || lastSegmentLength !== 2 || result.codePointAt(result.length - 1) !== 46 || result.codePointAt(result.length - 2) !== 46) {
+					if (result.length > 2) {
+						lastSlashIndex = result.lastIndexOf("/");
+						if (lastSlashIndex !== result.length - 1) {
+							if (lastSlashIndex < 0) {
+								result = "";
+								lastSegmentLength = 0;
+							} else {
+								result = result.slice(0, lastSlashIndex);
+								lastSegmentLength = result.length - 1 - result.lastIndexOf("/");
+							}
+							lastSlash = index;
+							dots = 0;
+							continue;
+						}
+					} else if (result.length > 0) {
+						result = "";
+						lastSegmentLength = 0;
+						lastSlash = index;
+						dots = 0;
+						continue;
+					}
+				}
+				if (allowAboveRoot) {
+					result = result.length > 0 ? result + "/.." : "..";
+					lastSegmentLength = 2;
+				}
+			} else {
+				if (result.length > 0) result += "/" + path.slice(lastSlash + 1, index);
+				else result = path.slice(lastSlash + 1, index);
+				lastSegmentLength = index - lastSlash - 1;
+			}
+			lastSlash = index;
+			dots = 0;
+		} else if (code === 46 && dots > -1) dots++;
+		else dots = -1;
+	}
+	return result;
+}
+/**
+* Make sure `path` is a string.
+*
+* @param {string} path
+*   File path.
+* @returns {asserts path is string}
+*   Nothing.
+*/
+function assertPath$1(path) {
+	if (typeof path !== "string") throw new TypeError("Path must be a string. Received " + JSON.stringify(path));
+}
+//#endregion
+//#region node_modules/vfile/lib/minproc.browser.js
+var minproc = { cwd };
+function cwd() {
+	return "/";
+}
+//#endregion
 //#region node_modules/vfile/lib/minurl.shared.js
 /**
 * Checks if a value has the shape of a WHATWG URL object.
@@ -391,6 +628,58 @@ function wrap(middleware, callback) {
 */
 function isUrl(fileUrlOrPath) {
 	return Boolean(fileUrlOrPath !== null && typeof fileUrlOrPath === "object" && "href" in fileUrlOrPath && fileUrlOrPath.href && "protocol" in fileUrlOrPath && fileUrlOrPath.protocol && fileUrlOrPath.auth === void 0);
+}
+//#endregion
+//#region node_modules/vfile/lib/minurl.browser.js
+/**
+* @param {URL | string} path
+*   File URL.
+* @returns {string}
+*   File URL.
+*/
+function urlToPath(path) {
+	if (typeof path === "string") path = new URL(path);
+	else if (!isUrl(path)) {
+		/** @type {NodeJS.ErrnoException} */
+		const error = /* @__PURE__ */ new TypeError("The \"path\" argument must be of type string or an instance of URL. Received `" + path + "`");
+		error.code = "ERR_INVALID_ARG_TYPE";
+		throw error;
+	}
+	if (path.protocol !== "file:") {
+		/** @type {NodeJS.ErrnoException} */
+		const error = /* @__PURE__ */ new TypeError("The URL must be of scheme file");
+		error.code = "ERR_INVALID_URL_SCHEME";
+		throw error;
+	}
+	return getPathFromURLPosix(path);
+}
+/**
+* Get a path from a POSIX URL.
+*
+* @param {URL} url
+*   URL.
+* @returns {string}
+*   File path.
+*/
+function getPathFromURLPosix(url) {
+	if (url.hostname !== "") {
+		/** @type {NodeJS.ErrnoException} */
+		const error = /* @__PURE__ */ new TypeError("File URL host must be \"localhost\" or empty on darwin");
+		error.code = "ERR_INVALID_FILE_URL_HOST";
+		throw error;
+	}
+	const pathname = url.pathname;
+	let index = -1;
+	while (++index < pathname.length) if (pathname.codePointAt(index) === 37 && pathname.codePointAt(index + 1) === 50) {
+		const third = pathname.codePointAt(index + 2);
+		if (third === 70 || third === 102) {
+			/** @type {NodeJS.ErrnoException} */
+			const error = /* @__PURE__ */ new TypeError("File URL path must not include encoded / characters");
+			error.code = "ERR_INVALID_FILE_URL_PATH";
+			throw error;
+		}
+	}
+	return decodeURIComponent(pathname);
 }
 //#endregion
 //#region node_modules/vfile/lib/index.js

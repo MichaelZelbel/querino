@@ -1,5 +1,5 @@
 import { n as __esmMin, r as __exportAll } from "../_runtime.mjs";
-import { __rest } from "tslib";
+import { O as __rest, k as init_tslib_es6 } from "./@radix-ui/react-alert-dialog+[...].mjs";
 //#region node_modules/@supabase/auth-js/dist/module/lib/version.js
 var version;
 var init_version = __esmMin((() => {
@@ -712,6 +712,7 @@ function hasSession(data) {
 }
 var _getErrorMessage, NETWORK_ERROR_CODES, _getRequestParams;
 var init_fetch = __esmMin((() => {
+	init_tslib_es6();
 	init_constants();
 	init_helpers();
 	init_errors();
@@ -746,6 +747,7 @@ var init_types = __esmMin((() => {
 //#region node_modules/@supabase/auth-js/dist/module/GoTrueAdminApi.js
 var GoTrueAdminApi;
 var init_GoTrueAdminApi = __esmMin((() => {
+	init_tslib_es6();
 	init_fetch();
 	init_helpers();
 	init_types();
@@ -1865,6 +1867,7 @@ function mergeCredentialRequestOptions(baseOptions, overrides) {
 }
 var WebAuthnAbortService, webAuthnAbortService, DEFAULT_CREATION_OPTIONS, DEFAULT_REQUEST_OPTIONS, WebAuthnApi;
 var init_webauthn = __esmMin((() => {
+	init_tslib_es6();
 	init_base64url();
 	init_errors();
 	init_helpers();

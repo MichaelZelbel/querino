@@ -1,7 +1,8 @@
-import { o as __toESM } from "../_runtime.mjs";
+import { a as __toESM } from "../_runtime.mjs";
+import { t as index_default } from "../_libs/@tiptap/extension-placeholder+[...].mjs";
+import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { t as Button } from "./button-DfDjtN4g.mjs";
 import { t as Input } from "./input-DZABqqwC.mjs";
 import { t as Textarea } from "./textarea-C03-A3RU.mjs";
@@ -10,9 +11,8 @@ import { a as DropdownMenuTrigger, n as DropdownMenuContent, r as DropdownMenuIt
 import { t as Separator } from "./separator-B3hsz7IR.mjs";
 import { A as mergeAttributes, a as Node3 } from "../_libs/@tiptap/core+[...].mjs";
 import { i as useEditor, n as NodeViewWrapper, r as ReactNodeViewRenderer, t as EditorContent } from "../_libs/fast-equals+tiptap__react.mjs";
-import { n as index_default } from "../_libs/@tiptap/extension-link+[...].mjs";
-import { n as index_default$1 } from "../_libs/tiptap__extension-underline.mjs";
-import { t as index_default$2 } from "../_libs/@tiptap/extension-placeholder+[...].mjs";
+import { n as index_default$1 } from "../_libs/@tiptap/extension-link+[...].mjs";
+import { n as index_default$2 } from "../_libs/tiptap__extension-underline.mjs";
 import { t as index_default$3 } from "../_libs/tiptap__starter-kit.mjs";
 import { t as index_default$4 } from "../_libs/tiptap__extension-typography.mjs";
 import { t as index_default$5 } from "../_libs/tiptap__extension-text-align.mjs";
@@ -544,9 +544,9 @@ function PromptKitRichEditor({ value, onChange, placeholder = "Write an intro fo
 				link: false,
 				underline: false
 			}),
-			index_default$1,
-			index_default$2.configure({ placeholder }),
-			index_default.configure({
+			index_default$2,
+			index_default.configure({ placeholder }),
+			index_default$1.configure({
 				openOnClick: false,
 				autolink: true,
 				HTMLAttributes: { rel: "noopener noreferrer" }

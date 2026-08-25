@@ -1,5 +1,5 @@
-import { n as supabase } from "./_ssr/client-Bi_X_zk2.mjs";
 import { E as require_jsx_runtime } from "./_libs/@radix-ui/react-alert-dialog+[...].mjs";
+import { n as supabase } from "./_ssr/client-Bi_X_zk2.mjs";
 import { Vn as ArrowLeft } from "./_libs/lucide-react.mjs";
 import { c as useParams$1, i as useAuth, n as Link$1 } from "./_ssr/router-compat-xSZ_AoUj.mjs";
 import { r as useQuery } from "./_libs/tanstack__react-query.mjs";

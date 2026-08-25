@@ -1,5 +1,7 @@
+import { n as globalthis_default, r as init_globalthis } from "../@supabase/postgrest-js+[...].mjs";
 import { B as decodePath, D as createInlineCssStyleAsset, E as createInlineCssPlaceholderAsset, I as rootRouteId, R as createLRUCache, T as TSR_SCRIPT_BARRIER_ID, k as getStylesheetHref, w as GLOBAL_TSR, z as invariant } from "./react-router+[...].mjs";
 //#region node_modules/seroval/dist/index.js
+init_globalthis();
 var SYM_ASYNC_ITERATOR = Symbol.asyncIterator;
 var SYM_HAS_INSTANCE = Symbol.hasInstance;
 var SYM_IS_CONCAT_SPREADABLE = Symbol.isConcatSpreadable;
@@ -287,7 +289,7 @@ else if (typeof self !== "undefined") Object.defineProperty(self, REFERENCES_KEY
 	writable: false,
 	enumerable: false
 });
-else if (typeof global !== "undefined") Object.defineProperty(global, REFERENCES_KEY, {
+else if (typeof globalthis_default !== "undefined") Object.defineProperty(globalthis_default, REFERENCES_KEY, {
 	value: INV_REFERENCE,
 	configurable: true,
 	writable: false,

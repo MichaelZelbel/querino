@@ -1,4 +1,4 @@
-import { o as __toESM } from "../_runtime.mjs";
+import { a as __toESM } from "../_runtime.mjs";
 import { H as PluginKey, J as Fragment, V as Plugin, a as Node3, d as extensions_exports, g as getHTMLFromFragment, i as Mark, q as DOMParser, r as Extension } from "./@tiptap/core+[...].mjs";
 import { t as MarkdownIt } from "./markdown-it+mdurl+punycode.js.mjs";
 import { n as defaultMarkdownSerializer, t as MarkdownSerializerState$1 } from "./prosemirror-markdown.mjs";

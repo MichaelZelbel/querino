@@ -1,5 +1,6 @@
 import { n as __esmMin, r as __exportAll } from "../../_runtime.mjs";
-import { __awaiter } from "tslib";
+import { D as __awaiter, k as init_tslib_es6 } from "../@radix-ui/react-alert-dialog+[...].mjs";
+import { Buffer } from "node:buffer";
 //#region node_modules/@supabase/storage-js/dist/module/lib/errors.js
 function isStorageError(error) {
 	return typeof error === "object" && error !== null && "__isStorageError" in error;
@@ -111,6 +112,7 @@ function remove(fetcher, url, body, options, parameters) {
 }
 var _getErrorMessage$1, handleError$1, _getRequestParams$1;
 var init_fetch$1 = __esmMin((() => {
+	init_tslib_es6();
 	init_errors$1();
 	init_helpers$1();
 	_getErrorMessage$1 = (err) => {
@@ -145,6 +147,7 @@ var init_fetch$1 = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/packages/StreamDownloadBuilder.js
 var StreamDownloadBuilder;
 var init_StreamDownloadBuilder = __esmMin((() => {
+	init_tslib_es6();
 	init_errors$1();
 	StreamDownloadBuilder = class {
 		constructor(downloadFn, shouldThrowOnError) {
@@ -177,6 +180,7 @@ var init_StreamDownloadBuilder = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/packages/BlobDownloadBuilder.js
 var _a, BlobDownloadBuilder;
 var init_BlobDownloadBuilder = __esmMin((() => {
+	init_tslib_es6();
 	init_errors$1();
 	init_StreamDownloadBuilder();
 	BlobDownloadBuilder = class {
@@ -226,6 +230,7 @@ var init_BlobDownloadBuilder = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/packages/StorageFileApi.js
 var DEFAULT_SEARCH_OPTIONS, DEFAULT_FILE_OPTIONS, StorageFileApi;
 var init_StorageFileApi = __esmMin((() => {
+	init_tslib_es6();
 	init_errors$1();
 	init_fetch$1();
 	init_helpers$1();
@@ -1142,6 +1147,7 @@ var init_constants$1 = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/packages/StorageBucketApi.js
 var StorageBucketApi;
 var init_StorageBucketApi = __esmMin((() => {
+	init_tslib_es6();
 	init_constants$1();
 	init_errors$1();
 	init_fetch$1();
@@ -1985,6 +1991,7 @@ var init_dist = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/packages/StorageAnalyticsClient.js
 var StorageAnalyticsClient;
 var init_StorageAnalyticsClient = __esmMin((() => {
+	init_tslib_es6();
 	init_dist();
 	init_constants$1();
 	init_errors$1();
@@ -2481,6 +2488,7 @@ function post(fetcher, url, body, options, parameters) {
 }
 var _getErrorMessage, handleError, _getRequestParams;
 var init_fetch = __esmMin((() => {
+	init_tslib_es6();
 	init_errors();
 	init_helpers();
 	_getErrorMessage = (err) => err.msg || err.message || err.error_description || err.error || JSON.stringify(err);
@@ -2520,6 +2528,7 @@ var init_fetch = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/lib/vectors/VectorIndexApi.js
 var VectorIndexApi;
 var init_VectorIndexApi = __esmMin((() => {
+	init_tslib_es6();
 	init_constants();
 	init_errors();
 	init_fetch();
@@ -2621,6 +2630,7 @@ var init_VectorIndexApi = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/lib/vectors/VectorDataApi.js
 var VectorDataApi;
 var init_VectorDataApi = __esmMin((() => {
+	init_tslib_es6();
 	init_constants();
 	init_errors();
 	init_fetch();
@@ -2742,6 +2752,7 @@ var init_VectorDataApi = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/lib/vectors/VectorBucketApi.js
 var VectorBucketApi;
 var init_VectorBucketApi = __esmMin((() => {
+	init_tslib_es6();
 	init_constants();
 	init_errors();
 	init_fetch();
@@ -2837,6 +2848,7 @@ var init_VectorBucketApi = __esmMin((() => {
 //#region node_modules/@supabase/storage-js/dist/module/lib/vectors/StorageVectorsClient.js
 var StorageVectorsClient, VectorBucketScope, VectorIndexScope;
 var init_StorageVectorsClient = __esmMin((() => {
+	init_tslib_es6();
 	init_VectorIndexApi();
 	init_VectorDataApi();
 	init_VectorBucketApi();

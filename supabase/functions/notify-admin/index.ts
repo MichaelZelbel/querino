@@ -12,7 +12,14 @@ if (!ADMIN_EMAIL) {
 }
 const FROM_EMAIL = "Querino <support@querino.ai>";
 
-type EventType = "signup" | "subscribe" | "unsubscribe" | "delete_account";
+type EventType =
+  | "signup"
+  | "subscribe"
+  | "unsubscribe"
+  | "delete_account"
+  // Not a user event. The nightly model-catalogue sync raising its hand,
+  // carrying metadata.subject and metadata.lines instead of an account.
+  | "llm_model_alert";
 
 interface NotifyRequest {
   eventType: EventType;
@@ -42,6 +49,10 @@ function getSubjectLine(eventType: EventType, rawEmail: string): string {
   // Subjects are plain text; strip newlines so headers can't be smuggled.
   const userEmail = rawEmail.replace(/[\r\n]/g, " ").slice(0, 200);
   switch (eventType) {
+    case "llm_model_alert":
+      // The caller writes this one: only it knows whether a model was retired
+      // or the sync refused a response.
+      return userEmail;
     case "signup":
       return `🎉 New User Signup: ${userEmail}`;
     case "subscribe":
@@ -60,8 +71,24 @@ function getEmailBody(event: NotifyRequest): string {
   const timestamp = new Date().toISOString();
   const name = displayName || "Unknown";
 
+  if (eventType === "llm_model_alert") {
+    const lines = Array.isArray(metadata?.lines)
+      ? (metadata.lines as unknown[])
+      : [];
+    const items = lines
+      .filter((l) => String(l).trim().length > 0)
+      .map((l) => `<li>${esc(l)}</li>`)
+      .join("");
+    return `<!DOCTYPE html><html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#333">
+<div style="max-width:600px;margin:0 auto;padding:20px">
+<h2 style="margin:0 0 12px">${esc(metadata?.subject || "Querino model catalogue")}</h2>
+<ul>${items || "<li>No detail was supplied.</li>"}</ul>
+<p style="font-size:12px;color:#6b7280">From the nightly model catalogue sync at ${timestamp}.</p>
+</div></body></html>`;
+  }
+
   const sections: Record<
-    EventType,
+    Exclude<EventType, "llm_model_alert">,
     { action: string; label: string; extra: string }
   > = {
     signup: {

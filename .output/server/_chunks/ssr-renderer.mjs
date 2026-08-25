@@ -1,4 +1,4 @@
-import { a as toRequest, o as HTTPError } from "../_libs/h3+rou3+srvx.mjs";
+import { i as HTTPError, r as toRequest } from "../_libs/h3+rou3+srvx.mjs";
 //#region node_modules/nitro/dist/runtime/vite.mjs
 function fetchViteEnv(viteEnvName, input, init) {
 	const viteEnv = (globalThis.__nitro_vite_envs__ || {})[viteEnvName];

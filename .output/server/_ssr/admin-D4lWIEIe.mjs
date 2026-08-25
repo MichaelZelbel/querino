@@ -1,7 +1,7 @@
-import { o as __toESM } from "../_runtime.mjs";
+import { a as __toESM } from "../_runtime.mjs";
+import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { n as supabase } from "./client-Bi_X_zk2.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { a as CardHeader, n as CardContent, o as CardTitle, r as CardDescription, t as Card } from "./card-4AsKRAzx.mjs";
 import { t as Button } from "./button-DfDjtN4g.mjs";
 import { t as Input } from "./input-DZABqqwC.mjs";
@@ -21,7 +21,7 @@ import { a as TooltipProvider, i as TooltipContent, n as Header, o as TooltipTri
 import { n as format } from "../_libs/date-fns.mjs";
 import { i as TabsTrigger, n as TabsContent, r as TabsList, t as Tabs } from "./tabs-B4ZFfXyf.mjs";
 import { a as AlertDialogDescription, c as AlertDialogTitle, i as AlertDialogContent, l as AlertDialogTrigger, n as AlertDialogAction, o as AlertDialogFooter, r as AlertDialogCancel, s as AlertDialogHeader, t as AlertDialog } from "./alert-dialog-Dt930TVg.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin-BYNKDsa3.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin-D4lWIEIe.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var SETTING_KEYS = [
@@ -1574,7 +1574,7 @@ function UsersPanel() {
 		}
 	})] });
 }
-var LLMConfigPanel = (0, import_react.lazy)(() => import("./LLMConfigPanel-CQRzRAu4.mjs"));
+var LLMConfigPanel = (0, import_react.lazy)(() => import("./LLMConfigPanel-DmI-LtO-.mjs"));
 var LLMUsagePanel = (0, import_react.lazy)(() => import("./LLMUsagePanel-ChmXyDZ8.mjs"));
 function Admin() {
 	const navigate = useNavigate$1();

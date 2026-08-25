@@ -1,5 +1,5 @@
 import { n as __esmMin, r as __exportAll } from "../_runtime.mjs";
-import { __awaiter } from "tslib";
+import { D as __awaiter, k as init_tslib_es6 } from "./@radix-ui/react-alert-dialog+[...].mjs";
 //#region node_modules/@supabase/functions-js/dist/module/helper.js
 var resolveFetch;
 var init_helper = __esmMin((() => {
@@ -56,6 +56,7 @@ var init_types = __esmMin((() => {
 //#region node_modules/@supabase/functions-js/dist/module/FunctionsClient.js
 var FunctionsClient;
 var init_FunctionsClient = __esmMin((() => {
+	init_tslib_es6();
 	init_helper();
 	init_types();
 	FunctionsClient = class {

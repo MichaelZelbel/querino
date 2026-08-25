@@ -1,6 +1,6 @@
 {
-  "date": "2026-08-24T11:09:23.843Z",
-  "preset": "node-server",
+  "date": "2026-08-25T23:37:24.333Z",
+  "preset": "cloudflare-module",
   "framework": {
     "name": "nitro",
     "version": "3.0.260603-beta"
@@ -11,7 +11,13 @@
   "serverEntry": "server/index.mjs",
   "publicDir": "public",
   "commands": {
-    "preview": "node ./server/index.mjs"
+    "preview": "npx wrangler --cwd ./ dev",
+    "deploy": "npx wrangler --cwd ./ deploy"
   },
-  "config": {}
+  "config": {
+    "cloudflare": {
+      "deployConfig": true,
+      "nodeCompat": true
+    }
+  }
 }

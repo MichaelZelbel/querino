@@ -1,5 +1,6 @@
-import { o as __toESM, t as __commonJSMin } from "../../_runtime.mjs";
+import { a as __toESM, t as __commonJSMin } from "../../_runtime.mjs";
 import { a as hide$1, c as shift$1, i as flip$1, l as size$1, o as limitShift$1, r as computePosition, s as offset$1, t as arrow$2 } from "./dom+[...].mjs";
+import processModule from "node:process";
 //#region node_modules/react/cjs/react.production.js
 /**
 * @license React
@@ -182,8 +183,8 @@ var require_react_production = /* @__PURE__ */ __commonJSMin(((exports) => {
 				error
 			});
 			if (!window.dispatchEvent(event)) return;
-		} else if ("object" === typeof process && "function" === typeof process.emit) {
-			process.emit("uncaughtException", error);
+		} else if ("object" === typeof processModule && "function" === typeof processModule.emit) {
+			processModule.emit("uncaughtException", error);
 			return;
 		}
 		console.error(error);

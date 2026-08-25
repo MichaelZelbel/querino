@@ -131,6 +131,95 @@ async function syncDefaults(
   }
 }
 
+/**
+ * The provider and model list the panel renders.
+ *
+ * Built from llm_models when the nightly sync has filled it, so the prices in
+ * the dropdown are the prices OpenRouter is charging rather than the ones
+ * somebody typed. The hand-written PROVIDER_PRESETS is the fallback and stays:
+ * an empty or unreachable table has to degrade to the old behaviour, not to an
+ * empty dropdown, and a fallback that lands nowhere is not a fallback.
+ *
+ * Only providers the catalogue actually covers are replaced. OpenAI, Anthropic
+ * and Gemini all need an API key to list their models, and two of them have no
+ * key on this project, so their presets stay exactly as they are.
+ */
+async function livePresets(
+  admin: SupabaseClient,
+): Promise<typeof PROVIDER_PRESETS> {
+  const { data, error } = await admin
+    .from("llm_models")
+    .select(
+      "provider, model_id, name, prompt_price_per_m, completion_price_per_m, supports_tools",
+    )
+    .is("retired_at", null)
+    .order("prompt_price_per_m", { nullsFirst: false });
+
+  if (error) {
+    console.warn(
+      "[admin-llm-config] llm_models unreadable, using the static presets:",
+      error.message,
+    );
+    return PROVIDER_PRESETS;
+  }
+
+  const rows = (data ?? []) as Array<{
+    provider: string;
+    model_id: string;
+    name: string;
+    prompt_price_per_m: number | null;
+    completion_price_per_m: number | null;
+    supports_tools: boolean;
+  }>;
+  if (rows.length === 0) return PROVIDER_PRESETS;
+
+  const byProvider = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const list = byProvider.get(row.provider) ?? [];
+    list.push(row);
+    byProvider.set(row.provider, list);
+  }
+
+  return PROVIDER_PRESETS.map((preset) => {
+    const live = byProvider.get(preset.provider);
+    if (!live || live.length === 0) return preset;
+    return {
+      ...preset,
+      models: live.map((m) => {
+        // A model with no fixed price is not free. It is openrouter/auto and
+        // its like, whose cost depends on what they route to. Say that, rather
+        // than print a number nobody can act on.
+        const price =
+          m.prompt_price_per_m === null || m.completion_price_per_m === null
+            ? "price varies"
+            : `$${m.prompt_price_per_m.toFixed(2)}/$${m.completion_price_per_m.toFixed(2)}`;
+        const tools = m.supports_tools ? "" : " · no tool calling";
+        return { value: m.model_id, label: `${m.name} (${price})${tools}` };
+      }),
+    };
+  });
+}
+
+/** What the nightly sync found and nobody has dismissed. Newest first. */
+async function unresolvedAlerts(admin: SupabaseClient): Promise<unknown[]> {
+  const { data, error } = await admin
+    .from("llm_model_alerts")
+    .select(
+      "id, created_at, kind, provider, model_id, call_site, tier, detail, action_taken",
+    )
+    .is("resolved_at", null)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    console.warn(
+      "[admin-llm-config] llm_model_alerts unreadable:",
+      error.message,
+    );
+    return [];
+  }
+  return data ?? [];
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders });
@@ -152,6 +241,7 @@ Deno.serve(async (req: Request) => {
       tier?: string;
       prompt?: string;
       force?: boolean;
+      alert_id?: string;
       days?: number;
       patch?: {
         provider?: string;
@@ -193,8 +283,23 @@ Deno.serve(async (req: Request) => {
       return json({
         configs,
         availability: providerAvailability(),
-        providers: PROVIDER_PRESETS,
+        providers: await livePresets(admin),
+        alerts: await unresolvedAlerts(admin),
       });
+    }
+
+    if (body.action === "resolve_alert") {
+      const id = String(body.alert_id ?? "");
+      if (!id) return json({ error: "alert_id required" }, 400);
+      const { error } = await admin
+        .from("llm_model_alerts")
+        .update({
+          resolved_at: new Date().toISOString(),
+          resolved_by: await callerUserId(req, admin),
+        })
+        .eq("id", id);
+      if (error) throw error;
+      return json({ ok: true, alert_id: id });
     }
 
     if (body.action === "save") {

@@ -1,7 +1,10 @@
 import { n as __esmMin, r as __exportAll } from "../_runtime.mjs";
+import { n as globalthis_default, r as init_globalthis } from "./@supabase/postgrest-js+[...].mjs";
+import processModule from "node:process";
 //#region node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
 var WebSocketFactory;
 var init_websocket_factory = __esmMin((() => {
+	init_globalthis();
 	WebSocketFactory = class {
 		/**
 		* Static-only utility – prevent instantiation.
@@ -17,9 +20,9 @@ var init_websocket_factory = __esmMin((() => {
 				type: "native",
 				constructor: globalThis.WebSocket
 			};
-			if (typeof global !== "undefined" && typeof global.WebSocket !== "undefined") return {
+			if (typeof globalthis_default !== "undefined" && typeof globalthis_default.WebSocket !== "undefined") return {
 				type: "native",
-				constructor: global.WebSocket
+				constructor: globalthis_default.WebSocket
 			};
 			if (typeof globalThis !== "undefined" && typeof globalThis.WebSocketPair !== "undefined" && typeof globalThis.WebSocket === "undefined") return {
 				type: "cloudflare",
@@ -31,8 +34,8 @@ var init_websocket_factory = __esmMin((() => {
 				error: "Edge runtime detected (Vercel Edge/Netlify Edge). WebSockets are not supported in edge functions.",
 				workaround: "Use serverless functions or a different deployment target for WebSocket functionality."
 			};
-			if (typeof process !== "undefined") {
-				const processVersions = process["versions"];
+			if (typeof processModule !== "undefined") {
+				const processVersions = processModule["versions"];
 				if (processVersions && processVersions["node"]) {
 					const versionString = processVersions["node"];
 					const nodeVersion = parseInt(versionString.replace(/^v/, "").split(".")[0]);

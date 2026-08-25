@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DYo27ylZ.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-BHDjrPiy.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "C:/hub/dev/querino/src/routes/__root.tsx",
@@ -58,7 +58,7 @@ var tsrStartManifest = () => ({ routes: {
 			"/blog/admin/posts/$id/edit"
 		],
 		preloads: [
-			"/assets/index-BFlGPRbB.js",
+			"/assets/index-DiqO51Ir.js",
 			"/assets/client-JNFkalRR.js",
 			"/assets/dist-BgtWHsZL.js",
 			"/assets/router-compat-DqT9UOqV.js",
@@ -78,7 +78,7 @@ var tsrStartManifest = () => ({ routes: {
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-BFlGPRbB.js"
+			src: "/assets/index-DiqO51Ir.js"
 		} }]
 	},
 	"/": {
@@ -109,7 +109,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "C:/hub/dev/querino/src/routes/admin.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/admin-BhifyWRW.js",
+			"/assets/admin-BfmYbzk6.js",
 			"/assets/avatar-CcPI2j61.js",
 			"/assets/bot-5rWugpGZ.js",
 			"/assets/useDebounce-BsyoZWnk.js",

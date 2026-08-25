@@ -41,6 +41,9 @@ verify_jwt = false  # pg_cron every 1min, X-Internal-Key only
 [functions.ensure-token-allowance]
 verify_jwt = false  # batch_init is reachable by a keyless machine caller holding X-Internal-Key
 
+[functions.sync-llm-models]
+verify_jwt = false  # pg_cron nightly, X-Internal-Key only; an admin may also trigger it by hand
+
 [functions.backfill-embeddings]
 verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; the Admin page button also calls it
 
@@ -48,6 +51,9 @@ verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; the Admin page bu
 
 [functions.api]
 verify_jwt = false  # serves /rss.xml and /sitemap.xml; feed readers and crawlers send no headers
+
+[functions.llm-models]
+verify_jwt = false  # the shared model catalogue; public data, read by Menerio and the hub with no credential
 
 [functions.blog-api]
 verify_jwt = false  # public blog REST for external clients

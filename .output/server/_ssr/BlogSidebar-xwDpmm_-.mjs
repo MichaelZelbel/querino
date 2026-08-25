@@ -1,5 +1,5 @@
-import { n as supabase } from "./client-Bi_X_zk2.mjs";
 import { E as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
+import { n as supabase } from "./client-Bi_X_zk2.mjs";
 import { t as Badge } from "./badge-DDdsxPGp.mjs";
 import { t as Skeleton } from "./skeleton-cOr9hq3l.mjs";
 import { n as Link$1 } from "./router-compat-xSZ_AoUj.mjs";
