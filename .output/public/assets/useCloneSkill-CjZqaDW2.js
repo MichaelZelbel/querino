@@ -1,1 +1,0 @@
-import{t as e}from"./useCloneArtifact-DeRbVHQj.js";var t=e({table:`skills`,label:`skill`,buildInsert:e=>({description:e.description,content:e.content,tags:e.tags,published:!1}),editPath:e=>`/skills/${e.slug}/edit`});function n(){let{clone:e,cloning:n}=t();return{cloneSkill:e,cloning:n}}export{n as t};

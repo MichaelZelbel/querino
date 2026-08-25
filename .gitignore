@@ -10,6 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# nitro build output, since the TanStack migration. Not ignored until
+# 2026-08-26, and 152 of its files were committed by a git add -A before that.
+.output
+.nitro
+.tanstack
 *.local
 
 # Editor directories and files

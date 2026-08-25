@@ -1,1 +1,0 @@
-import{r as e}from"./useWorkflows-CQyyecC-.js";var t=e({table:`prompt_kits`,queryKey:`prompt_kits`,semanticType:`prompt_kit`});export{t};

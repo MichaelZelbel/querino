@@ -1,1 +1,0 @@
-function e(){return typeof window<`u`&&window.location?.origin?window.location.origin:`https://querino.ai`}export{e as t};
