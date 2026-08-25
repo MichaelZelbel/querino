@@ -30,5 +30,5 @@ Disallow: /prompt-kits/new
 Disallow: /prompt-kits/*/edit
 Disallow: /collections/new
 
-# Dynamic sitemap served by Supabase Edge Function (always up-to-date with public artifacts)
-Sitemap: https://zvuwkffneqxqsihlnfsd.supabase.co/functions/v1/api/sitemap.xml
+# Dynamic sitemap, served by the app itself (always up-to-date with public artifacts)
+Sitemap: https://querino.ai/sitemap.xml

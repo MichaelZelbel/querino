@@ -1,5 +1,5 @@
 import { n as supabase } from "./client-Bi_X_zk2.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/route-loaders-BZlMkWnS.js
+//#region node_modules/.nitro/vite/services/ssr/assets/route-loaders-CeRUcm3J.js
 /**
 * Builds a TanStack Router `head()` payload.
 *
@@ -92,7 +92,7 @@ function pageHead(page) {
 		rel: "alternate",
 		type: "application/rss+xml",
 		title: `${SITE_NAME} Blog RSS Feed`,
-		href: `${SITE_ORIGIN}/api/rss.xml`
+		href: `${SITE_ORIGIN}/rss.xml`
 	});
 	return {
 		meta,
@@ -197,4 +197,4 @@ async function loadBlogTag(slug) {
 	return error ? null : data;
 }
 //#endregion
-export { loadProfile as a, loadSkill as c, privateHead as d, loadBlogTag as i, loadWorkflow as l, loadBlogCategory as n, loadPrompt as o, loadBlogPost as r, loadPromptKit as s, creativeWorkJsonLd as t, pageHead as u };
+export { loadBlogTag as a, loadPromptKit as c, pageHead as d, privateHead as f, loadBlogPost as i, loadSkill as l, creativeWorkJsonLd as n, loadProfile as o, loadBlogCategory as r, loadPrompt as s, SITE_ORIGIN as t, loadWorkflow as u };

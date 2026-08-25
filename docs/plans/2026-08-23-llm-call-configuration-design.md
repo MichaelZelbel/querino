@@ -388,10 +388,17 @@ turning tiering on remains a panel change and nothing else.
 decision monitor itself, so the question can be re-asked from the panel rather
 than from hand-written SQL.
 
-**A shared model registry across applications.** Preset lists go stale as models
-ship and are retired. Three ways forward, in rising order of effort: fetch live
-from a provider's own catalogue (`GET https://openrouter.ai/api/v1/models` is
-public and returns 200 with no API key, verified 2026-08-23); keep one shared
+**A shared model registry across applications. NOT BUILT. The model list in
+`llm-registry.ts` is a static constant and the app fetches no catalogue at
+runtime.** Saying so twice, at the top and the bottom, because the paragraph
+below was read as a description of the feature on 2026-08-25: what makes it
+misread is that the endpoint was genuinely tested, so the sentence carries a
+verification date and reads like a report of something working.
+
+Preset lists go stale as models ship and are retired. Three ways forward, in
+rising order of effort: fetch live from a provider's own catalogue (`GET
+https://openrouter.ai/api/v1/models` is public and returns 200 with no API key,
+tested 2026-08-23 by hand, from a terminal, never from the app); keep one shared
 table that Querino, Menerio and the hub all read; or a provisioning service both
 apps call.
 

@@ -20,8 +20,8 @@ import { t as PromptKitVersionHistoryPanel } from "./_ssr/PromptKitVersionHistor
 import { t as createCloneHook } from "./_ssr/useCloneArtifact-C6wTjE_T.mjs";
 import { t as useMenerioIntegration } from "./_ssr/useMenerioIntegration-s2hbByPY.mjs";
 import { a as MenerioSyncButton, c as SuggestionsTab, d as createReviewsHook, f as isUuid, i as CopyArtifactToTeamModal, l as TranslateModal, m as useSuggestions, n as ActivitySidebar, o as ReviewSection, p as resolveSlugFromId, r as AddToCollectionModal, s as SuggestEditModal, t as AIInsightsPanel, u as createCopyToTeamHook } from "./_ssr/MenerioSyncButton-Bizux33R.mjs";
-import { t as Route } from "./_slug.index-D-pa0gL-.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-DtqTNJ-3.js
+import { t as Route } from "./_slug.index-DLt5UqaZ.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-C1AJ0yRh.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var useBase$1 = createCloneHook({

@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-BKup8o-_.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DYo27ylZ.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "C:/hub/dev/querino/src/routes/__root.tsx",
@@ -15,7 +15,9 @@ var tsrStartManifest = () => ({ routes: {
 			"/docs",
 			"/impressum",
 			"/privacy",
+			"/rss.xml",
 			"/settings",
+			"/sitemap.xml",
 			"/terms",
 			"/blog/$slug",
 			"/collections/new",
@@ -56,11 +58,11 @@ var tsrStartManifest = () => ({ routes: {
 			"/blog/admin/posts/$id/edit"
 		],
 		preloads: [
-			"/assets/index-DXNmr2pW.js",
+			"/assets/index-BFlGPRbB.js",
 			"/assets/client-JNFkalRR.js",
 			"/assets/dist-BgtWHsZL.js",
 			"/assets/router-compat-DqT9UOqV.js",
-			"/assets/route-loaders-CGa91QO4.js",
+			"/assets/route-loaders-BxOJCnkP.js",
 			"/assets/useMutation-CAi2_fXj.js",
 			"/assets/Footer-CGP9clsR.js",
 			"/assets/dist-7k4eCu6l.js",
@@ -68,15 +70,15 @@ var tsrStartManifest = () => ({ routes: {
 			"/assets/button-Bpo7u0Ha.js",
 			"/assets/site-BoWRvSE7.js",
 			"/assets/preload-helper-Czpn1I53.js",
-			"/assets/_slug.index-D7USUSJY.js",
-			"/assets/_slug.index-dHDVpxWa.js",
-			"/assets/_slug.index-AouA-lAB.js",
-			"/assets/_slug.index-kACX8ucS.js"
+			"/assets/_slug.index-CKGHHQaL.js",
+			"/assets/_slug.index-iLfktYru.js",
+			"/assets/_slug.index-5VmLzpKQ.js",
+			"/assets/_slug.index-BG1banVA.js"
 		],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-DXNmr2pW.js"
+			src: "/assets/index-BFlGPRbB.js"
 		} }]
 	},
 	"/": {
@@ -815,7 +817,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "C:/hub/dev/querino/src/routes/prompt-kits/$slug.index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/_slug.index-BO9UbLJ9.js",
+			"/assets/_slug.index-C7M7YF5J.js",
 			"/assets/avatar-CcPI2j61.js",
 			"/assets/arrow-left-De3_2tNZ.js",
 			"/assets/calendar-HdvzHQZC.js",
@@ -846,7 +848,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "C:/hub/dev/querino/src/routes/prompts/$slug.index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/_slug.index-BXnKo6X8.js",
+			"/assets/_slug.index-BF8hPWTz.js",
 			"/assets/avatar-CcPI2j61.js",
 			"/assets/arrow-left-De3_2tNZ.js",
 			"/assets/arrow-right-BZXjlnoY.js",
@@ -886,7 +888,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "C:/hub/dev/querino/src/routes/skills/$slug.index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/_slug.index-pYmKCrea.js",
+			"/assets/_slug.index-4bxMdjnk.js",
 			"/assets/avatar-CcPI2j61.js",
 			"/assets/arrow-left-De3_2tNZ.js",
 			"/assets/calendar-HdvzHQZC.js",
@@ -925,7 +927,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "C:/hub/dev/querino/src/routes/workflows/$slug.index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/_slug.index-CGu5Ct74.js",
+			"/assets/_slug.index-C6TnKl6G.js",
 			"/assets/avatar-CcPI2j61.js",
 			"/assets/arrow-left-De3_2tNZ.js",
 			"/assets/calendar-HdvzHQZC.js",

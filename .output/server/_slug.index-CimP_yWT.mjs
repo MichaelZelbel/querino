@@ -27,12 +27,12 @@ import { t as SendToLLMButtons } from "./_ssr/SendToLLMButtons-dPxB-1LC.mjs";
 import { t as useMenerioIntegration } from "./_ssr/useMenerioIntegration-s2hbByPY.mjs";
 import { a as MenerioSyncButton, c as SuggestionsTab, d as createReviewsHook, f as isUuid, i as CopyArtifactToTeamModal, l as TranslateModal, m as useSuggestions, n as ActivitySidebar, o as ReviewSection$1, p as resolveSlugFromId, r as AddToCollectionModal, s as SuggestEditModal, t as AIInsightsPanel, u as createCopyToTeamHook } from "./_ssr/MenerioSyncButton-Bizux33R.mjs";
 import { t as useDuplicateArtifact } from "./_ssr/useDuplicateArtifact-Bcg6VDc0.mjs";
-import { t as Route } from "./_slug.index-CWSDhAeF.mjs";
+import { t as Route } from "./_slug.index-BdxPuJ38.mjs";
 import { t as useClonePrompt } from "./_ssr/useClonePrompt-DyUgLCDb.mjs";
 import { t as usePinnedPrompts } from "./_ssr/usePinnedPrompts-DDaPyuEo.mjs";
 import { t as UpsellModal } from "./_ssr/UpsellModal-CEnDkFkf.mjs";
 import { t as FRAMEWORK_OPTIONS } from "./_ssr/promptGenerator-DM4ousU3.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-DiydoczO.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-CimP_yWT.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function useSavedPrompts() {

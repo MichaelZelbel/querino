@@ -1,13 +1,13 @@
 import { h as createFileRoute, m as lazyRouteComponent } from "./_libs/@tanstack/react-router+[...].mjs";
-import { d as privateHead, o as loadPrompt, t as creativeWorkJsonLd, u as pageHead } from "./_ssr/route-loaders-BZlMkWnS.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-CWSDhAeF.js
-var $$splitComponentImporter = () => import("./_slug.index-DiydoczO.mjs");
-var Route = createFileRoute("/prompts/$slug/")({
-	loader: ({ params }) => loadPrompt(params.slug),
+import { c as loadPromptKit, d as pageHead, f as privateHead, n as creativeWorkJsonLd } from "./_ssr/route-loaders-CeRUcm3J.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-DLt5UqaZ.js
+var $$splitComponentImporter = () => import("./_slug.index-C1AJ0yRh.mjs");
+var Route = createFileRoute("/prompt-kits/$slug/")({
+	loader: ({ params }) => loadPromptKit(params.slug),
 	head: ({ loaderData }) => {
 		if (!loaderData) return privateHead("Not Found");
-		const url = `/prompts/${loaderData.slug ?? loaderData.id}`;
-		const description = loaderData.summary || loaderData.description || `${loaderData.title} — AI prompt on Querino`;
+		const url = `/prompt-kits/${loaderData.slug ?? loaderData.id}`;
+		const description = loaderData.summary || loaderData.description || `${loaderData.title} — prompt kit on Querino`;
 		return pageHead({
 			title: loaderData.title,
 			description,

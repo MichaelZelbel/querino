@@ -1,13 +1,13 @@
 import { h as createFileRoute, m as lazyRouteComponent } from "./_libs/@tanstack/react-router+[...].mjs";
-import { d as privateHead, s as loadPromptKit, t as creativeWorkJsonLd, u as pageHead } from "./_ssr/route-loaders-BZlMkWnS.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-D-pa0gL-.js
-var $$splitComponentImporter = () => import("./_slug.index-DtqTNJ-3.mjs");
-var Route = createFileRoute("/prompt-kits/$slug/")({
-	loader: ({ params }) => loadPromptKit(params.slug),
+import { d as pageHead, f as privateHead, l as loadSkill, n as creativeWorkJsonLd } from "./_ssr/route-loaders-CeRUcm3J.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-DUhJH_Ni.js
+var $$splitComponentImporter = () => import("./_slug.index-B6IDhDHI.mjs");
+var Route = createFileRoute("/skills/$slug/")({
+	loader: ({ params }) => loadSkill(params.slug),
 	head: ({ loaderData }) => {
 		if (!loaderData) return privateHead("Not Found");
-		const url = `/prompt-kits/${loaderData.slug ?? loaderData.id}`;
-		const description = loaderData.summary || loaderData.description || `${loaderData.title} — prompt kit on Querino`;
+		const url = `/skills/${loaderData.slug ?? loaderData.id}`;
+		const description = loaderData.summary || loaderData.description || `${loaderData.title} — AI skill on Querino`;
 		return pageHead({
 			title: loaderData.title,
 			description,

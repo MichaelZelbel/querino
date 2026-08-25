@@ -1,4 +1,5 @@
 import { o as __toESM } from "../_runtime.mjs";
+import { n as supabase } from "./client-Bi_X_zk2.mjs";
 import { t as cva } from "../_libs/class-variance-authority+clsx.mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
@@ -13,13 +14,13 @@ import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { n as z, t as j } from "../_libs/next-themes.mjs";
 import { a as TooltipProvider, n as Header, s as WorkspaceProvider, t as Footer } from "./Footer-ClUC5jzd.mjs";
 import { t as siteOrigin } from "./site-jKTsxe7R.mjs";
-import { a as loadProfile, d as privateHead, i as loadBlogTag, n as loadBlogCategory, r as loadBlogPost, u as pageHead } from "./route-loaders-BZlMkWnS.mjs";
-import { t as Route$48 } from "../_slug.index-BoAj6mLP.mjs";
-import { t as Route$49 } from "../_slug.index-C6rL2vpr.mjs";
-import { t as Route$50 } from "../_slug.index-CWSDhAeF.mjs";
-import { t as Route$51 } from "../_slug.index-D-pa0gL-.mjs";
+import { a as loadBlogTag, d as pageHead, f as privateHead, i as loadBlogPost, o as loadProfile, r as loadBlogCategory, t as SITE_ORIGIN } from "./route-loaders-CeRUcm3J.mjs";
+import { t as Route$50 } from "../_slug.index-DUhJH_Ni.mjs";
+import { t as Route$51 } from "../_slug.index-DLt5UqaZ.mjs";
+import { t as Route$52 } from "../_slug.index-BdxPuJ38.mjs";
+import { t as Route$53 } from "../_slug.index-BUURXrNp.mjs";
 import { a as Root2, i as Provider, n as Close, o as Title, r as Description, s as Viewport, t as Action } from "../_libs/@radix-ui/react-toast+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-mmZV5pfE.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DqPxBqQ3.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var TOAST_LIMIT = 1;
@@ -320,7 +321,7 @@ function SEOHead({ title, description, ogImage, ogType = "website", canonicalUrl
 	const siteName = "Querino";
 	const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
 	const finalDescription = description || "Discover and share AI prompts, skills, and workflows.";
-	const rssUrl = `${siteOrigin()}/api/rss.xml`;
+	const rssUrl = `${siteOrigin()}/rss.xml`;
 	(0, import_react.useEffect)(() => {
 		document.title = fullTitle;
 		const setMeta = (name, content, isProperty = false) => {
@@ -467,7 +468,7 @@ var WEBSITE_JSONLD = JSON.stringify({
 		"query-input": "required name=search_term_string"
 	}
 });
-var Route$47 = createRootRouteWithContext()({
+var Route$49 = createRootRouteWithContext()({
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
@@ -562,7 +563,7 @@ function RootShell({ children }) {
 	});
 }
 function RootComponent() {
-	const { queryClient } = Route$47.useRouteContext();
+	const { queryClient } = Route$49.useRouteContext();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(z, {
 		attribute: "class",
 		defaultTheme: "system",
@@ -617,7 +618,7 @@ function RootErrorComponent({ error, reset }) {
 	});
 }
 var $$splitComponentImporter$45 = () => import("./routes-BeU1Yr2U.mjs");
-var Route$46 = createFileRoute("/")({
+var Route$48 = createFileRoute("/")({
 	head: () => pageHead({
 		title: "Querino - AI Prompt Library for Creators",
 		description: "Thousands of curated prompts, your personal library, and a tiny mascot who genuinely cares whether your prompts are good.",
@@ -626,22 +627,22 @@ var Route$46 = createFileRoute("/")({
 	component: lazyRouteComponent($$splitComponentImporter$45, "component")
 });
 var $$splitComponentImporter$44 = () => import("./activity-BkSgJcFG.mjs");
-var Route$45 = createFileRoute("/activity")({
+var Route$47 = createFileRoute("/activity")({
 	head: () => privateHead("Activity"),
 	component: lazyRouteComponent($$splitComponentImporter$44, "component")
 });
 var $$splitComponentImporter$43 = () => import("./admin-BYNKDsa3.mjs");
-var Route$44 = createFileRoute("/admin")({
+var Route$46 = createFileRoute("/admin")({
 	head: () => privateHead("Admin"),
 	component: lazyRouteComponent($$splitComponentImporter$43, "component")
 });
 var $$splitComponentImporter$42 = () => import("./auth-BI-CJuOL.mjs");
-var Route$43 = createFileRoute("/auth")({
+var Route$45 = createFileRoute("/auth")({
 	head: () => privateHead("Sign In"),
 	component: lazyRouteComponent($$splitComponentImporter$42, "component")
 });
 var $$splitComponentImporter$41 = () => import("./community-guidelines-DBcRfDmZ.mjs");
-var Route$42 = createFileRoute("/community-guidelines")({
+var Route$44 = createFileRoute("/community-guidelines")({
 	head: () => pageHead({
 		title: "Community Guidelines — Querino",
 		description: "Querino's community guidelines for publishing AI artifacts. Learn what content is allowed and how we keep the platform safe.",
@@ -650,7 +651,7 @@ var Route$42 = createFileRoute("/community-guidelines")({
 	component: lazyRouteComponent($$splitComponentImporter$41, "component")
 });
 var $$splitComponentImporter$40 = () => import("./cookies-DphioLzg.mjs");
-var Route$41 = createFileRoute("/cookies")({
+var Route$43 = createFileRoute("/cookies")({
 	head: () => pageHead({
 		title: "Cookies Policy",
 		description: "Which cookies Querino sets, what they are for, and how to control them.",
@@ -659,11 +660,11 @@ var Route$41 = createFileRoute("/cookies")({
 	component: lazyRouteComponent($$splitComponentImporter$40, "component")
 });
 var $$splitComponentImporter$39 = () => import("./create-from-menerio-DcO7B1tZ.mjs");
-var Route$40 = createFileRoute("/create-from-menerio")({
+var Route$42 = createFileRoute("/create-from-menerio")({
 	head: () => privateHead("Create from Menerio"),
 	component: lazyRouteComponent($$splitComponentImporter$39, "component")
 });
-var Route$39 = createFileRoute("/dashboard")({ beforeLoad: () => {
+var Route$41 = createFileRoute("/dashboard")({ beforeLoad: () => {
 	throw redirect({
 		to: "/library",
 		replace: true,
@@ -671,7 +672,7 @@ var Route$39 = createFileRoute("/dashboard")({ beforeLoad: () => {
 	});
 } });
 var $$splitComponentImporter$38 = () => import("./discover-DkCCbV90.mjs");
-var Route$38 = createFileRoute("/discover")({
+var Route$40 = createFileRoute("/discover")({
 	head: () => pageHead({
 		title: "Discover AI Prompts, Skills and Workflows",
 		description: "Browse curated AI prompts, prompt kits, skills and workflows shared by the Querino community.",
@@ -680,7 +681,7 @@ var Route$38 = createFileRoute("/discover")({
 	component: lazyRouteComponent($$splitComponentImporter$38, "component")
 });
 var $$splitComponentImporter$37 = () => import("./docs-DbJATZZt.mjs");
-var Route$37 = createFileRoute("/docs")({
+var Route$39 = createFileRoute("/docs")({
 	head: () => pageHead({
 		title: "Documentation — Querino",
 		description: "Learn how to create, organize, and share AI prompts, prompt kits, skills, and workflows with Querino.",
@@ -689,7 +690,7 @@ var Route$37 = createFileRoute("/docs")({
 	component: lazyRouteComponent($$splitComponentImporter$37, "component")
 });
 var $$splitComponentImporter$36 = () => import("./impressum-Bj4km020.mjs");
-var Route$36 = createFileRoute("/impressum")({
+var Route$38 = createFileRoute("/impressum")({
 	head: () => pageHead({
 		title: "Impressum",
 		description: "Legal notice and company information for Querino, operated by Zelbel Ltd.",
@@ -698,7 +699,7 @@ var Route$36 = createFileRoute("/impressum")({
 	component: lazyRouteComponent($$splitComponentImporter$36, "component")
 });
 var $$splitComponentImporter$35 = () => import("./privacy-D8Qxb9dX.mjs");
-var Route$35 = createFileRoute("/privacy")({
+var Route$37 = createFileRoute("/privacy")({
 	head: () => pageHead({
 		title: "Privacy Policy",
 		description: "How Querino collects, uses and protects your data.",
@@ -706,11 +707,181 @@ var Route$35 = createFileRoute("/privacy")({
 	}),
 	component: lazyRouteComponent($$splitComponentImporter$35, "component")
 });
+/**
+* The sitemap and the RSS feed, built from the database.
+*
+* Ported from supabase/functions/api/index.ts, which served both from a Supabase edge
+* function on a foreign host while a Cloudflare rewrite proxied /sitemap.xml back onto
+* querino.ai and corrected its content type on the way. Three hops, one of them a
+* dashboard setting nobody could review, and /rss.xml was advertised on every blog page
+* while returning 404 on every URL the site named.
+*
+* The output is a deliberate copy of what the edge function produced, not an improvement
+* on it, so the move can be verified by comparing the two byte for byte. The one thing
+* that did change is the feed's own <atom:link>, which used to point at /api/rss.xml —
+* a URL that 404s. It now names the path this file is actually served from.
+*
+* The queries use the anon client, so row-level security applies. That is the point: the
+* sitemap must only list what a logged-out visitor can actually open.
+*/
+/** How long a crawler may reuse a response. Carried over from the edge function. */
+var FEED_CACHE_CONTROL = "public, max-age=3600";
+function escapeXml(str) {
+	return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+/** Sitemap <lastmod> wants a date, not a timestamp. */
+function formatDate(isoDate) {
+	return isoDate.split("T")[0];
+}
+async function buildRss() {
+	const siteName = "Querino Blog";
+	const siteDescription = "Articles about AI, prompts, and productivity";
+	const { data: posts, error } = await supabase.from("blog_posts").select(`
+      title,
+      slug,
+      excerpt,
+      content,
+      published_at,
+      author:profiles!blog_posts_author_id_fkey(display_name)
+    `).eq("status", "published").order("published_at", { ascending: false }).limit(20);
+	if (error) throw new Error(`RSS query failed: ${error.message}`);
+	const items = (posts ?? []).map((post) => {
+		const pubDate = post.published_at ? new Date(post.published_at).toUTCString() : (/* @__PURE__ */ new Date()).toUTCString();
+		const link = `${SITE_ORIGIN}/blog/${post.slug}`;
+		const author = post.author?.display_name || "Anonymous";
+		const description = escapeXml(post.excerpt || post.content?.slice(0, 300) || "");
+		return `
+    <item>
+      <title>${escapeXml(post.title)}</title>
+      <link>${link}</link>
+      <guid isPermaLink="true">${link}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <dc:creator>${escapeXml(author)}</dc:creator>
+      <description><![CDATA[${description}]]></description>
+    </item>`;
+	}).join("");
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${escapeXml(siteName)}</title>
+    <link>${SITE_ORIGIN}/blog</link>
+    <description>${escapeXml(siteDescription)}</description>
+    <language>en</language>
+    <lastBuildDate>${(/* @__PURE__ */ new Date()).toUTCString()}</lastBuildDate>
+    <atom:link href="${SITE_ORIGIN}/rss.xml" rel="self" type="application/rss+xml"/>
+    ${items}
+  </channel>
+</rss>`;
+}
+async function buildSitemap() {
+	const staticPages = [
+		{
+			loc: "/",
+			priority: "1.0",
+			changefreq: "daily"
+		},
+		{
+			loc: "/discover",
+			priority: "0.9",
+			changefreq: "daily"
+		},
+		{
+			loc: "/blog",
+			priority: "0.8",
+			changefreq: "daily"
+		},
+		{
+			loc: "/terms",
+			priority: "0.3",
+			changefreq: "yearly"
+		},
+		{
+			loc: "/privacy",
+			priority: "0.3",
+			changefreq: "yearly"
+		},
+		{
+			loc: "/cookies",
+			priority: "0.3",
+			changefreq: "yearly"
+		},
+		{
+			loc: "/impressum",
+			priority: "0.3",
+			changefreq: "yearly"
+		}
+	];
+	const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all([
+		supabase.from("blog_posts").select("slug, updated_at").eq("status", "published").order("updated_at", { ascending: false }),
+		supabase.from("prompts").select("slug, updated_at").eq("is_public", true).order("updated_at", { ascending: false }),
+		supabase.from("skills").select("slug, updated_at").eq("published", true).order("updated_at", { ascending: false }),
+		supabase.from("workflows").select("slug, updated_at").eq("published", true).order("updated_at", { ascending: false }),
+		supabase.from("prompt_kits").select("slug, updated_at").eq("published", true).order("updated_at", { ascending: false })
+	]);
+	const urls = [];
+	for (const page of staticPages) urls.push(`
+  <url>
+    <loc>${SITE_ORIGIN}${page.loc}</loc>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`);
+	const collections = [
+		{
+			prefix: "/blog",
+			priority: "0.7",
+			rows: blogPosts.data
+		},
+		{
+			prefix: "/prompts",
+			priority: "0.6",
+			rows: prompts.data
+		},
+		{
+			prefix: "/skills",
+			priority: "0.6",
+			rows: skills.data
+		},
+		{
+			prefix: "/workflows",
+			priority: "0.6",
+			rows: workflows.data
+		},
+		{
+			prefix: "/prompt-kits",
+			priority: "0.6",
+			rows: promptKits.data
+		}
+	];
+	for (const { prefix, priority, rows } of collections) for (const row of rows ?? []) {
+		if (!row.slug) continue;
+		const lastmod = row.updated_at ? formatDate(row.updated_at) : formatDate((/* @__PURE__ */ new Date()).toISOString());
+		urls.push(`
+  <url>
+    <loc>${SITE_ORIGIN}${prefix}/${escapeXml(row.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${priority}</priority>
+  </url>`);
+	}
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}
+</urlset>`;
+}
+var Route$36 = createFileRoute("/rss.xml")({ server: { handlers: { GET: async () => new Response(await buildRss(), { headers: {
+	"Content-Type": "application/rss+xml; charset=utf-8",
+	"Access-Control-Allow-Origin": "*",
+	"Cache-Control": FEED_CACHE_CONTROL
+} }) } } });
 var $$splitComponentImporter$34 = () => import("./settings-XEtfVDuR.mjs");
-var Route$34 = createFileRoute("/settings")({
+var Route$35 = createFileRoute("/settings")({
 	head: () => privateHead("Settings"),
 	component: lazyRouteComponent($$splitComponentImporter$34, "component")
 });
+var Route$34 = createFileRoute("/sitemap.xml")({ server: { handlers: { GET: async () => new Response(await buildSitemap(), { headers: {
+	"Content-Type": "application/xml; charset=utf-8",
+	"Access-Control-Allow-Origin": "*",
+	"Cache-Control": FEED_CACHE_CONTROL
+} }) } } });
 var $$splitComponentImporter$33 = () => import("./terms-DMLX3lwN.mjs");
 var Route$33 = createFileRoute("/terms")({
 	head: () => pageHead({
@@ -951,250 +1122,260 @@ var Route = createFileRoute("/blog/admin/posts/$id/edit")({
 	head: () => privateHead("Edit Blog Post"),
 	component: lazyRouteComponent($$splitComponentImporter, "component")
 });
-var IndexRoute = Route$46.update({
+var IndexRoute = Route$48.update({
 	id: "/",
 	path: "/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var ActivityRoute = Route$45.update({
+var ActivityRoute = Route$47.update({
 	id: "/activity",
 	path: "/activity",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var AdminRoute = Route$44.update({
+var AdminRoute = Route$46.update({
 	id: "/admin",
 	path: "/admin",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var AuthRoute = Route$43.update({
+var AuthRoute = Route$45.update({
 	id: "/auth",
 	path: "/auth",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var CommunityGuidelinesRoute = Route$42.update({
+var CommunityGuidelinesRoute = Route$44.update({
 	id: "/community-guidelines",
 	path: "/community-guidelines",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var CookiesRoute = Route$41.update({
+var CookiesRoute = Route$43.update({
 	id: "/cookies",
 	path: "/cookies",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var CreateFromMenerioRoute = Route$40.update({
+var CreateFromMenerioRoute = Route$42.update({
 	id: "/create-from-menerio",
 	path: "/create-from-menerio",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var DashboardRoute = Route$39.update({
+var DashboardRoute = Route$41.update({
 	id: "/dashboard",
 	path: "/dashboard",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var DiscoverRoute = Route$38.update({
+var DiscoverRoute = Route$40.update({
 	id: "/discover",
 	path: "/discover",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var DocsRoute = Route$37.update({
+var DocsRoute = Route$39.update({
 	id: "/docs",
 	path: "/docs",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var ImpressumRoute = Route$36.update({
+var ImpressumRoute = Route$38.update({
 	id: "/impressum",
 	path: "/impressum",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var PrivacyRoute = Route$35.update({
+var PrivacyRoute = Route$37.update({
 	id: "/privacy",
 	path: "/privacy",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var SettingsRoute = Route$34.update({
+var RssDotxmlRoute = Route$36.update({
+	id: "/rss.xml",
+	path: "/rss.xml",
+	getParentRoute: () => Route$49
+});
+var SettingsRoute = Route$35.update({
 	id: "/settings",
 	path: "/settings",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
+});
+var SitemapDotxmlRoute = Route$34.update({
+	id: "/sitemap.xml",
+	path: "/sitemap.xml",
+	getParentRoute: () => Route$49
 });
 var TermsRoute = Route$33.update({
 	id: "/terms",
 	path: "/terms",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogIndexRoute = Route$32.update({
 	id: "/blog/",
 	path: "/blog/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogSlugRoute = Route$31.update({
 	id: "/blog/$slug",
 	path: "/blog/$slug",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var CollectionsIndexRoute = Route$30.update({
 	id: "/collections/",
 	path: "/collections/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var CollectionsNewRoute = Route$29.update({
 	id: "/collections/new",
 	path: "/collections/new",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var LibraryIndexRoute = Route$28.update({
 	id: "/library/",
 	path: "/library/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var ProfileEditRoute = Route$27.update({
 	id: "/profile/edit",
 	path: "/profile/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var PromptKitsNewRoute = Route$26.update({
 	id: "/prompt-kits/new",
 	path: "/prompt-kits/new",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var PromptsNewRoute = Route$25.update({
 	id: "/prompts/new",
 	path: "/prompts/new",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var PromptsWizardRoute = Route$24.update({
 	id: "/prompts/wizard",
 	path: "/prompts/wizard",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var SkillsNewRoute = Route$23.update({
 	id: "/skills/new",
 	path: "/skills/new",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var TeamJoinRoute = Route$22.update({
 	id: "/team/join",
 	path: "/team/join",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var WorkflowsNewRoute = Route$21.update({
 	id: "/workflows/new",
 	path: "/workflows/new",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogAdminIndexRoute = Route$20.update({
 	id: "/blog/admin/",
 	path: "/blog/admin/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogAdminCategoriesRoute = Route$19.update({
 	id: "/blog/admin/categories",
 	path: "/blog/admin/categories",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogAdminMediaRoute = Route$18.update({
 	id: "/blog/admin/media",
 	path: "/blog/admin/media",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogAdminTagsRoute = Route$17.update({
 	id: "/blog/admin/tags",
 	path: "/blog/admin/tags",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogCategorySlugRoute = Route$16.update({
 	id: "/blog/category/$slug",
 	path: "/blog/category/$slug",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogTagSlugRoute = Route$15.update({
 	id: "/blog/tag/$slug",
 	path: "/blog/tag/$slug",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var CollectionsIdIndexRoute = Route$14.update({
 	id: "/collections/$id/",
 	path: "/collections/$id/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var CollectionsIdEditRoute = Route$13.update({
 	id: "/collections/$id/edit",
 	path: "/collections/$id/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var LibrarySlugEditRoute = Route$12.update({
 	id: "/library/$slug/edit",
 	path: "/library/$slug/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var LibrarySlugVersionsRoute = Route$11.update({
 	id: "/library/$slug/versions",
 	path: "/library/$slug/versions",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var PromptKitsSlugIndexRoute = Route$51.update({
 	id: "/prompt-kits/$slug/",
 	path: "/prompt-kits/$slug/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var PromptKitsSlugEditRoute = Route$10.update({
 	id: "/prompt-kits/$slug/edit",
 	path: "/prompt-kits/$slug/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var PromptsSlugIndexRoute = Route$50.update({
+var PromptsSlugIndexRoute = Route$52.update({
 	id: "/prompts/$slug/",
 	path: "/prompts/$slug/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var PromptsSlugEditRoute = Route$9.update({
 	id: "/prompts/$slug/edit",
 	path: "/prompts/$slug/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var SkillsSlugIndexRoute = Route$48.update({
+var SkillsSlugIndexRoute = Route$50.update({
 	id: "/skills/$slug/",
 	path: "/skills/$slug/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var SkillsSlugEditRoute = Route$8.update({
 	id: "/skills/$slug/edit",
 	path: "/skills/$slug/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var TeamIdActivityRoute = Route$7.update({
 	id: "/team/$id/activity",
 	path: "/team/$id/activity",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var TeamIdSettingsRoute = Route$6.update({
 	id: "/team/$id/settings",
 	path: "/team/$id/settings",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var UUsernameIndexRoute = Route$5.update({
 	id: "/u/$username/",
 	path: "/u/$username/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var UUsernameActivityRoute = Route$4.update({
 	id: "/u/$username/activity",
 	path: "/u/$username/activity",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
-var WorkflowsSlugIndexRoute = Route$49.update({
+var WorkflowsSlugIndexRoute = Route$53.update({
 	id: "/workflows/$slug/",
 	path: "/workflows/$slug/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var WorkflowsSlugEditRoute = Route$3.update({
 	id: "/workflows/$slug/edit",
 	path: "/workflows/$slug/edit",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var BlogAdminPostsIndexRoute = Route$2.update({
 	id: "/blog/admin/posts/",
 	path: "/blog/admin/posts/",
-	getParentRoute: () => Route$47
+	getParentRoute: () => Route$49
 });
 var rootRouteChildren = {
 	IndexRoute,
@@ -1209,7 +1390,9 @@ var rootRouteChildren = {
 	DocsRoute,
 	ImpressumRoute,
 	PrivacyRoute,
+	RssDotxmlRoute,
 	SettingsRoute,
+	SitemapDotxmlRoute,
 	TermsRoute,
 	BlogSlugRoute,
 	CollectionsNewRoute,
@@ -1248,16 +1431,16 @@ var rootRouteChildren = {
 	BlogAdminPostsNewRoute: Route$1.update({
 		id: "/blog/admin/posts/new",
 		path: "/blog/admin/posts/new",
-		getParentRoute: () => Route$47
+		getParentRoute: () => Route$49
 	}),
 	BlogAdminPostsIndexRoute,
 	BlogAdminPostsIdEditRoute: Route.update({
 		id: "/blog/admin/posts/$id/edit",
 		path: "/blog/admin/posts/$id/edit",
-		getParentRoute: () => Route$47
+		getParentRoute: () => Route$49
 	})
 };
-var routeTree = Route$47._addFileChildren(rootRouteChildren)._addFileTypes();
+var routeTree = Route$49._addFileChildren(rootRouteChildren)._addFileTypes();
 var getRouter = () => {
 	const queryClient = new QueryClient({ defaultOptions: { queries: {
 		staleTime: 6e4,

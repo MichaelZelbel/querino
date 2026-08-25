@@ -1,7 +1,7 @@
 import { h as createFileRoute, m as lazyRouteComponent } from "./_libs/@tanstack/react-router+[...].mjs";
-import { d as privateHead, l as loadWorkflow, t as creativeWorkJsonLd, u as pageHead } from "./_ssr/route-loaders-BZlMkWnS.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-C6rL2vpr.js
-var $$splitComponentImporter = () => import("./_slug.index-D1yMmSC6.mjs");
+import { d as pageHead, f as privateHead, n as creativeWorkJsonLd, u as loadWorkflow } from "./_ssr/route-loaders-CeRUcm3J.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/_slug.index-BUURXrNp.js
+var $$splitComponentImporter = () => import("./_slug.index-DmMKoqp4.mjs");
 var Route = createFileRoute("/workflows/$slug/")({
 	loader: ({ params }) => loadWorkflow(params.slug),
 	head: ({ loaderData }) => {

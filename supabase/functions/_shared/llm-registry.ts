@@ -176,10 +176,16 @@ export interface ProviderPreset {
   models: { value: string; label: string }[];
 }
 
-// Served to the panel rather than hardcoded in it, so swapping this constant for
-// a live catalogue or a shared cross-app registry later is a change to this file
-// and nothing else. The panel also keeps a free-text model field, which is what
-// actually makes a model released this morning usable this morning.
+// A STATIC LIST. Nothing here is fetched at runtime, from OpenRouter or anyone
+// else. The models below were copied by hand out of OpenRouter's catalogue; the
+// app has never called its /models endpoint and does not now.
+//
+// It is served to the panel rather than hardcoded in it, so swapping this
+// constant for a live catalogue or a shared cross-app registry later is a change
+// to this file and nothing else. That is the only sense in which the panel's
+// list is dynamic: the UI hardcodes nothing, this file does. The panel also
+// keeps a free-text model field, which is what actually makes a model released
+// this morning usable this morning without waiting for anyone to edit this.
 export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     provider: "lovable",
