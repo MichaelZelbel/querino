@@ -107,9 +107,13 @@ function stripComments(sql) {
 }
 
 /**
- * The header of every CREATE FUNCTION in the file: everything from CREATE up
- * to where the body starts. SECURITY DEFINER and SET search_path both live
- * there, so there is no need to parse a function body at all.
+ * The attributes of every CREATE FUNCTION in the file: everything from CREATE
+ * up to where the body starts, plus whatever follows the body up to the
+ * statement's semicolon. Postgres accepts SECURITY DEFINER and SET search_path
+ * on either side of the body, and three migrations in this repository write
+ * them after it (`$$ LANGUAGE plpgsql SECURITY DEFINER;`). Until 2026-09-08
+ * only the part before the body was read, so a function written that way with
+ * no search_path passed this check as "not SECURITY DEFINER at all".
  */
 function functionHeaders(sql) {
   const headers = [];
@@ -119,7 +123,8 @@ function functionHeaders(sql) {
     const rest = sql.slice(m.index);
     // The body begins at AS $tag$ or AS '...'; also stop at the next CREATE so
     // a function with no body at all cannot swallow the file.
-    const bodyAt = rest.search(/\bAS\s+(?:\$[A-Za-z_]*\$|')/i);
+    const body = /\bAS\s+(\$[A-Za-z_]*\$|')/i.exec(rest);
+    const bodyAt = body ? body.index : -1;
     const nextCreate = rest
       .slice(1)
       .search(/\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\b/i);
@@ -128,11 +133,23 @@ function functionHeaders(sql) {
       nextCreate === -1 ? -1 : nextCreate + 1,
       rest.length,
     ].filter((n) => n > 0);
-    headers.push({
-      name: m[1],
-      text: rest.slice(0, Math.min(...ends)),
-      index: m.index,
-    });
+    let text = rest.slice(0, Math.min(...ends));
+
+    // The trailing attributes: from the closing body tag to the semicolon that
+    // ends the statement. Comments and string literals are already stripped,
+    // so the first semicolon after the body is the statement's own.
+    if (body && body[1] !== "'") {
+      const tag = body[1];
+      const open = rest.indexOf(tag, body.index) + tag.length;
+      const close = rest.indexOf(tag, open);
+      if (close !== -1) {
+        const after = rest.slice(close + tag.length);
+        const semi = after.indexOf(";");
+        text += " " + (semi === -1 ? after : after.slice(0, semi));
+      }
+    }
+
+    headers.push({ name: m[1], text, index: m.index });
   }
   return headers;
 }

@@ -30,18 +30,28 @@ serve(async (req) => {
   try {
     logStep("Function started (DB-only mode)");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    // A missing or invalid token is answered as 401 here rather than thrown
+    // into the catch below, which turned every logged-out call into a 500.
+    const unauthorized = (reason: string) => {
+      logStep("Rejected", { reason });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    };
 
-    const token = authHeader.replace("Bearer ", "");
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return unauthorized("no authorization header");
+
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) return unauthorized("empty bearer token");
+
     const { data: userData, error: userError } =
       await supabaseClient.auth.getUser(token);
-    if (userError)
-      throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) return unauthorized(userError.message);
 
     const user = userData.user;
-    if (!user?.email)
-      throw new Error("User not authenticated or email not available");
+    if (!user?.email) return unauthorized("no user or no email on the token");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get current role from user_roles table (the authoritative source)

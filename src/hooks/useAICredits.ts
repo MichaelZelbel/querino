@@ -170,7 +170,12 @@ export function useAICredits() {
   useEffect(() => {
     if (user) {
       fetchCredits();
+      return;
     }
+    // Signing out has to clear the balance, not freeze it. Without this the
+    // previous account's credit figure stayed on screen in any component that
+    // was still mounted.
+    setCredits(null);
   }, [user, fetchCredits]);
 
   return {

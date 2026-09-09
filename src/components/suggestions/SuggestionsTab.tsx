@@ -10,7 +10,7 @@ import { SuggestionWithAuthor, SuggestionItemType } from "@/types/suggestion";
 import { SuggestionReviewModal } from "./SuggestionReviewModal";
 import { UpdateSuggestionModal } from "./UpdateSuggestionModal";
 import { CommentsSection } from "@/components/comments/CommentsSection";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface SuggestionsTabProps {
   suggestions: SuggestionWithAuthor[];
@@ -66,7 +66,7 @@ export function SuggestionsTab({
   onUpdateSuggestion,
   onApplySuggestion,
 }: SuggestionsTabProps) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [selectedSuggestion, setSelectedSuggestion] =
     useState<SuggestionWithAuthor | null>(null);
   const [updateSuggestion, setUpdateSuggestion] =

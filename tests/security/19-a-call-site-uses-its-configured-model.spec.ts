@@ -25,12 +25,19 @@ const ROW = `llm_call_configs?call_site=eq.${CALL_SITE}&tier=eq.default`;
 
 const CACHE_TTL_MS = 30_000;
 
-// A model this call site is definitely NOT set to, chosen per provider so the
-// override is real whatever the row currently says.
-const OVERRIDE_BY_PROVIDER: Record<string, string> = {
-  openrouter: "mistralai/mistral-small-3.2-24b-instruct",
-  lovable: "google/gemini-2.5-flash-lite",
-  openai: "gpt-4o-mini",
+// Candidate override models per provider. The test picks the first one that
+// differs from what the row currently says, so the override is real whatever
+// an administrator has configured. One candidate was not enough: on
+// 2026-09-08 the admin had set suggest-metadata to the single OpenRouter
+// candidate, and the test failed on its own precondition rather than on the
+// feature it exists to check.
+const OVERRIDE_CANDIDATES_BY_PROVIDER: Record<string, string[]> = {
+  openrouter: [
+    "mistralai/mistral-small-3.2-24b-instruct",
+    "google/gemini-2.5-flash-lite",
+  ],
+  lovable: ["google/gemini-2.5-flash-lite", "google/gemini-2.5-flash"],
+  openai: ["gpt-4o-mini", "gpt-4.1-mini"],
 };
 
 interface UsageRow {
@@ -79,15 +86,16 @@ test.describe("a call site uses its configured model", () => {
       "no default-tier row for this call site; is the migration applied?",
     ).toBeTruthy();
 
-    const overrideModel = OVERRIDE_BY_PROVIDER[original.provider];
+    const candidates = OVERRIDE_CANDIDATES_BY_PROVIDER[original.provider];
     expect(
-      overrideModel,
-      `no override model known for provider "${original.provider}"; add one to OVERRIDE_BY_PROVIDER`,
+      candidates,
+      `no override models known for provider "${original.provider}"; add some to OVERRIDE_CANDIDATES_BY_PROVIDER`,
     ).toBeTruthy();
+    const overrideModel = candidates.find((m) => m !== original!.model);
     expect(
       overrideModel,
-      "the override must differ from the configured model",
-    ).not.toBe(original.model);
+      `every candidate override for "${original.provider}" is the configured model; add another to OVERRIDE_CANDIDATES_BY_PROVIDER`,
+    ).toBeTruthy();
 
     await restAsService(ROW, {
       method: "PATCH",

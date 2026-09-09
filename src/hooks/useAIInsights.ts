@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogActivity } from "./useLogActivity";
 import type { AIInsights, AIQuality } from "@/types/aiInsights";
@@ -113,18 +114,14 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       setError(null);
 
       try {
-        // Get current user for tracking
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
         // Fetch artefact data
         const artefact = await fetchArtefact();
         if (!artefact) {
           throw new Error("Failed to fetch artefact data");
         }
 
-        // Call edge function instead of direct n8n webhook
+        // The edge function derives the caller from the JWT; the body never
+        // names a user.
         const { data: response, error: fnError } =
           await supabase.functions.invoke("ai-insights", {
             body: {
@@ -134,7 +131,6 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
               content: artefact.content,
               tags: artefact.tags || [],
               metadata: { id: itemId },
-              user_id: user?.id,
             },
           });
 
@@ -199,16 +195,30 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
   );
 
   const refreshInsights = useCallback(async () => {
-    // Delete existing cache
-    await supabase
+    // Delete the cached row. Under row-level security only the item's owner
+    // may delete it; for anyone else the delete matches zero rows and reports
+    // no error. Without this check the panel used to blank, the edge function
+    // charged credits, and the upsert then failed on the same policy.
+    const { data: deleted, error: deleteError } = await supabase
       .from("ai_insights")
       .delete()
       .eq("item_type", itemType)
-      .eq("item_id", itemId);
+      .eq("item_id", itemId)
+      .select("id");
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    if ((deleted?.length ?? 0) === 0 && insights) {
+      toast.error("Only the owner can refresh insights");
+      return;
+    }
 
     setInsights(null);
     await generateInsights(true);
-  }, [itemType, itemId, generateInsights]);
+  }, [itemType, itemId, insights, generateInsights]);
 
   useEffect(() => {
     let mounted = true;

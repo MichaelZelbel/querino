@@ -292,7 +292,7 @@ Common HTTP status codes:
 
 Returns an XML sitemap for SEO crawlers containing all public pages and content.
 
-**Response:** XML sitemap with all static pages and dynamic content (blog posts, prompts, skills, workflows, claws).
+**Response:** XML sitemap with all static pages and dynamic content (blog posts, prompts, skills, workflows, prompt kits).
 
 **Headers:**
 - `Content-Type: application/xml; charset=utf-8`

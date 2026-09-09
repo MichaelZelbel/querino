@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,43 +26,27 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const token = authHeader.replace("Bearer ", "");
 
-    // Determine if service-role or user token
-    const isServiceRole = token === serviceKey;
-
+    // The identity comes from the JWT and from nowhere else. An earlier
+    // version compared the bearer token to the service-role key and then read
+    // user_id from the body, which is the one thing CLAUDE.md forbids. The only
+    // caller is the sync button in the browser, and it always sends a user
+    // session, so there is no machine path to keep.
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-
-    let userId: string;
-    if (isServiceRole) {
-      // For service-role calls, user_id must be in the body
-      const body = await req.json();
-      if (!body.user_id) {
-        return json({ error: "user_id required for service-role calls" }, 400);
-      }
-      userId = body.user_id;
-      return await handleSync(
-        createClient(supabaseUrl, serviceKey),
-        userId,
-        body.artifact_type,
-        body.artifact_id,
-      );
-    } else {
-      const { data: claimsData, error: claimsErr } =
-        await userClient.auth.getClaims(token);
-      if (claimsErr || !claimsData?.claims) {
-        return json({ error: "Unauthorized" }, 401);
-      }
-      userId = claimsData.claims.sub as string;
-      const body = await req.json();
-      return await handleSync(
-        createClient(supabaseUrl, serviceKey),
-        userId,
-        body.artifact_type,
-        body.artifact_id,
-        true,
-      );
+    const { data: claimsData, error: claimsErr } =
+      await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) {
+      return json({ error: "Unauthorized" }, 401);
     }
+    const userId = claimsData.claims.sub as string;
+    const body = await req.json();
+    return await handleSync(
+      createClient(supabaseUrl, serviceKey),
+      userId,
+      body.artifact_type,
+      body.artifact_id,
+    );
   } catch (err) {
     console.error("render-for-menerio error:", err);
     return json(
@@ -76,7 +61,6 @@ async function handleSync(
   userId: string,
   artifactType: string,
   artifactId: string,
-  checkOwnership = false,
 ) {
   // Validate input
   if (!artifactType || !VALID_TYPES.includes(artifactType as ArtifactType)) {
@@ -104,12 +88,7 @@ async function handleSync(
   }
 
   // 2. Load artifact
-  const tableName =
-    artifactType === "prompt"
-      ? "prompts"
-      : artifactType === "prompt_kit"
-        ? "prompt_kits"
-        : `${artifactType}s`;
+  const tableName = tableFor(artifactType);
   const { data: artifact, error: artErr } = await adminClient
     .from(tableName)
     .select("*")
@@ -120,8 +99,8 @@ async function handleSync(
     return json({ error: `Artefakt nicht gefunden` }, 404);
   }
 
-  // Check ownership
-  if (checkOwnership && artifact.author_id !== userId) {
+  // Only the author may push their own artifact into their own Menerio.
+  if (artifact.author_id !== userId) {
     return json(
       { error: "Du kannst nur eigene Artefakte synchronisieren" },
       403,
@@ -157,7 +136,9 @@ async function handleSync(
 
   const body = buildBody(artifactType as ArtifactType, artifact);
 
-  const sourceUrl = `https://querino.ai/${tableName}/${artifact.slug || artifact.id}`;
+  // The public route, not the table name: prompt kits live under
+  // /prompt-kits/, and the table-derived /prompt_kits/ link was a 404.
+  const sourceUrl = publicUrlFor(artifactType, artifact.slug || artifact.id);
 
   const notePayload = {
     source_id: artifact.id,

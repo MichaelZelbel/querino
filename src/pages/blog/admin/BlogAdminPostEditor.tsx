@@ -116,13 +116,21 @@ export default function BlogAdminPostEditor() {
   }, [post, isNew]);
 
   const handleSave = async (newStatus?: BlogPostStatus) => {
+    const status = newStatus || formData.status;
+    // Stamp the publication date only when the post actually goes live for the
+    // first time. Re-saving an already published post has to keep its original
+    // date, because the RSS feed and the article's structured data are ordered
+    // by it and the header button always saves as published.
+    const isBecomingPublished =
+      status === "published" &&
+      (!formData.published_at || formData.status !== "published");
+
     const dataToSave = {
       ...formData,
-      status: newStatus || formData.status,
-      published_at:
-        newStatus === "published"
-          ? new Date().toISOString()
-          : formData.published_at,
+      status,
+      published_at: isBecomingPublished
+        ? new Date().toISOString()
+        : formData.published_at,
     };
 
     if (isNew) {

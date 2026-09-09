@@ -4,7 +4,10 @@
 // is a paid call to the AI gateway, so an open endpoint here is a bill anyone
 // can run up (see _shared/internalAuth.ts).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  createClient,
+  type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
 import { resolveConfig, type DbLike } from "../_shared/llm-config.ts";
 import { callProvider } from "../_shared/llm-providers.ts";
@@ -45,6 +48,24 @@ interface AIClassification {
   category: string;
   confidence: number;
   reason: string;
+}
+
+// Where each moderated artifact type lives and which column takes it off the
+// public site. A comment has no row of its own, so it is not in this map and
+// the worker never unpublishes anything for it.
+const ARTIFACT_TABLES: Record<
+  string,
+  { table: string; unpublish: Record<string, boolean> }
+> = {
+  prompt: { table: "prompts", unpublish: { is_public: false } },
+  skill: { table: "skills", unpublish: { published: false } },
+  prompt_kit: { table: "prompt_kits", unpublish: { published: false } },
+  workflow: { table: "workflows", unpublish: { published: false } },
+};
+
+interface ArtifactRow {
+  title: string | null;
+  author_id: string | null;
 }
 
 async function classifyContent(content: string): Promise<AIClassification> {
@@ -133,94 +154,58 @@ async function classifyContent(content: string): Promise<AIClassification> {
   return JSON.parse(toolCall.function.arguments) as AIClassification;
 }
 
-async function unpublishArtifact(
-  serviceClient: ReturnType<typeof createClient>,
+// The title and author of the artifact a queue row points at. Null when the
+// type has no table (a comment) or the row is gone.
+async function loadArtifact(
+  serviceClient: SupabaseClient,
   itemType: string,
   itemId: string,
-): Promise<string | null> {
-  // Get artifact title for the email
-  let title: string | null = null;
-
-  if (itemType === "prompt") {
-    const { data } = await serviceClient
-      .from("prompts")
-      .select("title")
-      .eq("id", itemId)
-      .maybeSingle();
-    title = data?.title || null;
-    await serviceClient
-      .from("prompts")
-      .update({ is_public: false })
-      .eq("id", itemId);
-  } else if (itemType === "skill") {
-    const { data } = await serviceClient
-      .from("skills")
-      .select("title")
-      .eq("id", itemId)
-      .maybeSingle();
-    title = data?.title || null;
-    await serviceClient
-      .from("skills")
-      .update({ published: false })
-      .eq("id", itemId);
-  } else if (itemType === "prompt_kit") {
-    const { data } = await serviceClient
-      .from("prompt_kits")
-      .select("title")
-      .eq("id", itemId)
-      .maybeSingle();
-    title = data?.title || null;
-    await serviceClient
-      .from("prompt_kits")
-      .update({ published: false })
-      .eq("id", itemId);
-  } else if (itemType === "workflow") {
-    const { data } = await serviceClient
-      .from("workflows")
-      .select("title")
-      .eq("id", itemId)
-      .maybeSingle();
-    title = data?.title || null;
-    await serviceClient
-      .from("workflows")
-      .update({ published: false })
-      .eq("id", itemId);
-  }
-
-  return title;
+): Promise<ArtifactRow | null> {
+  const target = ARTIFACT_TABLES[itemType];
+  if (!target) return null;
+  const { data } = await serviceClient
+    .from(target.table)
+    .select("title, author_id")
+    .eq("id", itemId)
+    .maybeSingle();
+  return (data as ArtifactRow | null) ?? null;
 }
 
-async function incrementStrike(
-  serviceClient: ReturnType<typeof createClient>,
-  userId: string,
-) {
-  const { data: existing } = await serviceClient
-    .from("user_suspensions")
-    .select("id, strike_count")
-    .eq("user_id", userId)
-    .maybeSingle();
+async function unpublishArtifact(
+  serviceClient: SupabaseClient,
+  itemType: string,
+  itemId: string,
+): Promise<void> {
+  const target = ARTIFACT_TABLES[itemType];
+  if (!target) return;
+  await serviceClient
+    .from(target.table)
+    .update(target.unpublish)
+    .eq("id", itemId);
+}
 
-  if (existing) {
-    const newStrikes = existing.strike_count + 1;
-    const shouldSuspend = newStrikes >= STRIKE_THRESHOLD;
-    await serviceClient
-      .from("user_suspensions")
-      .update({
-        strike_count: newStrikes,
-        suspended: shouldSuspend,
-        suspended_at: shouldSuspend ? new Date().toISOString() : null,
-        suspension_reason: shouldSuspend
-          ? `Auto-suspended after ${newStrikes} content violations (AI moderation)`
-          : null,
-      })
-      .eq("id", existing.id);
-  } else {
-    await serviceClient.from("user_suspensions").insert({
-      user_id: userId,
-      strike_count: 1,
-      suspended: false,
-    });
+// One statement in the database, so overlapping ticks cannot each read the
+// same count and write the same count plus one.
+async function incrementStrike(
+  serviceClient: SupabaseClient,
+  userId: string,
+): Promise<{ strikeCount: number; suspended: boolean }> {
+  const { data, error } = await serviceClient.rpc("increment_user_strike", {
+    p_user_id: userId,
+    p_threshold: STRIKE_THRESHOLD,
+  });
+  if (error) {
+    // The artifact is already unpublished and the event logged, so a retry
+    // would classify and charge again. Report it and move on instead.
+    console.error("Failed to record strike for", userId, error);
+    return { strikeCount: 0, suspended: false };
   }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    { strike_count: number; suspended: boolean } | undefined;
+  return {
+    strikeCount: row?.strike_count ?? 0,
+    suspended: row?.suspended ?? false,
+  };
 }
 
 async function sendViolationEmail(
@@ -228,7 +213,7 @@ async function sendViolationEmail(
   itemType: string,
   title: string | null,
   category: string,
-  serviceClient: ReturnType<typeof createClient>,
+  serviceClient: SupabaseClient,
 ) {
   if (!RESEND_API_KEY || !LOVABLE_API_KEY) {
     console.warn("Resend not configured, skipping email notification");
@@ -263,7 +248,7 @@ async function sendViolationEmail(
       <p><strong>Category:</strong> ${categoryLabel}</p>
       <p>Your artifact has been set to private. You can still access and edit it in your library.</p>
       <p>If you believe this is a mistake, please contact us at <a href="mailto:support@querino.ai">support@querino.ai</a> and we'll review it manually.</p>
-      <p style="color: #666; font-size: 14px; margin-top: 30px;">— The Querino Team</p>
+      <p style="color: #666; font-size: 14px; margin-top: 30px;">The Querino Team</p>
     </div>
   `;
 
@@ -302,23 +287,26 @@ Deno.serve(async (req: Request) => {
   try {
     const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch pending items
-    const { data: pendingItems, error: fetchError } = await serviceClient
-      .from("moderation_review_queue")
-      .select("id, item_type, item_id, user_id, content_snapshot, retry_count")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(BATCH_SIZE);
+    // Claim a batch in one statement. Rows come back already marked
+    // 'processing', so a second tick (or the admin button pressed twice)
+    // cannot pick up the same row and classify, strike and email it again.
+    // Rows stuck in 'processing' for ten minutes are handed out again.
+    const { data: claimedItems, error: fetchError } = await serviceClient.rpc(
+      "claim_moderation_review_queue",
+      { batch_size: BATCH_SIZE },
+    );
 
     if (fetchError) {
-      console.error("Failed to fetch queue:", fetchError);
+      console.error("Failed to claim queue rows:", fetchError);
       return new Response(JSON.stringify({ error: "Failed to fetch queue" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!pendingItems || pendingItems.length === 0) {
+    const pendingItems = (claimedItems ?? []) as QueueItem[];
+
+    if (pendingItems.length === 0) {
       return new Response(
         JSON.stringify({ processed: 0, message: "No pending items" }),
         {
@@ -336,7 +324,7 @@ Deno.serve(async (req: Request) => {
     let violations = 0;
     let errors = 0;
 
-    for (const item of pendingItems as QueueItem[]) {
+    for (const item of pendingItems) {
       try {
         const classification = await classifyContent(item.content_snapshot);
         console.log(
@@ -347,12 +335,36 @@ Deno.serve(async (req: Request) => {
           !classification.safe &&
           classification.confidence >= CONFIDENCE_AUTO_UNPUBLISH
         ) {
-          // HIGH confidence violation → auto-unpublish
-          const title = await unpublishArtifact(
+          // HIGH confidence violation: auto-unpublish. First make sure the
+          // artifact really belongs to the user the queue row names. The row
+          // is filed by moderate-content from the caller's JWT, and the caller
+          // must not be able to get someone else's artifact taken down.
+          const artifact = await loadArtifact(
             serviceClient,
             item.item_type,
             item.item_id,
           );
+
+          if (artifact && artifact.author_id !== item.user_id) {
+            console.warn(
+              `Item ${item.id}: user ${item.user_id} is not the author of ${item.item_type} ${item.item_id}, skipping`,
+            );
+            await serviceClient
+              .from("moderation_review_queue")
+              .update({
+                status: "reviewed",
+                ai_category: classification.category,
+                ai_confidence: classification.confidence,
+                ai_reason: `Not enforced: queue row user ${item.user_id} is not the author of this ${item.item_type}. AI said: ${classification.reason}`,
+                reviewed_at: new Date().toISOString(),
+              })
+              .eq("id", item.id);
+            processed++;
+            continue;
+          }
+
+          await unpublishArtifact(serviceClient, item.item_type, item.item_id);
+          const title = artifact?.title ?? null;
 
           // Log moderation event
           await serviceClient.from("moderation_events").insert({
@@ -368,7 +380,12 @@ Deno.serve(async (req: Request) => {
           });
 
           // Increment strike
-          await incrementStrike(serviceClient, item.user_id);
+          const strike = await incrementStrike(serviceClient, item.user_id);
+          if (strike.suspended) {
+            console.log(
+              `User ${item.user_id} suspended after ${strike.strikeCount} strikes`,
+            );
+          }
 
           // Send email
           await sendViolationEmail(
@@ -393,7 +410,7 @@ Deno.serve(async (req: Request) => {
 
           violations++;
         } else {
-          // Safe or low confidence → mark as reviewed
+          // Safe or low confidence: mark as reviewed
           await serviceClient
             .from("moderation_review_queue")
             .update({
@@ -411,6 +428,8 @@ Deno.serve(async (req: Request) => {
         console.error(`Error processing item ${item.id}:`, itemErr);
         const newRetryCount = item.retry_count + 1;
 
+        // Back to 'pending' so the next claim picks it up again, or 'error'
+        // once it has failed MAX_RETRIES times.
         await serviceClient
           .from("moderation_review_queue")
           .update({

@@ -18,7 +18,7 @@ import {
   Package,
   Trash2,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import {
   useCollection,
   useCollectionItems,
@@ -44,7 +44,7 @@ type CollectionItemData =
 export default function CollectionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [activeFilter, setActiveFilter] = useState<string>("all");
 
   const { data: collection, isLoading: loadingCollection } = useCollection(

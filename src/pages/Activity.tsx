@@ -2,12 +2,12 @@ import { Activity as ActivityIcon } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useOwnActivityFeed } from "@/hooks/useActivityEvents";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Link } from "@/lib/router-compat";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 
 export default function Activity() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useOwnActivityFeed(user?.id);

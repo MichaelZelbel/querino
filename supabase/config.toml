@@ -77,7 +77,7 @@ verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
 verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
 
 [functions.fetch-skill-md]
-verify_jwt = false  # TODO: no caller found in this repository
+verify_jwt = false  # public relay for a public GitHub file; sourcePath is validated in the function
 
 # ── Everything else: every caller sends a Supabase JWT ───────────────────────
 # Called from the browser through supabase.functions.invoke, which always sends

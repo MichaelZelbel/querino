@@ -495,7 +495,9 @@ export default function PromptDetail({
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Users className="h-4 w-4" />
-                  <span>{prompt.copies_count.toLocaleString()} copies</span>
+                  <span>
+                    {(prompt.copies_count ?? 0).toLocaleString()} copies
+                  </span>
                 </div>
               </div>
             </div>
@@ -756,7 +758,7 @@ export default function PromptDetail({
               onClose={() => setShowRefineModal(false)}
               promptContent={prompt.content}
               promptTitle={prompt.title}
-              promptId={prompt.id}
+              promptId={isAuthor ? prompt.id : undefined}
               isPublic={prompt.is_public}
               onPromptUpdated={fetchPrompt}
               userId={user?.id}
@@ -810,6 +812,8 @@ export default function PromptDetail({
                 open={showVersionHistory}
                 onOpenChange={setShowVersionHistory}
                 promptId={prompt.id}
+                promptSlug={prompt.slug}
+                onRestoreComplete={fetchPrompt}
                 currentPrompt={{
                   id: prompt.id,
                   title: prompt.title,
@@ -885,6 +889,7 @@ export default function PromptDetail({
         <AIInsightsPanel
           itemType="prompt"
           itemId={prompt.id}
+          isOwner={!!isAuthor}
           teamId={(prompt as any).team_id}
         />
       </div>

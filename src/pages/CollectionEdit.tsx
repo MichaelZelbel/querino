@@ -44,7 +44,7 @@ import {
   GripVertical,
   Save,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import {
   useCollection,
   useCollectionItems,
@@ -69,7 +69,7 @@ type CollectionItemData =
 export default function CollectionEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
 
   const { data: collection, isLoading: loadingCollection } = useCollection(
     id || "",

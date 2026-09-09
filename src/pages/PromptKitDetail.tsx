@@ -548,7 +548,11 @@ export default function PromptKitDetail({
       </main>
       <Footer />
 
-      <AIInsightsPanel itemType="prompt_kit" itemId={kit.id} />
+      <AIInsightsPanel
+        itemType="prompt_kit"
+        itemId={kit.id}
+        isOwner={!!isAuthor}
+      />
 
       <TranslateModal
         open={translateOpen}

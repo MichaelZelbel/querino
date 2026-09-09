@@ -33,7 +33,17 @@ export function useAICreditsGate() {
       return true;
     }
 
-    if (!credits || credits.remainingCredits <= 0) {
+    // A missing balance is not a zero balance. `credits` is also null when the
+    // allowance view errored or returned no row, and until 2026-09-08 that was
+    // read as "out of credits": one failed fetch told the user they had none
+    // and locked the coach, the wizard, insights and translation for the whole
+    // session. The server charges and refuses on its own, so the honest answer
+    // to "I do not know" is to let the call through.
+    if (!credits) {
+      return true;
+    }
+
+    if (credits.remainingCredits <= 0) {
       const resetDate = credits?.periodEnd
         ? format(new Date(credits.periodEnd), "dd MMM 'at' h:mm a")
         : null;

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { hasServiceRoleKey } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,14 +13,24 @@ if (!ADMIN_EMAIL) {
 }
 const FROM_EMAIL = "Querino <support@querino.ai>";
 
-type EventType =
-  | "signup"
-  | "subscribe"
-  | "unsubscribe"
-  | "delete_account"
+// Every event this endpoint knows how to write up. A request naming anything
+// else is refused with a 400 rather than falling through to a template lookup
+// that returns undefined and throws.
+const EVENT_TYPES = [
+  "signup",
+  "subscribe",
+  "unsubscribe",
+  "delete_account",
   // Not a user event. The nightly model-catalogue sync raising its hand,
   // carrying metadata.subject and metadata.lines instead of an account.
-  | "llm_model_alert";
+  "llm_model_alert",
+] as const;
+
+type EventType = (typeof EVENT_TYPES)[number];
+
+function isEventType(value: unknown): value is EventType {
+  return (EVENT_TYPES as readonly string[]).includes(String(value));
+}
 
 interface NotifyRequest {
   eventType: EventType;
@@ -147,13 +158,10 @@ serve(async (req) => {
     logStep("Function started");
 
     // Server-to-server only: both callers (delete-my-account, the signup DB
-    // trigger) authenticate with the service-role key. Reject everyone else —
+    // trigger) authenticate with the service-role key. Reject everyone else:
     // this endpoint sends email to the admin and must not be publicly
-    // triggerable.
-    const authHeader = req.headers.get("Authorization") || "";
-    const bearer = authHeader.replace(/^Bearer\s+/i, "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!serviceRoleKey || bearer !== serviceRoleKey) {
+    // triggerable. The comparison is constant-time (see internalAuth.ts).
+    if (!hasServiceRoleKey(req)) {
       logStep("Rejected unauthorized caller");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -174,6 +182,19 @@ serve(async (req) => {
 
     if (!payload.eventType || !payload.userEmail) {
       throw new Error("Missing required fields: eventType and userEmail");
+    }
+
+    if (!isEventType(payload.eventType)) {
+      logStep("Rejected unknown eventType", { eventType: payload.eventType });
+      return new Response(
+        JSON.stringify({
+          error: `Unknown eventType. Expected one of: ${EVENT_TYPES.join(", ")}`,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     const subject = getSubjectLine(payload.eventType, payload.userEmail);

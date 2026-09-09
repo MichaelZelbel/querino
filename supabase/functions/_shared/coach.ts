@@ -279,9 +279,20 @@ ${truncatedCanvas}
         );
       }
 
+      // Forced tool arguments are almost always an object, but "almost" has
+      // cost a 500 before: a null or a bare string parses fine and then
+      // throws on property access.
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        parsed = {};
+      }
       const assistantMessage =
         (parsed.assistantMessage ?? "").toString().trim() || "Done.";
-      const canvas = parsed.canvas ?? { updated: false };
+      const canvas =
+        parsed.canvas &&
+        typeof parsed.canvas === "object" &&
+        !Array.isArray(parsed.canvas)
+          ? parsed.canvas
+          : { updated: false };
       // Force chat_only to never edit
       if (mode === "chat_only") canvas.updated = false;
       // If updated=true but no content, downgrade to no-op

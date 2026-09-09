@@ -664,6 +664,7 @@ export default function WorkflowDetail({
         <AIInsightsPanel
           itemType="workflow"
           itemId={workflow.id}
+          isOwner={!!isAuthor}
           teamId={(workflow as any).team_id}
         />
       </div>

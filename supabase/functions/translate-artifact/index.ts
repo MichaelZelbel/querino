@@ -47,6 +47,16 @@ serve(async (req) => {
 
   try {
     const user_id = await getCallerUserId(req);
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return new Response(
+        JSON.stringify({ error: "Request body must be a JSON object" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     const {
       artifactType,
       title,
@@ -55,9 +65,14 @@ serve(async (req) => {
       tags,
       sourceLanguage,
       targetLanguage,
-    } = await req.json();
+    } = body as Record<string, unknown>;
 
-    if (!sourceLanguage || !targetLanguage) {
+    if (
+      typeof sourceLanguage !== "string" ||
+      typeof targetLanguage !== "string" ||
+      !sourceLanguage ||
+      !targetLanguage
+    ) {
       return new Response(
         JSON.stringify({
           error: "sourceLanguage and targetLanguage are required",
@@ -88,17 +103,20 @@ serve(async (req) => {
     // templateVars before, so its one advertised placeholder would have
     // collapsed to an empty string.
     const templateVars = {
-      artifactType: artifactType || "artifact",
+      artifactType:
+        typeof artifactType === "string" && artifactType
+          ? artifactType
+          : "artifact",
       sourceLanguage,
       targetLanguage,
     };
     const systemPrompt = interpolatePrompt(SYSTEM_PROMPT, templateVars) ?? "";
 
     // Truncate content to keep token usage predictable.
-    const truncatedContent = (content ?? "").toString().slice(0, 16000);
+    const truncatedContent = String(content ?? "").slice(0, 16000);
     const userPrompt = `Title: ${title || ""}
 Description: ${description || ""}
-Tags: ${(tags || []).join(", ")}
+Tags: ${Array.isArray(tags) ? tags.map((t) => String(t)).join(", ") : ""}
 ---
 Content:
 ${truncatedContent}`;
@@ -106,7 +124,6 @@ ${truncatedContent}`;
     const result = await callLovableAI({
       user_id,
       feature: "translate-artifact",
-      model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -122,7 +139,7 @@ ${truncatedContent}`;
         artifact: artifactType || "unknown",
         source: sourceLanguage,
         target: targetLanguage,
-        content_length: (content ?? "").length,
+        content_length: String(content ?? "").length,
       },
     });
 

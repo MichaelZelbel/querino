@@ -94,10 +94,13 @@ export function useSearchPrompts({
       }
 
       if (isSearching) {
-        // 'simple' instead of 'english' — works for German/multilingual.
+        // 'simple' instead of 'english' so German and mixed catalogues match.
         // True semantic intelligence comes from the embedding merge below.
+        // `fts` is a stored generated column over title, description and
+        // content (migration 20260908210000). PostgREST cannot filter on a
+        // comma-separated list of columns; it used to read only the title.
         query = query
-          .textSearch("title,description,content", trimmed, {
+          .textSearch("fts", trimmed, {
             type: "websearch",
             config: "simple",
           })
@@ -140,6 +143,7 @@ export function useSearchPrompts({
           trimmed,
           ftsResults,
           fetchPromptsByIds,
+          { category, tag },
         );
       }
 

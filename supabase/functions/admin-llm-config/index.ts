@@ -346,12 +346,24 @@ Deno.serve(async (req: Request) => {
       if (patch.max_tokens !== undefined) update.max_tokens = patch.max_tokens;
       if (patch.enabled !== undefined) update.enabled = patch.enabled;
 
-      const { error } = await admin
+      // Only the default tier is seeded by migration. An UPDATE aimed at a
+      // free or premium row that does not exist matches nothing and used to
+      // answer ok anyway, so the panel showed a save that never happened.
+      // Not an upsert on purpose: rows are created by the migration, and a
+      // silent insert here would be a second, unreviewed way to make one.
+      const { data: saved, error } = await admin
         .from("llm_call_configs")
         .update(update)
         .eq("call_site", callSite)
-        .eq("tier", tier);
+        .eq("tier", tier)
+        .select("call_site");
       if (error) throw error;
+      if (!saved || saved.length === 0) {
+        return json(
+          { error: "no config row for this call site and tier" },
+          404,
+        );
+      }
 
       __clearConfigCache();
       return json({ ok: true, call_site: callSite, tier });
@@ -415,8 +427,10 @@ Deno.serve(async (req: Request) => {
         callSite,
         tier,
         {
-          provider: DEFAULT_PROVIDER,
-          model: DEFAULT_MODEL,
+          // The same fallback the call site itself uses (llm.ts), so the
+          // "code default" column and the test agree.
+          provider: meta?.provider ?? DEFAULT_PROVIDER,
+          model: meta?.model ?? DEFAULT_MODEL,
           systemPrompt: getDefaultSystemPrompt(callSite),
         },
       );
@@ -436,6 +450,27 @@ Deno.serve(async (req: Request) => {
         templateVars,
       );
 
+      // A call site that forces a tool call must be tested with a forced tool
+      // call, otherwise the test says "fine" for a provider or model that
+      // answers in prose and the real feature is down. The probe tool is
+      // generic; what matters is that the reply comes back as a tool call.
+      const probeTools = meta?.requiresTools
+        ? [
+            {
+              type: "function" as const,
+              function: {
+                name: "respond",
+                description: "Return your answer.",
+                parameters: {
+                  type: "object",
+                  properties: { answer: { type: "string" } },
+                  required: ["answer"],
+                },
+              },
+            },
+          ]
+        : undefined;
+
       const startedAt = Date.now();
       try {
         const result = await callProvider({
@@ -444,6 +479,10 @@ Deno.serve(async (req: Request) => {
           apiKey,
           temperature: effective.temperature,
           maxTokens: effective.max_tokens,
+          tools: probeTools,
+          toolChoice: probeTools
+            ? { type: "function", function: { name: "respond" } }
+            : undefined,
           messages: systemPrompt
             ? [
                 { role: "system", content: systemPrompt },
@@ -451,11 +490,37 @@ Deno.serve(async (req: Request) => {
               ]
             : [{ role: "user", content: userPrompt }],
         });
+        let content = result.content;
+        if (probeTools) {
+          const call = result.tool_calls[0];
+          if (!call?.function?.arguments) {
+            return json({
+              ok: false,
+              provider: effective.provider,
+              model: result.model,
+              error:
+                "This call site needs tool calling and the model answered in prose instead of calling the tool. Pick a model that supports tools.",
+              content: result.content,
+              config_source: source,
+              latency_ms: Date.now() - startedAt,
+              usage: result.usage,
+            });
+          }
+          try {
+            const args = JSON.parse(call.function.arguments);
+            content =
+              typeof args?.answer === "string"
+                ? args.answer
+                : call.function.arguments;
+          } catch {
+            content = call.function.arguments;
+          }
+        }
         return json({
           ok: true,
           provider: effective.provider,
           model: result.model,
-          content: result.content,
+          content,
           config_source: source,
           latency_ms: Date.now() - startedAt,
           usage: result.usage,

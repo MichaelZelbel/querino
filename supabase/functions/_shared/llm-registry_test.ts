@@ -16,7 +16,13 @@
 //   ai-moderate-content classify_content
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { CALL_SITES, getCallSiteMeta } from "./llm-registry.ts";
+import {
+  CALL_SITES,
+  getCallSiteMeta,
+  PROVIDER_PRESETS,
+  PROVIDER_SUPPORTS_TOOLS,
+  providerSupportsTools,
+} from "./llm-registry.ts";
 
 const SENDS_A_TOOLS_ARRAY = [
   "ai-moderate-content",
@@ -70,4 +76,31 @@ Deno.test("getCallSiteMeta carries the flag through", () => {
   assertEquals(getCallSiteMeta("skill-coach")?.requiresTools, true);
   assertEquals(getCallSiteMeta("prompt-wizard")?.requiresTools, false);
   assertEquals(getCallSiteMeta("no-such-call-site"), undefined);
+});
+
+// Which providers a tool-calling call site may be pointed at. The two that
+// are false have transport code for tools since 2026-09-08 but no live check,
+// and admin-llm-config refuses a save that pairs them with a requiresTools
+// call site. The presets carry the same answer so the panel can say so first.
+Deno.test("supportsTools is true for the OpenAI-dialect providers only", () => {
+  assertEquals(PROVIDER_SUPPORTS_TOOLS, {
+    lovable: true,
+    openrouter: true,
+    openai: true,
+    anthropic: false,
+    gemini: false,
+  });
+  assertEquals(providerSupportsTools("openrouter"), true);
+  assertEquals(providerSupportsTools("anthropic"), false);
+  assertEquals(providerSupportsTools("gemini"), false);
+});
+
+Deno.test("every preset says the same thing about tools as the flag", () => {
+  for (const preset of PROVIDER_PRESETS) {
+    assertEquals(
+      preset.supportsTools,
+      PROVIDER_SUPPORTS_TOOLS[preset.provider],
+      preset.provider,
+    );
+  }
 });

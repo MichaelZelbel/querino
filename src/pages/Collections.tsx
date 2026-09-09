@@ -1,14 +1,14 @@
 import { Link } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import { Plus, Folder, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useCollections } from "@/hooks/useCollections";
 import { CollectionCard } from "@/components/collections/CollectionCard";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
 export default function Collections() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { data: myCollections, isLoading: loadingMy } = useCollections(
     user?.id,
   );

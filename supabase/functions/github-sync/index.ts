@@ -6,66 +6,28 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface Prompt {
-  id: string;
-  title: string;
-  slug: string | null;
-  description: string;
-  content: string;
-  category: string;
-  tags: string[] | null;
-  is_public: boolean | null;
-  rating_avg: number | null;
-  rating_count: number | null;
-  created_at: string;
-  updated_at: string;
-}
+// Paths and file bodies come from the same module the queue worker uses, so
+// a manual full sync writes exactly the files the worker would, and the
+// worker's recorded SHAs keep pointing at real blobs afterwards.
+import {
+  type ArtifactType,
+  buildPath,
+  generateMarkdown,
+  managedFolders,
+} from "../_shared/githubSyncFormat.ts";
 
-interface Skill {
+// A row from prompts, skills, workflows or prompt_kits. Only id and slug are
+// read here; generateMarkdown reads the rest.
+interface ArtifactRow {
   id: string;
-  title: string;
   slug: string | null;
-  description: string | null;
-  content: string;
-  category: string | null;
-  tags: string[] | null;
-  published: boolean | null;
-  rating_avg: number | null;
-  rating_count: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Workflow {
-  id: string;
   title: string;
-  slug: string | null;
-  description: string | null;
-  json: Record<string, unknown>;
-  category: string | null;
-  tags: string[] | null;
-  published: boolean | null;
-  rating_avg: number | null;
-  rating_count: number | null;
-  created_at: string;
-  updated_at: string;
-}
-interface PromptKit {
-  id: string;
-  title: string;
-  slug: string | null;
-  description: string | null;
-  content: string;
-  category: string | null;
-  tags: string[] | null;
-  published: boolean | null;
-  rating_avg: number | null;
-  rating_count: number | null;
-  created_at: string;
-  updated_at: string;
+  [key: string]: unknown;
 }
 
 interface GitHubFile {
+  artifactType: ArtifactType;
+  artifactId: string;
   path: string;
   content: string;
   sha?: string;
@@ -83,182 +45,6 @@ interface GitHubTreeEntry {
   mode: "100644";
   type: "blob";
   sha: string | null; // null = delete file
-}
-
-// Generate markdown content with YAML frontmatter
-function generatePromptMarkdown(prompt: Prompt): string {
-  const frontmatter = {
-    id: prompt.id,
-    title: prompt.title,
-    description: prompt.description,
-    category: prompt.category,
-    tags: prompt.tags || [],
-    is_public: prompt.is_public ?? false,
-    rating_avg: prompt.rating_avg ?? 0,
-    rating_count: prompt.rating_count ?? 0,
-    created_at: prompt.created_at,
-    updated_at: prompt.updated_at,
-  };
-
-  return `---
-${Object.entries(frontmatter)
-  .map(([key, value]) => {
-    if (Array.isArray(value)) {
-      return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
-    }
-    if (
-      typeof value === "string" &&
-      (value.includes(":") || value.includes('"'))
-    ) {
-      return `${key}: "${value.replace(/"/g, '\\"')}"`;
-    }
-    return `${key}: ${value}`;
-  })
-  .join("\n")}
----
-
-# ${prompt.title}
-
-${prompt.description}
-
-## Prompt Content
-
-\`\`\`
-${prompt.content}
-\`\`\`
-`;
-}
-
-function generateSkillMarkdown(skill: Skill): string {
-  const frontmatter = {
-    id: skill.id,
-    title: skill.title,
-    description: skill.description || "",
-    category: skill.category || "general",
-    tags: skill.tags || [],
-    published: skill.published ?? false,
-    rating_avg: skill.rating_avg ?? 0,
-    rating_count: skill.rating_count ?? 0,
-    created_at: skill.created_at,
-    updated_at: skill.updated_at,
-  };
-
-  return `---
-${Object.entries(frontmatter)
-  .map(([key, value]) => {
-    if (Array.isArray(value)) {
-      return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
-    }
-    if (
-      typeof value === "string" &&
-      (value.includes(":") || value.includes('"'))
-    ) {
-      return `${key}: "${value.replace(/"/g, '\\"')}"`;
-    }
-    return `${key}: ${value}`;
-  })
-  .join("\n")}
----
-
-# ${skill.title}
-
-${skill.description || ""}
-
-## Skill Content
-
-${skill.content}
-`;
-}
-
-function generateWorkflowMarkdown(workflow: Workflow): string {
-  const frontmatter = {
-    id: workflow.id,
-    title: workflow.title,
-    description: workflow.description || "",
-    category: workflow.category || "general",
-    tags: workflow.tags || [],
-    published: workflow.published ?? false,
-    rating_avg: workflow.rating_avg ?? 0,
-    rating_count: workflow.rating_count ?? 0,
-    created_at: workflow.created_at,
-    updated_at: workflow.updated_at,
-  };
-
-  return `---
-${Object.entries(frontmatter)
-  .map(([key, value]) => {
-    if (Array.isArray(value)) {
-      return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
-    }
-    if (
-      typeof value === "string" &&
-      (value.includes(":") || value.includes('"'))
-    ) {
-      return `${key}: "${value.replace(/"/g, '\\"')}"`;
-    }
-    return `${key}: ${value}`;
-  })
-  .join("\n")}
----
-
-# ${workflow.title}
-
-${workflow.description || ""}
-
-## Workflow Definition
-
-\`\`\`json
-${JSON.stringify(workflow.json, null, 2)}
-\`\`\`
-`;
-}
-
-function generatePromptKitMarkdown(kit: PromptKit): string {
-  const frontmatter = {
-    id: kit.id,
-    title: kit.title,
-    description: kit.description || "",
-    category: kit.category || "general",
-    tags: kit.tags || [],
-    published: kit.published ?? false,
-    rating_avg: kit.rating_avg ?? 0,
-    rating_count: kit.rating_count ?? 0,
-    created_at: kit.created_at,
-    updated_at: kit.updated_at,
-  };
-
-  return `---
-${Object.entries(frontmatter)
-  .map(([key, value]) => {
-    if (Array.isArray(value)) {
-      return `${key}: [${value.map((v) => `"${v}"`).join(", ")}]`;
-    }
-    if (
-      typeof value === "string" &&
-      (value.includes(":") || value.includes('"'))
-    ) {
-      return `${key}: "${value.replace(/"/g, '\\"')}"`;
-    }
-    return `${key}: ${value}`;
-  })
-  .join("\n")}
----
-
-# ${kit.title}
-
-${kit.description || ""}
-
-${kit.content}
-`;
-}
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
 }
 
 // GitHub API helpers
@@ -541,7 +327,7 @@ async function initializeEmptyRepo(
 
   const readmeContent = `# Querino Sync
 
-This repository is synced from [Querino](https://querino.lovable.app).
+This repository is synced from [Querino](https://querino.ai).
 
 ## Structure
 
@@ -803,10 +589,10 @@ Deno.serve(async (req) => {
     // Fetch all artefacts
     console.log("Fetching artefacts for user:", user.id, "teamId:", teamId);
 
-    let prompts: Prompt[] = [];
-    let skills: Skill[] = [];
-    let workflows: Workflow[] = [];
-    let promptKits: PromptKit[] = [];
+    let prompts: ArtifactRow[] = [];
+    let skills: ArtifactRow[] = [];
+    let workflows: ArtifactRow[] = [];
+    let promptKits: ArtifactRow[] = [];
 
     if (teamId) {
       // Team artefacts
@@ -820,10 +606,10 @@ Deno.serve(async (req) => {
             .eq("team_id", teamId),
         ]);
 
-      prompts = (promptsResult.data as Prompt[]) || [];
-      skills = (skillsResult.data as Skill[]) || [];
-      workflows = (workflowsResult.data as Workflow[]) || [];
-      promptKits = (kitsResult.data as PromptKit[]) || [];
+      prompts = (promptsResult.data as ArtifactRow[]) || [];
+      skills = (skillsResult.data as ArtifactRow[]) || [];
+      workflows = (workflowsResult.data as ArtifactRow[]) || [];
+      promptKits = (kitsResult.data as ArtifactRow[]) || [];
     } else {
       // Personal artefacts
       const [promptsResult, skillsResult, workflowsResult, kitsResult] =
@@ -849,10 +635,10 @@ Deno.serve(async (req) => {
             .is("team_id", null),
         ]);
 
-      prompts = (promptsResult.data as Prompt[]) || [];
-      skills = (skillsResult.data as Skill[]) || [];
-      workflows = (workflowsResult.data as Workflow[]) || [];
-      promptKits = (kitsResult.data as PromptKit[]) || [];
+      prompts = (promptsResult.data as ArtifactRow[]) || [];
+      skills = (skillsResult.data as ArtifactRow[]) || [];
+      workflows = (workflowsResult.data as ArtifactRow[]) || [];
+      promptKits = (kitsResult.data as ArtifactRow[]) || [];
     }
 
     console.log(
@@ -871,73 +657,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prepare files - generate filenames from titles (unique within this sync batch only)
+    // Prepare files. Every path and body comes from _shared/githubSyncFormat,
+    // which is what the queue worker writes too. Before 2026-09-08 this
+    // function named files after the title, so it never recognised the
+    // worker's `<slug>-<shortid>.md` files as its own and deleted them all.
     const files: GitHubFile[] = [];
-    const basePath = githubFolder ? `${githubFolder}/` : "";
-
-    // Helper to generate locally-unique filenames within a folder
-    function generateUniqueFilename(
-      title: string,
-      existingNames: Set<string>,
-    ): string {
-      let baseName = slugify(title);
-      if (!baseName) baseName = "untitled";
-
-      let filename = baseName;
-      let counter = 1;
-
-      while (existingNames.has(filename)) {
-        filename = `${baseName}-${counter}`;
-        counter++;
+    const byType: Array<[ArtifactType, ArtifactRow[]]> = [
+      ["prompt", prompts],
+      ["skill", skills],
+      ["workflow", workflows],
+      ["prompt_kit", promptKits],
+    ];
+    for (const [type, rows] of byType) {
+      for (const row of rows) {
+        files.push({
+          artifactType: type,
+          artifactId: row.id,
+          path: buildPath(githubFolder, type, { slug: row.slug, id: row.id }),
+          content: generateMarkdown(type, row),
+        });
       }
-
-      existingNames.add(filename);
-      return filename;
-    }
-
-    // Track used filenames per folder to ensure uniqueness within this sync
-    const promptFilenames = new Set<string>();
-    const skillFilenames = new Set<string>();
-    const workflowFilenames = new Set<string>();
-    const kitFilenames = new Set<string>();
-
-    // Generate prompt files with locally-unique filenames
-    for (const prompt of prompts) {
-      const filename = generateUniqueFilename(prompt.title, promptFilenames);
-      files.push({
-        path: `${basePath}prompts/${filename}.md`,
-        content: generatePromptMarkdown(prompt),
-      });
-    }
-
-    // Generate skill files
-    for (const skill of skills) {
-      const filename = generateUniqueFilename(skill.title, skillFilenames);
-      files.push({
-        path: `${basePath}skills/${filename}.md`,
-        content: generateSkillMarkdown(skill),
-      });
-    }
-
-    // Generate workflow files
-    for (const workflow of workflows) {
-      const filename = generateUniqueFilename(
-        workflow.title,
-        workflowFilenames,
-      );
-      files.push({
-        path: `${basePath}workflows/${filename}.md`,
-        content: generateWorkflowMarkdown(workflow),
-      });
-    }
-
-    // Generate prompt kit files
-    for (const kit of promptKits) {
-      const filename = generateUniqueFilename(kit.title, kitFilenames);
-      files.push({
-        path: `${basePath}prompt-kits/${filename}.md`,
-        content: generatePromptKitMarkdown(kit),
-      });
     }
 
     console.log(`Preparing to commit ${files.length} files`);
@@ -965,12 +704,7 @@ Deno.serve(async (req) => {
       currentCommitSha!,
       githubToken,
     );
-    const managedPaths = [
-      `${basePath}prompts/`,
-      `${basePath}skills/`,
-      `${basePath}workflows/`,
-      `${basePath}prompt-kits/`,
-    ];
+    const managedPaths = managedFolders(githubFolder);
 
     // Find existing files in our managed folders that should be deleted
     const existingManagedFiles = existingTree.filter(
@@ -1004,7 +738,12 @@ Deno.serve(async (req) => {
     // Create blobs for all new files
     const blobPromises = files.map(async (file) => {
       const sha = await createBlob(owner, repo, file.content, githubToken!);
-      return { path: file.path, sha };
+      return {
+        artifactType: file.artifactType,
+        artifactId: file.artifactId,
+        path: file.path,
+        sha,
+      };
     });
 
     const blobs = await Promise.all(blobPromises);
@@ -1059,6 +798,69 @@ Synced by: ${user.email}`;
     // Update branch ref
     await updateRef(owner, repo, githubBranch, newCommitSha, githubToken);
     console.log("Updated branch ref");
+
+    // Tell the queue worker what is in the repository now. github_sync_state
+    // is the worker's memory of which path and blob each artifact lives at;
+    // it has no client policies, so only the service-role client can write
+    // it. Without this, the worker's next upsert would send the SHA of a blob
+    // this commit just replaced and GitHub would answer 409 three times.
+    //
+    // The blob SHA from the Git Data API is the same value the Contents API
+    // reports as content.sha, so the worker can hand it straight back.
+    const targetScope = teamId ? "team" : "user";
+    const targetId = teamId ? String(teamId) : user.id;
+    const stateRows = blobs.map((b) => ({
+      artifact_type: b.artifactType,
+      artifact_id: b.artifactId,
+      target_scope: targetScope,
+      target_id: targetId,
+      repo: githubRepo,
+      branch: githubBranch,
+      path: b.path,
+      sha: b.sha,
+      last_synced_at: now,
+    }));
+    if (stateRows.length > 0) {
+      const { error: stateErr } = await supabaseAdmin
+        .from("github_sync_state")
+        .upsert(stateRows, {
+          onConflict: "artifact_type,artifact_id,target_scope,target_id",
+        });
+      if (stateErr) {
+        console.error("Failed to record github_sync_state:", stateErr);
+      }
+    }
+
+    // Anything this target had a state row for that was not written just now
+    // was deleted from the tree above (it is under a managed folder and not in
+    // newFilePaths), so its row would only ever point at a missing blob.
+    const { data: staleState, error: staleErr } = await supabaseAdmin
+      .from("github_sync_state")
+      .select("id, artifact_type, artifact_id")
+      .eq("target_scope", targetScope)
+      .eq("target_id", targetId);
+    if (staleErr) {
+      console.error("Failed to read github_sync_state:", staleErr);
+    } else {
+      const written = new Set(
+        blobs.map((b) => `${b.artifactType}:${b.artifactId}`),
+      );
+      const staleIds = (staleState ?? [])
+        .filter(
+          (row: { artifact_type: string; artifact_id: string }) =>
+            !written.has(`${row.artifact_type}:${row.artifact_id}`),
+        )
+        .map((row: { id: string }) => row.id);
+      if (staleIds.length > 0) {
+        const { error: delErr } = await supabaseAdmin
+          .from("github_sync_state")
+          .delete()
+          .in("id", staleIds);
+        if (delErr) {
+          console.error("Failed to prune github_sync_state:", delErr);
+        }
+      }
+    }
 
     // Update last synced timestamp
     if (teamId) {

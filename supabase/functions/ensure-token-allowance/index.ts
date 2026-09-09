@@ -127,17 +127,31 @@ serve(async (req) => {
     }
 
     // Single user mode.
-    // Always require auth token for non-batch operations
+    // Always require auth token for non-batch operations. A missing or bad
+    // token is the caller's problem and is answered as 401, not thrown into
+    // the generic catch below where it came back as a 500.
     if (!bearer) {
-      throw new Error("No authorization header provided");
+      logStep("Rejected: no bearer token");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { data: userData, error: userError } =
       await supabaseAdmin.auth.getUser(bearer);
 
     if (userError || !userData.user) {
-      throw new Error(
-        `Authentication error: ${userError?.message ?? "User not found"}`,
+      logStep("Rejected: invalid token", { error: userError?.message });
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -172,10 +186,19 @@ serve(async (req) => {
 
       if (adminError || !isAdminData) {
         logStep("Admin check failed", { error: adminError?.message });
-        throw new Error(
-          wantsOtherUser
-            ? "Only admins can specify a different user_id"
-            : "Only admins can override period_start, period_end, source or force_tokens",
+        // A signed-in user asking for more than they may have is forbidden,
+        // which is 403, not a server error.
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: wantsOtherUser
+              ? "Only admins can specify a different user_id"
+              : "Only admins can override period_start, period_end, source or force_tokens",
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
     }

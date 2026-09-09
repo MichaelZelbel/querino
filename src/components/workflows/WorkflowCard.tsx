@@ -123,7 +123,8 @@ export function WorkflowCard({
       <CardContent className="flex-1 pb-3">
         <div className="relative rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
           <div className="line-clamp-3 whitespace-pre-wrap">
-            {workflowContent.slice(0, 200)}...
+            {workflowContent.slice(0, 200)}
+            {workflowContent.length > 200 ? "..." : ""}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-muted/50 to-transparent rounded-b-lg" />
         </div>
@@ -183,7 +184,7 @@ export function WorkflowCard({
           </div>
 
           <div className="flex items-center gap-1">
-            {(isAuthor || showEditButton) && (
+            {isAuthor && showEditButton && (
               <>
                 <Link to={`/workflows/${workflow.slug}/edit`}>
                   <Button

@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -27,8 +28,12 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
 const WORKSPACE_STORAGE_KEY = "querino_current_workspace";
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext();
   const { data: teams = [], isLoading } = useUserTeams();
+  // The user id seen on the previous render, so a real logout (a user that
+  // WAS there and is now gone) can be told apart from the first render, when
+  // auth has not resolved yet and `user` is null for everyone.
+  const previousUserIdRef = useRef<string | null>(null);
   const [currentWorkspace, setCurrentWorkspace] = useState<"personal" | string>(
     "personal",
   );
@@ -41,8 +46,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Validate workspace when teams load
+  // Validate workspace once the signed-in user's teams are known. Before auth
+  // resolves, useUserTeams answers [] for a null user, which used to look like
+  // "the saved team no longer exists" and wiped the saved workspace on every
+  // page load.
   useEffect(() => {
+    if (authLoading || !user) return;
     if (!isLoading && currentWorkspace !== "personal") {
       const teamExists = teams.some((t) => t.id === currentWorkspace);
       if (!teamExists) {
@@ -50,11 +59,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(WORKSPACE_STORAGE_KEY, "personal");
       }
     }
-  }, [teams, isLoading, currentWorkspace]);
+  }, [teams, isLoading, currentWorkspace, authLoading, user]);
 
-  // Reset to personal when user logs out
+  // Reset to personal on a real logout: a user that was there and is now gone.
   useEffect(() => {
-    if (!user) {
+    const previousUserId = previousUserIdRef.current;
+    previousUserIdRef.current = user?.id ?? null;
+    if (previousUserId && !user) {
       setCurrentWorkspace("personal");
       localStorage.removeItem(WORKSPACE_STORAGE_KEY);
     }

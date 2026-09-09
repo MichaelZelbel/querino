@@ -162,8 +162,9 @@ export async function runCanvasAI(
 
   const edgeFunction = EDGE_FUNCTION_BY_TYPE[artifactType];
 
+  // The edge function derives the caller from the JWT; the body never names a
+  // user. `userId` is still used below to key the session in localStorage.
   const body = {
-    user_id: userId,
     workspace_id: workspaceId ?? null,
     artifact_type: artifactType,
     prompt_id: artifactId === "draft" ? "draft" : artifactId,

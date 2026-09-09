@@ -7,7 +7,9 @@ const useBase = createCloneHook<Skill>({
   buildInsert: (skill) => ({
     description: skill.description,
     content: skill.content,
+    category: skill.category,
     tags: skill.tags,
+    ...(skill.language ? { language: skill.language } : {}),
     published: false,
   }),
   editPath: (row) => `/skills/${row.slug}/edit`,

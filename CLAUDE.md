@@ -4,7 +4,7 @@ This file provides guidance for Claude Code when working in this repository.
 
 ## Project Overview
 
-**Querino** is an open-source SaaS platform for discovering, creating, and sharing AI artifacts — prompts, skills, workflows, and CLAWs (callable capabilities). It is licensed under AGPL-3.0.
+**Querino** is an open-source SaaS platform for discovering, creating, and sharing AI artifacts: prompts, skills, workflows, prompt kits and collections. It is licensed under AGPL-3.0.
 
 ## Non-negotiable security rule
 
@@ -32,12 +32,14 @@ manually. Do not "fix" or restore any self-serve payment path.
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript, Vite 5.4, React Router v6
-- **UI**: Tailwind CSS 3.4, shadcn/ui (Radix UI), Lucide icons
+- **Frontend**: React 19 + TypeScript, Vite 8, TanStack Router + TanStack Start (file routes in `src/routes/`, built by Nitro)
+- **UI**: Tailwind CSS 4, shadcn/ui (Radix UI), Lucide icons, Tiptap editors
 - **State**: TanStack Query v5 (server state), React Context (auth, workspace)
-- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
-- **AI Orchestration**: n8n workflows (Azure Foundry / OpenAI as LLM providers)
-- **Payments**: Stripe
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions on Deno)
+- **AI**: edge functions call the LLM provider directly through `supabase/functions/_shared/llm.ts`
+  (OpenRouter, OpenAI or the Lovable gateway; the model per call site is configured in the admin panel).
+  The old n8n orchestration is gone: there is no `n8n/` directory and no `N8N_*` secret.
+- **Payments**: none (see the product policy above; the Stripe functions are dormant stubs)
 - **Package Manager**: bun (bun.lock present) or npm
 
 ## Development Commands
@@ -46,7 +48,9 @@ manually. Do not "fix" or restore any self-serve payment path.
 npm run dev        # Start dev server at http://localhost:8080
 npm run build      # Production build
 npm run lint       # Run ESLint
-npm test           # Security test suite (tests/security/, see its README)
+npm run check      # Migrations, lint ratchet, Deno type ratchet (runs on every push)
+npm run test:unit  # Deno unit tests for supabase/functions/_shared
+npm test           # Security test suite against the deployed project (tests/security/, see its README)
 npm run preview    # Preview production build
 ```
 
@@ -54,18 +58,21 @@ npm run preview    # Preview production build
 
 ```
 src/
+  routes/          # TanStack Router file routes (one file per URL, they render a page)
   components/      # Feature-based component directories (prompts/, skills/, workflows/, promptKits/, ui/, ...)
   pages/           # Route-level page components (30+ pages)
   hooks/           # Custom React hooks (50+) — data fetching and feature logic
   contexts/        # AuthContext, WorkspaceContext
   types/           # TypeScript type definitions per artifact type
-  lib/             # Utilities (utils.ts, markdown.ts, openLLM.ts, ...)
+  lib/             # Utilities (utils.ts, markdown.ts, openLLM.ts, router-compat.tsx, ...)
   config/          # Static config (languages, pricing, stripe)
   integrations/    # Supabase client + auto-generated DB types
 supabase/
-  functions/       # 25+ Edge Functions (AI calls, Stripe, GitHub sync, etc.)
+  functions/       # 37 Edge Functions (AI calls, MCP server, GitHub sync, Menerio sync, ...)
+  functions/_shared/  # shared modules and their Deno unit tests
   migrations/      # Database migrations
-n8n/               # n8n workflow JSON files (16 workflows)
+scripts/           # the `npm run check` gates (migrations, lint ratchet, deno-check ratchet)
+tests/security/    # live tripwire suite against the deployed project
 docs/              # Implementation guides and schema documentation
 ```
 
@@ -73,7 +80,7 @@ docs/              # Implementation guides and schema documentation
 
 ### Data Flow
 ```
-React Frontend → TanStack Query → Supabase Edge Functions → n8n Webhooks → LLM (Azure/OpenAI)
+React Frontend → TanStack Query → Supabase Edge Functions → _shared/llm.ts → LLM provider (OpenRouter / OpenAI / Lovable gateway)
 ```
 
 ### Key Patterns
@@ -81,7 +88,9 @@ React Frontend → TanStack Query → Supabase Edge Functions → n8n Webhooks �
 - **TanStack Query** handles all server state with `useQuery` / `useMutation`
 - **Path alias**: `@/*` maps to `./src/*`
 - **shadcn/ui** components live in `src/components/ui/` — do not edit these directly
-- Edge Functions call n8n via HTTP webhook with `X-API-Key` auth header
+- Edge Functions that call an LLM go through `callLovableAI` in `_shared/llm.ts` (the name is historical, it serves every provider): it resolves the
+  call site's configured provider/model (`_shared/llm-config.ts`), checks and charges the
+  caller's credit allowance (`_shared/allowance.ts`), and records an `llm_usage_events` row
 
 ### Artifact Types
 The four web-surfaced artifact types follow the same CRUD pattern:
@@ -92,7 +101,7 @@ The four web-surfaced artifact types follow the same CRUD pattern:
 
 Each has: New / Detail / Edit pages, a card component, and a custom hook.
 
-**CLAWs** exist only in the database and the MCP server (`supabase/functions/mcp-server`) — there are NO `/claws` web pages, no `useClaws` hook, and no Claw page components. Do not add web links to `/claws/*`.
+**CLAWs are gone.** Migration `20260430155205` dropped `public.claws` in April 2026. The six MCP tools that still spoke to it were removed on 2026-09-08, after every one of them was confirmed to answer "Could not find the table 'public.claws'". There is no claws table, no `/claws` route, no hook and no component. Do not reintroduce one without recreating the table first.
 
 ## Environment Variables
 
@@ -100,13 +109,20 @@ Frontend (Vite prefix required):
 ```
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_SITE_ORIGIN          # optional, canonical origin for SEO tags (defaults to https://querino.ai)
 ```
 
-Supabase Edge Function secrets:
+Supabase Edge Function secrets (set with `npx supabase secrets set`, never committed):
 ```
-N8N_BASE_URL          # n8n instance URL
-N8N_WEBHOOK_KEY       # X-API-Key for n8n HTTP Header Auth
+OPENROUTER_API_KEY        # LLM calls and embeddings (at least one LLM provider key is required)
+OPENAI_API_KEY            # alternative LLM / embedding provider
+LOVABLE_API_KEY           # Lovable AI gateway, alternative LLM provider
+INTERNAL_JOB_SECRET       # X-Internal-Key shared with pg_cron and other machine callers
+RESEND_API_KEY            # transactional mail (notify-admin, delete-my-account)
+ADMIN_EMAIL               # recipient of the signup notification
+PUBLIC_SITE_URL           # absolute origin used in generated links
 ```
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase.
 
 See `.env.example` for reference.
 
@@ -114,6 +130,7 @@ See `.env.example` for reference.
 
 - Path alias `@/*` → `./src/*` is configured in both `tsconfig.json` and `vite.config.ts`
 - Loose type checking: `allowJs: true`, `noImplicitAny: false`, strict null checks not enforced
+- The edge functions are strict (`supabase/functions/deno.json`), enforced as a ratchet by `scripts/deno-check.mjs`: the per-function error counts in `scripts/deno-check-baseline.json` may fall, never rise. After lowering one, run `node scripts/deno-check.mjs --update`
 - Supabase types are auto-generated — do not edit `src/integrations/supabase/types.ts` manually
 - Regenerate types with: `npx supabase gen types typescript --linked > src/integrations/supabase/types.ts`
 
@@ -131,63 +148,20 @@ To deploy a single function:
 npx supabase functions deploy <function-name>
 ```
 
-## n8n Workflows
+## LLM calls
 
-Workflow JSON files are in `n8n/`. See `n8n/README.md` for import instructions.
+There is no n8n. Every AI feature is an edge function that calls `callLovableAI` from
+`supabase/functions/_shared/llm.ts` (the name is historical; it dispatches to whichever provider the call site is configured for):
 
-AI features are routed through n8n:
-- Prompt Wizard, Refinement, Coach, Insights
-- Metadata suggestion (prompts, skills, workflows, CLAWs)
-- Skill/Workflow/Claw Coach and Insights
-- Artifact Translation
-- Token usage tracking
+- Prompt Wizard, Refinement, Coach, Insights, Translation
+- Metadata suggestion (prompts, prompt kits, skills, workflows)
+- Skill / Workflow / Prompt-kit Coach and Insights
+- Embeddings (`generate-embedding`, `backfill-embeddings`) through `_shared/embeddings.ts`
 
-### Working on n8n Workflows with the User
-
-n8n workflow development is collaborative — Claude works **together with the user** to design, build, deploy, and test workflows directly on the live n8n instance.
-
-**Available tools:**
-
-**n8n-mcp** ([czlonkowski/n8n-mcp](https://github.com/czlonkowski/n8n-mcp)) — MCP server with 20+ tools for direct n8n instance interaction:
-
-| Category | Tools |
-|---|---|
-| Discovery | `search_nodes`, `get_node_info`, `get_node_documentation`, `get_node_essentials` |
-| Validation | `validate_node_minimal`, `validate_node_operation`, `validate_workflow`, `validate_workflow_connections`, `validate_workflow_expressions` |
-| Templates | `search_templates`, `get_template`, `list_node_templates`, `get_templates_for_task` |
-| Workflow CRUD | `n8n_list_workflows`, `n8n_get_workflow`, `n8n_create_workflow`, `n8n_update_full_workflow`, `n8n_update_partial_workflow`, `n8n_delete_workflow` |
-| Execution | `n8n_trigger_webhook_workflow`, `n8n_list_executions`, `n8n_get_execution`, `n8n_delete_execution` |
-| System | `n8n_health_check`, `n8n_diagnostic`, `tools_documentation` |
-
-**n8n-skills** ([czlonkowski/n8n-skills](https://github.com/czlonkowski/n8n-skills)) — Seven Claude Code skills that activate automatically based on context:
-
-| Skill | Activates when... |
-|---|---|
-| `n8n-mcp-tools-expert` | Using any n8n-mcp tool — highest priority, guides tool selection |
-| `n8n-workflow-patterns` | Designing workflow structure; provides 5 proven architectural patterns |
-| `n8n-node-configuration` | Configuring node parameters and property dependencies |
-| `n8n-expression-syntax` | Writing `{{ }}` expressions, accessing `$json`, `$node`, webhook data |
-| `n8n-validation-expert` | Interpreting and fixing validation errors |
-| `n8n-code-javascript` | Writing JavaScript in Code nodes (`$input.all()`, `$input.first()`) |
-| `n8n-code-python` | Writing Python in Code nodes (use JS for 95% of cases) |
-
-**Process:**
-1. Discuss the workflow goal and design with the user before building
-2. Check existing workflows with `n8n_list_workflows` / `n8n_get_workflow` for context and conventions
-3. Search for relevant nodes and templates (`search_nodes`, `search_templates`, `get_node_essentials`)
-4. Build with `n8n_create_workflow` or update with `n8n_update_partial_workflow` (preferred — saves tokens)
-5. Validate before activating (`validate_workflow`, `n8n_validate_workflow`)
-6. Trigger and inspect executions (`n8n_trigger_webhook_workflow`, `n8n_get_execution`)
-7. Iterate until the workflow functions correctly
-8. Save the final workflow JSON to `n8n/` in the repository
-
-**Standards:**
-- Always start with `tools_documentation` or `get_node_essentials` — not `get_node_info` (too verbose)
-- Prefer `n8n_update_partial_workflow` over full replacement (99% success rate, 80–90% token savings)
-- Validate before every deploy — use `validate_workflow` then `n8n_validate_workflow` (server-side)
-- Prefer updating existing workflows over creating duplicates
-- Webhook data in expressions is accessed via `$json.body`, not `$json` directly
-- Always confirm with the user before deleting workflows or executions
+Which provider and model a call site uses is stored in the `llm_call_configs` table and edited
+in the admin panel (`admin-llm-config`); the prompt each call site sends is in
+`_shared/prompts/`. The public model catalogue (`llm-models`, refreshed nightly by
+`sync-llm-models`) is what the admin panel picks models from.
 
 ## Database Migrations
 

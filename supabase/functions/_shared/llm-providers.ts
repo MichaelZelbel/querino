@@ -80,6 +80,76 @@ export function providerAvailability(): Record<Provider, boolean> {
   return out;
 }
 
+// ── Tool calling on the two non-OpenAI dialects ──────────────────────────────
+//
+// Eleven of the seventeen call sites force a tool call and read the answer out
+// of `tool_calls[0].function.arguments`. Until 2026-09-08 these two transports
+// dropped `tools` on the floor and returned `tool_calls: []`, so any call site
+// an administrator pointed at Anthropic or Gemini answered in prose, the caller
+// returned 502, and the user had already been charged. Each dialect gets the
+// same tools, the same choice, and hands back the same ToolCall shape.
+
+function anthropicToolChoice(choice: ToolChoice | undefined) {
+  if (!choice || choice === "auto") return { type: "auto" };
+  if (choice === "required") return { type: "any" };
+  return { type: "tool", name: choice.function.name };
+}
+
+function geminiToolConfig(choice: ToolChoice | undefined) {
+  if (!choice || choice === "auto") {
+    return { functionCallingConfig: { mode: "AUTO" } };
+  }
+  if (choice === "required") {
+    return { functionCallingConfig: { mode: "ANY" } };
+  }
+  return {
+    functionCallingConfig: {
+      mode: "ANY",
+      allowedFunctionNames: [choice.function.name],
+    },
+  };
+}
+
+// Gemini's function declarations take an OpenAPI subset, not JSON Schema, and
+// the API answers 400 to a key it does not know. `additionalProperties: false`
+// is on every tool in this repository, so it has to be stripped, not hoped
+// away.
+const GEMINI_UNSUPPORTED_SCHEMA_KEYS = new Set([
+  "additionalProperties",
+  "$schema",
+  "$id",
+  "$ref",
+  "default",
+  "examples",
+  "title",
+  "const",
+  "pattern",
+  "patternProperties",
+]);
+
+export function toGeminiSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(toGeminiSchema);
+  if (schema === null || typeof schema !== "object") return schema;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(
+    schema as Record<string, unknown>,
+  )) {
+    if (GEMINI_UNSUPPORTED_SCHEMA_KEYS.has(key)) continue;
+    if (key === "properties" && value && typeof value === "object") {
+      const props: Record<string, unknown> = {};
+      for (const [name, sub] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
+        props[name] = toGeminiSchema(sub);
+      }
+      out[key] = props;
+      continue;
+    }
+    out[key] = toGeminiSchema(value);
+  }
+  return out;
+}
+
 async function readOrThrow(response: Response): Promise<unknown> {
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -166,6 +236,14 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
   if (system.length > 0) body.system = system;
   if (req.temperature !== undefined && req.temperature !== null)
     body.temperature = req.temperature;
+  if (req.tools && req.tools.length > 0) {
+    body.tools = req.tools.map((t) => ({
+      name: t.function.name,
+      description: t.function.description,
+      input_schema: t.function.parameters,
+    }));
+    body.tool_choice = anthropicToolChoice(req.toolChoice);
+  }
 
   const json = (await readOrThrow(
     await doFetch("https://api.anthropic.com/v1/messages", {
@@ -178,20 +256,37 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
       body: JSON.stringify(body),
     }),
   )) as {
-    content?: Array<{ type: string; text?: string }>;
+    content?: Array<{
+      type: string;
+      text?: string;
+      id?: string;
+      name?: string;
+      input?: unknown;
+    }>;
     usage?: { input_tokens?: number; output_tokens?: number };
     model?: string;
   };
 
-  const text = (json.content ?? [])
+  const blocks = json.content ?? [];
+  const text = blocks
     .filter((b) => b.type === "text")
     .map((b) => b.text ?? "")
     .join("");
+  const tool_calls: ToolCall[] = blocks
+    .filter((b) => b.type === "tool_use" && typeof b.name === "string")
+    .map((b, i) => ({
+      id: b.id || `anthropic_tool_${i}`,
+      type: "function" as const,
+      function: {
+        name: b.name!,
+        arguments: JSON.stringify(b.input ?? {}),
+      },
+    }));
   const prompt = Number(json.usage?.input_tokens ?? 0);
   const completion = Number(json.usage?.output_tokens ?? 0);
   return {
     content: text.length > 0 ? text : null,
-    tool_calls: [],
+    tool_calls,
     usage: {
       prompt_tokens: prompt,
       completion_tokens: completion,
@@ -227,6 +322,18 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
   }
   if (Object.keys(generationConfig).length > 0)
     body.generationConfig = generationConfig;
+  if (req.tools && req.tools.length > 0) {
+    body.tools = [
+      {
+        functionDeclarations: req.tools.map((t) => ({
+          name: t.function.name,
+          description: t.function.description,
+          parameters: toGeminiSchema(t.function.parameters),
+        })),
+      },
+    ];
+    body.toolConfig = geminiToolConfig(req.toolChoice);
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${req.model}:generateContent`;
   const json = (await readOrThrow(
@@ -239,7 +346,14 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
       body: JSON.stringify(body),
     }),
   )) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{
+          text?: string;
+          functionCall?: { name?: string; args?: unknown };
+        }>;
+      };
+    }>;
     usageMetadata?: {
       promptTokenCount?: number;
       candidatesTokenCount?: number;
@@ -247,12 +361,21 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
     };
   };
 
-  const text = (json.candidates?.[0]?.content?.parts ?? [])
-    .map((p) => p.text ?? "")
-    .join("");
+  const parts = json.candidates?.[0]?.content?.parts ?? [];
+  const text = parts.map((p) => p.text ?? "").join("");
+  const tool_calls: ToolCall[] = parts
+    .filter((p) => typeof p.functionCall?.name === "string")
+    .map((p, i) => ({
+      id: `gemini_tool_${i}`,
+      type: "function" as const,
+      function: {
+        name: p.functionCall!.name!,
+        arguments: JSON.stringify(p.functionCall!.args ?? {}),
+      },
+    }));
   return {
     content: text.length > 0 ? text : null,
-    tool_calls: [],
+    tool_calls,
     usage: {
       prompt_tokens: Number(json.usageMetadata?.promptTokenCount ?? 0),
       completion_tokens: Number(json.usageMetadata?.candidatesTokenCount ?? 0),

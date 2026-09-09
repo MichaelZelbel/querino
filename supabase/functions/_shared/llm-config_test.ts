@@ -158,3 +158,12 @@ Deno.test(
     assertEquals(applySystemPrompt(msgs, null), msgs);
   },
 );
+
+Deno.test(
+  "interpolatePrompt collapses braces even when no vars are passed at all",
+  () => {
+    // Most call sites pass no templateVars. Returning the prompt untouched in
+    // that case sent an override's literal {{placeholder}} to the model.
+    assertEquals(interpolatePrompt("Hello {{nobody}}!"), "Hello !");
+  },
+);

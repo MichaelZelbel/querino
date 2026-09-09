@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MessageCircle, Pencil, Trash2, X, Check } from "lucide-react";
 import { Comment } from "@/types/comment";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Link } from "@/lib/router-compat";
 
 interface CommentItemProps {
@@ -33,7 +33,7 @@ export const CommentItem = ({
   onDelete,
   isReply = false,
 }: CommentItemProps) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [replyContent, setReplyContent] = useState("");

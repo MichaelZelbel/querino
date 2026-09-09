@@ -142,13 +142,18 @@ export function interpolatePrompt(
   vars?: Record<string, string | number | null | undefined>,
 ): string | null {
   if (prompt === null || prompt === undefined) return null;
-  if (!vars) return prompt;
+  // No vars is the same as no matching vars: the braces still collapse, as
+  // the comment above promises. Returning the prompt untouched here sent an
+  // override's literal {{placeholder}} to the model for every call site that
+  // passes no templateVars, while the admin "test" button (which passes {})
+  // showed it collapsed.
+  const v = vars ?? {};
   return prompt.replace(/\{\{(\w+)\}\}/g, (_m: string, key: string) => {
-    if (!(key in vars)) {
+    if (!(key in v)) {
       console.warn(`[llm-config] missing template var: ${key}`);
       return "";
     }
-    return String(vars[key] ?? "");
+    return String(v[key] ?? "");
   });
 }
 

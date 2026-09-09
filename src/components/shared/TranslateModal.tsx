@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { LANGUAGES } from "@/config/languages";
 import {
   Dialog,
@@ -65,7 +65,7 @@ export function TranslateModal({
     isLoading: creditsLoading,
     credits,
   } = useAICreditsGate();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [targetLanguage, setTargetLanguage] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
 

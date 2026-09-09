@@ -195,9 +195,34 @@ export const PROVIDER_SECRETS: Record<Provider, string> = {
   gemini: "GEMINI_API_KEY",
 };
 
+/**
+ * Which transports in llm-providers.ts can be trusted to send a tools array
+ * and hand back tool_calls. The three OpenAI-dialect providers have done so
+ * since the provider layer was written. The Anthropic and Gemini transports
+ * gained request and response mapping for tools on 2026-09-08, but neither
+ * has been exercised against the live API (no key for either exists on this
+ * project), so they stay false until a real call has returned a tool call.
+ * admin-llm-config refuses to point a requiresTools call site at a provider
+ * that is false here, which is what turned a silent 502 into a 400 with a
+ * sentence.
+ */
+export const PROVIDER_SUPPORTS_TOOLS: Record<Provider, boolean> = {
+  lovable: true,
+  openrouter: true,
+  openai: true,
+  anthropic: false,
+  gemini: false,
+};
+
+export function providerSupportsTools(provider: Provider): boolean {
+  return PROVIDER_SUPPORTS_TOOLS[provider] === true;
+}
+
 export interface ProviderPreset {
   provider: Provider;
   label: string;
+  /** Mirrors PROVIDER_SUPPORTS_TOOLS so the panel can warn before a save. */
+  supportsTools: boolean;
   models: { value: string; label: string }[];
 }
 
@@ -215,6 +240,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     provider: "lovable",
     label: "Lovable AI Gateway",
+    supportsTools: PROVIDER_SUPPORTS_TOOLS.lovable,
     models: [
       {
         value: "google/gemini-3-flash-preview",
@@ -239,6 +265,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     // call sites require and which fails silently on a model that lacks it.
     provider: "openrouter",
     label: "OpenRouter",
+    supportsTools: PROVIDER_SUPPORTS_TOOLS.openrouter,
     models: [
       {
         value: "google/gemini-3.1-flash-lite",
@@ -276,6 +303,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     provider: "openai",
     label: "OpenAI",
+    supportsTools: PROVIDER_SUPPORTS_TOOLS.openai,
     models: [
       { value: "gpt-4o-mini", label: "gpt-4o-mini" },
       { value: "gpt-4o", label: "gpt-4o" },
@@ -286,6 +314,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     provider: "anthropic",
     label: "Anthropic",
+    supportsTools: PROVIDER_SUPPORTS_TOOLS.anthropic,
     models: [
       { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
       { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
@@ -294,6 +323,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     provider: "gemini",
     label: "Gemini (Google)",
+    supportsTools: PROVIDER_SUPPORTS_TOOLS.gemini,
     models: [
       { value: "gemini-2.0-flash", label: "gemini-2.0-flash" },
       { value: "gemini-2.0-flash-lite", label: "gemini-2.0-flash-lite" },

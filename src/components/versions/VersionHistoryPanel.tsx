@@ -76,6 +76,8 @@ interface VersionHistoryPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   promptId: string;
+  /** Slug of the artifact, used to reach its edit page after a restore when no callback is given. */
+  promptSlug?: string;
   currentPrompt: CurrentPromptData;
   onRestoreComplete?: () => void;
   /** Table config for non-prompt artifact types; defaults to prompts. */
@@ -88,6 +90,7 @@ export function VersionHistoryPanel({
   open,
   onOpenChange,
   promptId,
+  promptSlug,
   currentPrompt,
   onRestoreComplete,
   tableConfig = PROMPT_CONFIG,
@@ -256,8 +259,10 @@ export function VersionHistoryPanel({
 
       if (onRestoreComplete) {
         onRestoreComplete();
-      } else {
-        navigate(`/library/${promptId}/edit`);
+      } else if (promptSlug) {
+        // Edit routes are keyed by slug, never by id, so without a slug there is
+        // nowhere safe to go and the caller's page simply stays where it is.
+        navigate(`/library/${promptSlug}/edit`);
       }
     } catch (err) {
       console.error("Error restoring version:", err);

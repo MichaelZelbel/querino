@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SITE_ORIGIN } from "../_shared/artifactRoutes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,7 +50,7 @@ Deno.serve(async (req) => {
 
     // GET /rss.xml
     if (path === "/rss.xml") {
-      return await handleGetRSS(supabase, url.origin);
+      return await handleGetRSS(supabase);
     }
 
     // 404 for unknown routes
@@ -69,10 +70,38 @@ Deno.serve(async (req) => {
 async function handleGetPosts(supabase: any, params: URLSearchParams) {
   // Public endpoint: never honour a client-supplied status — drafts stay private.
   const status = "published";
-  const limit = Math.min(parseInt(params.get("limit") || "20", 10), 100);
-  const offset = parseInt(params.get("offset") || "0", 10);
+  // limit and offset go straight into a range header, so anything that is
+  // not a whole number in range is refused up front: "abc" gave NaN, 0 and a
+  // negative offset made PostgREST answer with an error that surfaced as 500.
+  const limit = parsePagingNumber(params.get("limit"), 20);
+  const offset = parsePagingNumber(params.get("offset"), 0);
+  if (limit === null || limit < 1 || limit > 100) {
+    return new Response(
+      JSON.stringify({ error: "limit must be a whole number from 1 to 100" }),
+      { status: 400, headers: corsHeaders },
+    );
+  }
+  if (offset === null || offset < 0) {
+    return new Response(
+      JSON.stringify({ error: "offset must be a whole number of 0 or more" }),
+      { status: 400, headers: corsHeaders },
+    );
+  }
   const categorySlug = params.get("category");
   const tagSlug = params.get("tag");
+
+  const emptyPage = () =>
+    new Response(
+      JSON.stringify({ data: [], meta: { total: 0, limit, offset } }),
+      { headers: { ...corsHeaders, "Cache-Control": "public, max-age=300" } },
+    );
+  const lookupFailed = (what: string, err: unknown) => {
+    console.error(`[blog-api] ${what} lookup error:`, err);
+    return new Response(JSON.stringify({ error: "Failed to fetch posts" }), {
+      status: 500,
+      headers: corsHeaders,
+    });
+  };
 
   let query = supabase
     .from("blog_posts")
@@ -98,56 +127,47 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
     .order("published_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  // Filter by category
+  // Filter by category. A slug nobody has is an empty page, not the whole
+  // unfiltered list, which is what an ignored filter used to hand back.
   if (categorySlug) {
-    const { data: category } = await supabase
+    const { data: category, error: catErr } = await supabase
       .from("blog_categories")
       .select("id")
       .eq("slug", categorySlug)
       .maybeSingle();
+    if (catErr) return lookupFailed("category", catErr);
+    if (!category) return emptyPage();
 
-    if (category) {
-      const { data: postIds } = await supabase
-        .from("blog_post_categories")
-        .select("post_id")
-        .eq("category_id", category.id);
+    const { data: postIds, error: linkErr } = await supabase
+      .from("blog_post_categories")
+      .select("post_id")
+      .eq("category_id", category.id);
+    if (linkErr) return lookupFailed("category posts", linkErr);
 
-      const ids = postIds?.map((p: any) => p.post_id) || [];
-      if (ids.length > 0) {
-        query = query.in("id", ids);
-      } else {
-        return new Response(
-          JSON.stringify({ data: [], meta: { total: 0, limit, offset } }),
-          { headers: corsHeaders },
-        );
-      }
-    }
+    const ids = postIds?.map((p: any) => p.post_id) || [];
+    if (ids.length === 0) return emptyPage();
+    query = query.in("id", ids);
   }
 
-  // Filter by tag
+  // Filter by tag, same rules as the category filter.
   if (tagSlug) {
-    const { data: tag } = await supabase
+    const { data: tag, error: tagErr } = await supabase
       .from("blog_tags")
       .select("id")
       .eq("slug", tagSlug)
       .maybeSingle();
+    if (tagErr) return lookupFailed("tag", tagErr);
+    if (!tag) return emptyPage();
 
-    if (tag) {
-      const { data: postIds } = await supabase
-        .from("blog_post_tags")
-        .select("post_id")
-        .eq("tag_id", tag.id);
+    const { data: postIds, error: linkErr } = await supabase
+      .from("blog_post_tags")
+      .select("post_id")
+      .eq("tag_id", tag.id);
+    if (linkErr) return lookupFailed("tag posts", linkErr);
 
-      const ids = postIds?.map((p: any) => p.post_id) || [];
-      if (ids.length > 0) {
-        query = query.in("id", ids);
-      } else {
-        return new Response(
-          JSON.stringify({ data: [], meta: { total: 0, limit, offset } }),
-          { headers: corsHeaders },
-        );
-      }
-    }
+    const ids = postIds?.map((p: any) => p.post_id) || [];
+    if (ids.length === 0) return emptyPage();
+    query = query.in("id", ids);
   }
 
   const { data, error, count } = await query;
@@ -160,27 +180,46 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
     });
   }
 
-  // Fetch categories and tags for each post
-  const enrichedPosts = await Promise.all(
-    (data || []).map(async (post: any) => {
-      const [categories, tags] = await Promise.all([
-        supabase
-          .from("blog_post_categories")
-          .select("category:blog_categories(id, name, slug)")
-          .eq("post_id", post.id),
-        supabase
-          .from("blog_post_tags")
-          .select("tag:blog_tags(id, name, slug)")
-          .eq("post_id", post.id),
-      ]);
+  // Categories and tags for the whole page in two queries, grouped in memory,
+  // instead of two queries per post.
+  const posts: any[] = data || [];
+  const ids = posts.map((p) => p.id);
+  const categoriesByPost = new Map<string, any[]>();
+  const tagsByPost = new Map<string, any[]>();
 
-      return {
-        ...post,
-        categories: categories.data?.map((c: any) => c.category) || [],
-        tags: tags.data?.map((t: any) => t.tag) || [],
-      };
-    }),
-  );
+  if (ids.length > 0) {
+    const [catLinks, tagLinks] = await Promise.all([
+      supabase
+        .from("blog_post_categories")
+        .select("post_id, category:blog_categories(id, name, slug)")
+        .in("post_id", ids),
+      supabase
+        .from("blog_post_tags")
+        .select("post_id, tag:blog_tags(id, name, slug)")
+        .in("post_id", ids),
+    ]);
+    if (catLinks.error) return lookupFailed("post categories", catLinks.error);
+    if (tagLinks.error) return lookupFailed("post tags", tagLinks.error);
+
+    for (const row of catLinks.data || []) {
+      if (!row.category) continue;
+      const list = categoriesByPost.get(row.post_id) ?? [];
+      list.push(row.category);
+      categoriesByPost.set(row.post_id, list);
+    }
+    for (const row of tagLinks.data || []) {
+      if (!row.tag) continue;
+      const list = tagsByPost.get(row.post_id) ?? [];
+      list.push(row.tag);
+      tagsByPost.set(row.post_id, list);
+    }
+  }
+
+  const enrichedPosts = posts.map((post) => ({
+    ...post,
+    categories: categoriesByPost.get(post.id) ?? [],
+    tags: tagsByPost.get(post.id) ?? [],
+  }));
 
   return new Response(
     JSON.stringify({
@@ -191,8 +230,24 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
         offset,
       },
     }),
-    { headers: corsHeaders },
+    // Public, read-only, and only published posts: five minutes at the edge
+    // keeps a busy list page from hitting the database on every request.
+    { headers: { ...corsHeaders, "Cache-Control": "public, max-age=300" } },
   );
+}
+
+/**
+ * A paging parameter as a whole number, the default when it is absent, and
+ * null when it is present but not a whole number.
+ */
+function parsePagingNumber(
+  raw: string | null,
+  fallback: number,
+): number | null {
+  if (raw === null || raw === "") return fallback;
+  if (!/^-?\d+$/.test(raw)) return null;
+  const n = Number(raw);
+  return Number.isInteger(n) ? n : null;
 }
 
 async function handleGetPost(supabase: any, slug: string) {
@@ -321,8 +376,12 @@ async function handleGetTags(supabase: any) {
   });
 }
 
-async function handleGetRSS(supabase: any, origin: string) {
-  const siteUrl = "https://querino.lovable.app";
+async function handleGetRSS(supabase: any) {
+  // The links in the feed point at the site. The self link has to be the URL
+  // this feed is actually fetched from, and that is this function on the
+  // project's functions origin, not /api/rss.xml on the site, which is a 404.
+  const siteUrl = SITE_ORIGIN;
+  const selfUrl = `${SUPABASE_URL}/functions/v1/blog-api/rss.xml`;
   const siteName = "Querino Blog";
   const siteDescription = "Articles about AI, prompts, and productivity";
 
@@ -357,7 +416,9 @@ async function handleGetRSS(supabase: any, origin: string) {
         : new Date().toUTCString();
       const link = `${siteUrl}/blog/${post.slug}`;
       const author = post.author?.display_name || "Anonymous";
-      const description = escapeXml(
+      // CDATA already carries the text verbatim, so escaping it first
+      // double-encoded every "&" for the reader.
+      const description = cdata(
         post.excerpt || post.content?.slice(0, 300) || "",
       );
 
@@ -368,7 +429,7 @@ async function handleGetRSS(supabase: any, origin: string) {
       <guid isPermaLink="true">${link}</guid>
       <pubDate>${pubDate}</pubDate>
       <dc:creator>${escapeXml(author)}</dc:creator>
-      <description><![CDATA[${description}]]></description>
+      <description>${description}</description>
     </item>`;
     })
     .join("");
@@ -381,7 +442,7 @@ async function handleGetRSS(supabase: any, origin: string) {
     <description>${escapeXml(siteDescription)}</description>
     <language>en</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${siteUrl}/api/rss.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${escapeXml(selfUrl)}" rel="self" type="application/rss+xml"/>
     ${items}
   </channel>
 </rss>`;
@@ -401,4 +462,12 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+/**
+ * Wrap text in a CDATA section. The only sequence CDATA cannot hold is its
+ * own terminator, so a literal "]]>" is split across two sections.
+ */
+function cdata(str: string): string {
+  return `<![CDATA[${str.replace(/\]\]>/g, "]]]]><![CDATA[>")}]]>`;
 }

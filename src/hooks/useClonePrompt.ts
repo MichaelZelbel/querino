@@ -7,6 +7,9 @@ interface SourcePrompt {
   content: string;
   category: string;
   tags?: string[] | null;
+  language?: string;
+  summary?: string | null;
+  example_output?: string | null;
 }
 
 const useBase = createCloneHook<SourcePrompt>({
@@ -17,6 +20,9 @@ const useBase = createCloneHook<SourcePrompt>({
     content: source.content,
     category: source.category,
     tags: source.tags || [],
+    ...(source.language ? { language: source.language } : {}),
+    summary: source.summary ?? null,
+    example_output: source.example_output ?? null,
     is_public: false,
     rating_avg: 0,
     rating_count: 0,

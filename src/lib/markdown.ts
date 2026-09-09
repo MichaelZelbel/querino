@@ -51,11 +51,10 @@ export function buildMarkdownContent(data: {
   frontmatterLines.push(`title: ${data.title}`);
   frontmatterLines.push(`type: ${data.type}`);
   if (data.description) {
-    const escapedDesc = data.description.replace(/"/g, '\\"');
-    frontmatterLines.push(`description: "${escapedDesc}"`);
+    frontmatterLines.push(`description: ${quoteScalar(data.description)}`);
   }
   if (data.tags && data.tags.length > 0) {
-    frontmatterLines.push(`tags: [${data.tags.join(", ")}]`);
+    frontmatterLines.push(`tags: [${data.tags.map(quoteTag).join(", ")}]`);
   }
   if (data.framework) {
     frontmatterLines.push(`framework: ${data.framework}`);
@@ -98,6 +97,68 @@ export function parseMarkdownContent(
   };
 }
 
+/**
+ * Export and import have to agree on quoting, or a round trip changes the
+ * data. The rules, kept deliberately small:
+ *   - a double-quoted scalar escapes `\` as `\\` and `"` as `\"`
+ *   - a tag is written bare unless it contains a comma, a quote, a bracket
+ *     or leading/trailing whitespace, in which case it is double-quoted the
+ *     same way
+ *   - on import a double-quoted value is unescaped, a single-quoted value is
+ *     taken literally, and a bare value is trimmed (unchanged behaviour for
+ *     files written before this)
+ */
+function quoteScalar(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function quoteTag(tag: string): string {
+  return /[,"'[\]\\]/.test(tag) || tag !== tag.trim() ? quoteScalar(tag) : tag;
+}
+
+function unquoteScalar(raw: string): string {
+  const value = raw.trim();
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1).replace(/\\(["\\])/g, "$1");
+  }
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+/** Split `a, "b, c", d` on the commas that are outside quotes. */
+function splitArrayItems(content: string): string[] {
+  const items: string[] = [];
+  let current = "";
+  let quote: '"' | "'" | null = null;
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+    if (quote) {
+      current += ch;
+      if (ch === "\\" && quote === '"' && i + 1 < content.length) {
+        current += content[++i];
+      } else if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if ((ch === '"' || ch === "'") && current.trim() === "") {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === ",") {
+      items.push(current);
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  items.push(current);
+  return items.map(unquoteScalar).filter(Boolean);
+}
+
 function parseFrontmatter(str: string): Record<string, any> {
   const result: Record<string, any> = {};
   const lines = str.split("\n");
@@ -105,21 +166,11 @@ function parseFrontmatter(str: string): Record<string, any> {
     const colonIndex = line.indexOf(":");
     if (colonIndex === -1) continue;
     const key = line.slice(0, colonIndex).trim();
-    let value = line.slice(colonIndex + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
+    const value = line.slice(colonIndex + 1).trim();
     if (value.startsWith("[") && value.endsWith("]")) {
-      const arrayContent = value.slice(1, -1);
-      result[key] = arrayContent
-        .split(",")
-        .map((item) => item.trim().replace(/^["']|["']$/g, ""))
-        .filter(Boolean);
+      result[key] = splitArrayItems(value.slice(1, -1));
     } else {
-      result[key] = value;
+      result[key] = unquoteScalar(value);
     }
   }
   return result;

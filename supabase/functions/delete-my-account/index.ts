@@ -188,78 +188,99 @@ serve(async (req) => {
       await cancelStripeSubscriptions(userEmail);
     }
 
-    // Send admin notification about account deletion
-    try {
-      console.log("delete-my-account - Sending admin notification...");
-      const notifyResponse = await fetch(
-        `${supabaseUrl}/functions/v1/notify-admin`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${supabaseServiceKey}`,
-          },
-          body: JSON.stringify({
-            eventType: "delete_account",
-            userEmail,
-            userId,
-            displayName,
-          }),
-        },
-      );
-      console.log(
-        "delete-my-account - Admin notification sent:",
-        notifyResponse.status,
-      );
-    } catch (notifyError) {
-      console.error(
-        "delete-my-account - Failed to send admin notification:",
-        notifyError,
-      );
-      // Continue with deletion even if notification fails
-    }
-
     // Delete user data from all tables (in order to respect foreign keys)
     // The order matters to avoid FK constraint violations
 
+    // Every delete below is checked. Until 2026-09-08 none were, so a failing
+    // one (a foreign key with no ON DELETE rule, an RLS surprise) was skipped
+    // in silence, the content was gone anyway, and only the very last call,
+    // auth.admin.deleteUser, reported anything. The account was then gutted
+    // and still able to log in, and every retry did the same thing again.
+    // Stopping at the first failure is what keeps the rest of the rows.
+    const mustSucceed = async (
+      label: string,
+      op: PromiseLike<{ error: { message: string } | null }>,
+    ): Promise<void> => {
+      const { error } = await op;
+      if (error) throw new Error(`${label}: ${error.message}`);
+    };
+
+    // Suggestions this user reviewed on other people's artifacts are not the
+    // user's own data. They lose the reviewer reference and stay.
+    console.log("delete-my-account - Unlinking reviewed suggestions...");
+    await mustSucceed(
+      "unlink reviewed suggestions",
+      supabaseAdmin
+        .from("suggestions")
+        .update({ reviewer_id: null })
+        .eq("reviewer_id", userId),
+    );
+
     console.log("delete-my-account - Deleting user credentials...");
-    await supabaseAdmin.from("user_credentials").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete user_credentials",
+      supabaseAdmin.from("user_credentials").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting user saved prompts...");
-    await supabaseAdmin
-      .from("user_saved_prompts")
-      .delete()
-      .eq("user_id", userId);
+    await mustSucceed(
+      "delete user_saved_prompts",
+      supabaseAdmin.from("user_saved_prompts").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting prompt pins...");
-    await supabaseAdmin.from("prompt_pins").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete prompt_pins",
+      supabaseAdmin.from("prompt_pins").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting prompt reviews...");
-    await supabaseAdmin.from("prompt_reviews").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete prompt_reviews",
+      supabaseAdmin.from("prompt_reviews").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting skill reviews...");
-    await supabaseAdmin.from("skill_reviews").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete skill_reviews",
+      supabaseAdmin.from("skill_reviews").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting workflow reviews...");
-    await supabaseAdmin.from("workflow_reviews").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete workflow_reviews",
+      supabaseAdmin.from("workflow_reviews").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting comments...");
-    await supabaseAdmin.from("comments").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete comments",
+      supabaseAdmin.from("comments").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting suggestions authored...");
-    await supabaseAdmin.from("suggestions").delete().eq("author_id", userId);
+    await mustSucceed(
+      "delete suggestions",
+      supabaseAdmin.from("suggestions").delete().eq("author_id", userId),
+    );
 
     console.log("delete-my-account - Deleting activity events...");
-    await supabaseAdmin.from("activity_events").delete().eq("actor_id", userId);
+    await mustSucceed(
+      "delete activity_events",
+      supabaseAdmin.from("activity_events").delete().eq("actor_id", userId),
+    );
 
     console.log("delete-my-account - Deleting AI allowance periods...");
-    await supabaseAdmin
-      .from("ai_allowance_periods")
-      .delete()
-      .eq("user_id", userId);
+    await mustSucceed(
+      "delete ai_allowance_periods",
+      supabaseAdmin.from("ai_allowance_periods").delete().eq("user_id", userId),
+    );
 
     console.log("delete-my-account - Deleting LLM usage events...");
-    await supabaseAdmin.from("llm_usage_events").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete llm_usage_events",
+      supabaseAdmin.from("llm_usage_events").delete().eq("user_id", userId),
+    );
 
     // Delete collection items for user's collections first
     console.log("delete-my-account - Fetching user collections...");
@@ -278,7 +299,10 @@ serve(async (req) => {
     }
 
     console.log("delete-my-account - Deleting collections...");
-    await supabaseAdmin.from("collections").delete().eq("owner_id", userId);
+    await mustSucceed(
+      "delete collections",
+      supabaseAdmin.from("collections").delete().eq("owner_id", userId),
+    );
 
     // Delete prompt versions for user's prompts
     console.log("delete-my-account - Fetching user prompts...");
@@ -312,7 +336,10 @@ serve(async (req) => {
     }
 
     console.log("delete-my-account - Deleting prompts...");
-    await supabaseAdmin.from("prompts").delete().eq("author_id", userId);
+    await mustSucceed(
+      "delete prompts",
+      supabaseAdmin.from("prompts").delete().eq("author_id", userId),
+    );
 
     // Delete AI insights for user's skills
     const { data: userSkills } = await supabaseAdmin
@@ -336,7 +363,10 @@ serve(async (req) => {
     }
 
     console.log("delete-my-account - Deleting skills...");
-    await supabaseAdmin.from("skills").delete().eq("author_id", userId);
+    await mustSucceed(
+      "delete skills",
+      supabaseAdmin.from("skills").delete().eq("author_id", userId),
+    );
 
     // Delete AI insights for user's workflows
     const { data: userWorkflows } = await supabaseAdmin
@@ -360,19 +390,73 @@ serve(async (req) => {
     }
 
     console.log("delete-my-account - Deleting workflows...");
-    await supabaseAdmin.from("workflows").delete().eq("author_id", userId);
+    await mustSucceed(
+      "delete workflows",
+      supabaseAdmin.from("workflows").delete().eq("author_id", userId),
+    );
+
+    // Delete AI insights, reviews and pins for the user's prompt kits.
+    // Until 2026-09-08 prompt kits were skipped entirely here. Their author
+    // foreign key is ON DELETE SET NULL, so a deleted account's public kits
+    // stayed on the site, readable, with no author at all.
+    const { data: userKits } = await supabaseAdmin
+      .from("prompt_kits")
+      .select("id")
+      .eq("author_id", userId);
+
+    if (userKits && userKits.length > 0) {
+      const kitIds = userKits.map((k) => k.id);
+      await supabaseAdmin
+        .from("prompt_kit_reviews")
+        .delete()
+        .in("prompt_kit_id", kitIds);
+      await supabaseAdmin
+        .from("prompt_kit_pins")
+        .delete()
+        .in("prompt_kit_id", kitIds);
+      for (const kitId of kitIds) {
+        await supabaseAdmin
+          .from("ai_insights")
+          .delete()
+          .eq("item_type", "prompt_kit")
+          .eq("item_id", kitId);
+      }
+    }
+
+    // The user's own reviews and pins on other people's kits go too, the way
+    // the three other artifact types already handled them.
+    await supabaseAdmin
+      .from("prompt_kit_reviews")
+      .delete()
+      .eq("user_id", userId);
+    await supabaseAdmin.from("prompt_kit_pins").delete().eq("user_id", userId);
+
+    console.log("delete-my-account - Deleting prompt kits...");
+    await mustSucceed(
+      "delete prompt_kits",
+      supabaseAdmin.from("prompt_kits").delete().eq("author_id", userId),
+    );
 
     // Handle team ownership - transfer or delete teams
     console.log("delete-my-account - Handling team memberships...");
-    await supabaseAdmin.from("team_members").delete().eq("user_id", userId);
+    await mustSucceed(
+      "delete team_members",
+      supabaseAdmin.from("team_members").delete().eq("user_id", userId),
+    );
 
     // Delete teams owned by user (members already deleted above)
     console.log("delete-my-account - Deleting owned teams...");
-    await supabaseAdmin.from("teams").delete().eq("owner_id", userId);
+    await mustSucceed(
+      "delete teams",
+      supabaseAdmin.from("teams").delete().eq("owner_id", userId),
+    );
 
     // Delete the profile
     console.log("delete-my-account - Deleting profile...");
-    await supabaseAdmin.from("profiles").delete().eq("id", userId);
+    await mustSucceed(
+      "delete profiles",
+      supabaseAdmin.from("profiles").delete().eq("id", userId),
+    );
 
     // Finally, delete the auth user
     console.log("delete-my-account - Deleting auth user...");
@@ -396,6 +480,37 @@ serve(async (req) => {
     }
 
     console.log(`delete-my-account - User ${userId} deleted successfully`);
+
+    // Only now, with the auth user really gone. Sending this first meant a run
+    // that failed halfway still reported the account as deleted.
+    try {
+      const notifyResponse = await fetch(
+        `${supabaseUrl}/functions/v1/notify-admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            eventType: "delete_account",
+            userEmail,
+            userId,
+            displayName,
+          }),
+        },
+      );
+      console.log(
+        "delete-my-account - Admin notification sent:",
+        notifyResponse.status,
+      );
+    } catch (notifyError) {
+      console.error(
+        "delete-my-account - Failed to send admin notification:",
+        notifyError,
+      );
+      // The account is already deleted; a missing notification does not undo it.
+    }
 
     return new Response(
       JSON.stringify({

@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { BlogAdminLayout } from "@/components/blog/admin/BlogAdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,16 +10,31 @@ import { useBlogMedia } from "@/hooks/useBlogMedia";
 import { FileText, FolderOpen, Tags, Image, Plus } from "lucide-react";
 import { Link } from "@/lib/router-compat";
 import { formatDistanceToNow } from "date-fns";
+import type { BlogPostStatus } from "@/types/blog";
+
+// The Recent Posts list is capped at five, so the totals cannot be counted from
+// it. Ask the database for the real count per status instead.
+function useBlogPostCount(status: BlogPostStatus) {
+  return useQuery({
+    queryKey: ["blog-post-count", status],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("blog_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
 
 export default function BlogAdminDashboard() {
   const { data: posts } = useBlogPosts({ limit: 5 });
   const { data: categories } = useBlogCategories();
   const { data: tags } = useBlogTags();
   const { data: media } = useBlogMedia();
-
-  const draftCount = posts?.filter((p) => p.status === "draft").length || 0;
-  const publishedCount =
-    posts?.filter((p) => p.status === "published").length || 0;
+  const { data: publishedCount = 0 } = useBlogPostCount("published");
+  const { data: draftCount = 0 } = useBlogPostCount("draft");
 
   const stats = [
     {

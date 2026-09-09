@@ -104,11 +104,13 @@ export function createArtifactListHook<T extends { id: string }>(
         }
 
         if (searchQuery.trim()) {
-          query = query.textSearch(
-            "title,description,content",
-            searchQuery.trim(),
-            { type: "websearch", config: "simple" },
-          );
+          // `fts` is a stored generated column over title, description and
+          // content (migration 20260908210000). PostgREST cannot filter on a
+          // comma-separated list of columns; it used to read only the title.
+          query = query.textSearch("fts", searchQuery.trim(), {
+            type: "websearch",
+            config: "simple",
+          });
         }
 
         if (limit) {
@@ -130,6 +132,7 @@ export function createArtifactListHook<T extends { id: string }>(
             searchQuery.trim(),
             ftsResults,
             fetchByIds,
+            { category },
           );
         }
 

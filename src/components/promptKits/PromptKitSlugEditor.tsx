@@ -18,14 +18,12 @@ import { generateSlug } from "@/hooks/useGenerateSlug";
 interface PromptKitSlugEditorProps {
   promptKitId: string;
   currentSlug: string;
-  userId: string;
   onSlugChanged: (newSlug: string) => void;
 }
 
 export function PromptKitSlugEditor({
   promptKitId,
   currentSlug,
-  userId,
   onSlugChanged,
 }: PromptKitSlugEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -57,7 +55,7 @@ export function PromptKitSlugEditor({
       setError("Invalid slug: becomes empty after normalization");
       return;
     }
-    const result = await updateSlug(promptKitId, transliterated, userId);
+    const result = await updateSlug(promptKitId, transliterated);
 
     if (result.error) {
       setError(result.error);

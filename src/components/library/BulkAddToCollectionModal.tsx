@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Folder, Plus, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import {
   useCollections,
   useAddToCollection,
@@ -36,7 +36,7 @@ export function BulkAddToCollectionModal({
   items,
   onDone,
 }: BulkAddToCollectionModalProps) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { data: collections, isLoading } = useCollections(user?.id);
   const addToCollection = useAddToCollection();
   const createCollection = useCreateCollection();

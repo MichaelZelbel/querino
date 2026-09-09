@@ -764,12 +764,6 @@ export default function SkillEdit() {
                     )}
                   </div>
 
-                  {/* Language */}
-                  <LanguageSelect
-                    value={formData.language}
-                    onChange={(v) => setFormData({ ...formData, language: v })}
-                  />
-
                   {/* Visibility Toggle */}
                   <div className="flex items-center justify-between rounded-lg border border-border p-4">
                     <div>

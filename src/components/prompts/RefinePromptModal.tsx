@@ -155,17 +155,23 @@ export function RefinePromptModal({
         }
       }
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("prompts")
         .update({
           content: refinedPrompt,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", promptId);
+        .eq("id", promptId)
+        .select("id");
 
       if (error) {
         console.error("Error updating prompt:", error);
         throw new Error(error.message);
+      }
+
+      // Row-level security filters silently, so an empty result means nothing was written.
+      if (!updated || updated.length === 0) {
+        throw new Error("You do not have permission to update this prompt.");
       }
 
       toast.success("Prompt updated successfully!");

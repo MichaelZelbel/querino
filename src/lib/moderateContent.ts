@@ -14,7 +14,7 @@ export interface ModerationResult {
 export async function moderateContent(
   contentFields: Record<string, string | null | undefined>,
   action: "publish" | "edit_public" | "comment",
-  itemType: "prompt" | "skill" | "claw" | "workflow" | "comment",
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "comment",
   itemId?: string,
 ): Promise<ModerationResult> {
   try {

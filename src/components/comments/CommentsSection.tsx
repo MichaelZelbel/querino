@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useComments } from "@/hooks/useComments";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { CommentItem } from "./CommentItem";
 import { ItemType } from "@/types/comment";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ export const CommentsSection = ({
   // The router knows the path without a browser, so the sign-in redirect keeps
   // working when this component renders on a server.
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const {
     comments,
     loading,

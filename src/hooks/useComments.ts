@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Comment, ItemType } from "@/types/comment";
 import { triggerNotification } from "@/lib/notifications";
 
 export const useComments = (itemType: ItemType, itemId: string) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

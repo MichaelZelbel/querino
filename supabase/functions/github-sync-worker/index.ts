@@ -8,6 +8,14 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireMachineCaller } from "../_shared/internalAuth.ts";
+// Paths and file bodies are shared with the manual github-sync function, so
+// the two can never disagree about which files are theirs.
+import {
+  type ArtifactType,
+  buildPath,
+  generateMarkdown,
+  TABLE_FOR_TYPE,
+} from "../_shared/githubSyncFormat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,10 +23,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-internal-key",
 };
 
+// The service client is created without the generated Database type, so
+// supabase-js types every `.rpc` argument object as `undefined` and every
+// result as `never`. That is a gap in the typing, not in the call, and casting
+// at each site would spread the same cast over the file. One helper says what
+// these calls really take and return.
+function callRpc<T>(
+  client: ReturnType<typeof createClient>,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<{ data: T | null; error: { message: string } | null }> {
+  const rpc = client.rpc as unknown as (
+    name: string,
+    params: Record<string, unknown>,
+  ) => Promise<{ data: T | null; error: { message: string } | null }>;
+  return rpc(fn, args);
+}
+
 const BATCH_SIZE = 25;
 const MAX_ATTEMPTS = 3;
 
-type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 type Operation = "upsert" | "delete";
 
 interface QueueRow {
@@ -39,90 +63,6 @@ interface GitHubSettings {
   branch: string;
   folder: string;
   token: string;
-}
-
-// ---------------- Markdown generation ----------------
-
-function yamlValue(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(", ")}]`;
-  }
-  if (value === null || value === undefined) return '""';
-  if (typeof value === "string") {
-    return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-  }
-  return String(value);
-}
-
-function buildFrontmatter(fields: Record<string, unknown>): string {
-  const lines = Object.entries(fields).map(([k, v]) => `${k}: ${yamlValue(v)}`);
-  return `---\n${lines.join("\n")}\n---\n`;
-}
-
-function generateMarkdown(
-  type: ArtifactType,
-  row: Record<string, any>,
-): string {
-  const common = {
-    id: row.id,
-    title: row.title ?? "",
-    description: row.description ?? "",
-    category: row.category ?? "",
-    tags: row.tags ?? [],
-    language: row.language ?? "en",
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  };
-
-  if (type === "prompt") {
-    const fm = buildFrontmatter({
-      ...common,
-      is_public: row.is_public ?? false,
-    });
-    return `${fm}\n# ${row.title}\n\n${row.description ?? ""}\n\n## Prompt Content\n\n\`\`\`\n${row.content ?? ""}\n\`\`\`\n`;
-  }
-  if (type === "skill") {
-    const fm = buildFrontmatter({
-      ...common,
-      published: row.published ?? false,
-    });
-    return `${fm}\n# ${row.title}\n\n${row.description ?? ""}\n\n## Skill Content\n\n${row.content ?? ""}\n`;
-  }
-  if (type === "workflow") {
-    const fm = buildFrontmatter({
-      ...common,
-      published: row.published ?? false,
-    });
-    return `${fm}\n# ${row.title}\n\n${row.description ?? ""}\n\n## Workflow\n\n${row.content ?? ""}\n`;
-  }
-  // prompt_kit
-  const fm = buildFrontmatter({
-    ...common,
-    published: row.published ?? false,
-  });
-  return `${fm}\n# ${row.title}\n\n${row.description ?? ""}\n\n${row.content ?? ""}\n`;
-}
-
-function folderForType(type: ArtifactType): string {
-  return {
-    prompt: "prompts",
-    skill: "skills",
-    workflow: "workflows",
-    prompt_kit: "prompt-kits",
-  }[type];
-}
-
-function buildPath(
-  baseFolder: string,
-  type: ArtifactType,
-  row: { slug?: string | null; id: string },
-): string {
-  const slug = row.slug && row.slug.length > 0 ? row.slug : row.id;
-  const shortId = row.id.slice(0, 8);
-  const file = `${slug}-${shortId}.md`;
-  const subFolder = folderForType(type);
-  const trimmed = (baseFolder || "").replace(/^\/+|\/+$/g, "");
-  return trimmed ? `${trimmed}/${subFolder}/${file}` : `${subFolder}/${file}`;
 }
 
 // ---------------- GitHub Contents API ----------------
@@ -240,10 +180,11 @@ async function loadGitHubSettings(
 
     // Encrypted at rest in Vault; read_user_credential is the only way in and
     // it is service-role only (finding H3).
-    const { data: teamToken } = await supabase.rpc("read_user_credential", {
-      _credential_type: "github_token",
-      _team_id: teamId,
-    });
+    const { data: teamToken } = await callRpc<string>(
+      supabase,
+      "read_user_credential",
+      { _credential_type: "github_token", _team_id: teamId },
+    );
     if (!teamToken) return null;
 
     return {
@@ -265,10 +206,11 @@ async function loadGitHubSettings(
     .maybeSingle();
   if (!profile?.github_sync_enabled || !profile?.github_repo) return null;
 
-  const { data: ownerToken } = await supabase.rpc("read_user_credential", {
-    _credential_type: "github_token",
-    _user_id: ownerUserId,
-  });
+  const { data: ownerToken } = await callRpc<string>(
+    supabase,
+    "read_user_credential",
+    { _credential_type: "github_token", _user_id: ownerUserId },
+  );
   if (!ownerToken) return null;
 
   return {
@@ -282,13 +224,6 @@ async function loadGitHubSettings(
 }
 
 // ---------------- Artifact loading ----------------
-
-const TABLE_FOR_TYPE: Record<ArtifactType, string> = {
-  prompt: "prompts",
-  skill: "skills",
-  workflow: "workflows",
-  prompt_kit: "prompt_kits",
-};
 
 async function loadArtifact(
   supabase: ReturnType<typeof createClient>,
@@ -314,22 +249,28 @@ async function processQueue(
   failed: number;
   skipped: number;
 }> {
-  const { data: pending, error: fetchErr } = await supabase
-    .from("github_sync_queue")
-    .select("*")
-    .in("status", ["pending", "failed"])
-    .lt("attempts", MAX_ATTEMPTS)
-    .order("created_at", { ascending: true })
-    .limit(BATCH_SIZE);
+  // One SQL call claims the batch: it flips the rows to 'processing', bumps
+  // attempts and stamps claimed_at inside a single statement with
+  // FOR UPDATE SKIP LOCKED. The cron fires every 30 s and a push to GitHub can
+  // take longer than that, so before this two overlapping ticks could both
+  // select the same 'pending' rows and push the same file twice. The claim
+  // also picks up 'processing' rows whose claimed_at is older than the RPC's
+  // stale window, which is how a job whose isolate died gets another turn
+  // instead of sitting in 'processing' forever.
+  const { data: claimed, error: fetchErr } = await callRpc<QueueRow[]>(
+    supabase,
+    "claim_github_sync_queue",
+    { batch_size: BATCH_SIZE, max_attempts: MAX_ATTEMPTS },
+  );
 
-  if (fetchErr) throw new Error(`Failed to fetch queue: ${fetchErr.message}`);
-  if (!pending || pending.length === 0) {
+  if (fetchErr) throw new Error(`Failed to claim queue: ${fetchErr.message}`);
+  if (!claimed || claimed.length === 0) {
     return { processed: 0, done: 0, failed: 0, skipped: 0 };
   }
 
   const latestByArtifact = new Map<string, QueueRow>();
   const supersededIds: string[] = [];
-  for (const row of pending as QueueRow[]) {
+  for (const row of claimed) {
     const key = `${row.artifact_type}:${row.artifact_id}`;
     const existing = latestByArtifact.get(key);
     if (!existing) {
@@ -350,12 +291,9 @@ async function processQueue(
   let failed = 0;
   let skipped = 0;
 
+  // The claim already marked every row 'processing' and counted the attempt,
+  // so there is nothing to write before starting on a job.
   for (const job of latestByArtifact.values()) {
-    await supabase
-      .from("github_sync_queue")
-      .update({ status: "processing", attempts: job.attempts + 1 })
-      .eq("id", job.id);
-
     try {
       const settings = await loadGitHubSettings(
         supabase,
@@ -475,6 +413,28 @@ async function processQueue(
         continue;
       }
 
+      // enqueue_github_sync was callable by any signed-in user until the
+      // 2026-09-08 migration revoked it, so a queue row may name an artifact
+      // its owner_user_id or team_id never owned. Pushing it would write
+      // someone else's content into this owner's repository. The artifact
+      // itself says who owns it, so it is checked before anything reaches
+      // GitHub.
+      const belongsToOwner = job.team_id
+        ? artifact.team_id === job.team_id
+        : artifact.author_id === job.owner_user_id &&
+          (artifact.team_id === null || artifact.team_id === undefined);
+      if (!belongsToOwner) {
+        await supabase
+          .from("github_sync_queue")
+          .update({
+            status: "skipped",
+            last_error: "artifact does not belong to the queued owner",
+          })
+          .eq("id", job.id);
+        skipped++;
+        continue;
+      }
+
       const newPath = buildPath(settings.folder, job.artifact_type, {
         slug: artifact.slug,
         id: artifact.id,
@@ -551,11 +511,12 @@ async function processQueue(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`Job ${job.id} failed:`, message);
-      const newAttempts = job.attempts + 1;
+      // job.attempts is the value after the claim incremented it, so it is
+      // this attempt's number, not the previous one's.
       await supabase
         .from("github_sync_queue")
         .update({
-          status: newAttempts >= MAX_ATTEMPTS ? "failed" : "pending",
+          status: job.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
           last_error: message.slice(0, 500),
         })
         .eq("id", job.id);

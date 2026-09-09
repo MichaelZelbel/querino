@@ -7,6 +7,7 @@ interface SourcePromptKit {
   content: string;
   category: string | null;
   tags?: string[] | null;
+  language?: string;
 }
 
 const useBase = createCloneHook<SourcePromptKit>({
@@ -17,6 +18,7 @@ const useBase = createCloneHook<SourcePromptKit>({
     content: source.content,
     category: source.category,
     tags: source.tags || [],
+    ...(source.language ? { language: source.language } : {}),
     published: false,
   }),
   editPath: (row) => `/prompt-kits/${row.slug}/edit`,

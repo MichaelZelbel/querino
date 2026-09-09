@@ -132,8 +132,11 @@ export function WorkspacePicker() {
             )}
           </DropdownMenuItem>
 
-          {/* Show teams section only for premium users with teams */}
-          {isPremium && teams.length > 0 && (
+          {/* Any signed-in user can be a member of a team, because an invite can be
+              redeemed without Premium. Listing the teams here regardless of plan is
+              what lets a free member switch back after picking Personal. Only
+              creating a team stays behind the Premium gate. */}
+          {teams.length > 0 && (
             <>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
@@ -142,29 +145,28 @@ export function WorkspacePicker() {
             </>
           )}
 
-          {isPremium &&
-            teams.map((team) => (
-              <DropdownMenuItem
-                key={team.id}
-                onClick={() => switchWorkspace(team.id)}
-                className="gap-2 py-2.5"
-              >
-                <Building2 className="h-4 w-4" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{team.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {team.role}
-                  </p>
-                </div>
-                {currentWorkspace === team.id && (
-                  <Check className="h-4 w-4 text-primary" />
-                )}
-              </DropdownMenuItem>
-            ))}
+          {teams.map((team) => (
+            <DropdownMenuItem
+              key={team.id}
+              onClick={() => switchWorkspace(team.id)}
+              className="gap-2 py-2.5"
+            >
+              <Building2 className="h-4 w-4" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{team.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {team.role}
+                </p>
+              </div>
+              {currentWorkspace === team.id && (
+                <Check className="h-4 w-4 text-primary" />
+              )}
+            </DropdownMenuItem>
+          ))}
 
           <DropdownMenuSeparator />
 
-          {currentWorkspace !== "personal" && canManageTeam && isPremium && (
+          {currentWorkspace !== "personal" && canManageTeam && (
             <DropdownMenuItem
               onClick={() => navigate(`/team/${currentWorkspace}/settings`)}
               className="gap-2"

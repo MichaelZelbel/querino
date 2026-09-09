@@ -33,7 +33,7 @@ A platform for discovering, creating, and sharing AI artifacts—prompts, skills
 
 ## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite
+- **Frontend**: React 19, TypeScript, Vite, TanStack Start (server-side rendering) with TanStack Router (file-based routes in `src/routes/`)
 - **Styling**: Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Storage)
 - **State Management**: TanStack Query
@@ -61,7 +61,9 @@ The following environment variables are required:
 | Variable | Description |
 |----------|-------------|
 | `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable (anon) key |
+
+See `.env.example` for the optional ones and for the names of the edge function secrets.
 
 ## Project Structure
 
@@ -75,7 +77,8 @@ src/
 │   ├── workflows/   # Workflow-related components
 │   └── ...
 ├── hooks/           # Custom React hooks
-├── pages/           # Route pages
+├── routes/          # TanStack Router file routes (one file per URL)
+├── pages/           # The page components those routes render
 ├── types/           # TypeScript type definitions
 ├── contexts/        # React contexts (Auth, Workspace)
 ├── lib/             # Utility functions
@@ -97,7 +100,7 @@ supabase/
 
 ## Why AGPL?
 
-Querino is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). The purpose of using AGPL is to ensure that Querino and any modifications remain open and self-hostable. If someone runs a modified version as a network service, they must also provide the corresponding corresponding source code under the same license. A hosted version of Querino is available at https://querino.ai/. The hosted version does not change the open-source status of the core system.
+Querino is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). The purpose of using AGPL is to ensure that Querino and any modifications remain open and self-hostable. If someone runs a modified version as a network service, they must also provide the corresponding source code under the same license. A hosted version of Querino is available at https://querino.ai/. The hosted version does not change the open-source status of the core system.
 
 ## License
 

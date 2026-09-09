@@ -90,16 +90,31 @@ serve(async (req) => {
       );
     }
     if (error instanceof GatewayError) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error(
+        "[prompt-wizard] Gateway error:",
+        error.status,
+        error.message,
+      );
+      return new Response(
+        JSON.stringify({ error: "Upstream AI gateway error" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[prompt-wizard] error:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // An auth failure is the caller's, everything else stays in the log.
+    const isAuth = /auth|bearer|token/i.test(message);
+    return new Response(
+      JSON.stringify({
+        error: isAuth ? "Unauthorized" : "Prompt wizard failed",
+      }),
+      {
+        status: isAuth ? 401 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

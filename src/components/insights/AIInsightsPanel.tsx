@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAIInsights } from "@/hooks/useAIInsights";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 
 type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -24,15 +25,22 @@ interface AIInsightsPanelProps {
   itemType: ItemType;
   itemId: string;
   teamId?: string | null;
+  /** Whether the viewer owns the item. Writing an insights row is owner,
+   *  team-member or admin only under row-level security, so the control that
+   *  generates or refreshes one is hidden for everyone else. Without it a
+   *  visitor spent credits on a call whose result the database then refused.
+   *  Undefined keeps the old behaviour. */
+  isOwner?: boolean;
 }
 
 export function AIInsightsPanel({
   itemType,
   itemId,
   teamId,
+  isOwner,
 }: AIInsightsPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const { user, profile } = useAuthContext();
+  const { user } = useAuthContext();
   const {
     insights,
     loading,
@@ -44,8 +52,8 @@ export function AIInsightsPanel({
   } = useAIInsights(itemType, itemId);
   const { checkCredits } = useAICreditsGate();
 
-  // Check if user has premium access
-  const isPremium = profile?.plan_type === "premium";
+  // Premium is granted through user_roles, which is what usePremiumCheck reads.
+  const { isPremium } = usePremiumCheck();
 
   // Gated generate/refresh functions
   const handleGenerate = () => {
@@ -138,18 +146,22 @@ export function AIInsightsPanel({
           <h3 className="font-semibold text-sm">AI Insights</h3>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={hasInsights ? handleRefresh : handleGenerate}
-            disabled={generating}
-            aria-label={hasInsights ? "Refresh insights" : "Generate insights"}
-          >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", generating && "animate-spin")}
-            />
-          </Button>
+          {isOwner !== false && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={hasInsights ? handleRefresh : handleGenerate}
+              disabled={generating}
+              aria-label={
+                hasInsights ? "Refresh insights" : "Generate insights"
+              }
+            >
+              <RefreshCw
+                className={cn("h-3.5 w-3.5", generating && "animate-spin")}
+              />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

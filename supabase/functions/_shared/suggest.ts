@@ -74,7 +74,10 @@ export function startSuggestServer(cfg: SuggestConfig) {
 
     try {
       const user_id = await getCallerUserId(req);
-      const body = await req.json();
+      const body = await req.json().catch(() => null);
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return json({ error: "Request body must be a JSON object" }, 400);
+      }
 
       let content = "";
       for (const field of cfg.bodyFields) {
@@ -94,7 +97,6 @@ export function startSuggestServer(cfg: SuggestConfig) {
       const result = await callLovableAI({
         user_id,
         feature: cfg.feature,
-        model: DEFAULT_MODEL,
         messages: [
           { role: "system", content: cfg.systemPrompt },
           {

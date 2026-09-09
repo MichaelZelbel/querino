@@ -21,7 +21,16 @@ serve(async (req) => {
 
   try {
     const user_id = await getCallerUserId(req);
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return new Response(
+        JSON.stringify({ error: "Request body must be a JSON object" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     const { item_type, title, description, content, tags } = body ?? {};
 
     if (
@@ -64,7 +73,6 @@ ${truncated}`;
     const result = await callLovableAI({
       user_id,
       feature: `ai-insights-${item_type}`,
-      model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: SYSTEM_PROMPTS[item_type as ItemType] },
         { role: "user", content: userMessage },

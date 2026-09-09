@@ -1058,7 +1058,6 @@ export default function LibraryPromptEdit() {
                           <SlugEditor
                             promptId={prompt.id}
                             currentSlug={prompt.slug}
-                            userId={user.id}
                             onSlugChanged={(newSlug) => {
                               setPrompt((prev) =>
                                 prev ? { ...prev, slug: newSlug } : null,

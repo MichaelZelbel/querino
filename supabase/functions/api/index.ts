@@ -83,7 +83,9 @@ async function handleGetRSS(supabase: any) {
         : new Date().toUTCString();
       const link = `${siteUrl}/blog/${post.slug}`;
       const author = post.author?.display_name || "Anonymous";
-      const description = escapeXml(
+      // CDATA already carries the text verbatim, so escaping it first
+      // double-encoded every "&" for the reader.
+      const description = cdata(
         post.excerpt || post.content?.slice(0, 300) || "",
       );
 
@@ -94,7 +96,7 @@ async function handleGetRSS(supabase: any) {
       <guid isPermaLink="true">${link}</guid>
       <pubDate>${pubDate}</pubDate>
       <dc:creator>${escapeXml(author)}</dc:creator>
-      <description><![CDATA[${description}]]></description>
+      <description>${description}</description>
     </item>`;
     })
     .join("");
@@ -137,36 +139,34 @@ async function handleGetSitemap(supabase: any) {
     { loc: "/impressum", priority: "0.3", changefreq: "yearly" },
   ];
 
-  // Fetch dynamic content in parallel
-  const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all(
-    [
-      supabase
-        .from("blog_posts")
-        .select("slug, updated_at")
-        .eq("status", "published")
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("prompts")
-        .select("slug, updated_at")
-        .eq("is_public", true)
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("skills")
-        .select("slug, updated_at")
-        .eq("published", true)
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("workflows")
-        .select("slug, updated_at")
-        .eq("published", true)
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("prompt_kits")
-        .select("slug, updated_at")
-        .eq("published", true)
-        .order("updated_at", { ascending: false }),
-    ],
-  );
+  // Fetch dynamic content in parallel. Each section is paged, because
+  // PostgREST silently stops at 1000 rows and a sitemap that quietly drops
+  // the oldest prompts is worse than a slow one. A query error is a 500 for
+  // the whole sitemap: a section served as empty behind a one-hour cache
+  // would tell crawlers those pages are gone.
+  let blogPosts: SlugRow[];
+  let prompts: SlugRow[];
+  let skills: SlugRow[];
+  let workflows: SlugRow[];
+  let promptKits: SlugRow[];
+  try {
+    [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all([
+      fetchAllSlugs(supabase, "blog_posts", "status", "published"),
+      fetchAllSlugs(supabase, "prompts", "is_public", true),
+      fetchAllSlugs(supabase, "skills", "published", true),
+      fetchAllSlugs(supabase, "workflows", "published", true),
+      fetchAllSlugs(supabase, "prompt_kits", "published", true),
+    ]);
+  } catch (err) {
+    console.error("[api] Sitemap query error:", err);
+    return new Response(
+      JSON.stringify({ error: "Failed to generate sitemap" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
 
   // Build URL entries
   const urls: string[] = [];
@@ -182,7 +182,7 @@ async function handleGetSitemap(supabase: any) {
   }
 
   // Add blog posts
-  for (const post of blogPosts.data || []) {
+  for (const post of blogPosts) {
     if (post.slug) {
       const lastmod = post.updated_at
         ? formatDate(post.updated_at)
@@ -198,7 +198,7 @@ async function handleGetSitemap(supabase: any) {
   }
 
   // Add public prompts
-  for (const prompt of prompts.data || []) {
+  for (const prompt of prompts) {
     if (prompt.slug) {
       const lastmod = prompt.updated_at
         ? formatDate(prompt.updated_at)
@@ -214,7 +214,7 @@ async function handleGetSitemap(supabase: any) {
   }
 
   // Add public skills
-  for (const skill of skills.data || []) {
+  for (const skill of skills) {
     if (skill.slug) {
       const lastmod = skill.updated_at
         ? formatDate(skill.updated_at)
@@ -230,7 +230,7 @@ async function handleGetSitemap(supabase: any) {
   }
 
   // Add public workflows
-  for (const workflow of workflows.data || []) {
+  for (const workflow of workflows) {
     if (workflow.slug) {
       const lastmod = workflow.updated_at
         ? formatDate(workflow.updated_at)
@@ -246,7 +246,7 @@ async function handleGetSitemap(supabase: any) {
   }
 
   // Add public prompt kits
-  for (const kit of promptKits.data || []) {
+  for (const kit of promptKits) {
     if (kit.slug) {
       const lastmod = kit.updated_at
         ? formatDate(kit.updated_at)
@@ -276,6 +276,41 @@ async function handleGetSitemap(supabase: any) {
   });
 }
 
+interface SlugRow {
+  slug: string | null;
+  updated_at: string | null;
+}
+
+const SITEMAP_PAGE = 1000;
+
+/**
+ * Every published slug of one table, in pages of 1000, newest first. Throws
+ * on a query error so the caller can refuse the whole sitemap instead of
+ * serving a hole.
+ */
+async function fetchAllSlugs(
+  supabase: any,
+  table: string,
+  flagColumn: string,
+  flagValue: string | boolean,
+): Promise<SlugRow[]> {
+  const all: SlugRow[] = [];
+  for (let from = 0; ; from += SITEMAP_PAGE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("slug, updated_at")
+      .eq(flagColumn, flagValue)
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + SITEMAP_PAGE - 1);
+    if (error) throw new Error(`${table}: ${error.message}`);
+    const page: SlugRow[] = data || [];
+    all.push(...page);
+    if (page.length < SITEMAP_PAGE) break;
+  }
+  return all;
+}
+
 function formatDate(isoDate: string): string {
   // Return YYYY-MM-DD format for sitemap
   return isoDate.split("T")[0];
@@ -288,4 +323,12 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+/**
+ * Wrap text in a CDATA section. The only sequence CDATA cannot hold is its
+ * own terminator, so a literal "]]>" is split across two sections.
+ */
+function cdata(str: string): string {
+  return `<![CDATA[${str.replace(/\]\]>/g, "]]]]><![CDATA[>")}]]>`;
 }

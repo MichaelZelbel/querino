@@ -71,7 +71,11 @@ export function useSubscription() {
   useEffect(() => {
     if (user) {
       checkSubscription(true);
+      return;
     }
+    // Same reason as the credit balance: a signed-out browser must not keep
+    // showing the last account's plan.
+    setSubscription(null);
   }, [user, checkSubscription]);
 
   // No background polling: self-serve checkout is disabled, so subscription

@@ -48,6 +48,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // prompts.id is a uuid. A non-uuid here would make the update at the end
+    // fail with a type error after Menerio has already been told the link
+    // exists, so it is refused before anything outward happens.
+    const UUID_RE =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (typeof prompt_id !== "string" || !UUID_RE.test(prompt_id)) {
+      return new Response(
+        JSON.stringify({ error: "prompt_id must be a uuid" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // Validate callback URL: must be https. Host is allowlisted below against
     // the user's stored Menerio base URL so an attacker cannot exfiltrate the
     // API key to an arbitrary domain even if they know the victim's user_id.
@@ -155,8 +170,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Optionally update the prompt with the menerio_note_id for future syncs
-    await supabase
+    // Record the link on the prompt so later syncs find the note. The error
+    // used to be dropped here, so the client saw ok: true while the prompt
+    // stayed unlinked; now a failed write is a failed request.
+    const { data: linked, error: linkError } = await supabase
       .from("prompts")
       .update({
         menerio_note_id,
@@ -164,7 +181,30 @@ Deno.serve(async (req) => {
         menerio_synced_at: new Date().toISOString(),
       })
       .eq("id", prompt_id)
-      .eq("author_id", user_id);
+      .eq("author_id", user_id)
+      .select("id");
+
+    if (linkError) {
+      console.error("menerio-link-callback prompt update failed:", linkError);
+      return new Response(
+        JSON.stringify({ error: "Could not record the link on the prompt" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    if (!linked || linked.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: "No prompt with this id belongs to the signed-in user",
+        }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,

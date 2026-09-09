@@ -301,29 +301,59 @@ Deno.serve(async (req: Request) => {
     mailLines.push(`${row.call_site} (${row.tier}): ${reason}. ${action}`);
   }
 
-  // The fallback itself. If the model named in llm-registry.ts is the one that
-  // vanished, falling back lands nowhere, and the automation would otherwise
+  // The fallback itself. If the model named in llm-registry.ts is not in the
+  // catalogue, falling back lands nowhere, and the automation would otherwise
   // report a tidy success while the app was broken.
+  //
+  // Checked against the catalogue, like the configured rows above, and not
+  // against tonight's diff: a default that was retired on an earlier night,
+  // or that never existed at all, is missing every night, and a check on the
+  // diff only saw it on the one night it vanished. The configured-row case
+  // does not repeat itself because it switches the row off and skips
+  // disabled rows. There is no row to switch off here, so an open alert for
+  // the same model is what says "already reported"; resolving it re-arms.
   const codeDefaults = new Set(
     CALL_SITES.filter((c) => c.provider === PROVIDER).map((c) => c.model),
   );
-  for (const model of codeDefaults) {
-    if (!retired.has(model)) continue;
-    const sites = CALL_SITES.filter((c) => c.model === model).map(
-      (c) => c.call_site,
+  const missingDefaults = [...codeDefaults].filter((m) => !byId.has(m));
+  if (missingDefaults.length > 0) {
+    const { data: openRows, error: openErr } = await admin
+      .from("llm_model_alerts")
+      .select("model_id")
+      .eq("kind", "code_default_retired")
+      .eq("provider", PROVIDER)
+      .in("model_id", missingDefaults)
+      .is("resolved_at", null);
+    // If the read fails, alert anyway: a duplicate row costs a click, a
+    // missing one costs a broken app nobody hears about.
+    if (openErr)
+      console.error(
+        "[sync-llm-models] could not read open alerts:",
+        openErr.message,
+      );
+    const alreadyOpen = new Set(
+      ((openRows ?? []) as Array<{ model_id: string | null }>).map(
+        (r) => r.model_id,
+      ),
     );
-    alerts.push({
-      kind: "code_default_retired",
-      provider: PROVIDER,
-      model_id: model,
-      detail: { call_sites: sites },
-      action_taken:
-        "Nothing can be done automatically. This needs a code change.",
-    });
-    mailLines.push(
-      `THE CODE DEFAULT ${model} was retired. ${sites.length} call site(s) fall back to it, ` +
-        `so falling back no longer helps. This one needs a code change in llm-registry.ts.`,
-    );
+    for (const model of missingDefaults) {
+      if (alreadyOpen.has(model)) continue;
+      const sites = CALL_SITES.filter((c) => c.model === model).map(
+        (c) => c.call_site,
+      );
+      alerts.push({
+        kind: "code_default_retired",
+        provider: PROVIDER,
+        model_id: model,
+        detail: { call_sites: sites },
+        action_taken:
+          "Nothing can be done automatically. This needs a code change.",
+      });
+      mailLines.push(
+        `THE CODE DEFAULT ${model} is not in OpenRouter's catalogue. ${sites.length} call site(s) fall back to it, ` +
+          `so falling back no longer helps. This one needs a code change in llm-registry.ts.`,
+      );
+    }
   }
 
   // ── 6. The CDN copy ───────────────────────────────────────────────────────

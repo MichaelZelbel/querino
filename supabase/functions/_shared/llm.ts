@@ -29,6 +29,7 @@ import {
   PROVIDER_SECRETS,
   DEFAULT_PROVIDER,
   DEFAULT_MODEL as REGISTRY_DEFAULT_MODEL,
+  getCallSiteMeta,
   type Provider,
 } from "./llm-registry.ts";
 
@@ -235,9 +236,22 @@ export function buildProviderRequest(
 }
 
 /**
+ * The model a call site runs on when the config table has no enabled row for
+ * it, or cannot be read. The registry is the one place that says which sites
+ * are cheap background jobs and which are chat, so the fallback is read from
+ * there; a caller may still pin a model explicitly. Before 2026-09-08 every
+ * fallback landed on the chat model, which put the eight background sites on a
+ * model roughly five times the intended price whenever the table was down.
+ */
+export function fallbackModelFor(feature: string, pinned?: string): string {
+  return pinned || getCallSiteMeta(feature)?.model || DEFAULT_MODEL;
+}
+
+/**
  * Resolve this call site's configuration, call whichever provider it names,
- * record token usage, return the parsed result. Always atomic w.r.t. credit
- * accounting via record_llm_usage.
+ * record token usage, return the parsed result. Usage recording is best-effort
+ * through the record_llm_usage RPC: an accounting failure is logged, never
+ * turned into a failed answer (tests/security/07 pins that down).
  *
  * The name is historical: it no longer only calls Lovable. Keeping it means the
  * fifteen call sites that already pass a `feature` string became configurable
@@ -250,7 +264,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
   const tier = await resolveTier(db, opts.user_id ?? null);
   const { effective, source } = await resolveConfig(db, opts.feature, tier, {
     provider: DEFAULT_PROVIDER,
-    model: opts.model || DEFAULT_MODEL,
+    model: fallbackModelFor(opts.feature, opts.model),
     temperature: opts.temperature ?? null,
   });
 
@@ -278,7 +292,20 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
     // so rewiring the provider layer changed nothing for any of them.
     if (e instanceof ProviderHttpError) {
       if (e.status === 429) throw new RateLimitedError(e.message);
-      if (e.status === 402) throw new CreditsExhaustedError(e.message);
+      // A 402 from the provider is OUR account being out of money, not the
+      // user's allowance. CreditsExhaustedError is reserved for assertCredits;
+      // mapping the upstream one onto it told every user, full allowance or
+      // not, that they had spent their credits, and quoted the provider's
+      // top-up text at them.
+      if (e.status === 402) {
+        console.error(
+          `[llm.callLovableAI] provider ${effective.provider} answered 402 for call site "${opts.feature}": the provider account needs funding`,
+        );
+        throw new GatewayError(
+          502,
+          `Provider ${effective.provider} refused the call (payment required on the provider account)`,
+        );
+      }
       throw new GatewayError(e.status, e.message);
     }
     throw e;

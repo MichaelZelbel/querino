@@ -99,10 +99,31 @@ export async function fetchSemanticMatches(
   }
 }
 
+interface MergeOptions {
+  threshold?: number;
+  count?: number;
+  /** Active category filter. "all" / undefined means no filter. Semantic
+   *  rows in another category are dropped so a filtered view stays filtered. */
+  category?: string;
+  /** Active tag filter. Semantic rows without that tag are dropped. */
+  tag?: string;
+}
+
+/** The two filterable fields every artifact row carries. Read defensively:
+ *  the merge is generic over the row type and must not trust the shape. */
+function passesFilters(row: unknown, category?: string, tag?: string) {
+  const r = (row ?? {}) as { category?: unknown; tags?: unknown };
+  if (category && category !== "all" && r.category !== category) return false;
+  if (tag && !(Array.isArray(r.tags) && r.tags.includes(tag))) return false;
+  return true;
+}
+
 /**
  * Merge an existing artifact list (e.g. from FTS) with semantic matches.
  * - Items already in `existing` keep their position.
  * - Semantic-only matches are appended, sorted by similarity desc.
+ * - Semantic-only matches outside the caller's category / tag filter are
+ *   dropped: the FTS query was filtered server-side, the RPC is not.
  * - Caller supplies a `fetchById` to hydrate semantic-only ids with full
  *   author/profile data (so cards render identically).
  */
@@ -111,16 +132,22 @@ export async function mergeWithSemantic<T extends { id: string }>(
   query: string,
   existing: T[],
   fetchByIds: (ids: string[]) => Promise<T[]>,
-  opts: { threshold?: number; count?: number } = {},
+  opts: MergeOptions = {},
 ): Promise<T[]> {
-  const semantic = await fetchSemanticMatches(itemType, query, opts);
+  const semantic = await fetchSemanticMatches(itemType, query, {
+    threshold: opts.threshold,
+    count: opts.count,
+  });
   if (semantic.length === 0) return existing;
 
   const existingIds = new Set(existing.map((e) => e.id));
   const newOnes = semantic.filter((s) => !existingIds.has(s.id));
   if (newOnes.length === 0) return existing;
 
-  const hydrated = await fetchByIds(newOnes.map((n) => n.id));
+  const hydrated = (await fetchByIds(newOnes.map((n) => n.id))).filter((row) =>
+    passesFilters(row, opts.category, opts.tag),
+  );
+  if (hydrated.length === 0) return existing;
   // Preserve similarity ordering from semantic search
   const orderById = new Map(newOnes.map((n, idx) => [n.id, idx]));
   hydrated.sort(

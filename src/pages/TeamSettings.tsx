@@ -64,7 +64,7 @@ import { toast } from "sonner";
 export default function TeamSettings() {
   const { id: teamId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext();
   const { data: team, isLoading: teamLoading } = useTeam(teamId);
   const { data: members = [], isLoading: membersLoading } =
     useTeamMembers(teamId);
@@ -86,12 +86,28 @@ export default function TeamSettings() {
     }
   }, [team]);
 
+  // Redirect from an effect and only once auth has settled. Navigating in the
+  // render body warns about updating the router while rendering, and on a hard
+  // reload the user is still null while the session is being restored, which
+  // bounced everyone through /auth.
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth?redirect=/team/" + teamId + "/settings");
+    }
+  }, [authLoading, user, teamId, navigate]);
+
   const canManage = userRole === "owner" || userRole === "admin";
   const isOwner = userRole === "owner";
 
-  if (!user) {
-    navigate("/auth?redirect=/team/" + teamId + "/settings");
-    return null;
+  if (authLoading || !user) {
+    return (
+      <main className="container max-w-4xl py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 w-48 bg-muted rounded" />
+          <div className="h-64 bg-muted rounded" />
+        </div>
+      </main>
+    );
   }
 
   if (teamLoading || membersLoading) {

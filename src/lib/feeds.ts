@@ -70,9 +70,10 @@ export async function buildRss(): Promise<string> {
         : new Date().toUTCString();
       const link = `${SITE_ORIGIN}/blog/${post.slug}`;
       const author = post.author?.display_name || "Anonymous";
-      const description = escapeXml(
-        post.excerpt || post.content?.slice(0, 300) || "",
-      );
+      // No escapeXml here: the value is wrapped in CDATA below, and doing both
+      // encodes an ampersand twice, so readers show &amp;amp; where the post
+      // said "&".
+      const description = post.excerpt || post.content?.slice(0, 300) || "";
 
       return `
     <item>
@@ -100,6 +101,47 @@ export async function buildRss(): Promise<string> {
 </rss>`;
 }
 
+/** One page of rows, and the cap PostgREST applies whether or not you ask. */
+const SITEMAP_PAGE = 1000;
+
+interface SitemapRow {
+  slug: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Every published row of one table, in pages.
+ *
+ * PostgREST answers with at most 1000 rows and reports no error when it
+ * truncates, so the single unpaged select this replaces silently stopped
+ * listing anything past the thousandth artifact. A sitemap that quietly goes
+ * short is worse than one that fails: nobody finds out, the pages just stop
+ * being crawled.
+ */
+async function fetchAllRows(
+  table: "blog_posts" | "prompts" | "skills" | "workflows" | "prompt_kits",
+  column: string,
+  value: string | boolean,
+): Promise<{ data: SitemapRow[] | null; error: { message: string } | null }> {
+  const rows: SitemapRow[] = [];
+
+  for (let from = 0; ; from += SITEMAP_PAGE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("slug, updated_at")
+      .eq(column, value as never)
+      .order("updated_at", { ascending: false })
+      .range(from, from + SITEMAP_PAGE - 1);
+
+    if (error) return { data: null, error };
+    const page = (data ?? []) as SitemapRow[];
+    rows.push(...page);
+    if (page.length < SITEMAP_PAGE) break;
+  }
+
+  return { data: rows, error: null };
+}
+
 export async function buildSitemap(): Promise<string> {
   // Static pages with their priorities
   const staticPages = [
@@ -117,31 +159,11 @@ export async function buildSitemap(): Promise<string> {
   // Fetch dynamic content in parallel
   const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all(
     [
-      supabase
-        .from("blog_posts")
-        .select("slug, updated_at")
-        .eq("status", "published")
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("prompts")
-        .select("slug, updated_at")
-        .eq("is_public", true)
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("skills")
-        .select("slug, updated_at")
-        .eq("published", true)
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("workflows")
-        .select("slug, updated_at")
-        .eq("published", true)
-        .order("updated_at", { ascending: false }),
-      supabase
-        .from("prompt_kits")
-        .select("slug, updated_at")
-        .eq("published", true)
-        .order("updated_at", { ascending: false }),
+      fetchAllRows("blog_posts", "status", "published"),
+      fetchAllRows("prompts", "is_public", true),
+      fetchAllRows("skills", "published", true),
+      fetchAllRows("workflows", "published", true),
+      fetchAllRows("prompt_kits", "published", true),
     ],
   );
 

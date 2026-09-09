@@ -71,9 +71,9 @@ serve(async (req) => {
       message,
       canvasContent,
       selection,
-    } = await req.json();
+    } = (await req.json().catch(() => ({}))) ?? {};
 
-    if (!message) {
+    if (!message || typeof message !== "string") {
       return new Response(
         JSON.stringify({ error: "message and canvasContent are required" }),
         {
@@ -142,7 +142,13 @@ serve(async (req) => {
       }
       if (e instanceof GatewayError) {
         console.error("[canvas-ai] Gateway error:", e.status, e.message);
-        throw new Error(`AI gateway returned ${e.status}`);
+        return new Response(
+          JSON.stringify({ error: "Upstream AI gateway error" }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       throw e;
     }
@@ -161,7 +167,14 @@ serve(async (req) => {
           .replace(/^```(?:json)?\s*/, "")
           .replace(/\s*```$/, "");
       }
-      result = JSON.parse(jsonStr);
+      const parsed: unknown = JSON.parse(jsonStr);
+      // JSON.parse happily returns a string, a number, null or an array. Only
+      // an object can carry the fields below; anything else is the model
+      // answering in prose and is treated like unparseable text, not a 500.
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("model reply is not a JSON object");
+      }
+      result = parsed as typeof result;
     } catch {
       // Fallback: treat entire response as a chat message
       console.warn("[canvas-ai] Failed to parse JSON, using raw text");
@@ -178,7 +191,11 @@ serve(async (req) => {
     ) {
       result.assistantMessage = rawContent || "I processed your request.";
     }
-    if (!result.canvas) {
+    if (
+      !result.canvas ||
+      typeof result.canvas !== "object" ||
+      Array.isArray(result.canvas)
+    ) {
       result.canvas = { updated: false };
     }
 
@@ -187,14 +204,11 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("[canvas-ai] Error:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Canvas AI failed",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    // The message may name a missing secret or an internal table; the log
+    // keeps it, the client gets a fixed line.
+    return new Response(JSON.stringify({ error: "Canvas AI failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

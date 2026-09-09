@@ -135,6 +135,16 @@ Deno.serve(async (req) => {
   }
 });
 
+// The service client is created without the generated Database type and the
+// table name is chosen at run time, so supabase-js resolves the row to `never`
+// and every column read is a type error. All four artifact tables carry the
+// two columns this worker decides on, so it names them once.
+interface SyncableArtifact {
+  id: string;
+  author_id: string;
+  [column: string]: unknown;
+}
+
 async function handleSync(
   adminClient: ReturnType<typeof createClient>,
   integration: any,
@@ -142,14 +152,27 @@ async function handleSync(
 ) {
   const tableName = tableFor(item.artifact_type);
 
-  const { data: artifact, error } = await adminClient
+  const { data, error } = await adminClient
     .from(tableName)
     .select("*")
     .eq("id", item.artifact_id)
     .maybeSingle();
 
+  const artifact = data as SyncableArtifact | null;
+
   if (error || !artifact) {
     throw new Error(`Artifact not found: ${item.artifact_id}`);
+  }
+
+  // The queue row names an artifact by id and the insert policy used to check
+  // only that user_id was the caller's own, so anyone could queue anyone
+  // else's private artifact into their own Menerio. The policy now checks
+  // ownership too (migration 20260908120300), and this is the second lock on
+  // the same door: a row that names someone else's artifact is never sent.
+  if (artifact.author_id !== item.user_id) {
+    throw new Error(
+      `Artifact ${item.artifact_id} does not belong to the user who queued it`,
+    );
   }
 
   const notePayload = buildNotePayload(item.artifact_type, artifact);

@@ -18,14 +18,15 @@ import { generateSlug } from "@/hooks/useGenerateSlug";
 interface SlugEditorProps {
   promptId: string;
   currentSlug: string;
-  userId: string;
   onSlugChanged: (newSlug: string) => void;
 }
 
+// No userId prop: update_prompt_slug reads the caller from the session now,
+// and a component that accepted one would suggest the browser still decides
+// who it is acting as.
 export function SlugEditor({
   promptId,
   currentSlug,
-  userId,
   onSlugChanged,
 }: SlugEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -59,7 +60,7 @@ export function SlugEditor({
       setError("Invalid slug: becomes empty after normalization");
       return;
     }
-    const result = await updateSlug(promptId, transliterated, userId);
+    const result = await updateSlug(promptId, transliterated);
 
     if (result.error) {
       setError(result.error);

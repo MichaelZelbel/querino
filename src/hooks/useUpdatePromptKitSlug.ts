@@ -10,21 +10,18 @@ interface UpdateSlugResult {
 export function useUpdatePromptKitSlug() {
   const [updating, setUpdating] = useState(false);
 
+  // The owner is auth.uid() inside the database function; a user id sent from
+  // the browser was one the caller could make up.
   const updateSlug = async (
     promptKitId: string,
     newSlug: string,
-    userId: string,
   ): Promise<UpdateSlugResult> => {
     setUpdating(true);
     try {
-      const { data, error } = await (supabase.rpc as any)(
-        "update_prompt_kit_slug",
-        {
-          p_prompt_kit_id: promptKitId,
-          p_new_slug: newSlug,
-          p_user_id: userId,
-        },
-      );
+      const { data, error } = await supabase.rpc("update_prompt_kit_slug", {
+        p_prompt_kit_id: promptKitId,
+        p_new_slug: newSlug,
+      });
 
       if (error) throw error;
 

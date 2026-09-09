@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Folder, Plus, Check, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import {
   useCollections,
   useAddToCollection,
@@ -32,7 +32,7 @@ export function AddToCollectionModal({
   itemId,
 }: AddToCollectionModalProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { data: collections, isLoading } = useCollections(user?.id);
   const addToCollection = useAddToCollection();
   const createCollection = useCreateCollection();

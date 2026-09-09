@@ -10,6 +10,13 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIKE_THRESHOLD = 5;
 
+// The item types this endpoint accepts alongside an item_id. The four artifact
+// types have an owner and only that owner may file them for AI review, because
+// the review can end in an unpublish. A comment's item_id is the artifact being
+// commented on, which the commenter does not own, so it gets no ownership check.
+const ARTIFACT_ITEM_TYPES = ["prompt", "skill", "workflow", "prompt_kit"];
+const KNOWN_ITEM_TYPES = [...ARTIFACT_ITEM_TYPES, "comment"];
+
 // Leet-speak and unicode normalization map
 const LEET_MAP: Record<string, string> = {
   "@": "a",
@@ -130,6 +137,43 @@ Deno.serve(async (req: Request) => {
 
     const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // 0. An item_id names something the AI review may end up unpublishing, so
+    // it has to be the caller's own. Before this check any signed-in user could
+    // file any other user's public artifact and have it taken down.
+    if (item_id) {
+      if (!KNOWN_ITEM_TYPES.includes(item_type)) {
+        return new Response(JSON.stringify({ error: "Unknown item_type" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (ARTIFACT_ITEM_TYPES.includes(item_type)) {
+        const { data: isOwner, error: ownerErr } = await serviceClient.rpc(
+          "is_item_owner",
+          { p_item_type: item_type, p_item_id: item_id, p_user_id: user.id },
+        );
+        if (ownerErr) {
+          console.warn("Ownership lookup failed:", ownerErr);
+          return new Response(
+            JSON.stringify({ error: "Could not verify item ownership" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+        if (isOwner !== true) {
+          return new Response(
+            JSON.stringify({ error: "Not the owner of this item" }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+      }
+    }
+
     // 1. Check if user is suspended
     const { data: suspension } = await serviceClient
       .from("user_suspensions")
@@ -211,34 +255,15 @@ Deno.serve(async (req: Request) => {
       tier: "stopword",
     });
 
-    // 7. If blocked, increment strike count
+    // 7. If blocked, increment strike count. One statement in the database,
+    // so two blocked submissions landing at once cannot lose a strike.
     if (isBlocked) {
-      const { data: existingSuspension } = await serviceClient
-        .from("user_suspensions")
-        .select("id, strike_count")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existingSuspension) {
-        const newStrikes = existingSuspension.strike_count + 1;
-        const shouldSuspend = newStrikes >= STRIKE_THRESHOLD;
-        await serviceClient
-          .from("user_suspensions")
-          .update({
-            strike_count: newStrikes,
-            suspended: shouldSuspend,
-            suspended_at: shouldSuspend ? new Date().toISOString() : null,
-            suspension_reason: shouldSuspend
-              ? `Auto-suspended after ${newStrikes} content violations`
-              : null,
-          })
-          .eq("id", existingSuspension.id);
-      } else {
-        await serviceClient.from("user_suspensions").insert({
-          user_id: user.id,
-          strike_count: 1,
-          suspended: false,
-        });
+      const { error: strikeErr } = await serviceClient.rpc(
+        "increment_user_strike",
+        { p_user_id: user.id, p_threshold: STRIKE_THRESHOLD },
+      );
+      if (strikeErr) {
+        console.error("Failed to record strike:", strikeErr);
       }
 
       const categoryLabels: Record<string, string> = {

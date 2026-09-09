@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import {
   Suggestion,
   SuggestionWithAuthor,
@@ -12,7 +12,7 @@ export const useSuggestions = (
   itemType: SuggestionItemType,
   itemId: string,
 ) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [suggestions, setSuggestions] = useState<SuggestionWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

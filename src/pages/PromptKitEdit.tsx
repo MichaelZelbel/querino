@@ -619,7 +619,6 @@ export default function PromptKitEdit() {
                     <PromptKitSlugEditor
                       promptKitId={kitId!}
                       currentSlug={currentSlug}
-                      userId={user.id}
                       onSlugChanged={(s) => {
                         setCurrentSlug(s);
                         navigate(`/prompt-kits/${s}/edit`, { replace: true });

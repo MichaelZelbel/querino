@@ -146,9 +146,39 @@ Deno.serve(async (req) => {
     }
 
     // 6. Process
+    //
+    //    Two runs can overlap: pg_cron fires every two minutes and the admin
+    //    button fires whenever it is pressed. Both used to select the same
+    //    NULL rows in the same order and pay for every embedding twice.
+    //
+    //    There is no lock RPC and no claim column, and a migration is out of
+    //    scope here, so the claim is a conditional UPDATE on updated_at, a
+    //    column every one of these tables already bumps on any update
+    //    (update_embedding included, through the updated_at triggers). A row
+    //    is ours only if our UPDATE ... WHERE embedding IS NULL AND
+    //    updated_at < now() - lease actually changed it. Under Postgres's
+    //    default READ COMMITTED the second runner's UPDATE waits on the row
+    //    lock, re-checks its WHERE against the committed row, sees the fresh
+    //    updated_at and matches nothing. The lease is longer than one
+    //    embedding call and shorter than the cron interval, so a row that was
+    //    just written waits at most one extra tick. Touching updated_at wakes
+    //    no sync: the Menerio and GitHub triggers only compare text and
+    //    metadata columns, and the embedding trigger only nulls on text
+    //    changes.
+    const CLAIM_LEASE_MS = 90_000;
+    const claimCutoff = new Date(Date.now() - CLAIM_LEASE_MS).toISOString();
+    const claimable = `updated_at.is.null,updated_at.lt.${claimCutoff}`;
+
     const results: Record<
       string,
-      { processed: number; succeeded: number; failed: number; errors: string[] }
+      {
+        processed: number;
+        succeeded: number;
+        failed: number;
+        /** Claimed by an overlapping run, or written too recently to claim. */
+        skipped: number;
+        errors: string[];
+      }
     > = {};
     // Which providers actually answered. Reported so a failover to the backup
     // account shows up here rather than only on the bill.
@@ -161,6 +191,7 @@ Deno.serve(async (req) => {
         processed: 0,
         succeeded: 0,
         failed: 0,
+        skipped: 0,
         errors: [] as string[],
       };
       results[cfg.itemType] = r;
@@ -171,11 +202,13 @@ Deno.serve(async (req) => {
       const selectCols = ["id", ...cfg.textFields].join(", ");
       // Published first. Only a published row is reachable by semantic search,
       // so if a run cannot finish the backlog, the half it does finish should
-      // be the half anyone can actually miss.
+      // be the half anyone can actually miss. Only rows old enough to claim,
+      // so a slot is not spent on a row another run is embedding right now.
       const { data: rows, error: selErr } = await sb
         .from(cfg.table)
         .select(selectCols)
         .is("embedding", null)
+        .or(claimable)
         .order(cfg.publishedColumn, { ascending: false })
         .order("updated_at", { ascending: false })
         .limit(remaining);
@@ -187,6 +220,27 @@ Deno.serve(async (req) => {
 
       for (const row of (rows ?? []) as Array<Record<string, unknown>>) {
         if (totalProcessed >= maxItems) break;
+
+        // The claim. Zero rows back means another run got here first, or
+        // the row was rewritten since we selected it; either way not ours.
+        const { data: claimed, error: claimErr } = await sb
+          .from(cfg.table)
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", row.id)
+          .is("embedding", null)
+          .or(claimable)
+          .select("id");
+        if (claimErr) {
+          r.failed++;
+          if (r.errors.length < errorsCap)
+            r.errors.push(`${row.id}: claim ${claimErr.message}`);
+          continue;
+        }
+        if (!claimed || claimed.length === 0) {
+          r.skipped++;
+          continue;
+        }
+
         r.processed++;
         totalProcessed++;
 

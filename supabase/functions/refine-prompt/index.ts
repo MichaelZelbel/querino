@@ -54,7 +54,17 @@ serve(async (req) => {
     const user_id = await getCallerUserId(req);
 
     // 2. Parse + validate body
-    const body = (await req.json()) as RefineBody;
+    const raw = await req.json().catch(() => null);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      return new Response(
+        JSON.stringify({ error: "Request body must be a JSON object" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    const body = raw as RefineBody;
     const prompt = (body.prompt ?? "").toString().trim();
     const framework = (body.framework ?? "auto").toString().slice(0, 64);
     const goal = (body.goal ?? "").toString().slice(0, 500);
@@ -86,7 +96,6 @@ serve(async (req) => {
     const result = await callLovableAI({
       user_id,
       feature: "prompt-refinement",
-      model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMsg },

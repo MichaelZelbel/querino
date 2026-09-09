@@ -605,6 +605,7 @@ export default function SkillDetail({
         <AIInsightsPanel
           itemType="skill"
           itemId={skill.id}
+          isOwner={!!isAuthor}
           teamId={(skill as any).team_id}
         />
       </div>

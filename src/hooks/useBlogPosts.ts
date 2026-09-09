@@ -42,8 +42,7 @@ export function useBlogPosts(options: FetchPostsOptions = {}) {
           featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text)
         `,
         )
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order("created_at", { ascending: false });
 
       if (status !== "all") {
         query = query.eq("status", status);
@@ -57,19 +56,24 @@ export function useBlogPosts(options: FetchPostsOptions = {}) {
         query = query.ilike("title", `%${search}%`);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // If filtering by category, we need to do a separate query
-      if (categoryId && data) {
-        const { data: postCategories } = await supabase
+      // The category filter has to reach the database BEFORE the page is cut,
+      // the way usePublicBlog does it. Filtering the page in JS afterwards
+      // returned an empty page for any category whose posts sat on another
+      // page.
+      if (categoryId) {
+        const { data: postCategories, error: categoryError } = await supabase
           .from("blog_post_categories")
           .select("post_id")
           .eq("category_id", categoryId);
+        if (categoryError) throw categoryError;
 
         const postIds = postCategories?.map((pc) => pc.post_id) || [];
-        return data.filter((post) => postIds.includes(post.id)) as BlogPost[];
+        if (postIds.length === 0) return [] as BlogPost[];
+        query = query.in("id", postIds);
       }
+
+      const { data, error } = await query.range(offset, offset + limit - 1);
+      if (error) throw error;
 
       return data as BlogPost[];
     },

@@ -59,7 +59,11 @@ export default function UserProfile() {
         const { data: profileData, error: profileError } = (await supabase
           .from("profiles")
           .select("id, display_name, avatar_url, bio, website, twitter, github")
-          .or(`display_name.ilike.${username}`)
+          // Match the display name exactly. Interpolating the URL segment into a
+          // PostgREST filter string would let a comma or parenthesis in a username
+          // rewrite the filter, and route-loaders.ts and UserActivity.tsx both look
+          // the profile up with the same exact match.
+          .eq("display_name", username)
           .maybeSingle()) as any;
 
         if (profileError || !profileData) {

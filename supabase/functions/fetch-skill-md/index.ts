@@ -39,8 +39,44 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return new Response(
+        JSON.stringify({ error: "Request body must be a JSON object" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     const { sourceType, sourceRef, sourcePath, sourceVersion, originalUrl } =
-      await req.json();
+      body as Record<string, unknown>;
+
+    // sourcePath is pasted into the raw.githubusercontent.com path. A '?' or a
+    // '#' in it ends the path early, so "README.md#" fetched README.md rather
+    // than the SKILL.md this endpoint exists to read, and '..' walked out of
+    // the repository's own folder. The host allowlist below cannot see any of
+    // that, because the host is still raw.githubusercontent.com.
+    if (sourcePath !== undefined && sourcePath !== null) {
+      const badChars = ["?", "#", "\\"];
+      if (
+        typeof sourcePath !== "string" ||
+        badChars.some((c) => sourcePath.includes(c)) ||
+        sourcePath.split("/").includes("..") ||
+        sourcePath.startsWith("/")
+      ) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "sourcePath must be a relative path with no '?', '#', '..' or backslash",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
 
     console.log("Fetch request:", {
       sourceType,
@@ -79,7 +115,10 @@ Deno.serve(async (req) => {
       }
 
       // Extract owner/repo from sourceRef
-      const repoMatch = sourceRef.match(/github\.com\/([^/]+)\/([^/]+)/);
+      const repoMatch =
+        typeof sourceRef === "string"
+          ? sourceRef.match(/github\.com\/([^/]+)\/([^/]+)/)
+          : null;
       if (!repoMatch) {
         return new Response(
           JSON.stringify({ error: "Could not parse GitHub repository URL" }),

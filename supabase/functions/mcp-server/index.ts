@@ -27,7 +27,8 @@ interface Auth {
 }
 
 // Service-role client. We deliberately bypass RLS here and enforce ownership
-// in every tool by filtering on author_id = auth.userId.
+// in every tool by filtering on author_id = auth.userId, and column access
+// in every update_* tool with pickDeclared below.
 function authedClient(_auth: Auth) {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -72,6 +73,84 @@ async function authenticate(req: Request): Promise<Auth> {
   if (!userId) throw new Error("Invalid, revoked, or expired token");
 
   return { userId };
+}
+
+// ── Input hygiene ───────────────────────────────────────────────────
+
+// mcp-lite 0.10 hands a tool whatever keys the caller sent; it does not check
+// them against the tool's inputSchema. And the client below holds the
+// service-role key, so neither row-level security nor the column grants sit
+// between a stray key and the SET list, and the profile guard trigger only
+// fires for a real auth.uid(). The whitelist here IS the authorization: an
+// update touches the columns its tool declares and nothing else. Each list
+// mirrors that tool's inputSchema minus `id`, so keep the two together.
+const UPDATABLE = {
+  prompts: [
+    "title",
+    "description",
+    "content",
+    "category",
+    "tags",
+    "is_public",
+    "language",
+  ],
+  skills: [
+    "title",
+    "description",
+    "content",
+    "category",
+    "tags",
+    "published",
+    "language",
+  ],
+  workflows: [
+    "title",
+    "description",
+    "content",
+    "json",
+    "category",
+    "tags",
+    "published",
+    "language",
+  ],
+  prompt_kits: [
+    "title",
+    "description",
+    "content",
+    "category",
+    "tags",
+    "published",
+    "language",
+  ],
+  profiles: ["display_name", "bio", "website", "twitter", "github"],
+} as const;
+
+/** The declared keys of `input`, or null when none of them was given. */
+function pickDeclared(
+  input: Record<string, unknown>,
+  allowed: readonly string[],
+): Record<string, unknown> | null {
+  const picked: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (input[key] !== undefined) picked[key] = input[key];
+  }
+  return Object.keys(picked).length > 0 ? picked : null;
+}
+
+/**
+ * The row window for every list_* tool. A negative offset is a PostgREST
+ * error, a limit of ten thousand is a response nobody asked to read, and
+ * list_collections used to have no cap at all. Limit ends up in 1..100,
+ * offset at 0 or more, and anything that is not a number falls back to the
+ * defaults.
+ */
+function pageWindow(
+  limit: unknown,
+  offset: unknown,
+): { from: number; to: number } {
+  const l = Math.min(Math.max(Math.floor(Number(limit)) || 20, 1), 100);
+  const o = Math.max(Math.floor(Number(offset)) || 0, 0);
+  return { from: o, to: o + l - 1 };
 }
 
 // ── Tool definitions ────────────────────────────────────────────────
@@ -158,8 +237,7 @@ function buildMcpServer(auth: Auth) {
       },
     },
     handler: async ({ limit, offset }: { limit?: number; offset?: number }) => {
-      const l = Math.min(limit ?? 20, 100);
-      const o = offset ?? 0;
+      const { from, to } = pageWindow(limit, offset);
       const { data, error } = await sb
         .from("prompts")
         .select(
@@ -167,7 +245,7 @@ function buildMcpServer(auth: Auth) {
         )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
-        .range(o, o + l - 1);
+        .range(from, to);
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return {
@@ -275,11 +353,16 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async (input: Record<string, unknown>) => {
-      const { id, ...updates } = input;
+      const id = input.id as string;
+      const updates = pickDeclared(input, UPDATABLE.prompts);
+      if (!updates)
+        return {
+          content: [{ type: "text", text: "Error: no updatable fields given" }],
+        };
       const { data, error } = await sb
         .from("prompts")
         .update(updates)
-        .eq("id", id as string)
+        .eq("id", id)
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
@@ -299,13 +382,23 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async ({ id }: { id: string }) => {
-      const { error } = await sb
+      const { data, error } = await sb
         .from("prompts")
         .delete()
         .eq("id", id)
-        .eq("author_id", auth.userId);
+        .eq("author_id", auth.userId)
+        .select("id");
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (!data || data.length === 0)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: no prompt ${id} in your library, nothing was deleted`,
+            },
+          ],
+        };
       return { content: [{ type: "text", text: `Deleted prompt ${id}` }] };
     },
   });
@@ -322,8 +415,7 @@ function buildMcpServer(auth: Auth) {
       },
     },
     handler: async ({ limit, offset }: { limit?: number; offset?: number }) => {
-      const l = Math.min(limit ?? 20, 100);
-      const o = offset ?? 0;
+      const { from, to } = pageWindow(limit, offset);
       const { data, error } = await sb
         .from("skills")
         .select(
@@ -331,7 +423,7 @@ function buildMcpServer(auth: Auth) {
         )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
-        .range(o, o + l - 1);
+        .range(from, to);
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return {
@@ -438,11 +530,16 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async (input: Record<string, unknown>) => {
-      const { id, ...updates } = input;
+      const id = input.id as string;
+      const updates = pickDeclared(input, UPDATABLE.skills);
+      if (!updates)
+        return {
+          content: [{ type: "text", text: "Error: no updatable fields given" }],
+        };
       const { data, error } = await sb
         .from("skills")
         .update(updates)
-        .eq("id", id as string)
+        .eq("id", id)
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
@@ -462,13 +559,23 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async ({ id }: { id: string }) => {
-      const { error } = await sb
+      const { data, error } = await sb
         .from("skills")
         .delete()
         .eq("id", id)
-        .eq("author_id", auth.userId);
+        .eq("author_id", auth.userId)
+        .select("id");
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (!data || data.length === 0)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: no skill ${id} in your library, nothing was deleted`,
+            },
+          ],
+        };
       return { content: [{ type: "text", text: `Deleted skill ${id}` }] };
     },
   });
@@ -485,8 +592,7 @@ function buildMcpServer(auth: Auth) {
       },
     },
     handler: async ({ limit, offset }: { limit?: number; offset?: number }) => {
-      const l = Math.min(limit ?? 20, 100);
-      const o = offset ?? 0;
+      const { from, to } = pageWindow(limit, offset);
       const { data, error } = await sb
         .from("workflows")
         .select(
@@ -494,7 +600,7 @@ function buildMcpServer(auth: Auth) {
         )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
-        .range(o, o + l - 1);
+        .range(from, to);
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return {
@@ -607,11 +713,16 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async (input: Record<string, unknown>) => {
-      const { id, ...updates } = input;
+      const id = input.id as string;
+      const updates = pickDeclared(input, UPDATABLE.workflows);
+      if (!updates)
+        return {
+          content: [{ type: "text", text: "Error: no updatable fields given" }],
+        };
       const { data, error } = await sb
         .from("workflows")
         .update(updates)
-        .eq("id", id as string)
+        .eq("id", id)
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
@@ -631,21 +742,38 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async ({ id }: { id: string }) => {
-      const { error } = await sb
+      const { data, error } = await sb
         .from("workflows")
         .delete()
         .eq("id", id)
-        .eq("author_id", auth.userId);
+        .eq("author_id", auth.userId)
+        .select("id");
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (!data || data.length === 0)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: no workflow ${id} in your library, nothing was deleted`,
+            },
+          ],
+        };
       return { content: [{ type: "text", text: `Deleted workflow ${id}` }] };
     },
   });
 
-  // ── CLAWS ─────────────────────────────────────────────────────────
+  // The six claw tools that stood here were removed on 2026-09-08. Migration
+  // 20260430155205 dropped public.claws in April and nothing recreated it, so
+  // every one of them had been answering "Could not find the table
+  // 'public.claws' in the schema cache" to every client since. A tool that
+  // cannot succeed is worse than a missing one: it tells the model the
+  // capability exists.
 
-  mcpServer.tool("list_claws", {
-    description: "List your claws (most recent first).",
+  // ── COLLECTIONS ───────────────────────────────────────────────────
+
+  mcpServer.tool("list_collections", {
+    description: "List your collections.",
     inputSchema: {
       type: "object",
       properties: {
@@ -654,181 +782,13 @@ function buildMcpServer(auth: Auth) {
       },
     },
     handler: async ({ limit, offset }: { limit?: number; offset?: number }) => {
-      const l = Math.min(limit ?? 20, 100);
-      const o = offset ?? 0;
-      const { data, error } = await sb
-        .from("claws")
-        .select(
-          "id, title, category, tags, published, source, language, rating_avg, rating_count, created_at, updated_at",
-        )
-        .eq("author_id", auth.userId)
-        .order("updated_at", { ascending: false })
-        .range(o, o + l - 1);
-      if (error)
-        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-      };
-    },
-  });
-
-  mcpServer.tool("search_claws", {
-    description:
-      "Search your claws by keyword in title, description or content. " +
-      'Multiple words are matched as separate keywords; "quote a phrase" to keep it together. ' +
-      "Searches everything you own, drafts and unpublished claws included.",
-    inputSchema: {
-      type: "object",
-      properties: { query: { type: "string", description: "Search keywords" } },
-      required: ["query"],
-    },
-    handler: async ({ query }: { query: string }) => {
-      return await runSearch(
-        "claws",
-        "id, title, category, tags, published, source, language, updated_at",
-        query,
-      );
-    },
-  });
-
-  mcpServer.tool("get_claw", {
-    description: "Get full details of a claw by ID.",
-    inputSchema: {
-      type: "object",
-      properties: { id: { type: "string" } },
-      required: ["id"],
-    },
-    handler: async ({ id }: { id: string }) => {
-      const { data, error } = await sb
-        .from("claws")
-        .select("*")
-        .eq("id", id)
-        .eq("author_id", auth.userId)
-        .single();
-      if (error)
-        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-      };
-    },
-  });
-
-  mcpServer.tool("create_claw", {
-    description: "Create a new claw.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        description: { type: "string" },
-        content: { type: "string" },
-        skill_md_content: { type: "string", description: "SKILL.md content" },
-        category: { type: "string" },
-        tags: { type: "array", items: { type: "string" } },
-        source: {
-          type: "string",
-          description: "clawbot, antigravity, or generic",
-        },
-        published: { type: "boolean" },
-        language: { type: "string" },
-      },
-      required: ["title"],
-    },
-    handler: async (input: Record<string, unknown>) => {
-      const { data, error } = await sb
-        .from("claws")
-        .insert({
-          title: input.title as string,
-          description: (input.description as string) ?? null,
-          content: (input.content as string) ?? null,
-          skill_md_content: (input.skill_md_content as string) ?? null,
-          category: (input.category as string) ?? null,
-          tags: (input.tags as string[]) ?? [],
-          source: (input.source as string) ?? "clawbot",
-          published: (input.published as boolean) ?? false,
-          language: (input.language as string) ?? "en",
-          author_id: auth.userId,
-        })
-        .select("id, title, slug")
-        .single();
-      if (error)
-        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return {
-        content: [
-          { type: "text", text: `Created claw: ${JSON.stringify(data)}` },
-        ],
-      };
-    },
-  });
-
-  mcpServer.tool("update_claw", {
-    description: "Update an existing claw by ID.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        id: { type: "string" },
-        title: { type: "string" },
-        description: { type: "string" },
-        content: { type: "string" },
-        skill_md_content: { type: "string" },
-        category: { type: "string" },
-        tags: { type: "array", items: { type: "string" } },
-        source: { type: "string" },
-        published: { type: "boolean" },
-        language: { type: "string" },
-      },
-      required: ["id"],
-    },
-    handler: async (input: Record<string, unknown>) => {
-      const { id, ...updates } = input;
-      const { data, error } = await sb
-        .from("claws")
-        .update(updates)
-        .eq("id", id as string)
-        .eq("author_id", auth.userId)
-        .select("id, title")
-        .single();
-      if (error)
-        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return {
-        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
-      };
-    },
-  });
-
-  mcpServer.tool("delete_claw", {
-    description: "Delete a claw by ID.",
-    inputSchema: {
-      type: "object",
-      properties: { id: { type: "string" } },
-      required: ["id"],
-    },
-    handler: async ({ id }: { id: string }) => {
-      const { error } = await sb
-        .from("claws")
-        .delete()
-        .eq("id", id)
-        .eq("author_id", auth.userId);
-      if (error)
-        return { content: [{ type: "text", text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text", text: `Deleted claw ${id}` }] };
-    },
-  });
-
-  // ── COLLECTIONS ───────────────────────────────────────────────────
-
-  mcpServer.tool("list_collections", {
-    description: "List your collections.",
-    inputSchema: {
-      type: "object",
-      properties: { limit: { type: "number" } },
-    },
-    handler: async ({ limit }: { limit?: number }) => {
+      const { from, to } = pageWindow(limit, offset);
       const { data, error } = await sb
         .from("collections")
         .select("id, title, description, is_public, created_at, updated_at")
         .eq("owner_id", auth.userId)
         .order("updated_at", { ascending: false })
-        .limit(limit ?? 20);
+        .range(from, to);
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return {
@@ -910,13 +870,23 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async ({ id }: { id: string }) => {
-      const { error } = await sb
+      const { data, error } = await sb
         .from("collections")
         .delete()
         .eq("id", id)
-        .eq("owner_id", auth.userId);
+        .eq("owner_id", auth.userId)
+        .select("id");
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (!data || data.length === 0)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: no collection ${id} in your library, nothing was deleted`,
+            },
+          ],
+        };
       return { content: [{ type: "text", text: `Deleted collection ${id}` }] };
     },
   });
@@ -955,9 +925,14 @@ function buildMcpServer(auth: Auth) {
       },
     },
     handler: async (input: Record<string, unknown>) => {
+      const updates = pickDeclared(input, UPDATABLE.profiles);
+      if (!updates)
+        return {
+          content: [{ type: "text", text: "Error: no updatable fields given" }],
+        };
       const { data, error } = await sb
         .from("profiles")
-        .update(input)
+        .update(updates)
         .eq("id", auth.userId)
         .select("id, display_name")
         .single();
@@ -984,8 +959,7 @@ function buildMcpServer(auth: Auth) {
       },
     },
     handler: async ({ limit, offset }: { limit?: number; offset?: number }) => {
-      const l = Math.min(limit ?? 20, 100);
-      const o = offset ?? 0;
+      const { from, to } = pageWindow(limit, offset);
       const { data, error } = await sb
         .from("prompt_kits")
         .select(
@@ -993,7 +967,7 @@ function buildMcpServer(auth: Auth) {
         )
         .eq("author_id", auth.userId)
         .order("updated_at", { ascending: false })
-        .range(o, o + l - 1);
+        .range(from, to);
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
       return {
@@ -1107,11 +1081,16 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async (input: Record<string, unknown>) => {
-      const { id, ...updates } = input;
+      const id = input.id as string;
+      const updates = pickDeclared(input, UPDATABLE.prompt_kits);
+      if (!updates)
+        return {
+          content: [{ type: "text", text: "Error: no updatable fields given" }],
+        };
       const { data, error } = await sb
         .from("prompt_kits")
         .update(updates)
-        .eq("id", id as string)
+        .eq("id", id)
         .eq("author_id", auth.userId)
         .select("id, title")
         .single();
@@ -1131,13 +1110,23 @@ function buildMcpServer(auth: Auth) {
       required: ["id"],
     },
     handler: async ({ id }: { id: string }) => {
-      const { error } = await sb
+      const { data, error } = await sb
         .from("prompt_kits")
         .delete()
         .eq("id", id)
-        .eq("author_id", auth.userId);
+        .eq("author_id", auth.userId)
+        .select("id");
       if (error)
         return { content: [{ type: "text", text: `Error: ${error.message}` }] };
+      if (!data || data.length === 0)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: no prompt kit ${id} in your library, nothing was deleted`,
+            },
+          ],
+        };
       return { content: [{ type: "text", text: `Deleted prompt kit ${id}` }] };
     },
   });

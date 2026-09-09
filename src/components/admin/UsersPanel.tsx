@@ -51,6 +51,9 @@ interface AllowancePeriod {
   user_id: string;
   tokens_granted: number;
   tokens_used: number;
+  // Optional because UserTokenBalance hands back a freshly saved allowance
+  // without it. It is only used to pick between overlapping periods below.
+  period_end?: string;
 }
 
 interface UserWithRole {
@@ -174,15 +177,18 @@ export function UsersPanel() {
 
       const allowanceMap: Record<string, AllowancePeriod> = {};
       (data || []).forEach((row) => {
-        if (
-          !allowanceMap[row.user_id] ||
-          row.period_end > allowanceMap[row.user_id].id
-        ) {
+        // Several allowance periods can be open at the same moment, so keep the
+        // one that runs longest. This used to compare the new row's period_end
+        // against the stored row's id, a timestamp against a UUID, which let an
+        // arbitrary row win.
+        const currentEnd = allowanceMap[row.user_id]?.period_end;
+        if (!currentEnd || row.period_end > currentEnd) {
           allowanceMap[row.user_id] = {
             id: row.id,
             user_id: row.user_id,
             tokens_granted: row.tokens_granted,
             tokens_used: row.tokens_used,
+            period_end: row.period_end,
           };
         }
       });

@@ -5,12 +5,12 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useActivityEvents } from "@/hooks/useActivityEvents";
 import { useTeam, useCurrentUserTeamRole } from "@/hooks/useTeams";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 
 export default function TeamActivity() {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { data: team, isLoading: teamLoading } = useTeam(id);
   const { data: userRole, isLoading: roleLoading } = useCurrentUserTeamRole(id);
 

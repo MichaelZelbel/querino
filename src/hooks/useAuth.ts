@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -183,8 +184,15 @@ export function useAuth() {
     return { error };
   };
 
+  const queryClient = useQueryClient();
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    // Empty the query cache on the way out. Several keys do not carry a user
+    // id ("team-members", "team_invites", "blog-posts", "collections"), so
+    // without this the next person to sign in on the same browser saw the
+    // previous account's rows until each query refetched.
+    queryClient.clear();
     return { error };
   };
 

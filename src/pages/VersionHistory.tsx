@@ -54,11 +54,14 @@ interface Prompt {
 }
 
 export default function VersionHistory() {
-  const { id } = useParams<{ id: string }>();
+  // The route is /library/$slug/versions, so the prompt is looked up by slug
+  // and its id is taken from the row (the same way the edit page does it).
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
 
   const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const promptId = prompt?.id;
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -77,21 +80,25 @@ export default function VersionHistory() {
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/library/${id}/versions`, { replace: true });
+      navigate(`/auth?redirect=/library/${slug}/versions`, { replace: true });
     }
-  }, [user, authLoading, navigate, id]);
+  }, [user, authLoading, navigate, slug]);
 
   // Fetch prompt and versions
   useEffect(() => {
     async function fetchData() {
-      if (!id || !user) return;
+      if (!slug || !user) {
+        // Nothing to load, so do not leave the spinner up forever.
+        setLoading(false);
+        return;
+      }
 
       try {
         // Fetch prompt
         const { data: promptData, error: promptError } = await supabase
           .from("prompts")
           .select("id, title, author_id")
-          .eq("id", id)
+          .eq("slug", slug)
           .maybeSingle();
 
         if (promptError) {
@@ -116,7 +123,7 @@ export default function VersionHistory() {
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
           .select("*")
-          .eq("prompt_id", id)
+          .eq("prompt_id", promptData.id)
           .order("version_number", { ascending: false });
 
         if (versionsError) {
@@ -135,10 +142,10 @@ export default function VersionHistory() {
     if (user) {
       fetchData();
     }
-  }, [id, user]);
+  }, [slug, user]);
 
   const handleRestore = async () => {
-    if (!restoringVersion || !id || !user) return;
+    if (!restoringVersion || !promptId || !user) return;
 
     setIsRestoring(true);
     try {
@@ -151,12 +158,12 @@ export default function VersionHistory() {
         supabase
           .from("prompts")
           .select("title, description, content, tags")
-          .eq("id", id)
+          .eq("id", promptId)
           .maybeSingle(),
         supabase
           .from("prompt_versions")
           .select("version_number, title, description, content")
-          .eq("prompt_id", id)
+          .eq("prompt_id", promptId)
           .order("version_number", { ascending: false })
           .limit(1)
           .maybeSingle(),
@@ -185,7 +192,7 @@ export default function VersionHistory() {
         const { error: snapshotError } = await supabase
           .from("prompt_versions")
           .insert({
-            prompt_id: id,
+            prompt_id: promptId,
             version_number: nextVersionNumber,
             title: livePrompt.title,
             description: livePrompt.description,
@@ -206,7 +213,7 @@ export default function VersionHistory() {
       const { error: versionError } = await supabase
         .from("prompt_versions")
         .insert({
-          prompt_id: id,
+          prompt_id: promptId,
           version_number: nextVersionNumber,
           title: restoringVersion.title,
           description: restoringVersion.description,
@@ -230,7 +237,7 @@ export default function VersionHistory() {
           content: restoringVersion.content,
           tags: restoringVersion.tags,
         })
-        .eq("id", id)
+        .eq("id", promptId)
         .eq("author_id", user.id);
 
       if (updateError) {
@@ -240,7 +247,7 @@ export default function VersionHistory() {
       }
 
       toast.success(`Restored to version v${restoringVersion.version_number}`);
-      navigate(`/library/${id}/edit`);
+      navigate(`/library/${slug}/edit`);
     } catch (err) {
       console.error("Error restoring version:", err);
       toast.error("Something went wrong. Please try again.");
@@ -325,7 +332,7 @@ export default function VersionHistory() {
         <div className="container mx-auto max-w-4xl px-4">
           {/* Navigation */}
           <Link
-            to={`/library/${id}/edit`}
+            to={`/library/${slug}/edit`}
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -360,7 +367,7 @@ export default function VersionHistory() {
                 Use "Save as New Version" on the edit page to create version
                 snapshots.
               </p>
-              <Link to={`/library/${id}/edit`}>
+              <Link to={`/library/${slug}/edit`}>
                 <Button>Go to Edit Page</Button>
               </Link>
             </div>

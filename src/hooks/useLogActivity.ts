@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { ActivityItemType, ActivityAction } from "@/types/activity";
 
@@ -13,7 +13,7 @@ interface LogActivityParams {
 }
 
 export function useLogActivity() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
 
   const logActivity = useCallback(

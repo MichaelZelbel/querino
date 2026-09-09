@@ -4,14 +4,14 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserActivityFeed } from "@/hooks/useActivityEvents";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function UserActivity() {
   const { username } = useParams<{ username: string }>();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   // Fetch user profile by display_name
   const { data: profile, isLoading: profileLoading } = useQuery({

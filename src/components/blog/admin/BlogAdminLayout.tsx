@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Navigate } from "@/lib/router-compat";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
   FileText,
@@ -35,7 +35,7 @@ export function BlogAdminLayout({
   actions,
 }: BlogAdminLayoutProps) {
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { role, isLoading: roleLoading } = useUserRole();
 
   if (authLoading || roleLoading) {
