@@ -33,7 +33,10 @@ function callRpc<T>(
   fn: string,
   args: Record<string, unknown>,
 ): Promise<{ data: T | null; error: { message: string } | null }> {
-  const rpc = client.rpc as unknown as (
+  // .bind(client), not a bare reference: supabase-js reads this.rest inside
+  // rpc(), so calling it detached threw "Cannot read properties of undefined
+  // (reading 'rest')" and every run of this job returned 500.
+  const rpc = client.rpc.bind(client) as unknown as (
     name: string,
     params: Record<string, unknown>,
   ) => Promise<{ data: T | null; error: { message: string } | null }>;

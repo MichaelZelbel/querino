@@ -41,7 +41,7 @@ A platform for discovering, creating, and sharing AI artifacts—prompts, skills
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm
+- Node.js 20.19+ (Vite 8 requires it, and CI runs Node 20) and npm
 - A Supabase project (or use Lovable Cloud)
 
 ### Development

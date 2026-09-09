@@ -184,7 +184,10 @@ Deno.serve(async (req) => {
       200,
     );
   } catch (e) {
+    // The detail stays in the logs. It used to be returned to the caller, and
+    // an unhandled error here carries provider messages and configuration
+    // names that a caller has no business reading.
     console.error("[generate-embedding] unhandled:", e);
-    return json({ error: "Internal error", details: String(e) }, 500);
+    return json({ error: "Internal error" }, 500);
   }
 });

@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -51,13 +76,6 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activity_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -242,13 +260,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "blog_media_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       blog_post_categories: {
@@ -324,13 +335,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blog_post_revisions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -433,13 +437,6 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blog_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -547,13 +544,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "collections_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "collections_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -611,13 +601,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       github_sync_queue: {
@@ -625,6 +608,7 @@ export type Database = {
           artifact_id: string
           artifact_type: string
           attempts: number
+          claimed_at: string | null
           created_at: string
           id: string
           last_error: string | null
@@ -639,6 +623,7 @@ export type Database = {
           artifact_id: string
           artifact_type: string
           attempts?: number
+          claimed_at?: string | null
           created_at?: string
           id?: string
           last_error?: string | null
@@ -653,6 +638,7 @@ export type Database = {
           artifact_id?: string
           artifact_type?: string
           attempts?: number
+          claimed_at?: string | null
           created_at?: string
           id?: string
           last_error?: string | null
@@ -755,6 +741,105 @@ export type Database = {
           tier?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      llm_model_alerts: {
+        Row: {
+          action_taken: string | null
+          call_site: string | null
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          model_id: string | null
+          provider: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          tier: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          call_site?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          model_id?: string | null
+          provider?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          tier?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          call_site?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          model_id?: string | null
+          provider?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          tier?: string | null
+        }
+        Relationships: []
+      }
+      llm_models: {
+        Row: {
+          completion_price_per_m: number | null
+          context_length: number | null
+          created_at: string
+          expiration_date: string | null
+          first_seen_at: string
+          input_modalities: string[]
+          last_seen_at: string
+          model_id: string
+          name: string
+          output_modalities: string[]
+          prompt_price_per_m: number | null
+          provider: string
+          raw: Json
+          retired_at: string | null
+          supports_tools: boolean
+          updated_at: string
+        }
+        Insert: {
+          completion_price_per_m?: number | null
+          context_length?: number | null
+          created_at?: string
+          expiration_date?: string | null
+          first_seen_at?: string
+          input_modalities?: string[]
+          last_seen_at?: string
+          model_id: string
+          name: string
+          output_modalities?: string[]
+          prompt_price_per_m?: number | null
+          provider: string
+          raw?: Json
+          retired_at?: string | null
+          supports_tools?: boolean
+          updated_at?: string
+        }
+        Update: {
+          completion_price_per_m?: number | null
+          context_length?: number | null
+          created_at?: string
+          expiration_date?: string | null
+          first_seen_at?: string
+          input_modalities?: string[]
+          last_seen_at?: string
+          model_id?: string
+          name?: string
+          output_modalities?: string[]
+          prompt_price_per_m?: number | null
+          provider?: string
+          raw?: Json
+          retired_at?: string | null
+          supports_tools?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -970,6 +1055,7 @@ export type Database = {
           ai_category: string | null
           ai_confidence: number | null
           ai_reason: string | null
+          claimed_at: string | null
           content_snapshot: string
           created_at: string
           id: string
@@ -984,6 +1070,7 @@ export type Database = {
           ai_category?: string | null
           ai_confidence?: number | null
           ai_reason?: string | null
+          claimed_at?: string | null
           content_snapshot: string
           created_at?: string
           id?: string
@@ -998,6 +1085,7 @@ export type Database = {
           ai_category?: string | null
           ai_confidence?: number | null
           ai_reason?: string | null
+          claimed_at?: string | null
           content_snapshot?: string
           created_at?: string
           id?: string
@@ -1008,7 +1096,15 @@ export type Database = {
           status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "moderation_review_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       moderation_stopwords: {
         Row: {
@@ -1166,6 +1262,13 @@ export type Database = {
             referencedRelation: "prompt_kits"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "prompt_kit_pins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       prompt_kit_reviews: {
@@ -1202,6 +1305,13 @@ export type Database = {
             columns: ["prompt_kit_id"]
             isOneToOne: false
             referencedRelation: "prompt_kits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_kit_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1279,6 +1389,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           embedding: string | null
+          embedding_failed_at: string | null
+          fts: unknown
           id: string
           language: string
           menerio_note_id: string | null
@@ -1300,6 +1412,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_failed_at?: string | null
+          fts?: unknown
           id?: string
           language?: string
           menerio_note_id?: string | null
@@ -1321,6 +1435,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_failed_at?: string | null
+          fts?: unknown
           id?: string
           language?: string
           menerio_note_id?: string | null
@@ -1341,13 +1457,6 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_kits_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1384,13 +1493,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_pins_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1436,13 +1538,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_reviews_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1529,7 +1624,9 @@ export type Database = {
           created_at: string | null
           description: string
           embedding: string | null
+          embedding_failed_at: string | null
           example_output: string | null
+          fts: unknown
           id: string
           is_public: boolean | null
           language: string
@@ -1554,7 +1651,9 @@ export type Database = {
           created_at?: string | null
           description: string
           embedding?: string | null
+          embedding_failed_at?: string | null
           example_output?: string | null
+          fts?: unknown
           id?: string
           is_public?: boolean | null
           language?: string
@@ -1579,7 +1678,9 @@ export type Database = {
           created_at?: string | null
           description?: string
           embedding?: string | null
+          embedding_failed_at?: string | null
           example_output?: string | null
+          fts?: unknown
           id?: string
           is_public?: boolean | null
           language?: string
@@ -1602,13 +1703,6 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1661,13 +1755,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "skill_reviews_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1724,6 +1811,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           embedding: string | null
+          embedding_failed_at: string | null
+          fts: unknown
           id: string
           language: string
           menerio_note_id: string | null
@@ -1745,6 +1834,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_failed_at?: string | null
+          fts?: unknown
           id?: string
           language?: string
           menerio_note_id?: string | null
@@ -1766,6 +1857,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_failed_at?: string | null
+          fts?: unknown
           id?: string
           language?: string
           menerio_note_id?: string | null
@@ -1786,13 +1879,6 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "skills_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1859,24 +1945,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "suggestions_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "suggestions_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "suggestions_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1918,13 +1990,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_invites_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1973,13 +2038,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "team_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       teams: {
@@ -2019,13 +2077,6 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "teams_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2126,13 +2177,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_saved_prompts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       user_suspensions: {
@@ -2208,13 +2252,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "workflow_reviews_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workflow_reviews_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
@@ -2275,7 +2312,9 @@ export type Database = {
           created_at: string | null
           description: string | null
           embedding: string | null
+          embedding_failed_at: string | null
           filename: string | null
+          fts: unknown
           id: string
           json: Json
           language: string
@@ -2299,7 +2338,9 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_failed_at?: string | null
           filename?: string | null
+          fts?: unknown
           id?: string
           json?: Json
           language?: string
@@ -2323,7 +2364,9 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_failed_at?: string | null
           filename?: string | null
+          fts?: unknown
           id?: string
           json?: Json
           language?: string
@@ -2349,13 +2392,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "workflows_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workflows_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -2366,39 +2402,6 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          created_at: string | null
-          display_name: string | null
-          github: string | null
-          id: string | null
-          twitter: string | null
-          website: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          github?: string | null
-          id?: string | null
-          twitter?: string | null
-          website?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          github?: string | null
-          id?: string | null
-          twitter?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
       v_ai_allowance_current: {
         Row: {
           created_at: string | null
@@ -2438,6 +2441,34 @@ export type Database = {
         }[]
       }
       check_signup_allowed: { Args: never; Returns: Json }
+      claim_github_sync_queue: {
+        Args: {
+          batch_size?: number
+          max_attempts?: number
+          stale_after?: string
+        }
+        Returns: {
+          artifact_id: string
+          artifact_type: string
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          operation: string
+          owner_user_id: string | null
+          payload: Json
+          status: string
+          team_id: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "github_sync_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_menerio_sync_queue: {
         Args: { batch_size?: number; stale_after?: string }
         Returns: {
@@ -2446,6 +2477,17 @@ export type Database = {
           created_at: string
           id: string
           status: string
+          user_id: string
+        }[]
+      }
+      claim_moderation_review_queue: {
+        Args: { batch_size?: number; stale_after?: string }
+        Returns: {
+          content_snapshot: string
+          id: string
+          item_id: string
+          item_type: string
+          retry_count: number
           user_id: string
         }[]
       }
@@ -2557,6 +2599,13 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_user_strike: {
+        Args: { p_threshold?: number; p_user_id: string }
+        Returns: {
+          strike_count: number
+          suspended: boolean
+        }[]
       }
       internal_job_headers: { Args: never; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
@@ -2711,7 +2760,11 @@ export type Database = {
         Returns: undefined
       }
       update_prompt_kit_slug: {
-        Args: { p_new_slug: string; p_prompt_kit_id: string; p_user_id?: string }
+        Args: {
+          p_new_slug: string
+          p_prompt_kit_id: string
+          p_user_id?: string
+        }
         Returns: Json
       }
       update_prompt_slug: {
@@ -2736,12 +2789,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2765,11 +2818,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2790,11 +2843,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2815,11 +2868,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2832,11 +2885,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2846,6 +2899,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["free", "premium", "premium_gift", "admin"],

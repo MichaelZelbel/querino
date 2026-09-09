@@ -1,8 +1,8 @@
 # Security test suite
 
-Seven checks over the things that cost money or leak data. They are deliberately
-small: this is not coverage, it is a tripwire on the parts of Querino where a
-mistake is expensive and silent.
+Two dozen spec files over the things that cost money or leak data. They are
+deliberately narrow: this is not coverage, it is a tripwire on the parts of
+Querino where a mistake is expensive and silent.
 
 Every test talks to the **deployed** project over HTTPS, as an outsider would.
 Nothing is mocked and nothing reads the local source, so a green run means the
@@ -60,9 +60,9 @@ A red test here is a statement about production, not about the suite.
 | `07-idempotent-charging` | double charging | now, and it must stay green through Phase 2 |
 | `08-admin-can-still-run-the-jobs` | the human button on a machine endpoint | now |
 
-As of 2026-08-21 the suite is 46 green and 4 red. The four are the comma bug
-(three tests) and the `suggest-claw-metadata` orphan, which is deployed to
-production and has no source in this repository.
+As of 2026-09-08 the suite is 24 spec files and every test is green. The table
+above lists the first eight, which were written for the 2026-08-20 audit; the
+rest carry their own subject in their filename.
 
 ## The rule these tests exist to enforce
 
