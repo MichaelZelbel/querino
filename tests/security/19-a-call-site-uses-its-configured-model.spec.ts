@@ -75,7 +75,7 @@ test.describe("a call site uses its configured model", () => {
       !hasManagementToken(),
       "needs SUPABASE_ACCESS_TOKEN; skipped in CI on purpose",
     );
-    test.setTimeout(CACHE_TTL_MS + 90_000);
+    test.setTimeout(CACHE_TTL_MS + 150_000);
 
     const current = await restAsService<ConfigRow[]>(
       `${ROW}&select=provider,model,enabled`,
@@ -102,18 +102,31 @@ test.describe("a call site uses its configured model", () => {
       body: { model: overrideModel, enabled: true },
     });
 
-    // Outwait the resolver's per-isolate cache before invoking the call site.
+    const session = await signInTestUser();
+    const askTheCallSite = () =>
+      callFunction(
+        "suggest-metadata",
+        {
+          prompt_content:
+            "Write a haiku about a cat sitting on a warm windowsill.",
+        },
+        asUser(session.accessToken),
+      );
+
+    // Outwait the resolver's per-isolate cache, measured from a call this test
+    // made itself.
+    //
+    // Sleeping CACHE_TTL_MS from the PATCH was wrong, and it went red on
+    // 2026-09-08 in a full-suite run while passing on its own. The cache clock
+    // starts at whichever request last read the config, and in a full run an
+    // earlier test had asked this same call site a few seconds before. Its
+    // entry then outlived the sleep and the invocation below still used the
+    // old model. One throwaway call first puts the entry at a known age, so
+    // the wait after it is the whole lifetime.
+    await askTheCallSite();
     await new Promise((r) => setTimeout(r, CACHE_TTL_MS + 2_000));
 
-    const session = await signInTestUser();
-    const res = await callFunction(
-      "suggest-metadata",
-      {
-        prompt_content:
-          "Write a haiku about a cat sitting on a warm windowsill.",
-      },
-      asUser(session.accessToken),
-    );
+    const res = await askTheCallSite();
 
     // A 502 here is almost never this feature. The usual cause is the Lovable
     // workspace hitting its own credit limit, which the gateway reports as a
