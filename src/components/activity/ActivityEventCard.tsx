@@ -34,6 +34,10 @@ export function ActivityEventCard({
       collection: `/collections/${event.item_id}`,
       profile: `/u/${event.metadata?.username || event.item_id}`,
       team: `/team/${event.item_id}/settings`,
+      // The sidebar emits prompt_kit events, so without this entry those rows
+      // rendered with no link at all. The detail route takes the slug and
+      // redirects a legacy id.
+      prompt_kit: `/prompt-kits/${event.metadata?.slug || event.item_id}`,
     };
 
     return routes[event.item_type] || null;
@@ -43,14 +47,28 @@ export function ActivityEventCard({
   const itemTitle = event.metadata?.title || event.metadata?.name || "Untitled";
   const changedFields = event.metadata?.changedFields as string[] | undefined;
 
+  // The profile route keys off the display name, so an actor without one has no
+  // page to link to. /u/<uuid> is not a route and only ever produced a dead link.
+  const actorProfileLink = event.actor?.display_name
+    ? `/u/${event.actor.display_name}`
+    : null;
+
   return (
     <div className="flex gap-3 p-4 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
       {/* Actor Avatar */}
-      <Link
-        to={
-          event.actor ? `/u/${event.actor.display_name || event.actor_id}` : "#"
-        }
-      >
+      {actorProfileLink ? (
+        <Link to={actorProfileLink}>
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage
+              src={event.actor?.avatar_url || undefined}
+              alt={actorName}
+            />
+            <AvatarFallback className="bg-primary/10 text-primary">
+              {actorInitial}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
+      ) : (
         <Avatar className="h-10 w-10 shrink-0">
           <AvatarImage
             src={event.actor?.avatar_url || undefined}
@@ -60,22 +78,22 @@ export function ActivityEventCard({
             {actorInitial}
           </AvatarFallback>
         </Avatar>
-      </Link>
+      )}
 
       {/* Event Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 flex-wrap">
           {/* Actor Name */}
-          <Link
-            to={
-              event.actor
-                ? `/u/${event.actor.display_name || event.actor_id}`
-                : "#"
-            }
-            className="font-medium text-foreground hover:text-primary transition-colors"
-          >
-            {actorName}
-          </Link>
+          {actorProfileLink ? (
+            <Link
+              to={actorProfileLink}
+              className="font-medium text-foreground hover:text-primary transition-colors"
+            >
+              {actorName}
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">{actorName}</span>
+          )}
 
           {/* Action with Icon */}
           <span className="flex items-center gap-1.5 text-muted-foreground">

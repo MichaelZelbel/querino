@@ -50,7 +50,10 @@ function getRedirectLabel(path: string): string | null {
   if (/^\/skills\/[^/]+\/edit/.test(path)) return "edit this skill";
   if (/^\/workflows\/[^/]+\/edit/.test(path)) return "edit this workflow";
   if (/^\/prompt-kits\/[^/]+\/edit/.test(path)) return "edit this prompt kit";
-  if (path.startsWith("/teams")) return "team workspace";
+  // The routes are /team/<id>/settings, /team/<id>/activity and /team/join.
+  // The old check tested for "/teams", which no route ever starts with, so the
+  // team banner never appeared.
+  if (path.startsWith("/team/")) return "team workspace";
   return "this page";
 }
 

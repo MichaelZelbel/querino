@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "@/lib/router-compat";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -49,6 +49,19 @@ const Discover = () => {
   const [skillSearch, setSkillSearch] = useState(initialQuery);
   const [workflowSearch, setWorkflowSearch] = useState(initialQuery);
   const [kitSearch, setKitSearch] = useState(initialQuery);
+
+  // The site's own search action navigates to /discover?q=... and the tab links
+  // change ?type=... while this page stays mounted, so both have to follow the
+  // URL instead of only seeding themselves on the first render.
+  useEffect(() => {
+    setActiveTab(VALID_TABS.includes(typeParam) ? typeParam : "prompts");
+  }, [typeParam]);
+
+  useEffect(() => {
+    setSkillSearch(initialQuery);
+    setWorkflowSearch(initialQuery);
+    setKitSearch(initialQuery);
+  }, [initialQuery]);
 
   const debouncedSkillSearch = useDebounce(skillSearch, 300);
   const debouncedWorkflowSearch = useDebounce(workflowSearch, 300);

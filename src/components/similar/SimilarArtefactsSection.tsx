@@ -11,7 +11,7 @@ import {
   Lock,
   Crown,
 } from "lucide-react";
-import { useAuthContext } from "@/contexts/AuthContext";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import type {
   SimilarPrompt,
   SimilarSkill,
@@ -99,8 +99,9 @@ export function SimilarPromptsSection({
   items,
   loading,
 }: SimilarPromptsSectionProps) {
-  const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === "premium";
+  // Premium is granted through user_roles, which is what usePremiumCheck reads.
+  // profiles.plan_type is never written when an admin grants premium.
+  const { user, isPremium } = usePremiumCheck();
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
@@ -168,8 +169,9 @@ export function SimilarSkillsSection({
   items,
   loading,
 }: SimilarSkillsSectionProps) {
-  const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === "premium";
+  // Premium is granted through user_roles, which is what usePremiumCheck reads.
+  // profiles.plan_type is never written when an admin grants premium.
+  const { user, isPremium } = usePremiumCheck();
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {
@@ -234,8 +236,9 @@ export function SimilarWorkflowsSection({
   items,
   loading,
 }: SimilarWorkflowsSectionProps) {
-  const { user, profile } = useAuthContext();
-  const isPremium = profile?.plan_type === "premium";
+  // Premium is granted through user_roles, which is what usePremiumCheck reads.
+  // profiles.plan_type is never written when an admin grants premium.
+  const { user, isPremium } = usePremiumCheck();
   const isFreeUser = user && !isPremium;
 
   if (isFreeUser) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { useSearchPrompts } from "@/hooks/useSearchPrompts";
@@ -31,6 +31,12 @@ export function PromptsSection({
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState<SortOption>("trending");
+
+  // /discover?q=... can change while this section stays mounted, so the box has
+  // to follow the prop rather than only seeding itself on the first render.
+  useEffect(() => {
+    setSearchQuery(initialSearch);
+  }, [initialSearch]);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const isSearching = debouncedSearch.trim().length > 0;

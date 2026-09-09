@@ -41,7 +41,8 @@ import {
   FileText,
   Code,
   Workflow,
-  GripVertical,
+  ArrowUp,
+  ArrowDown,
   Save,
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -172,6 +173,30 @@ export default function CollectionEdit() {
       collection_id: id,
       item_type: addItemType,
       item_id: itemId,
+    });
+  };
+
+  // The list is ordered by sort_order. The grab handle that used to sit here had
+  // no drag behaviour behind it, so reordering is done with explicit move
+  // buttons. The whole run of sort_order values is rewritten, because rows saved
+  // with the same value would otherwise keep an undefined order.
+  const handleMoveItem = async (index: number, direction: -1 | 1) => {
+    if (!id || !items) return;
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+
+    const reordered = [...items];
+    [reordered[index], reordered[target]] = [
+      reordered[target],
+      reordered[index],
+    ];
+
+    await updateItemOrder.mutateAsync({
+      collectionId: id,
+      items: reordered.map((item, position) => ({
+        id: item.id,
+        sort_order: position,
+      })),
     });
   };
 
@@ -339,12 +364,36 @@ export default function CollectionEdit() {
             <CardContent>
               {itemsWithData && itemsWithData.length > 0 ? (
                 <div className="space-y-2">
-                  {itemsWithData.map((item) => (
+                  {itemsWithData.map((item, index) => (
                     <div
                       key={item.id}
                       className="flex items-center gap-3 p-3 border rounded-lg"
                     >
-                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                      <div className="flex flex-col">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() => handleMoveItem(index, -1)}
+                          disabled={index === 0 || updateItemOrder.isPending}
+                          aria-label="Move item up"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() => handleMoveItem(index, 1)}
+                          disabled={
+                            index === itemsWithData.length - 1 ||
+                            updateItemOrder.isPending
+                          }
+                          aria-label="Move item down"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                       <div className="p-2 bg-muted rounded">
                         {getItemIcon(item.item_type)}
                       </div>

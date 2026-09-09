@@ -200,6 +200,10 @@ export default function SkillNew() {
           category,
           tags: tags.length > 0 ? tags : null,
           author_id: user.id,
+          // The artifact belongs to the workspace that is selected, the way the Docs
+          // page promises. Without this a skill made in a team view was created
+          // personal and never showed up in the team's library.
+          team_id: currentWorkspace !== "personal" ? currentWorkspace : null,
           published: isPublic,
           language,
           slug,

@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -136,6 +137,9 @@ export default function Library() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuthContext();
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
+  // Premium is granted through user_roles, which is what usePremiumCheck reads.
+  // profiles.plan_type is never written when an admin grants premium.
+  const { isPremium } = usePremiumCheck();
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([]);
   const [showPlanUpsell, setShowPlanUpsell] = useState(false);
   const [myPrompts, setMyPrompts] = useState<Prompt[]>([]);
@@ -474,10 +478,19 @@ export default function Library() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filteredPinnedPrompts, sort, menerioFilter],
   );
-  const displayMyPrompts = useMemo(
+  // Every owned prompt that survives search and filters, pinned ones included. This is
+  // what the My Prompts count chip counts, so the number stays the true total.
+  const displayMyPromptsAll = useMemo(
     () => sortItems(applyMenerio(filteredMyPrompts)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filteredMyPrompts, sort, menerioFilter],
+  );
+  // What the My Prompts grid renders. The Pinned grid above already shows the pinned
+  // ones, and without this a pinned prompt you own appeared in both grids.
+  const displayMyPrompts = useMemo(
+    () =>
+      displayMyPromptsAll.filter((prompt) => !pinnedPromptIds.has(prompt.id)),
+    [displayMyPromptsAll, pinnedPromptIds],
   );
   const displayMySkills = useMemo(
     () => sortItems(applyMenerio(filteredMySkills)),
@@ -948,11 +961,18 @@ export default function Library() {
                   <SectionHeader
                     icon={Sparkles}
                     title={isTeamWorkspace ? "Team Prompts" : "My Prompts"}
-                    count={displayMyPrompts.length}
+                    count={displayMyPromptsAll.length}
                     total={myPrompts.length}
                     showFraction={!!debouncedSearch}
                   />
-                  {displayMyPrompts.length === 0 ? (
+                  {displayMyPrompts.length === 0 &&
+                  displayMyPromptsAll.length > 0 ? (
+                    // Everything that matched is already in the Pinned grid above, so
+                    // the "no prompts yet" empty state would be a lie here.
+                    <p className="text-sm text-muted-foreground">
+                      Every prompt here is pinned above.
+                    </p>
+                  ) : displayMyPrompts.length === 0 ? (
                     <EmptyState
                       variant="compact"
                       icon={Search}
@@ -1245,16 +1265,16 @@ export default function Library() {
                 <p className="text-sm font-medium text-foreground">
                   Current Plan:{" "}
                   <span className="capitalize">
-                    {profile?.plan_type || "Free"}
+                    {isPremium ? "Premium" : "Free"}
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {profile?.plan_type === "free"
+                  {!isPremium
                     ? "Premium adds AI insights, the Kickstart wizard, semantic search, GitHub sync and team workspaces."
                     : "You have access to all premium features"}
                 </p>
               </div>
-              {profile?.plan_type === "free" && (
+              {!isPremium && (
                 <Button
                   variant="outline"
                   size="sm"

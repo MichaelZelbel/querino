@@ -17,7 +17,7 @@ import { toast } from "sonner";
 interface SuggestEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit";
   currentTitle: string;
   currentDescription: string;
   currentContent: string;

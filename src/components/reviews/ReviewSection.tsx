@@ -11,7 +11,7 @@ import type { ReviewWithUser } from "@/types/review";
 
 interface ReviewSectionProps {
   itemId: string;
-  itemType: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
+  itemType: "prompt" | "skill" | "workflow" | "prompt_kit";
   itemSlug?: string;
   userId?: string;
   ratingAvg: number;
@@ -117,10 +117,10 @@ export function ReviewSection({
       .slice(0, 2);
   };
 
-  // Get reviews excluding user's own for display
-  const displayReviews = reviews
-    .filter((r) => r.user_id !== userId)
-    .slice(0, 5);
+  // The viewer's own review is rendered separately above the list, so both the
+  // visible five and the "more reviews" remainder count only the others.
+  const otherReviews = reviews.filter((r) => r.user_id !== userId);
+  const displayReviews = otherReviews.slice(0, 5);
 
   return (
     <div className="space-y-4">
@@ -243,9 +243,9 @@ export function ReviewSection({
             />
           ))}
 
-          {reviews.length > 5 && (
+          {otherReviews.length > 5 && (
             <p className="text-xs text-muted-foreground text-center pt-1">
-              + {reviews.length - 5} more reviews
+              + {otherReviews.length - 5} more reviews
             </p>
           )}
         </div>

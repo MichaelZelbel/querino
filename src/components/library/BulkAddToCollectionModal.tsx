@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 
 export type BulkSelectionItem = {
-  type: "prompt" | "skill" | "workflow" | "prompt_kit" | "claw";
+  type: "prompt" | "skill" | "workflow" | "prompt_kit";
   id: string;
 };
 

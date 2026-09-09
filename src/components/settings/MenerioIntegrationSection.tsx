@@ -22,10 +22,13 @@ import { toast } from "sonner";
 const MENERIO_BASE_URL =
   "https://tjeapelvjlmbxafsmjef.supabase.co/functions/v1";
 
+// These are the types MenerioBulkSync actually pushes. CLAWs are gone: the table
+// was dropped in April 2026, so offering them here only produced a setting that
+// nothing could act on.
 const ARTIFACT_TYPES = [
   { value: "prompt", label: "Prompts" },
+  { value: "prompt_kit", label: "Prompt Kits" },
   { value: "skill", label: "Skills" },
-  { value: "claw", label: "CLAWs (MCP-only)" },
   { value: "workflow", label: "Workflows" },
 ] as const;
 
@@ -45,8 +48,8 @@ export function MenerioIntegrationSection() {
   const [autoSync, setAutoSync] = useState(true);
   const [syncTypes, setSyncTypes] = useState<string[]>([
     "prompt",
+    "prompt_kit",
     "skill",
-    "claw",
     "workflow",
   ]);
   const [isActive, setIsActive] = useState(true);
@@ -71,7 +74,12 @@ export function MenerioIntegrationSection() {
         setExistingId(d.id);
         setAutoSync(d.auto_sync ?? true);
         setSyncTypes(
-          d.sync_artifact_types || ["prompt", "skill", "claw", "workflow"],
+          d.sync_artifact_types || [
+            "prompt",
+            "prompt_kit",
+            "skill",
+            "workflow",
+          ],
         );
         setIsActive(d.is_active ?? true);
         setLastSyncAt(d.last_sync_at || null);

@@ -99,7 +99,7 @@ export default function LibraryPromptEdit() {
   const { user, loading: authLoading } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,7 +165,9 @@ export default function LibraryPromptEdit() {
   // Fetch prompt and versions
   useEffect(() => {
     async function fetchData() {
-      if (!slug || !user) return;
+      // The admin role arrives from an async query. Deciding before it lands showed an
+      // admin "Not Authorized" on every reload of someone else's prompt.
+      if (!slug || !user || roleLoading) return;
 
       try {
         const { data: promptData, error: promptError } = await supabase
@@ -218,10 +220,10 @@ export default function LibraryPromptEdit() {
       }
     }
 
-    if (user) {
+    if (user && !roleLoading) {
       fetchData();
     }
-  }, [slug, user]);
+  }, [slug, user, isAdmin, roleLoading]);
 
   // Reload the prompt + versions after a restore from the version panel.
   const handleRestoreComplete = async () => {
@@ -377,7 +379,10 @@ export default function LibraryPromptEdit() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      // No author_id filter: an admin is allowed in here too, and row-level security is
+      // what decides. The returned rows are checked because PostgREST reports no error
+      // when a write matches nothing, which used to show "saved" after saving nothing.
+      const { data, error } = await supabase
         .from("prompts")
         .update({
           title: title.trim(),
@@ -389,11 +394,18 @@ export default function LibraryPromptEdit() {
           language,
         })
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .select("id");
 
       if (error) {
         console.error("Error updating prompt:", error);
         toast.error("Failed to save changes. Please try again.");
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        toast.error(
+          "Nothing was saved. You may not have access to this prompt.",
+        );
         return;
       }
 
@@ -433,7 +445,9 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      const { error: updateError } = await supabase
+      // Same write as the ordinary save, so it carries language too. Leaving it out made
+      // a new version quietly revert the language back to whatever was stored.
+      const { data: updated, error: updateError } = await supabase
         .from("prompts")
         .update({
           title: title.trim(),
@@ -442,13 +456,21 @@ export default function LibraryPromptEdit() {
           category,
           tags: tags.length > 0 ? tags : null,
           is_public: isPublic,
+          language,
         })
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .select("id");
 
       if (updateError) {
         console.error("Error updating prompt:", updateError);
         toast.error("Version created but failed to update prompt.");
+        return;
+      }
+
+      if (!updated || updated.length === 0) {
+        toast.error(
+          "Version created but the prompt was not updated. You may not have access to it.",
+        );
         return;
       }
 
@@ -477,15 +499,22 @@ export default function LibraryPromptEdit() {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("prompts")
         .delete()
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .select("id");
 
       if (error) {
         console.error("Error deleting prompt:", error);
         toast.error("Failed to delete prompt. Please try again.");
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        toast.error(
+          "Nothing was deleted. You may not have access to this prompt.",
+        );
         return;
       }
 
@@ -507,7 +536,7 @@ export default function LibraryPromptEdit() {
 
     setIsPublishing(true);
     try {
-      const { error } = await supabase
+      const { data: published, error } = await supabase
         .from("prompts")
         .update({
           is_public: true,
@@ -516,11 +545,18 @@ export default function LibraryPromptEdit() {
           example_output: data.exampleOutput || null,
         })
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .select("id");
 
       if (error) {
         console.error("Error publishing prompt:", error);
         toast.error("Failed to publish prompt. Please try again.");
+        return;
+      }
+
+      if (!published || published.length === 0) {
+        toast.error(
+          "Nothing was published. You may not have access to this prompt.",
+        );
         return;
       }
 
@@ -552,17 +588,24 @@ export default function LibraryPromptEdit() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("prompts")
         .update({
           is_public: false,
         })
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .select("id");
 
       if (error) {
         console.error("Error unpublishing prompt:", error);
         toast.error("Failed to unpublish prompt. Please try again.");
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        toast.error(
+          "Nothing was unpublished. You may not have access to this prompt.",
+        );
         return;
       }
 
@@ -1062,12 +1105,12 @@ export default function LibraryPromptEdit() {
                               setPrompt((prev) =>
                                 prev ? { ...prev, slug: newSlug } : null,
                               );
-                              // Update URL without full reload
-                              window.history.replaceState(
-                                null,
-                                "",
-                                `/library/${newSlug}/edit`,
-                              );
+                              // Router navigation, not history.replaceState: the raw
+                              // history call left the router's slug param on the old
+                              // value, so "View Public Page" kept opening the old slug.
+                              navigate(`/library/${newSlug}/edit`, {
+                                replace: true,
+                              });
                             }}
                           />
                         )}

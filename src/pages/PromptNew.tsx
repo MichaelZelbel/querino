@@ -218,6 +218,10 @@ export default function PromptNew() {
           tags: tags.length > 0 ? tags : null,
           is_public: isPublic,
           author_id: user.id,
+          // The artifact belongs to the workspace that is selected, the way the Docs
+          // page promises. Without this a prompt made in a team view was created
+          // personal and never showed up in the team's library.
+          team_id: currentWorkspace !== "personal" ? currentWorkspace : null,
           rating_avg: 0,
           rating_count: 0,
           copies_count: 0,

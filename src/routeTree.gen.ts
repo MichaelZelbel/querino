@@ -21,6 +21,7 @@ import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -121,6 +122,11 @@ const ImpressumRoute = ImpressumRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RssDotxmlRoute = RssDotxmlRouteImport.update({
@@ -342,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/impressum': typeof ImpressumRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -397,6 +404,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/impressum': typeof ImpressumRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/impressum': typeof ImpressumRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -510,6 +519,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/impressum'
     | '/privacy'
+    | '/reset-password'
     | '/rss.xml'
     | '/settings'
     | '/sitemap.xml'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/impressum'
     | '/privacy'
+    | '/reset-password'
     | '/rss.xml'
     | '/settings'
     | '/sitemap.xml'
@@ -620,6 +631,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/impressum'
     | '/privacy'
+    | '/reset-password'
     | '/rss.xml'
     | '/settings'
     | '/sitemap.xml'
@@ -676,6 +688,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   ImpressumRoute: typeof ImpressumRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -803,6 +816,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rss.xml': {
@@ -1108,6 +1128,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   ImpressumRoute: ImpressumRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

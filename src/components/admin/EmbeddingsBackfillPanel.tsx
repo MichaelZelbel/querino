@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Sparkles, RefreshCw, Loader2 } from "lucide-react";
 
-type ItemType = "prompt" | "skill" | "workflow" | "claw";
+type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
 interface RunResult {
   processed: number;
@@ -139,19 +139,21 @@ export function EmbeddingsBackfillPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {(["prompt", "skill", "workflow", "claw"] as ItemType[]).map((t) => (
-            <div key={t} className="rounded-md border p-3">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                {t}s
+          {(["prompt", "skill", "workflow", "prompt_kit"] as ItemType[]).map(
+            (t) => (
+              <div key={t} className="rounded-md border p-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t}s
+                </div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold tabular-nums">
+                    {counts?.[t] ?? "—"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">missing</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums">
-                  {counts?.[t] ?? "—"}
-                </span>
-                <span className="text-xs text-muted-foreground">missing</span>
-              </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
