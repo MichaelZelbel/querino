@@ -254,7 +254,7 @@ async function processQueue(
 }> {
   // One SQL call claims the batch: it flips the rows to 'processing', bumps
   // attempts and stamps claimed_at inside a single statement with
-  // FOR UPDATE SKIP LOCKED. The cron fires every 30 s and a push to GitHub can
+  // FOR UPDATE SKIP LOCKED. The cron fires every 2 min (every 30 s until 2026-09-11) and a push to GitHub can
   // take longer than that, so before this two overlapping ticks could both
   // select the same 'pending' rows and push the same file twice. The claim
   // also picks up 'processing' rows whose claimed_at is older than the RPC's

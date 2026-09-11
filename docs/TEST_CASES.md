@@ -1146,7 +1146,7 @@ Precondition: Test user has GitHub Sync configured (repo + PAT) and enabled.
 Use your browser to log in at https://querino.ai
 Navigate to an existing prompt in My Library and open the editor
 Change the title or content and save
-Wait ~30–60 seconds (cron runs every 30s)
+Wait up to 2 minutes (cron runs every 2 min since 2026-09-11)
 Open the connected GitHub repo in a new tab
 Validate that a new commit "Querino: sync prompt <title>" appears
 Validate that the file under prompts/<slug>-<shortid>.md reflects the new content

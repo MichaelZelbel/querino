@@ -30,7 +30,7 @@ enabled = true
 # scheduled jobs 401 at the gateway before the guard ever runs.
 
 [functions.github-sync-worker]
-verify_jwt = false  # pg_cron every 30s, X-Internal-Key only
+verify_jwt = false  # pg_cron every 2 min (was 30s until 2026-09-11), X-Internal-Key only
 
 [functions.ai-moderate-content]
 verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; admins may also trigger it by hand

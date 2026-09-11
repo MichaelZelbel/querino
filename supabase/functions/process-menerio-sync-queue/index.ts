@@ -1,6 +1,6 @@
 // Menerio sync queue worker.
 //
-// Triggered by pg_cron every minute. Machine-only: it opens a service-role
+// Triggered by pg_cron every 2 minutes (every minute until 2026-09-11). Machine-only: it opens a service-role
 // client, sends users' artifacts to their Menerio hosts with their stored API
 // keys, and deletes completed queue rows (see _shared/internalAuth.ts).
 
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     // 1. Claim up to 10 rows in ONE statement (finding M4).
     //
     // This used to be a SELECT followed by a separate UPDATE, and the job runs
-    // every minute. A slow tick left a gap in which the next tick selected the
+    // on a fixed schedule. A slow tick left a gap in which the next tick selected the
     // same rows and sent the same artifact to Menerio a second time.
     // claim_menerio_sync_queue does the select and the status change together
     // under FOR UPDATE SKIP LOCKED, so an overlapping tick skips them and takes

@@ -1,7 +1,7 @@
 // Finding M4: overlapping cron ticks double-sent Menerio syncs.
 //
 // process-menerio-sync-queue used to SELECT ten pending rows and then, in a
-// separate statement, UPDATE them to 'processing'. The job runs every minute,
+// separate statement, UPDATE them to 'processing'. The job runs on a fixed schedule,
 // so a slow tick left a gap in which the next tick selected the same rows and
 // pushed the same artifact to the user's Menerio host a second time.
 //
