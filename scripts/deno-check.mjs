@@ -115,13 +115,25 @@ for (const line of clean.split(/\r?\n/)) {
 // Cross-check against Deno's own tally, so a change in its output format shows
 // up as a loud mismatch rather than as a silently passing ratchet.
 const reported = /Found (\d+) errors?\./.exec(clean);
-const denoTotal = reported
-  ? Number(reported[1])
-  : result.status === 0
-    ? 0
-    : null;
 
-if (denoTotal !== null && denoTotal !== total) {
+// A non-zero exit with no tally is a run that never got to type checking:
+// on 2026-09-11 CI failed with "Type errors fell from 71 to 0. Bank it"
+// because esm.sh answered 408 while Deno fetched a type file, and the same
+// thing happened twice on a developer machine on 2026-09-16. Zero locations
+// and no "Found N errors" line meant "nothing wrong" to the code below. It
+// means "nothing was checked", and that is neither a pass nor a bankable
+// number.
+if (!reported && result.status !== 0) {
+  console.error(
+    `\`${deno} check\` exited with ${result.status} before reporting a tally; nothing was type checked. Run it again.\n`,
+  );
+  console.error(clean.slice(0, 4000));
+  process.exit(2);
+}
+
+const denoTotal = reported ? Number(reported[1]) : 0;
+
+if (denoTotal !== total) {
   console.error(
     `Parsed ${total} error location${total === 1 ? "" : "s"} but Deno reported ${denoTotal}.`,
   );
