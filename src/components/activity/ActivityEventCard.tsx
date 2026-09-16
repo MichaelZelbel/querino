@@ -50,7 +50,7 @@ export function ActivityEventCard({
   // The profile route keys off the display name, so an actor without one has no
   // page to link to. /u/<uuid> is not a route and only ever produced a dead link.
   const actorProfileLink = event.actor?.display_name
-    ? `/u/${event.actor.display_name}`
+    ? `/u/${encodeURIComponent(event.actor.display_name)}`
     : null;
 
   return (

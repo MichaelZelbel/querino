@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,15 +42,16 @@ export function SuggestEditModal({
   const [content, setContent] = useState(currentContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset form when modal opens
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
+  // Reset the form each time the modal opens. Every parent sets `open`
+  // directly, so an onOpenChange(true) handler never fired, and after in-app
+  // navigation the form still held the previous artifact's content.
+  useEffect(() => {
+    if (open) {
       setTitle(currentTitle);
       setDescription(currentDescription);
       setContent(currentContent);
     }
-    onOpenChange(newOpen);
-  };
+  }, [open, currentTitle, currentDescription, currentContent]);
 
   const handleSubmit = async () => {
     if (!content.trim()) {
@@ -76,7 +77,7 @@ export function SuggestEditModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

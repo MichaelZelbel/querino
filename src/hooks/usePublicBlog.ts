@@ -102,44 +102,57 @@ export function usePublicPosts({
   });
 }
 
-export function usePublicPost(slug: string) {
-  return useQuery({
-    queryKey: ["public-blog-post", slug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("blog_posts")
-        .select(
-          `
+/**
+ * One published post with its author, featured image, categories and tags.
+ * Shared by the query below and by the route loader, so the server-rendered
+ * HTML carries the same record the client would fetch.
+ */
+export async function fetchPublicPost(slug: string): Promise<BlogPost | null> {
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select(
+      `
           *,
           author:profiles!blog_posts_author_id_fkey(id, display_name, avatar_url),
           featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text, width, height)
         `,
-        )
-        .eq("slug", slug)
-        .eq("status", "published")
-        .maybeSingle();
+    )
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
 
-      if (error) throw error;
-      if (!data) return null;
+  if (error) throw error;
+  if (!data) return null;
 
-      // Fetch categories
-      const { data: categoryLinks } = await supabase
-        .from("blog_post_categories")
-        .select("category_id, category:blog_categories(*)")
-        .eq("post_id", data.id);
+  // Fetch categories
+  const { data: categoryLinks } = await supabase
+    .from("blog_post_categories")
+    .select("category_id, category:blog_categories(*)")
+    .eq("post_id", data.id);
 
-      // Fetch tags
-      const { data: tagLinks } = await supabase
-        .from("blog_post_tags")
-        .select("tag_id, tag:blog_tags(*)")
-        .eq("post_id", data.id);
+  // Fetch tags
+  const { data: tagLinks } = await supabase
+    .from("blog_post_tags")
+    .select("tag_id, tag:blog_tags(*)")
+    .eq("post_id", data.id);
 
-      return {
-        ...data,
-        categories: categoryLinks?.map((l) => l.category) || [],
-        tags: tagLinks?.map((l) => l.tag) || [],
-      } as BlogPost;
-    },
+  return {
+    ...data,
+    categories: categoryLinks?.map((l) => l.category) || [],
+    tags: tagLinks?.map((l) => l.tag) || [],
+  } as BlogPost;
+}
+
+/**
+ * `initialPost` is the row the route loader already fetched. Seeding the query
+ * with it means the first render, which is the one a crawler sees, carries the
+ * article instead of the loading skeleton. The query still refetches on mount.
+ */
+export function usePublicPost(slug: string, initialPost?: BlogPost | null) {
+  return useQuery({
+    queryKey: ["public-blog-post", slug],
+    queryFn: () => fetchPublicPost(slug),
+    initialData: initialPost ?? undefined,
     enabled: !!slug,
   });
 }

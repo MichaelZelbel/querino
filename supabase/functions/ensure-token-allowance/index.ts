@@ -69,7 +69,7 @@ serve(async (req) => {
     // shared job secret, the service-role key, and a signed-in admin, because
     // Admin.tsx runs this on mount to fill its allowance table.
     if (body.batch_init === true) {
-      if (!isMachineCaller(req) && !(await isAdminCaller(req))) {
+      if (!(await isMachineCaller(req)) && !(await isAdminCaller(req))) {
         logStep("Rejected unauthorized batch_init");
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized" }),

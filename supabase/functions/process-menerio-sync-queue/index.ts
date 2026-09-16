@@ -7,6 +7,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireMachineCaller } from "../_shared/internalAuth.ts";
 import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
+import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
+
+// A Menerio that does not answer within this window fails the row, which
+// the queue retries; without it a hung connection held the whole tick.
+const MENERIO_TIMEOUT_MS = 15_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +25,7 @@ Deno.serve(async (req) => {
   }
 
   // Machine-only. Before this check, anyone could force a sync on demand.
-  const denied = requireMachineCaller(req, corsHeaders);
+  const denied = await requireMachineCaller(req, corsHeaders);
   if (denied) return denied;
 
   try {
@@ -56,14 +61,24 @@ Deno.serve(async (req) => {
     // 2. Process each claimed entry
     for (const item of queue) {
       try {
-        // Check user has active menerio integration with auto_sync
-        const { data: integration } = await adminClient
+        // Check user has active menerio integration with auto_sync. A read
+        // error is thrown, not treated as "no integration": until 2026-09-16
+        // a transient database failure here marked the row completed with
+        // "skipped", and the artifact was never sent. Thrown, it lands in
+        // failed and gets another turn.
+        const { data: integration, error: integrationErr } = await adminClient
           .from("menerio_integration")
           .select("*")
           .eq("user_id", item.user_id)
           .eq("is_active", true)
           .eq("auto_sync", true)
           .maybeSingle();
+
+        if (integrationErr) {
+          throw new Error(
+            `reading menerio_integration: ${integrationErr.message}`,
+          );
+        }
 
         if (!integration) {
           await markCompleted(
@@ -86,12 +101,25 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // The base URL column is user-writable through PostgREST, so it is
+        // checked against the one Menerio host before any request carries
+        // this user's API key to it (see _shared/menerioUrl.ts).
+        let menerioBase: string;
+        try {
+          menerioBase = assertMenerioBaseUrl(integration.menerio_base_url);
+        } catch (urlErr) {
+          console.warn(
+            `menerio_integration ${integration.id}: ${urlErr instanceof Error ? urlErr.message : urlErr}`,
+          );
+          throw new Error("The Menerio address on this account is not allowed");
+        }
+
         if (item.status === "delete_pending") {
           // Handle delete: send "deleted" update to Menerio
-          await handleDelete(adminClient, integration, item);
+          await handleDelete(adminClient, integration, menerioBase, item);
         } else {
           // Handle sync: render and send to Menerio
-          await handleSync(adminClient, integration, item);
+          await handleSync(adminClient, integration, menerioBase, item);
         }
 
         await adminClient
@@ -148,6 +176,7 @@ interface SyncableArtifact {
 async function handleSync(
   adminClient: ReturnType<typeof createClient>,
   integration: any,
+  menerioBase: string,
   item: any,
 ) {
   const tableName = tableFor(item.artifact_type);
@@ -177,7 +206,7 @@ async function handleSync(
 
   const notePayload = buildNotePayload(item.artifact_type, artifact);
 
-  const menerioUrl = `${integration.menerio_base_url.replace(/\/$/, "")}/receive-note`;
+  const menerioUrl = `${menerioBase}/receive-note`;
   const res = await fetch(menerioUrl, {
     method: "POST",
     headers: {
@@ -185,6 +214,7 @@ async function handleSync(
       "x-api-key": integration.menerio_api_key,
     },
     body: JSON.stringify(notePayload),
+    signal: AbortSignal.timeout(MENERIO_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -214,6 +244,7 @@ async function handleSync(
 async function handleDelete(
   adminClient: ReturnType<typeof createClient>,
   integration: any,
+  menerioBase: string,
   item: any,
 ) {
   // Send a "deleted" marker to Menerio
@@ -231,7 +262,7 @@ async function handleDelete(
     body: "[Gelöscht] Dieses Artefakt wurde in Querino gelöscht.",
   };
 
-  const menerioUrl = `${integration.menerio_base_url.replace(/\/$/, "")}/receive-note`;
+  const menerioUrl = `${menerioBase}/receive-note`;
   const res = await fetch(menerioUrl, {
     method: "POST",
     headers: {
@@ -239,6 +270,7 @@ async function handleDelete(
       "x-api-key": integration.menerio_api_key,
     },
     body: JSON.stringify(notePayload),
+    signal: AbortSignal.timeout(MENERIO_TIMEOUT_MS),
   });
 
   if (!res.ok) {

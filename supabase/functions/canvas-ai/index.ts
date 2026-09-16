@@ -7,6 +7,7 @@ import {
   RateLimitedError,
   GatewayError,
   callLovableAI,
+  capText,
 } from "../_shared/llm.ts";
 import { interpolatePrompt } from "../_shared/llm-config.ts";
 import {
@@ -83,15 +84,23 @@ serve(async (req) => {
       );
     }
 
+    // The credit gate above only asks for a balance above zero, so the size of
+    // what one call may send is bounded here. The canvas cap is the one
+    // coach.ts uses.
+    const cappedCanvas = capText(canvasContent, 16000);
+    const cappedMessage = capText(message, 4000);
+    const requestedMode = mode || "chat_only";
+
     const systemPrompt = buildSystemPrompt(
-      mode || "chat_only",
+      requestedMode,
       artifactType || "prompt",
-      canvasContent,
+      cappedCanvas,
     );
 
-    let userMessage = message;
+    let userMessage = cappedMessage;
     if (selection?.text) {
-      userMessage += `\n\n[Selected text (lines ${selection.start}-${selection.end})]: "${selection.text}"`;
+      const selectedText = capText(String(selection.text), 2000);
+      userMessage += `\n\n[Selected text (lines ${selection.start}-${selection.end})]: "${selectedText}"`;
     }
 
     let rawContent = "";
@@ -110,10 +119,10 @@ serve(async (req) => {
         // written on the LLM Config page can use every placeholder the panel
         // advertises rather than only some of them.
         templateVars: {
-          mode: mode || "chat_only",
+          mode: requestedMode,
           artifactType: artifactType || "prompt",
-          canvasContent: canvasContent ?? "",
-          modeInstructions: modeInstructions(mode || "chat_only"),
+          canvasContent: cappedCanvas,
+          modeInstructions: modeInstructions(requestedMode),
         },
       });
       rawContent = result.content || "";
@@ -191,13 +200,30 @@ serve(async (req) => {
     ) {
       result.assistantMessage = rawContent || "I processed your request.";
     }
-    if (
-      !result.canvas ||
-      typeof result.canvas !== "object" ||
-      Array.isArray(result.canvas)
-    ) {
-      result.canvas = { updated: false };
-    }
+    // Shape the canvas the way coach.ts does, so the client never receives a
+    // model's own idea of it: `updated` is a real boolean, an update without
+    // string content is no update, and a chat_only request never edits.
+    const canvas =
+      result.canvas &&
+      typeof result.canvas === "object" &&
+      !Array.isArray(result.canvas)
+        ? (result.canvas as {
+            updated?: unknown;
+            content?: unknown;
+            changeNote?: unknown;
+          })
+        : { updated: false };
+    let updated = !!canvas.updated;
+    if (typeof canvas.content !== "string") updated = false;
+    if (requestedMode === "chat_only") updated = false;
+    result.canvas = {
+      updated,
+      content: updated ? (canvas.content as string) : undefined,
+      changeNote: updated
+        ? (typeof canvas.changeNote === "string" && canvas.changeNote) ||
+          "Updated"
+        : undefined,
+    };
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

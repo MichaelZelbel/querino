@@ -106,7 +106,9 @@ Deno.serve(async (req) => {
     //
     //    A human admin pressing the button is still charged, because that is
     //    what it did before and they chose to spend it.
-    const chargeTo = isMachineCaller(req) ? null : await adminUserId(req);
+    const chargeTo = (await isMachineCaller(req))
+      ? null
+      : await adminUserId(req);
 
     // 3. Parse options
     const body = await req.json().catch(() => ({}));

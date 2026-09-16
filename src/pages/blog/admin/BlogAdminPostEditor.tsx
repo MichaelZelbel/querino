@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "@/lib/router-compat";
 import { BlogAdminLayout } from "@/components/blog/admin/BlogAdminLayout";
 import { Button } from "@/components/ui/button";
@@ -66,27 +66,6 @@ export default function BlogAdminPostEditor() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [previewTab, setPreviewTab] = useState<"edit" | "preview">("edit");
 
-  // Load post data
-  useEffect(() => {
-    if (post && !isNew) {
-      setFormData({
-        title: post.title,
-        slug: post.slug,
-        content: post.content || "",
-        excerpt: post.excerpt || "",
-        status: post.status as BlogPostStatus,
-        published_at: post.published_at,
-        featured_image_id: post.featured_image_id,
-        seo_title: post.seo_title || "",
-        seo_description: post.seo_description || "",
-        og_image_url: post.og_image_url || "",
-        category_ids: post.categories?.map((c) => c.id) || [],
-        tag_ids: post.tags?.map((t) => t.id) || [],
-      });
-      setSlugManuallyEdited(true);
-    }
-  }, [post, isNew]);
-
   // Auto-generate slug from title
   useEffect(() => {
     if (!slugManuallyEdited && formData.title) {
@@ -97,25 +76,56 @@ export default function BlogAdminPostEditor() {
   // Autosave for drafts
   const autosaveData = useMemo(() => formData, [formData]);
 
-  const { status: autosaveStatus, resetLastSaved } = useAutosave({
+  const {
+    status: autosaveStatus,
+    resetLastSaved,
+    cancelPending,
+  } = useAutosave({
     data: autosaveData,
     onSave: async (data) => {
       if (!isNew && post && data.status === "draft") {
-        await updateMutation.mutateAsync({ id: post.id, data });
+        // Status stays out of the autosave payload. A save already in flight
+        // when the post was published used to land afterwards and flip it
+        // back to draft.
+        const { status: _status, ...draft } = data;
+        await updateMutation.mutateAsync({ id: post.id, data: draft });
       }
     },
     delay: 3000,
     enabled: !isNew && formData.status === "draft",
   });
 
-  // Initialize autosave with loaded data
+  // Hydrate the form once per post id. `post` changes on every refetch, and
+  // the update mutation invalidates it after each save, the 3 s autosave
+  // included, so hydrating on every change overwrote keystrokes typed while
+  // the refetch was in flight.
+  const hydratedPostId = useRef<string | null>(null);
   useEffect(() => {
-    if (post && !isNew) {
-      resetLastSaved(autosaveData);
-    }
-  }, [post, isNew]);
+    if (!post || isNew || hydratedPostId.current === post.id) return;
+    hydratedPostId.current = post.id;
+    const loaded: BlogPostFormData = {
+      title: post.title,
+      slug: post.slug,
+      content: post.content || "",
+      excerpt: post.excerpt || "",
+      status: post.status as BlogPostStatus,
+      published_at: post.published_at,
+      featured_image_id: post.featured_image_id,
+      seo_title: post.seo_title || "",
+      seo_description: post.seo_description || "",
+      og_image_url: post.og_image_url || "",
+      category_ids: post.categories?.map((c) => c.id) || [],
+      tag_ids: post.tags?.map((t) => t.id) || [],
+    };
+    setFormData(loaded);
+    setSlugManuallyEdited(true);
+    resetLastSaved(loaded);
+  }, [post, isNew, resetLastSaved]);
 
   const handleSave = async (newStatus?: BlogPostStatus) => {
+    // A draft autosave still waiting on its timer must not fire after this
+    // request: it carried status "draft" and flipped a published post back.
+    cancelPending();
     const status = newStatus || formData.status;
     // Stamp the publication date only when the post actually goes live for the
     // first time. Re-saving an already published post has to keep its original
@@ -133,13 +143,25 @@ export default function BlogAdminPostEditor() {
         : formData.published_at,
     };
 
-    if (isNew) {
-      const result = await createMutation.mutateAsync(dataToSave);
-      if (result) {
-        navigate(`/blog/admin/posts/${result.id}/edit`);
+    try {
+      if (isNew) {
+        const result = await createMutation.mutateAsync(dataToSave);
+        if (result) {
+          navigate(`/blog/admin/posts/${result.id}/edit`);
+        }
+      } else if (id) {
+        await updateMutation.mutateAsync({ id, data: dataToSave });
+        // The form is not re-hydrated from the refetched post, so the saved
+        // status and date are applied here and become the autosave baseline.
+        setFormData((prev) => ({
+          ...prev,
+          status,
+          published_at: dataToSave.published_at,
+        }));
+        resetLastSaved(dataToSave);
       }
-    } else if (id) {
-      await updateMutation.mutateAsync({ id, data: dataToSave });
+    } catch {
+      // The mutation hook already shows the error toast.
     }
   };
 
@@ -173,6 +195,25 @@ export default function BlogAdminPostEditor() {
       <BlogAdminLayout title="Loading...">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </BlogAdminLayout>
+    );
+  }
+
+  if (!isNew && !post) {
+    return (
+      <BlogAdminLayout title="Post not found">
+        <div className="flex flex-col items-center gap-4 py-12 text-center">
+          <p className="text-muted-foreground">
+            There is no post with this id. It may have been deleted.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/blog/admin/posts")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to posts
+          </Button>
         </div>
       </BlogAdminLayout>
     );

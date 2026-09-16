@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +21,15 @@ export default function CollectionNew() {
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
 
-  // Redirect if not authenticated
-  if (!authLoading && !user) {
-    navigate("/auth?redirect=/collections/new");
+  // Redirect if not authenticated. This runs from an effect: navigating in
+  // the render body updates the router while React is still rendering.
+  const notSignedIn = !authLoading && !user;
+
+  useEffect(() => {
+    if (notSignedIn) navigate("/auth?redirect=/collections/new");
+  }, [notSignedIn, navigate]);
+
+  if (notSignedIn) {
     return null;
   }
 

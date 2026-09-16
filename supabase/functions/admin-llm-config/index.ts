@@ -16,6 +16,8 @@ import {
   PROVIDER_SECRETS,
   DEFAULT_PROVIDER,
   DEFAULT_MODEL,
+  providerSupportsTools,
+  type Provider,
 } from "../_shared/llm-registry.ts";
 import {
   getDefaultSystemPrompt,
@@ -305,8 +307,8 @@ Deno.serve(async (req: Request) => {
     if (body.action === "save") {
       const callSite = String(body.call_site ?? "");
       if (!callSite) return json({ error: "call_site required" }, 400);
-      if (!getCallSiteMeta(callSite))
-        return json({ error: "Unknown call_site" }, 400);
+      const meta = getCallSiteMeta(callSite);
+      if (!meta) return json({ error: "Unknown call_site" }, 400);
 
       const patch = body.patch ?? {};
       if (
@@ -314,6 +316,23 @@ Deno.serve(async (req: Request) => {
         !PROVIDERS.includes(patch.provider as never)
       ) {
         return json({ error: `Unknown provider "${patch.provider}"` }, 400);
+      }
+      // llm-registry.ts has promised since 2026-09-08 that this endpoint
+      // refuses to point a call site that forces a tool call at a provider
+      // whose transport is not trusted to return one. Until 2026-09-16 the
+      // promise was only in the comment: the save went through and the call
+      // site answered 502 in prose.
+      if (
+        meta.requiresTools &&
+        patch.provider !== undefined &&
+        !providerSupportsTools(patch.provider as Provider)
+      ) {
+        return json(
+          {
+            error: `Call site "${callSite}" needs tool calling and provider "${patch.provider}" is not trusted to return tool calls yet.`,
+          },
+          400,
+        );
       }
       if (
         patch.model !== undefined &&

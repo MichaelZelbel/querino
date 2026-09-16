@@ -15,6 +15,8 @@ interface UseAutosaveReturn<T> {
   hasChanges: boolean;
   resetLastSaved: (data: T) => void;
   forceSave: () => Promise<void>;
+  /** Drop a save that is waiting on its timer, without saving it. */
+  cancelPending: () => void;
 }
 
 function deepEqual(a: unknown, b: unknown): boolean {
@@ -56,50 +58,57 @@ export function useAutosave<T>({
 
   const hasChanges = lastSaved !== null && !deepEqual(data, lastSaved);
 
-  const performSave = useCallback(
-    async (dataToSave: T) => {
-      if (isSavingRef.current) {
-        pendingDataRef.current = dataToSave;
+  // Callers pass a fresh onSave every render. Reading it through a ref keeps
+  // performSave stable, so the timer effect below re-runs only when the data
+  // changes and a cancelled timer stays cancelled through unrelated renders.
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  const performSave = useCallback(async (dataToSave: T) => {
+    if (isSavingRef.current) {
+      pendingDataRef.current = dataToSave;
+      return;
+    }
+
+    isSavingRef.current = true;
+    setStatus("saving");
+
+    try {
+      await onSaveRef.current(dataToSave);
+      setLastSaved(dataToSave);
+      setStatus("saved");
+
+      // Check if there's pending data that changed while we were saving
+      if (
+        pendingDataRef.current &&
+        !deepEqual(pendingDataRef.current, dataToSave)
+      ) {
+        const pendingData = pendingDataRef.current;
+        pendingDataRef.current = null;
+        isSavingRef.current = false;
+        await performSave(pendingData);
         return;
       }
+    } catch (error) {
+      console.error("Autosave error:", error);
+      setStatus("error");
+    } finally {
+      isSavingRef.current = false;
+      pendingDataRef.current = null;
+    }
+  }, []);
 
-      isSavingRef.current = true;
-      setStatus("saving");
-
-      try {
-        await onSave(dataToSave);
-        setLastSaved(dataToSave);
-        setStatus("saved");
-
-        // Check if there's pending data that changed while we were saving
-        if (
-          pendingDataRef.current &&
-          !deepEqual(pendingDataRef.current, dataToSave)
-        ) {
-          const pendingData = pendingDataRef.current;
-          pendingDataRef.current = null;
-          isSavingRef.current = false;
-          await performSave(pendingData);
-          return;
-        }
-      } catch (error) {
-        console.error("Autosave error:", error);
-        setStatus("error");
-      } finally {
-        isSavingRef.current = false;
-        pendingDataRef.current = null;
-      }
-    },
-    [onSave],
-  );
-
-  const forceSave = useCallback(async () => {
+  const cancelPending = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+  }, []);
+
+  const forceSave = useCallback(async () => {
+    cancelPending();
     await performSave(data);
-  }, [data, performSave]);
+  }, [data, performSave, cancelPending]);
 
   const resetLastSaved = useCallback((newData: T) => {
     setLastSaved(newData);
@@ -146,5 +155,6 @@ export function useAutosave<T>({
     hasChanges,
     resetLastSaved,
     forceSave,
+    cancelPending,
   };
 }

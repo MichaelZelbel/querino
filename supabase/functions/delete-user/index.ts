@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { deleteUserRows } from "../_shared/deleteUserData.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,7 +102,30 @@ serve(async (req) => {
       );
     }
 
-    // Delete the user from auth.users (this will cascade to profiles due to foreign key)
+    // The user's rows first, the same sequence delete-my-account runs. Until
+    // 2026-09-16 this function deleted only the auth user and trusted the
+    // cascades, but prompts, prompt kits and blog posts are ON DELETE SET
+    // NULL and the GitHub sync tables have no foreign key at all, so the
+    // deleted user's public artifacts stayed live with no author and their
+    // sync rows lingered. A failure here keeps the auth user, so the admin
+    // can retry and nothing is half gone.
+    try {
+      const summary = await deleteUserRows(supabaseAdmin, userId);
+      console.log("v5 - Rows removed:", JSON.stringify(summary));
+    } catch (rowsError) {
+      const message =
+        rowsError instanceof Error ? rowsError.message : String(rowsError);
+      console.error("v5 - Row deletion failed, auth user kept:", message);
+      return new Response(
+        JSON.stringify({ error: `Failed to delete user: ${message}` }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
+    // Then the auth user itself.
     const { error: deleteError } =
       await supabaseAdmin.auth.admin.deleteUser(userId);
 

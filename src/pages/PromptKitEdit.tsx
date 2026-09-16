@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -128,9 +128,20 @@ export default function PromptKitEdit() {
     }
   }, [user, authLoading, navigate, slug]);
 
+  // The slug the slug editor just assigned. Changing the slug navigates to the
+  // new edit URL, and the fetch effect below is keyed on the slug, so without
+  // this it reloaded every field and threw away unsaved edits.
+  const assignedSlugRef = useRef<string | null>(null);
+
   useEffect(() => {
     async function fetchKit() {
       if (!slug || !user) return;
+      // The kit behind this slug is already loaded: it is the one whose slug
+      // was just renamed. Refetching would overwrite unsaved edits.
+      if (assignedSlugRef.current === slug) {
+        assignedSlugRef.current = null;
+        return;
+      }
       try {
         const { data, error } = await (supabase.from("prompt_kits") as any)
           .select("*")
@@ -149,7 +160,10 @@ export default function PromptKitEdit() {
         }
         setKit(data);
         setCurrentSlug(data.slug);
-        setFormData({
+        // The baseline is passed explicitly: markSaved() with no argument reads
+        // the form of this render, which is still empty, and that counted every
+        // kit as dirty the moment it loaded.
+        const loaded: KitFormData = {
           title: data.title,
           description: data.description || "",
           content: data.content || "",
@@ -157,8 +171,9 @@ export default function PromptKitEdit() {
           tags: data.tags || [],
           isPublic: data.published ?? false,
           language: data.language || DEFAULT_LANGUAGE,
-        });
-        markSaved();
+        };
+        setFormData(loaded);
+        markSaved(loaded);
       } catch (err) {
         console.error(err);
         toast.error("Failed to load prompt kit");
@@ -264,13 +279,32 @@ export default function PromptKitEdit() {
 
     setIsSubmitting(true);
     try {
-      // Snapshot previous state into prompt_kit_versions before overwriting
       const contentChanged =
         kit.title !== formData.title.trim() ||
         (kit.description || "") !== formData.description.trim() ||
         (kit.content || "") !== formData.content.trim() ||
         JSON.stringify(kit.tags || []) !== JSON.stringify(formData.tags);
 
+      const { error } = await (supabase.from("prompt_kits") as any)
+        .update({
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          content: formData.content.trim(),
+          category: formData.category || null,
+          tags: formData.tags.length > 0 ? formData.tags : null,
+          published: formData.isPublic,
+          language: formData.language,
+        })
+        .eq("id", kitId);
+      if (error) {
+        toast.error("Failed to save prompt kit");
+        return;
+      }
+
+      // Snapshot the previous state into prompt_kit_versions only once the
+      // update has gone through. Inserting first left a phantom version behind
+      // whenever the update failed. The snapshot is built from `kit`, which
+      // still holds the pre-update values at this point.
       if (contentChanged) {
         const { data: latest } = await (
           supabase.from("prompt_kit_versions") as any
@@ -290,22 +324,6 @@ export default function PromptKitEdit() {
           tags: kit.tags,
           change_notes: null,
         });
-      }
-
-      const { error } = await (supabase.from("prompt_kits") as any)
-        .update({
-          title: formData.title.trim(),
-          description: formData.description.trim() || null,
-          content: formData.content.trim(),
-          category: formData.category || null,
-          tags: formData.tags.length > 0 ? formData.tags : null,
-          published: formData.isPublic,
-          language: formData.language,
-        })
-        .eq("id", kitId);
-      if (error) {
-        toast.error("Failed to save prompt kit");
-        return;
       }
 
       setKit({
@@ -620,6 +638,7 @@ export default function PromptKitEdit() {
                       promptKitId={kitId!}
                       currentSlug={currentSlug}
                       onSlugChanged={(s) => {
+                        assignedSlugRef.current = s;
                         setCurrentSlug(s);
                         navigate(`/prompt-kits/${s}/edit`, { replace: true });
                       }}

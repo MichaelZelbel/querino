@@ -35,14 +35,30 @@ const HEADER = "X-Internal-Key";
  * Compare two secrets without leaking their length or contents through timing.
  * Returns false for empty input, so a missing env var can never match and an
  * unconfigured function fails closed rather than open.
+ *
+ * Both sides are hashed first and the two 32-byte digests are compared in a
+ * loop of fixed length. The earlier version returned early when the lengths
+ * differed, so a caller could learn the secret's length one guess at a time,
+ * which is the one thing the comment above promised it would not leak.
+ * Hashing makes the compared values the same size whatever came in, and the
+ * loop runs over every byte whether or not a mismatch has already been seen.
  */
-export function constantTimeEquals(a: string, b: string): boolean {
-  if (!a || !b || a.length !== b.length) return false;
+export async function constantTimeEquals(
+  a: string,
+  b: string,
+): Promise<boolean> {
+  if (!a || !b) return false;
+  const [da, db] = await Promise.all([digest(a), digest(b)]);
   let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  for (let i = 0; i < da.length; i++) {
+    diff |= da[i] ^ db[i];
   }
   return diff === 0;
+}
+
+async function digest(s: string): Promise<Uint8Array> {
+  const bytes = new TextEncoder().encode(s);
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
 }
 
 function bearerOf(req: Request): string {
@@ -56,7 +72,7 @@ function bearerOf(req: Request): string {
 }
 
 /** True when the caller presented the shared machine secret. */
-export function hasInternalKey(req: Request): boolean {
+export async function hasInternalKey(req: Request): Promise<boolean> {
   const secret = Deno.env.get("INTERNAL_JOB_SECRET") ?? "";
   if (!secret) {
     // Loud, because the alternative is a machine endpoint that silently
@@ -71,14 +87,14 @@ export function hasInternalKey(req: Request): boolean {
     req.headers.get(HEADER.toLowerCase()) ??
     ""
   ).trim();
-  return constantTimeEquals(presented, secret);
+  return await constantTimeEquals(presented, secret);
 }
 
 /** True when the caller presented the service-role key as its bearer token. */
-export function hasServiceRoleKey(req: Request): boolean {
+export async function hasServiceRoleKey(req: Request): Promise<boolean> {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (!key) return false;
-  return constantTimeEquals(bearerOf(req), key);
+  return await constantTimeEquals(bearerOf(req), key);
 }
 
 /**
@@ -86,8 +102,8 @@ export function hasServiceRoleKey(req: Request): boolean {
  * something already trusted with the service-role key (admin tooling, a
  * database trigger). Both are ours; neither is reachable from a browser.
  */
-export function isMachineCaller(req: Request): boolean {
-  return hasInternalKey(req) || hasServiceRoleKey(req);
+export async function isMachineCaller(req: Request): Promise<boolean> {
+  return (await hasInternalKey(req)) || (await hasServiceRoleKey(req));
 }
 
 /**
@@ -147,14 +163,14 @@ export function unauthorized(
  * Guard for an endpoint only our jobs may call. Returns a 401 Response to
  * return as-is, or null when the caller may proceed.
  *
- *   const denied = requireMachineCaller(req, corsHeaders);
+ *   const denied = await requireMachineCaller(req, corsHeaders);
  *   if (denied) return denied;
  */
-export function requireMachineCaller(
+export async function requireMachineCaller(
   req: Request,
   extraHeaders: Record<string, string> = {},
-): Response | null {
-  if (isMachineCaller(req)) return null;
+): Promise<Response | null> {
+  if (await isMachineCaller(req)) return null;
   console.warn("[internalAuth] refused a caller with no valid internal key");
   return unauthorized(extraHeaders);
 }
@@ -167,7 +183,7 @@ export async function requireMachineOrAdmin(
   req: Request,
   extraHeaders: Record<string, string> = {},
 ): Promise<Response | null> {
-  if (isMachineCaller(req)) return null;
+  if (await isMachineCaller(req)) return null;
   if (await isAdminCaller(req)) return null;
   console.warn(
     "[internalAuth] refused a caller that is neither a job nor an admin",

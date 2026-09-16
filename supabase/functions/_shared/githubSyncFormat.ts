@@ -28,13 +28,20 @@ export const TABLE_FOR_TYPE: Record<ArtifactType, string> = {
 
 // ---------------- Markdown generation ----------------
 
+// A double-quoted YAML scalar. The backslash goes first: a tag ending in `\`
+// used to come out as `"tag\"`, which swallows the closing quote and breaks
+// the whole frontmatter line.
+function quote(value: unknown): string {
+  return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
 function yamlValue(value: unknown): string {
   if (Array.isArray(value)) {
-    return `[${value.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(", ")}]`;
+    return `[${value.map(quote).join(", ")}]`;
   }
   if (value === null || value === undefined) return '""';
   if (typeof value === "string") {
-    return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+    return quote(value);
   }
   return String(value);
 }

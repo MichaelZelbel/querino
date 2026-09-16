@@ -74,6 +74,22 @@ function utf8ToBase64(s: string): string {
   return btoa(unescape(encodeURIComponent(s)));
 }
 
+// The Contents API answers 409 or 422 when the `sha` sent with a PUT or a
+// DELETE is not the blob currently at that path. The recorded SHA in
+// github_sync_state goes stale whenever anything else touches the file: the
+// manual github-sync, a push from the user's own machine, an earlier attempt
+// of this same job that reached GitHub but died before recording. Callers
+// catch this one error type, ask GitHub for the current SHA and try once
+// more; every other failure is thrown as is.
+class GitHubShaMismatch extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 async function ghGetFile(
   repo: string,
   path: string,
@@ -129,6 +145,12 @@ async function ghPutFile(
       body: JSON.stringify(body),
     },
   );
+  if (res.status === 409 || res.status === 422) {
+    throw new GitHubShaMismatch(
+      res.status,
+      `GitHub PUT ${path} failed: ${res.status} ${await res.text()}`,
+    );
+  }
   if (!res.ok) {
     throw new Error(
       `GitHub PUT ${path} failed: ${res.status} ${await res.text()}`,
@@ -136,6 +158,47 @@ async function ghPutFile(
   }
   const data = await res.json();
   return { sha: data.content.sha };
+}
+
+/**
+ * PUT with the given SHA, and if GitHub says that SHA is stale, once more
+ * with whatever is there now. A path that vanished in between is created.
+ */
+async function ghPutFileFresh(
+  repo: string,
+  path: string,
+  branch: string,
+  content: string,
+  message: string,
+  token: string,
+  existingSha?: string,
+): Promise<{ sha: string }> {
+  try {
+    return await ghPutFile(
+      repo,
+      path,
+      branch,
+      content,
+      message,
+      token,
+      existingSha,
+    );
+  } catch (e) {
+    if (!(e instanceof GitHubShaMismatch)) throw e;
+    console.warn(
+      `Stale SHA for ${path} (${e.status}), refetching and retrying`,
+    );
+    const fresh = await ghGetFile(repo, path, branch, token);
+    return await ghPutFile(
+      repo,
+      path,
+      branch,
+      content,
+      message,
+      token,
+      fresh?.sha,
+    );
+  }
 }
 
 async function ghDeleteFile(
@@ -159,10 +222,43 @@ async function ghDeleteFile(
       body: JSON.stringify({ message, sha, branch }),
     },
   );
-  if (!res.ok && res.status !== 404 && res.status !== 422) {
-    throw new Error(
+  // Only a 2xx or a 404 means the file is gone. Until 2026-09-16 a 422 was
+  // treated as success too, so a stale SHA "deleted" nothing, the state row
+  // was removed anyway, and the file stayed in the repository for good.
+  if (res.ok || res.status === 404) return;
+  if (res.status === 409 || res.status === 422) {
+    throw new GitHubShaMismatch(
+      res.status,
       `GitHub DELETE ${path} failed: ${res.status} ${await res.text()}`,
     );
+  }
+  throw new Error(
+    `GitHub DELETE ${path} failed: ${res.status} ${await res.text()}`,
+  );
+}
+
+/**
+ * DELETE with the given SHA, and if GitHub says that SHA is stale, once more
+ * with the current one. A path that is already gone counts as deleted.
+ */
+async function ghDeleteFileFresh(
+  repo: string,
+  path: string,
+  branch: string,
+  sha: string,
+  message: string,
+  token: string,
+): Promise<void> {
+  try {
+    await ghDeleteFile(repo, path, branch, sha, message, token);
+  } catch (e) {
+    if (!(e instanceof GitHubShaMismatch)) throw e;
+    console.warn(
+      `Stale SHA for ${path} (${e.status}), refetching and retrying`,
+    );
+    const fresh = await ghGetFile(repo, path, branch, token);
+    if (!fresh) return;
+    await ghDeleteFile(repo, path, branch, fresh.sha, message, token);
   }
 }
 
@@ -350,7 +446,7 @@ async function processQueue(
             sha = existing?.sha;
           }
           if (sha) {
-            await ghDeleteFile(
+            await ghDeleteFileFresh(
               settings.repo,
               path,
               settings.branch,
@@ -392,7 +488,7 @@ async function processQueue(
           .eq("target_id", settings.target_id)
           .maybeSingle();
         if (state?.path && state?.sha) {
-          await ghDeleteFile(
+          await ghDeleteFileFresh(
             settings.repo,
             state.path,
             settings.branch,
@@ -455,7 +551,7 @@ async function processQueue(
 
       if (oldState?.path && oldState.path !== newPath && oldState.sha) {
         try {
-          await ghDeleteFile(
+          await ghDeleteFileFresh(
             settings.repo,
             oldState.path,
             settings.branch,
@@ -468,8 +564,12 @@ async function processQueue(
         }
       }
 
+      // The recorded SHA is trusted on the first attempt only. job.attempts
+      // is this attempt's number, so anything above 1 means the last try
+      // failed, and a stale recorded SHA is the likeliest reason; asking
+      // GitHub costs one GET and never answers 409.
       let currentSha: string | undefined;
-      if (oldState?.path === newPath && oldState.sha) {
+      if (oldState?.path === newPath && oldState.sha && job.attempts <= 1) {
         currentSha = oldState.sha;
       } else {
         const existing = await ghGetFile(
@@ -481,7 +581,7 @@ async function processQueue(
         currentSha = existing?.sha;
       }
 
-      const { sha: newSha } = await ghPutFile(
+      const { sha: newSha } = await ghPutFileFresh(
         settings.repo,
         newPath,
         settings.branch,
@@ -541,7 +641,7 @@ Deno.serve(async (req) => {
   }
 
   // Machine-only. Before this check, anyone could drain the queue on demand.
-  const denied = requireMachineCaller(req, corsHeaders);
+  const denied = await requireMachineCaller(req, corsHeaders);
   if (denied) return denied;
 
   try {

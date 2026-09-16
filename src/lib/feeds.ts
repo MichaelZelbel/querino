@@ -73,7 +73,13 @@ export async function buildRss(): Promise<string> {
       // No escapeXml here: the value is wrapped in CDATA below, and doing both
       // encodes an ampersand twice, so readers show &amp;amp; where the post
       // said "&".
-      const description = post.excerpt || post.content?.slice(0, 300) || "";
+      // A "]]>" inside the text would end the CDATA section early and break the
+      // feed for every reader; the standard trick splits it across two sections.
+      const description = (
+        post.excerpt ||
+        post.content?.slice(0, 300) ||
+        ""
+      ).replace(/\]\]>/g, "]]]]><![CDATA[>");
 
       return `
     <item>
@@ -166,6 +172,25 @@ export async function buildSitemap(): Promise<string> {
       fetchAllRows("prompt_kits", "published", true),
     ],
   );
+
+  // Same reasoning as the RSS feed and as fetchAllRows: a crawler retries a
+  // 500, but takes a sitemap missing a whole table at its word and drops those
+  // pages from the index. Until 2026-09-16 a failed query here skipped its table
+  // silently, which is exactly what the comment above fetchAllRows says must
+  // not happen.
+  for (const [table, result] of [
+    ["blog_posts", blogPosts],
+    ["prompts", prompts],
+    ["skills", skills],
+    ["workflows", workflows],
+    ["prompt_kits", promptKits],
+  ] as const) {
+    if (result.error) {
+      throw new Error(
+        `Sitemap query for ${table} failed: ${result.error.message}`,
+      );
+    }
+  }
 
   const urls: string[] = [];
 

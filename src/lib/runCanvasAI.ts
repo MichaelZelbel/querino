@@ -82,6 +82,11 @@ export function getOrCreateDraftSessionId(
   artifactType: ArtifactType = "prompt",
 ): string {
   const key = draftSessionKey(artifactType, workspaceScope, userId);
+  // The four "new artifact" pages call this during render. On the server there
+  // is no storage, and the same read threw on every public detail page until
+  // 2026-09-16 (SendToLLMButtons); a fresh id per server render is harmless,
+  // because the client reads its own stored one on hydration.
+  if (typeof window === "undefined") return crypto.randomUUID();
   const existing = localStorage.getItem(key);
   if (existing) return existing;
   const id = crypto.randomUUID();

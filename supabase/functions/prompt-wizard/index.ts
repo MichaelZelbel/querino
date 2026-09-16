@@ -105,8 +105,15 @@ serve(async (req) => {
     }
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[prompt-wizard] error:", message);
-    // An auth failure is the caller's, everything else stays in the log.
-    const isAuth = /auth|bearer|token/i.test(message);
+    // An auth failure is the caller's, everything else stays in the log. The
+    // three messages are the ones getCallerUserId throws, matched exactly the
+    // way refine-prompt and the coaches do. The regex this replaced on
+    // 2026-09-16 also matched "token" in a provider or ledger error and
+    // turned a server fault into a 401.
+    const isAuth =
+      message === "Missing Authorization bearer token" ||
+      message === "Invalid auth token" ||
+      message === "Empty bearer token";
     return new Response(
       JSON.stringify({
         error: isAuth ? "Unauthorized" : "Prompt wizard failed",

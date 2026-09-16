@@ -33,6 +33,54 @@ interface GitHubFile {
   sha?: string;
 }
 
+// The columns generateMarkdown and buildPath actually read, per table. The
+// four tables also carry a 1536-float `embedding` column and a full-text
+// `fts` column; selecting `*` shipped both for every artifact, which for a
+// few hundred prompts is megabytes of numbers nobody here looks at.
+const COMMON_COLUMNS =
+  "id, slug, title, description, category, tags, language, content, created_at, updated_at";
+const PROMPT_COLUMNS = `${COMMON_COLUMNS}, is_public`;
+const PUBLISHED_COLUMNS = `${COMMON_COLUMNS}, published`;
+
+const PAGE_SIZE = 1000;
+
+/**
+ * Every row of one artifact table that belongs to this sync, in pages of
+ * 1000 until a short page, with the query error surfaced instead of
+ * swallowed.
+ *
+ * Both matter because of what happens further down: any file under a
+ * managed folder whose path is not in the fetched set is deleted from the
+ * repository. Before 2026-09-16 a failed query became an empty list (data
+ * null, then `|| []`) and PostgREST's default row cap silently dropped
+ * everything past the first thousand, so either one deleted the user's
+ * files from GitHub in a commit that looked like a normal sync.
+ */
+async function fetchAllArtifacts(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+  table: string,
+  columns: string,
+  scope: { teamId: string } | { userId: string },
+): Promise<ArtifactRow[]> {
+  const all: ArtifactRow[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    let query = client.from(table).select(columns);
+    query =
+      "teamId" in scope
+        ? query.eq("team_id", scope.teamId)
+        : query.eq("author_id", scope.userId).is("team_id", null);
+    const { data, error } = await query
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`${table}: ${error.message}`);
+    const page = (data ?? []) as ArtifactRow[];
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
 interface GitHubTreeItem {
   path: string;
   mode: "100644" | "100755" | "040000" | "160000" | "120000";
@@ -589,56 +637,40 @@ Deno.serve(async (req) => {
     // Fetch all artefacts
     console.log("Fetching artefacts for user:", user.id, "teamId:", teamId);
 
-    let prompts: ArtifactRow[] = [];
-    let skills: ArtifactRow[] = [];
-    let workflows: ArtifactRow[] = [];
-    let promptKits: ArtifactRow[] = [];
+    let prompts: ArtifactRow[];
+    let skills: ArtifactRow[];
+    let workflows: ArtifactRow[];
+    let promptKits: ArtifactRow[];
 
-    if (teamId) {
-      // Team artefacts
-      const [promptsResult, skillsResult, workflowsResult, kitsResult] =
-        await Promise.all([
-          supabase.from("prompts").select("*").eq("team_id", teamId),
-          supabase.from("skills").select("*").eq("team_id", teamId),
-          supabase.from("workflows").select("*").eq("team_id", teamId),
-          (supabase.from("prompt_kits") as any)
-            .select("*")
-            .eq("team_id", teamId),
-        ]);
-
-      prompts = (promptsResult.data as ArtifactRow[]) || [];
-      skills = (skillsResult.data as ArtifactRow[]) || [];
-      workflows = (workflowsResult.data as ArtifactRow[]) || [];
-      promptKits = (kitsResult.data as ArtifactRow[]) || [];
-    } else {
-      // Personal artefacts
-      const [promptsResult, skillsResult, workflowsResult, kitsResult] =
-        await Promise.all([
-          supabase
-            .from("prompts")
-            .select("*")
-            .eq("author_id", user.id)
-            .is("team_id", null),
-          supabase
-            .from("skills")
-            .select("*")
-            .eq("author_id", user.id)
-            .is("team_id", null),
-          supabase
-            .from("workflows")
-            .select("*")
-            .eq("author_id", user.id)
-            .is("team_id", null),
-          (supabase.from("prompt_kits") as any)
-            .select("*")
-            .eq("author_id", user.id)
-            .is("team_id", null),
-        ]);
-
-      prompts = (promptsResult.data as ArtifactRow[]) || [];
-      skills = (skillsResult.data as ArtifactRow[]) || [];
-      workflows = (workflowsResult.data as ArtifactRow[]) || [];
-      promptKits = (kitsResult.data as ArtifactRow[]) || [];
+    // A query that fails stops the sync here, before anything is read from
+    // or written to GitHub. The deletion pass below treats "not in this
+    // list" as "delete from the repository", so an incomplete list must
+    // never reach it.
+    const scope = teamId
+      ? { teamId: String(teamId) }
+      : { userId: user.id as string };
+    try {
+      [prompts, skills, workflows, promptKits] = await Promise.all([
+        fetchAllArtifacts(supabase, "prompts", PROMPT_COLUMNS, scope),
+        fetchAllArtifacts(supabase, "skills", PUBLISHED_COLUMNS, scope),
+        fetchAllArtifacts(supabase, "workflows", PUBLISHED_COLUMNS, scope),
+        fetchAllArtifacts(supabase, "prompt_kits", PUBLISHED_COLUMNS, scope),
+      ]);
+    } catch (fetchError) {
+      console.error(
+        "Artifact fetch failed, nothing was sent to GitHub:",
+        fetchError,
+      );
+      return new Response(
+        JSON.stringify({
+          error:
+            "Could not read your artifacts, so nothing was synced. Please try again.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     console.log(

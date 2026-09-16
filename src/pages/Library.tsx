@@ -536,16 +536,18 @@ export default function Library() {
         });
       } else {
         // Use personal GitHub settings
-        const { data, error } = await supabase
-          .from("profiles")
-          .select(
-            "github_repo, github_branch, github_folder, github_sync_enabled",
-          )
-          .eq("id", user.id)
-          .single();
+        // Own row only, through the RPC: the columns left the profiles grant
+        // on 2026-09-16.
+        const { data, error } = await supabase.rpc("get_my_github_settings");
+        const own = data?.[0];
 
-        if (!error && data) {
-          setGithubSettings(data);
+        if (!error && own) {
+          setGithubSettings({
+            github_repo: own.github_repo,
+            github_branch: own.github_branch,
+            github_folder: own.github_folder,
+            github_sync_enabled: own.github_sync_enabled,
+          });
         }
       }
     }
@@ -621,6 +623,11 @@ export default function Library() {
 
   // Fetch prompts - filtered by workspace
   useEffect(() => {
+    // The workspace context starts as "personal" and switches in an effect, so
+    // two fetches can be in flight at once. Without this flag the slower,
+    // personal response could land under the team header.
+    let cancelled = false;
+
     async function fetchLibraryData() {
       if (!user) return;
 
@@ -643,6 +650,7 @@ export default function Library() {
           "created_at",
           { ascending: false },
         );
+        if (cancelled) return;
 
         if (ownError) {
           console.error("Error fetching prompts:", ownError);
@@ -656,6 +664,7 @@ export default function Library() {
             .from("user_saved_prompts")
             .select("prompt_id")
             .eq("user_id", user.id);
+          if (cancelled) return;
 
           if (savedError) {
             console.error("Error fetching saved prompts:", savedError);
@@ -667,6 +676,7 @@ export default function Library() {
               .from("prompts")
               .select("*")
               .in("id", promptIds);
+            if (cancelled) return;
 
             if (promptsError) {
               console.error("Error fetching prompts:", promptsError);
@@ -680,6 +690,7 @@ export default function Library() {
               .select("prompt_id, rating")
               .eq("user_id", user.id)
               .in("prompt_id", promptIds);
+            if (cancelled) return;
 
             if (ratingsError) {
               console.error("Error fetching ratings:", ratingsError);
@@ -700,7 +711,7 @@ export default function Library() {
       } catch (err) {
         console.error("Error fetching library data:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -708,6 +719,10 @@ export default function Library() {
       fetchLibraryData();
       refetchPinned();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, currentWorkspace, isTeamWorkspace, refetchPinned]);
 
   if (authLoading) {

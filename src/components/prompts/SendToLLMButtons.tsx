@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -37,9 +37,14 @@ export function SendToLLMButtons({
   content,
   variant = "full",
 }: SendToLLMButtonsProps) {
-  const [preferredLLM, setPreferred] = useState<LLMTarget | null>(
-    getPreferredLLM,
-  );
+  // Start with no preference and read the stored one after mount. The server
+  // has no localStorage, and reading it in the initial state made the server
+  // render throw; reading it in an effect also keeps the first client render
+  // identical to the server markup, so hydration does not mismatch.
+  const [preferredLLM, setPreferred] = useState<LLMTarget | null>(null);
+  useEffect(() => {
+    setPreferred(getPreferredLLM());
+  }, []);
   const [clipboardDialog, setClipboardDialog] = useState<{
     open: boolean;
     llm: LLMTarget | null;

@@ -268,7 +268,13 @@ function StopwordsTab() {
       supabase.from("moderation_stopwords") as any
     ).insert(rows);
     if (error) {
-      toast.error("Some words may already exist. Added what we could.");
+      // A multi-row insert is all or nothing, so when one word is a duplicate
+      // (the usual cause) nothing at all was added.
+      toast.error(
+        error.code === "23505"
+          ? "Nothing was added: one of the words is already in the list, and the whole batch is rejected together. Remove it and try again."
+          : `Nothing was added: ${error.message}`,
+      );
     } else {
       toast.success(`Added ${words.length} stopwords`);
     }
@@ -278,7 +284,13 @@ function StopwordsTab() {
   };
 
   const deleteWord = async (id: string) => {
-    await (supabase.from("moderation_stopwords") as any).delete().eq("id", id);
+    const { error } = await (supabase.from("moderation_stopwords") as any)
+      .delete()
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Stopword removed");
     fetchStopwords();
   };
@@ -542,7 +554,7 @@ function AIReviewQueueTab() {
   };
 
   const requeueItem = async (id: string) => {
-    await (supabase.from("moderation_review_queue") as any)
+    const { error } = await (supabase.from("moderation_review_queue") as any)
       .update({
         status: "pending",
         retry_count: 0,
@@ -552,6 +564,10 @@ function AIReviewQueueTab() {
         reviewed_at: null,
       })
       .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Re-queued for review");
     fetchItems();
   };
@@ -728,19 +744,23 @@ function SuspensionsTab() {
 
   const toggleSuspension = async (s: UserSuspension) => {
     const newSuspended = !s.suspended;
-    await (supabase.from("user_suspensions") as any)
+    const { error } = await (supabase.from("user_suspensions") as any)
       .update({
         suspended: newSuspended,
         suspended_at: newSuspended ? new Date().toISOString() : null,
         suspension_reason: newSuspended ? "Manually suspended by admin" : null,
       })
       .eq("id", s.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(newSuspended ? "User suspended" : "User unsuspended");
     fetchSuspensions();
   };
 
   const clearStrikes = async (id: string) => {
-    await (supabase.from("user_suspensions") as any)
+    const { error } = await (supabase.from("user_suspensions") as any)
       .update({
         strike_count: 0,
         suspended: false,
@@ -748,6 +768,10 @@ function SuspensionsTab() {
         suspension_reason: null,
       })
       .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Strikes cleared");
     fetchSuspensions();
   };

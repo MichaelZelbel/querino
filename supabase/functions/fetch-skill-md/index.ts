@@ -1,3 +1,5 @@
+import { getCallerUserId } from "../_shared/llm.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -6,6 +8,47 @@ const corsHeaders = {
 
 // Allowed domains for fetching
 const ALLOWED_DOMAINS = ["github.com", "raw.githubusercontent.com"];
+
+// A SKILL.md is a few kilobytes. The path under raw.githubusercontent.com is
+// chosen by the caller, so without a cap this function would read whatever
+// file they pointed it at into memory, however large, and however long the
+// server took to send it.
+const MAX_BODY_BYTES = 1_000_000;
+const FETCH_TIMEOUT_MS = 15_000;
+
+/**
+ * The body as text, or null when it is larger than MAX_BODY_BYTES. The
+ * Content-Length header is checked first when there is one; the stream is
+ * counted anyway, because the header is optional and not always honest.
+ */
+async function readCapped(response: Response): Promise<string | null> {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return null;
+
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BODY_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+
+  const joined = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(joined);
+}
 
 function isAllowedUrl(urlString: string): boolean {
   try {
@@ -39,6 +82,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // A signed-in session is required. Every caller is the skill editor in
+    // the browser, which invokes this through supabase.functions.invoke and
+    // so always carries the session token; the gateway itself does not check
+    // it (verify_jwt = false in config.toml), so this does. Without it the
+    // relay was an anonymous fetch-anything-from-GitHub endpoint.
+    try {
+      await getCallerUserId(req);
+    } catch {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return new Response(
@@ -153,10 +210,30 @@ Deno.serve(async (req) => {
               Accept: "text/plain",
               "User-Agent": "Querino/1.0",
             },
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
           });
 
           if (response.ok) {
-            content = await response.text();
+            const text = await readCapped(response);
+            if (text === null) {
+              console.log(
+                `Refused ${fetchUrl}: larger than ${MAX_BODY_BYTES} bytes`,
+              );
+              return new Response(
+                JSON.stringify({
+                  error:
+                    "SKILL.md is larger than 1 MB, which is not a skill file",
+                }),
+                {
+                  status: 413,
+                  headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                  },
+                },
+              );
+            }
+            content = text;
             console.log(`Successfully fetched from ${fetchUrl}`);
             break;
           } else {

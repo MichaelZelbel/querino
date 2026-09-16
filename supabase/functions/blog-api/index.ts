@@ -35,7 +35,19 @@ Deno.serve(async (req) => {
     // GET /posts/{slug}
     const postMatch = path.match(/^\/posts\/([^/]+)$/);
     if (postMatch) {
-      return await handleGetPost(supabase, postMatch[1]);
+      // The segment arrives percent-encoded, so a slug with anything beyond
+      // plain ASCII was looked up as its encoded form and never found. A
+      // malformed escape ("%E0%A4%A") is the caller's mistake, not ours.
+      let slug: string;
+      try {
+        slug = decodeURIComponent(postMatch[1]);
+      } catch {
+        return new Response(JSON.stringify({ error: "Malformed slug" }), {
+          status: 400,
+          headers: corsHeaders,
+        });
+      }
+      return await handleGetPost(supabase, slug);
     }
 
     // GET /categories

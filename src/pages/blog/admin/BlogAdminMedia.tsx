@@ -63,8 +63,12 @@ export default function BlogAdminMedia() {
     const files = e.target.files;
     if (!files?.length) return;
 
-    for (const file of Array.from(files)) {
-      await uploadMutation.mutateAsync(file);
+    try {
+      for (const file of Array.from(files)) {
+        await uploadMutation.mutateAsync(file);
+      }
+    } catch {
+      // The mutation hook already shows the error toast.
     }
 
     if (fileInputRef.current) {
@@ -80,11 +84,15 @@ export default function BlogAdminMedia() {
 
   const handleUpdate = async () => {
     if (!editingMedia) return;
-    await updateMutation.mutateAsync({
-      id: editingMedia.id,
-      data: { alt_text: altText },
-    });
-    setIsEditDialogOpen(false);
+    try {
+      await updateMutation.mutateAsync({
+        id: editingMedia.id,
+        data: { alt_text: altText },
+      });
+      setIsEditDialogOpen(false);
+    } catch {
+      // The mutation hook already shows the error toast; the dialog stays open.
+    }
   };
 
   const handleDelete = () => {

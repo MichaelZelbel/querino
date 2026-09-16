@@ -175,7 +175,10 @@ export default function WorkflowEdit() {
               : JSON.stringify(data.json, null, 2);
         }
 
-        setFormData({
+        // The baseline is passed explicitly: markSaved() with no argument reads
+        // the form of this render, which is still empty, and that counted every
+        // workflow as dirty the moment it loaded.
+        const loaded: WorkflowFormData = {
           title: data.title,
           description: data.description || "",
           content: workflowContent,
@@ -183,8 +186,9 @@ export default function WorkflowEdit() {
           tags: data.tags || [],
           isPublic: data.published ?? false,
           language: data.language || DEFAULT_LANGUAGE,
-        });
-        markSaved();
+        };
+        setFormData(loaded);
+        markSaved(loaded);
       } catch (err) {
         console.error("Error fetching workflow:", err);
         toast.error("Failed to load workflow");
@@ -431,7 +435,7 @@ export default function WorkflowEdit() {
             ? data.json
             : JSON.stringify(data.json, null, 2);
       }
-      setFormData({
+      const restored: WorkflowFormData = {
         title: data.title,
         description: data.description || "",
         content: workflowContent,
@@ -439,8 +443,9 @@ export default function WorkflowEdit() {
         tags: data.tags || [],
         isPublic: data.published ?? false,
         language: data.language || DEFAULT_LANGUAGE,
-      });
-      markSaved();
+      };
+      setFormData(restored);
+      markSaved(restored);
     }
   };
 

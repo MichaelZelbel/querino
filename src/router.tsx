@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { installAICreditsRefresh } from "@/lib/aiCredits";
 
 export const getRouter = () => {
   // Ported from the pre-migration App.tsx QueryClient config.
@@ -15,6 +16,11 @@ export const getRouter = () => {
       },
     },
   });
+
+  // The header's credit pill refetches after any charging AI call, wherever in
+  // the app the call is made. Nothing else invalidates that query, so without
+  // this line the balance sat stale for five minutes after every AI feature.
+  installAICreditsRefresh(queryClient);
 
   const router = createRouter({
     routeTree,

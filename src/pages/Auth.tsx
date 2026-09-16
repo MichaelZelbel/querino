@@ -57,6 +57,23 @@ function getRedirectLabel(path: string): string | null {
   return "this page";
 }
 
+// Only an in-app path may be a redirect target. Anything else ("//evil.example",
+// "https://...", or /auth itself, which would loop) falls back to the default.
+const DEFAULT_REDIRECT = "/library";
+function safeRedirect(path: string | null | undefined): string {
+  if (!path || !path.startsWith("/") || path.startsWith("//")) {
+    return DEFAULT_REDIRECT;
+  }
+  if (
+    path === "/auth" ||
+    path.startsWith("/auth?") ||
+    path.startsWith("/auth/")
+  ) {
+    return DEFAULT_REDIRECT;
+  }
+  return path;
+}
+
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z
   .string()
@@ -115,8 +132,8 @@ export default function Auth() {
     if (!authLoading && user && !hasRedirected.current) {
       hasRedirected.current = true;
       // Check localStorage first (for OAuth return), then URL params
-      const storedPath = getAndClearRedirectPath();
-      const urlRedirect = getRedirectFromParams(searchParams);
+      const storedPath = safeRedirect(getAndClearRedirectPath());
+      const urlRedirect = safeRedirect(getRedirectFromParams(searchParams));
       // Prefer stored path if it exists and isn't the default, otherwise use URL param
       const redirectTo = storedPath !== "/library" ? storedPath : urlRedirect;
       navigate(redirectTo, { replace: true });
@@ -158,7 +175,7 @@ export default function Auth() {
           }
         } else {
           toast.success("Welcome back!");
-          const redirectTo = getRedirectFromParams(searchParams);
+          const redirectTo = safeRedirect(getRedirectFromParams(searchParams));
           navigate(redirectTo, { replace: true });
         }
       } else {

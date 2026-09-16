@@ -13,11 +13,15 @@ interface Options<T> {
   enableNavigationGuard?: boolean;
 }
 
-interface Result {
+interface Result<T> {
   isDirty: boolean;
   savedAt: Date | null;
-  /** Snapshot current `data` as the clean baseline. Call after a successful save and once on initial load. */
-  markSaved: () => void;
+  /**
+   * Snapshot the clean baseline. Call after a successful save and once on
+   * initial load. Pass the just-loaded values explicitly when calling right
+   * after setState: the state of the current render is still the old one.
+   */
+  markSaved: (next?: T) => void;
 }
 
 function snapshot<T>(value: T): string {
@@ -35,7 +39,7 @@ export function useUnsavedChanges<T>({
   enableShortcut = true,
   enableBeforeUnload = true,
   enableNavigationGuard = true,
-}: Options<T>): Result {
+}: Options<T>): Result<T> {
   const baselineRef = useRef<string | null>(null);
   const [, force] = useState(0);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -44,11 +48,20 @@ export function useUnsavedChanges<T>({
   const isDirty =
     baselineRef.current !== null && baselineRef.current !== current;
 
-  const markSaved = useCallback(() => {
-    baselineRef.current = snapshot(data);
+  // Always the latest `data`, so markSaved does not have to be recreated per
+  // render and does not close over a stale form. Every editor used to call
+  // markSaved() inside the fetch effect right after setState, which snapshotted
+  // the empty form of that render: the page counted as dirty the moment it
+  // loaded, the leave-page confirm fired on every exit and Ctrl+S saved
+  // unchanged data.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const markSaved = useCallback((next?: T) => {
+    baselineRef.current = snapshot(next === undefined ? dataRef.current : next);
     setSavedAt(new Date());
     force((n) => n + 1);
-  }, [data]);
+  }, []);
 
   // Keep onSave reference fresh for the keydown listener
   const onSaveRef = useRef(onSave);

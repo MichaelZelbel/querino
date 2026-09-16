@@ -143,13 +143,13 @@ export default function Settings() {
     async function loadGithubSettings() {
       if (!user) return;
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select(
-          "github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at",
-        )
-        .eq("id", user.id)
-        .single();
+      // The five columns are no longer readable on profiles rows (any signed-in
+      // user could read every author's since 2026-08-23); the RPC answers only
+      // about the caller.
+      const { data: githubRows, error: profileError } = await supabase.rpc(
+        "get_my_github_settings",
+      );
+      const profileData = githubRows?.[0];
 
       // Only the existence of the token matters here — never pull the secret
       // itself into the browser. Saving guards on the "•" placeholder and the

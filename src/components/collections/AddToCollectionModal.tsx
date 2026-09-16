@@ -50,6 +50,10 @@ export function AddToCollectionModal({
         item_id: itemId,
       });
       onOpenChange(false);
+    } catch {
+      // The hook's onError already toasted (a duplicate item is the usual
+      // case). Without this catch the rejection escaped onClick as an
+      // unhandled promise rejection.
     } finally {
       setAddingTo(null);
     }

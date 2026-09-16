@@ -69,16 +69,19 @@ export default function BlogAdminCategories() {
   const handleSave = async () => {
     if (!formData.name.trim()) return;
 
-    if (editingCategory) {
-      await updateMutation.mutateAsync({
-        id: editingCategory.id,
-        data: formData,
-      });
-    } else {
-      await createMutation.mutateAsync(formData);
+    try {
+      if (editingCategory) {
+        await updateMutation.mutateAsync({
+          id: editingCategory.id,
+          data: formData,
+        });
+      } else {
+        await createMutation.mutateAsync(formData);
+      }
+      setIsDialogOpen(false);
+    } catch {
+      // The mutation hook already shows the error toast; the dialog stays open.
     }
-
-    setIsDialogOpen(false);
   };
 
   const handleDelete = () => {

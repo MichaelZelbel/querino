@@ -82,6 +82,8 @@ interface VersionHistoryPanelProps {
   onRestoreComplete?: () => void;
   /** Table config for non-prompt artifact types; defaults to prompts. */
   tableConfig?: VersionTableConfig;
+  /** What the artifact is called in the dialog text, e.g. "prompt kit". */
+  artifactLabel?: string;
 }
 
 type ViewMode = "list" | "detail" | "compare";
@@ -94,6 +96,7 @@ export function VersionHistoryPanel({
   currentPrompt,
   onRestoreComplete,
   tableConfig = PROMPT_CONFIG,
+  artifactLabel = "prompt",
 }: VersionHistoryPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -237,7 +240,7 @@ export function VersionHistoryPanel({
       }
 
       // Update the live artifact with restored content
-      const { error: updateError } = await supabase
+      const { data: updatedRows, error: updateError } = await supabase
         .from(tableConfig.artifactTable as any)
         .update({
           title: restoringVersion.title,
@@ -246,11 +249,24 @@ export function VersionHistoryPanel({
           tags: restoringVersion.tags,
         })
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .eq("author_id", user.id)
+        .select("id");
 
       if (updateError) {
-        console.error("Error updating prompt:", updateError);
-        toast.error("Version entry created but failed to update prompt.");
+        console.error(`Error updating ${artifactLabel}:`, updateError);
+        toast.error(
+          `Version entry created but failed to update ${artifactLabel}.`,
+        );
+        return;
+      }
+
+      // Row level security turns an update the caller may not make into a
+      // silent no-op with no error, so an empty result is a failure too.
+      if (!updatedRows || updatedRows.length === 0) {
+        console.error(`Restore matched no ${artifactLabel} row:`, promptId);
+        toast.error(
+          `Version entry created but the ${artifactLabel} was not updated.`,
+        );
         return;
       }
 
@@ -446,8 +462,8 @@ export function VersionHistoryPanel({
               Restore version v{restoringVersion?.version_number}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will update your prompt with the content from version v
-              {restoringVersion?.version_number}
+              This will update your {artifactLabel} with the content from
+              version v{restoringVersion?.version_number}
               and create a new version entry. Your current changes will be
               preserved in the version history.
             </AlertDialogDescription>

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { findStopwordHits } from "../_shared/stopwords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,43 +18,8 @@ const STRIKE_THRESHOLD = 5;
 const ARTIFACT_ITEM_TYPES = ["prompt", "skill", "workflow", "prompt_kit"];
 const KNOWN_ITEM_TYPES = [...ARTIFACT_ITEM_TYPES, "comment"];
 
-// Leet-speak and unicode normalization map
-const LEET_MAP: Record<string, string> = {
-  "@": "a",
-  "4": "a",
-  "^": "a",
-  "8": "b",
-  "(": "c",
-  "<": "c",
-  "3": "e",
-  "6": "g",
-  "#": "h",
-  "!": "i",
-  "1": "i",
-  "|": "i",
-  "0": "o",
-  "5": "s",
-  $: "s",
-  "7": "t",
-  "+": "t",
-  "9": "g",
-};
-
-function normalizeText(text: string): string {
-  let normalized = text.toLowerCase();
-  // Replace leet-speak characters
-  normalized = normalized
-    .split("")
-    .map((ch) => LEET_MAP[ch] || ch)
-    .join("");
-  // Remove non-alphanumeric (keep spaces for word boundary detection)
-  normalized = normalized.replace(/[^a-z0-9\s]/g, "");
-  // Collapse repeated characters (e.g., "seeex" -> "sex")
-  normalized = normalized.replace(/(.)\1{2,}/g, "$1$1");
-  // Collapse whitespace
-  normalized = normalized.replace(/\s+/g, " ").trim();
-  return normalized;
-}
+// Text normalisation and the stopword matcher live in _shared/stopwords.ts,
+// where they are unit tested.
 
 // PII detection patterns
 const PII_PATTERNS = [
@@ -221,16 +187,15 @@ Deno.serve(async (req: Request) => {
 
     // 3. Combine all content fields into one string for checking
     const allText = Object.values(content_fields).filter(Boolean).join(" ");
-    const normalizedText = normalizeText(allText);
 
-    // 4. Check against stopwords
+    // 4. Check against stopwords: whole words on the normalised text. Until
+    // 2026-09-16 this was a substring test on the raw stopword, which fired
+    // on "conspicuous" and could never fire on "rm -rf".
     const matchedWords: string[] = [];
     let matchedCategory = "";
-    for (const sw of blockWords) {
-      if (normalizedText.includes(sw.word.toLowerCase())) {
-        matchedWords.push(sw.word);
-        if (!matchedCategory) matchedCategory = sw.category || "general";
-      }
+    for (const hit of findStopwordHits(allText, blockWords)) {
+      matchedWords.push(hit.word);
+      if (!matchedCategory) matchedCategory = hit.category || "general";
     }
 
     // 5. PII detection (on original text, not normalized)
@@ -242,18 +207,24 @@ Deno.serve(async (req: Request) => {
 
     const isBlocked = matchedWords.length > 0;
 
-    // 6. Log moderation event
-    await serviceClient.from("moderation_events").insert({
-      user_id: user.id,
-      action,
-      item_type,
-      item_id: item_id || null,
-      flagged_content: isBlocked ? allText.substring(0, 500) : null,
-      matched_words: isBlocked ? matchedWords : null,
-      category: matchedCategory || null,
-      result: isBlocked ? "blocked" : "cleared",
-      tier: "stopword",
-    });
+    // 6. Log moderation event. supabase-js reports a failed insert in
+    // `error` and never throws, so the outer try/catch would never see it.
+    const { error: eventErr } = await serviceClient
+      .from("moderation_events")
+      .insert({
+        user_id: user.id,
+        action,
+        item_type,
+        item_id: item_id || null,
+        flagged_content: isBlocked ? allText.substring(0, 500) : null,
+        matched_words: isBlocked ? matchedWords : null,
+        category: matchedCategory || null,
+        result: isBlocked ? "blocked" : "cleared",
+        tier: "stopword",
+      });
+    if (eventErr) {
+      console.error("Failed to log moderation event:", eventErr);
+    }
 
     // 7. If blocked, increment strike count. One statement in the database,
     // so two blocked submissions landing at once cannot lose a strike.
@@ -294,13 +265,19 @@ Deno.serve(async (req: Request) => {
     // 8. Queue for async AI review (Tier 2) if content passed Tier 1
     if (item_id) {
       try {
-        await serviceClient.from("moderation_review_queue").insert({
-          item_type,
-          item_id,
-          user_id: user.id,
-          content_snapshot: allText.substring(0, 5000),
-          status: "pending",
-        });
+        // A failed insert comes back in `error`, not as a throw.
+        const { error: queueErr } = await serviceClient
+          .from("moderation_review_queue")
+          .insert({
+            item_type,
+            item_id,
+            user_id: user.id,
+            content_snapshot: allText.substring(0, 5000),
+            status: "pending",
+          });
+        if (queueErr) {
+          console.warn("Failed to queue for AI review:", queueErr);
+        }
       } catch (queueErr) {
         console.warn("Failed to queue for AI review:", queueErr);
         // Non-blocking: don't fail the publish action

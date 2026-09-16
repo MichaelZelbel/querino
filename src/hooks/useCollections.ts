@@ -95,6 +95,67 @@ export function useCollectionItems(collectionId: string) {
   });
 }
 
+/** The fields the collection pages read from any item, whatever its type. */
+export interface CollectionItemSummary {
+  id: string;
+  slug: string | null;
+  title: string;
+  description: string | null;
+}
+
+// "claw" rows can still exist in old collections; the table is gone.
+const ITEM_TABLES: Record<CollectionItem["item_type"], string | null> = {
+  prompt: "prompts",
+  skill: "skills",
+  workflow: "workflows",
+  prompt_kit: "prompt_kits",
+  claw: null,
+};
+
+/**
+ * Resolve the rows behind a collection's items, keyed "<item_type>:<item_id>".
+ * The pages used to look items up in the public catalogue hooks, so a private
+ * prompt in the owner's own collection showed as "Unknown". Fetching the
+ * referenced ids directly lets row-level security decide what is visible.
+ */
+export function useCollectionItemDetails(items: CollectionItem[] | undefined) {
+  const key =
+    items
+      ?.map((item) => `${item.item_type}:${item.item_id}`)
+      .sort()
+      .join(",") ?? "";
+
+  return useQuery({
+    queryKey: ["collection-item-details", key],
+    queryFn: async () => {
+      const idsByType = new Map<CollectionItem["item_type"], string[]>();
+      for (const item of items ?? []) {
+        if (!ITEM_TABLES[item.item_type]) continue;
+        const ids = idsByType.get(item.item_type) ?? [];
+        ids.push(item.item_id);
+        idsByType.set(item.item_type, ids);
+      }
+
+      const details: Record<string, CollectionItemSummary> = {};
+      await Promise.all(
+        [...idsByType].map(async ([type, ids]) => {
+          const { data, error } = await supabase
+            .from(ITEM_TABLES[type] as never)
+            .select("id, slug, title, description")
+            .in("id", ids);
+          if (error) throw error;
+          for (const row of (data ??
+            []) as unknown as CollectionItemSummary[]) {
+            details[`${type}:${row.id}`] = row;
+          }
+        }),
+      );
+      return details;
+    },
+    enabled: !!items && items.length > 0,
+  });
+}
+
 export function useCreateCollection() {
   const queryClient = useQueryClient();
 
@@ -135,7 +196,8 @@ export function useUpdateCollection() {
     }: {
       id: string;
       title?: string;
-      description?: string;
+      // null clears the description; undefined is dropped by JSON and leaves it.
+      description?: string | null;
       is_public?: boolean;
     }) => {
       const { data: collection, error } = await supabase

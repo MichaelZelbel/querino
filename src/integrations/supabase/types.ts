@@ -857,7 +857,7 @@ export type Database = {
           prompt_tokens: number
           provider: string | null
           total_tokens: number
-          user_id: string
+          user_id: string | null
           workflow_id: string | null
           workflow_name: string | null
         }
@@ -874,7 +874,7 @@ export type Database = {
           prompt_tokens?: number
           provider?: string | null
           total_tokens?: number
-          user_id: string
+          user_id?: string | null
           workflow_id?: string | null
           workflow_name?: string | null
         }
@@ -891,7 +891,7 @@ export type Database = {
           prompt_tokens?: number
           provider?: string | null
           total_tokens?: number
-          user_id?: string
+          user_id?: string | null
           workflow_id?: string | null
           workflow_name?: string | null
         }
@@ -1379,7 +1379,15 @@ export type Database = {
           title?: string
           version_number?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompt_kit_versions_prompt_kit_id_fkey"
+            columns: ["prompt_kit_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_kits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prompt_kits: {
         Row: {
@@ -1457,6 +1465,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_kits_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2529,6 +2544,16 @@ export type Database = {
         Args: { p_exclude_id?: string; p_table: string; p_title: string }
         Returns: string
       }
+      get_my_github_settings: {
+        Args: never
+        Returns: {
+          github_branch: string
+          github_folder: string
+          github_last_synced_at: string
+          github_repo: string
+          github_sync_enabled: boolean
+        }[]
+      }
       get_my_plan: {
         Args: never
         Returns: {
@@ -2618,6 +2643,10 @@ export type Database = {
         Returns: boolean
       }
       is_premium_user: { Args: { _user_id: string }; Returns: boolean }
+      is_premium_user_unchecked: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_team_admin_or_owner: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: boolean

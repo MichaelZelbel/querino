@@ -129,6 +129,12 @@ export function startSuggestServer(cfg: SuggestConfig) {
         console.error(`[${cfg.feature}] JSON parse error:`, e);
         return json({ error: "Invalid model response" }, 502);
       }
+      // JSON.parse also accepts null, a bare string or an array, and reading
+      // a property off null is a 500. The same guard coach.ts carries.
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        console.error(`[${cfg.feature}] tool arguments are not an object`);
+        return json({ error: "Invalid model response" }, 502);
+      }
 
       return json({
         title: (parsed.title ?? "").toString().slice(0, 80),

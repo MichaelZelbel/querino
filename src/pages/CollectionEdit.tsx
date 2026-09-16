@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,8 +54,9 @@ import {
   useAddToCollection,
   useRemoveFromCollection,
   useUpdateItemOrder,
+  useCollectionItemDetails,
 } from "@/hooks/useCollections";
-import { usePrompts } from "@/hooks/usePrompts";
+import { useMyPrompts } from "@/hooks/usePrompts";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { Header } from "@/components/layout/Header";
@@ -76,9 +77,14 @@ export default function CollectionEdit() {
     id || "",
   );
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
-  const { data: prompts } = usePrompts();
+  // The picker lists the owner's own prompts, private ones included. The public
+  // catalogue hook filtered on is_public, so private prompts could not be added.
+  const { data: myPrompts } = useMyPrompts(user?.id);
   const { data: skills } = useSkills();
   const { data: workflows } = useWorkflows();
+  // Items already in the collection are resolved by id, whatever their
+  // visibility; the public catalogue showed private ones as "Unknown".
+  const { data: itemDetails } = useCollectionItemDetails(items);
 
   const updateCollection = useUpdateCollection();
   const deleteCollection = useDeleteCollection();
@@ -105,42 +111,60 @@ export default function CollectionEdit() {
     setInitialized(true);
   }
 
-  // Authorization check
-  if (
-    !authLoading &&
-    (!user || (collection && user.id !== collection.owner_id))
-  ) {
-    navigate("/collections");
+  // Authorization check. The redirect runs from an effect: navigating in the
+  // render body updates the router while React is still rendering.
+  const notAllowed =
+    !authLoading && (!user || (collection && user.id !== collection.owner_id));
+
+  useEffect(() => {
+    if (notAllowed) navigate("/collections");
+  }, [notAllowed, navigate]);
+
+  if (notAllowed) {
     return null;
   }
 
   const handleSave = async () => {
     if (!id || !title.trim()) return;
 
-    await updateCollection.mutateAsync({
-      id,
-      title: title.trim(),
-      description: description.trim() || undefined,
-      is_public: isPublic,
-    });
+    try {
+      await updateCollection.mutateAsync({
+        id,
+        title: title.trim(),
+        // null, not undefined: JSON drops undefined, so an emptied description
+        // could never be cleared.
+        description: description.trim() || null,
+        is_public: isPublic,
+      });
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
   };
 
   const handleDelete = async () => {
     if (!id) return;
-    await deleteCollection.mutateAsync(id);
-    navigate("/collections");
+    try {
+      await deleteCollection.mutateAsync(id);
+      navigate("/collections");
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
   };
 
   const handleRemoveItem = async (itemId: string) => {
     if (!id) return;
-    await removeFromCollection.mutateAsync({
-      collectionId: id,
-      itemId,
-    });
+    try {
+      await removeFromCollection.mutateAsync({
+        collectionId: id,
+        itemId,
+      });
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
   };
 
   // Get user's artefacts for adding
-  const userPrompts = prompts?.filter((p) => p.author_id === user?.id) || [];
+  const userPrompts = myPrompts || [];
   const userSkills = skills?.filter((s) => s.author_id === user?.id) || [];
   const userWorkflows =
     workflows?.filter((w) => w.author_id === user?.id) || [];
@@ -169,11 +193,15 @@ export default function CollectionEdit() {
 
   const handleAddItem = async (itemId: string) => {
     if (!id) return;
-    await addToCollection.mutateAsync({
-      collection_id: id,
-      item_type: addItemType,
-      item_id: itemId,
-    });
+    try {
+      await addToCollection.mutateAsync({
+        collection_id: id,
+        item_type: addItemType,
+        item_id: itemId,
+      });
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
   };
 
   // The list is ordered by sort_order. The grab handle that used to sit here had
@@ -191,25 +219,23 @@ export default function CollectionEdit() {
       reordered[index],
     ];
 
-    await updateItemOrder.mutateAsync({
-      collectionId: id,
-      items: reordered.map((item, position) => ({
-        id: item.id,
-        sort_order: position,
-      })),
-    });
+    try {
+      await updateItemOrder.mutateAsync({
+        collectionId: id,
+        items: reordered.map((item, position) => ({
+          id: item.id,
+          sort_order: position,
+        })),
+      });
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
   };
 
   // Get full item data
   const itemsWithData = items?.map((item) => {
-    let data: CollectionItemData = null;
-    if (item.item_type === "prompt") {
-      data = prompts?.find((p) => p.id === item.item_id);
-    } else if (item.item_type === "skill") {
-      data = skills?.find((s) => s.id === item.item_id);
-    } else if (item.item_type === "workflow") {
-      data = workflows?.find((w) => w.id === item.item_id);
-    }
+    const data: CollectionItemData =
+      itemDetails?.[`${item.item_type}:${item.item_id}`] ?? null;
     return { ...item, data };
   });
 

@@ -91,10 +91,29 @@ export function pageHead(page: PageHead) {
   const blocks = page.jsonLd ? [page.jsonLd].flat() : [];
   const scripts = blocks.map((block) => ({
     type: "application/ld+json",
-    children: JSON.stringify(block),
+    children: jsonLdText(block),
   }));
 
   return { meta, links, scripts };
+}
+
+/**
+ * JSON for a server-rendered <script type="application/ld+json">.
+ *
+ * The router writes the block into the HTML verbatim, and the block carries
+ * user-written text: artifact titles and descriptions, profile names and bios.
+ * JSON.stringify leaves "</script>" as it is, so a title containing one would
+ * end the block early and start a script of the author's choosing, run by every
+ * visitor of that public page. Escaping the three HTML-significant characters
+ * as JSON unicode escapes keeps the value valid JSON and inert as HTML. The two
+ * line separators are escaped too, because a parser reading the block as
+ * JavaScript would treat them as line breaks.
+ */
+export function jsonLdText(block: unknown): string {
+  return JSON.stringify(block).replace(
+    /[<>&\u2028\u2029]/g,
+    (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"),
+  );
 }
 
 /**

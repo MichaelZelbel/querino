@@ -114,11 +114,17 @@ export function MenerioBulkSync() {
         status: "pending",
       }));
 
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from("menerio_sync_queue")
-        .insert(queueEntries);
+        .insert(queueEntries)
+        .select("id");
 
       if (insertError) throw insertError;
+
+      // Poll only the rows this run created. Filtering by artifact id also
+      // matched the completed rows of earlier syncs, so a second bulk sync
+      // reported "complete" at its first poll.
+      const queueIds = (inserted ?? []).map((row) => row.id);
 
       let completed = 0;
       const maxPolls = 120;
@@ -132,10 +138,7 @@ export function MenerioBulkSync() {
           .from("menerio_sync_queue")
           .select("status")
           .eq("user_id", user.id)
-          .in(
-            "artifact_id",
-            toSync.map((t) => t.id),
-          );
+          .in("id", queueIds);
 
         if (queueData) {
           const done = queueData.filter(

@@ -74,15 +74,25 @@ export default function EditProfile() {
 
       if (error) throw error;
 
+      // The baseline is passed explicitly: the state of this render is still
+      // the empty form, and snapshotting that made every profile dirty on load.
+      const loaded = {
+        displayName: data?.display_name || "",
+        avatarUrl: data?.avatar_url || "",
+        bio: data?.bio || "",
+        website: data?.website || "",
+        twitter: data?.twitter || "",
+        github: data?.github || "",
+      };
       if (data) {
-        setDisplayName(data.display_name || "");
-        setAvatarUrl(data.avatar_url || "");
-        setBio(data.bio || "");
-        setWebsite(data.website || "");
-        setTwitter(data.twitter || "");
-        setGithub(data.github || "");
+        setDisplayName(loaded.displayName);
+        setAvatarUrl(loaded.avatarUrl);
+        setBio(loaded.bio);
+        setWebsite(loaded.website);
+        setTwitter(loaded.twitter);
+        setGithub(loaded.github);
       }
-      markSaved();
+      markSaved(loaded);
     } catch (err) {
       console.error("Error loading profile:", err);
       toast.error("Failed to load profile");

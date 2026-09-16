@@ -8,6 +8,7 @@ import {
   RateLimitedError,
   GatewayError,
   DEFAULT_MODEL,
+  capText,
   type ToolDefinition,
 } from "../_shared/llm.ts";
 import { interpolatePrompt } from "../_shared/llm-config.ts";
@@ -58,20 +59,20 @@ serve(async (req) => {
       );
     }
     const {
-      artifactType,
-      title,
-      description,
+      artifactType: rawArtifactType,
+      title: rawTitle,
+      description: rawDescription,
       content,
-      tags,
-      sourceLanguage,
-      targetLanguage,
+      tags: rawTags,
+      sourceLanguage: rawSourceLanguage,
+      targetLanguage: rawTargetLanguage,
     } = body as Record<string, unknown>;
 
     if (
-      typeof sourceLanguage !== "string" ||
-      typeof targetLanguage !== "string" ||
-      !sourceLanguage ||
-      !targetLanguage
+      typeof rawSourceLanguage !== "string" ||
+      typeof rawTargetLanguage !== "string" ||
+      !rawSourceLanguage ||
+      !rawTargetLanguage
     ) {
       return new Response(
         JSON.stringify({
@@ -83,7 +84,7 @@ serve(async (req) => {
         },
       );
     }
-    if (sourceLanguage === targetLanguage) {
+    if (rawSourceLanguage === rawTargetLanguage) {
       return new Response(
         JSON.stringify({
           error: "sourceLanguage and targetLanguage must differ",
@@ -95,6 +96,20 @@ serve(async (req) => {
       );
     }
 
+    // Every text field is capped: the credit gate only checks for a balance
+    // above zero, so these caps are what bound the size of one call.
+    const sourceLanguage = capText(rawSourceLanguage, 64);
+    const targetLanguage = capText(rawTargetLanguage, 64);
+    const artifactType = capText(rawArtifactType, 40);
+    const title = capText(rawTitle, 200);
+    const description = capText(rawDescription, 2000);
+    const tags = Array.isArray(rawTags)
+      ? rawTags
+          .slice(0, 20)
+          .map((t) => capText(t, 40))
+          .filter((t) => t.length > 0)
+      : [];
+
     await assertCredits(user_id);
 
     // The text lives in _shared/prompts/translate-artifact.ts as a {{placeholder}}
@@ -103,20 +118,17 @@ serve(async (req) => {
     // templateVars before, so its one advertised placeholder would have
     // collapsed to an empty string.
     const templateVars = {
-      artifactType:
-        typeof artifactType === "string" && artifactType
-          ? artifactType
-          : "artifact",
+      artifactType: artifactType || "artifact",
       sourceLanguage,
       targetLanguage,
     };
     const systemPrompt = interpolatePrompt(SYSTEM_PROMPT, templateVars) ?? "";
 
     // Truncate content to keep token usage predictable.
-    const truncatedContent = String(content ?? "").slice(0, 16000);
-    const userPrompt = `Title: ${title || ""}
-Description: ${description || ""}
-Tags: ${Array.isArray(tags) ? tags.map((t) => String(t)).join(", ") : ""}
+    const truncatedContent = capText(content, 16000);
+    const userPrompt = `Title: ${title}
+Description: ${description}
+Tags: ${tags.join(", ")}
 ---
 Content:
 ${truncatedContent}`;
@@ -139,7 +151,7 @@ ${truncatedContent}`;
         artifact: artifactType || "unknown",
         source: sourceLanguage,
         target: targetLanguage,
-        content_length: String(content ?? "").length,
+        content_length: typeof content === "string" ? content.length : 0,
       },
     });
 
@@ -164,6 +176,18 @@ ${truncatedContent}`;
       parsed = JSON.parse(call.function.arguments);
     } catch (e) {
       console.error("[translate-artifact] JSON parse error:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid translation response" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    // JSON.parse also accepts null, a bare string or an array, and reading a
+    // property off null is a 500. The same guard coach.ts carries.
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      console.error("[translate-artifact] tool arguments are not an object");
       return new Response(
         JSON.stringify({ error: "Invalid translation response" }),
         {

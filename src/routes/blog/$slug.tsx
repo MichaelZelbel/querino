@@ -29,5 +29,11 @@ export const Route = createFileRoute("/blog/$slug")({
     });
   },
 
-  component: BlogPost,
+  component: RouteComponent,
 });
+
+function RouteComponent() {
+  // The loader's row seeds the page's query, so the first paint, the one a
+  // crawler sees, is the article and not the skeleton.
+  return <BlogPost initialPost={Route.useLoaderData()} />;
+}

@@ -125,6 +125,23 @@ const UPDATABLE = {
   profiles: ["display_name", "bio", "website", "twitter", "github"],
 } as const;
 
+// What the get_* tools return: every column of the table except `embedding`
+// (1536 floats, which `select("*")` pretty-printed into the model's context
+// on every call, several hundred kilobytes of numbers per artifact) and
+// `fts` (the full-text index, derived from the columns already listed). The
+// lists mirror src/integrations/supabase/types.ts, so a new column has to be
+// added here to be visible over MCP.
+const DETAIL_COLUMNS = {
+  prompts:
+    "id, slug, title, description, content, category, tags, language, is_public, published_at, summary, example_output, copies_count, rating_avg, rating_count, author_id, team_id, menerio_synced, menerio_note_id, menerio_synced_at, embedding_failed_at, created_at, updated_at",
+  skills:
+    "id, slug, title, description, content, category, tags, language, published, rating_avg, rating_count, author_id, team_id, menerio_synced, menerio_note_id, menerio_synced_at, embedding_failed_at, created_at, updated_at",
+  workflows:
+    "id, slug, title, description, content, json, filename, scope, category, tags, language, published, rating_avg, rating_count, author_id, team_id, menerio_synced, menerio_note_id, menerio_synced_at, embedding_failed_at, created_at, updated_at",
+  prompt_kits:
+    "id, slug, title, description, content, category, tags, language, published, rating_avg, rating_count, author_id, team_id, menerio_synced, menerio_note_id, menerio_synced_at, embedding_failed_at, created_at, updated_at",
+} as const;
+
 /** The declared keys of `input`, or null when none of them was given. */
 function pickDeclared(
   input: Record<string, unknown>,
@@ -283,7 +300,7 @@ function buildMcpServer(auth: Auth) {
     handler: async ({ id }: { id: string }) => {
       const { data, error } = await sb
         .from("prompts")
-        .select("*")
+        .select(DETAIL_COLUMNS.prompts)
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
@@ -461,7 +478,7 @@ function buildMcpServer(auth: Auth) {
     handler: async ({ id }: { id: string }) => {
       const { data, error } = await sb
         .from("skills")
-        .select("*")
+        .select(DETAIL_COLUMNS.skills)
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
@@ -638,7 +655,7 @@ function buildMcpServer(auth: Auth) {
     handler: async ({ id }: { id: string }) => {
       const { data, error } = await sb
         .from("workflows")
-        .select("*")
+        .select(DETAIL_COLUMNS.workflows)
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
@@ -816,11 +833,17 @@ function buildMcpServer(auth: Auth) {
           content: [{ type: "text", text: `Error: ${colErr.message}` }],
         };
 
-      const { data: items } = await sb
+      // A failed items query is an error, not an empty collection: an
+      // agent told "this collection has no items" will repeat it as fact.
+      const { data: items, error: itemsErr } = await sb
         .from("collection_items")
         .select("id, item_id, item_type, sort_order")
         .eq("collection_id", id)
         .order("sort_order");
+      if (itemsErr)
+        return {
+          content: [{ type: "text", text: `Error: ${itemsErr.message}` }],
+        };
 
       return {
         content: [
@@ -1006,7 +1029,7 @@ function buildMcpServer(auth: Auth) {
     handler: async ({ id }: { id: string }) => {
       const { data, error } = await sb
         .from("prompt_kits")
-        .select("*")
+        .select(DETAIL_COLUMNS.prompt_kits)
         .eq("id", id)
         .eq("author_id", auth.userId)
         .single();
@@ -1197,8 +1220,20 @@ const mcpHandler = async (c: any) => {
     });
   }
 
+  // Two separate catches, because the two failures mean different things to
+  // a client. A bad token is the caller's problem and gets a 401 with the
+  // reason. A transport failure is ours: one catch around both used to
+  // answer 401 for it too, so an MCP client saw "Authentication failed" and
+  // threw away a perfectly good token.
+  let auth: Auth;
   try {
-    const auth = await authenticate(c.req.raw);
+    auth = await authenticate(c.req.raw);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Authentication failed";
+    return c.json({ error: msg }, 401, corsHeaders);
+  }
+
+  try {
     const mcpServer = buildMcpServer(auth);
     const transport = new StreamableHttpTransport();
     // mcp-lite v0.10+: bind() returns the actual fetch handler bound to the server.
@@ -1216,8 +1251,15 @@ const mcpHandler = async (c: any) => {
       headers: newHeaders,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Authentication failed";
-    return c.json({ error: msg }, 401, corsHeaders);
+    console.error(
+      "mcp-server transport error:",
+      err instanceof Error ? err.message : err,
+    );
+    return c.json(
+      { error: "The MCP server could not handle this request" },
+      500,
+      corsHeaders,
+    );
   }
 };
 

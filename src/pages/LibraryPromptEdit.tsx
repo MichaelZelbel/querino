@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -155,6 +155,34 @@ export default function LibraryPromptEdit() {
     onSave: () => handleSaveChanges(),
   });
 
+  // Put a loaded row into the form and take it as the clean baseline. The
+  // baseline is passed explicitly because markSaved() with no argument reads
+  // the state of the current render, which is still the previous form.
+  const applyPromptToForm = (loaded: Prompt) => {
+    const form = {
+      title: loaded.title,
+      shortDescription: loaded.description,
+      content: loaded.content,
+      category: loaded.category,
+      tags: loaded.tags || [],
+      isPublic: loaded.is_public,
+      language: loaded.language || DEFAULT_LANGUAGE,
+    };
+    setTitle(form.title);
+    setShortDescription(form.shortDescription);
+    setContent(form.content);
+    setCategory(form.category);
+    setTags(form.tags);
+    setIsPublic(form.isPublic);
+    setLanguage(form.language);
+    markSaved(form);
+  };
+
+  // The slug the slug editor just assigned. Changing the slug navigates to the
+  // new edit URL, and the fetch effect below is keyed on the slug, so without
+  // this it reloaded every field and threw away unsaved edits.
+  const assignedSlugRef = useRef<string | null>(null);
+
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
@@ -168,6 +196,13 @@ export default function LibraryPromptEdit() {
       // The admin role arrives from an async query. Deciding before it lands showed an
       // admin "Not Authorized" on every reload of someone else's prompt.
       if (!slug || !user || roleLoading) return;
+
+      // The prompt behind this slug is already loaded: it is the one whose slug
+      // was just renamed. Refetching would overwrite unsaved edits.
+      if (assignedSlugRef.current === slug) {
+        assignedSlugRef.current = null;
+        return;
+      }
 
       try {
         const { data: promptData, error: promptError } = await supabase
@@ -194,14 +229,7 @@ export default function LibraryPromptEdit() {
 
         const typedPrompt = promptData as Prompt;
         setPrompt(typedPrompt);
-        setTitle(typedPrompt.title);
-        setShortDescription(typedPrompt.description);
-        setContent(typedPrompt.content);
-        setCategory(typedPrompt.category);
-        setTags(typedPrompt.tags || []);
-        setIsPublic(typedPrompt.is_public);
-        setLanguage(typedPrompt.language || DEFAULT_LANGUAGE);
-        markSaved();
+        applyPromptToForm(typedPrompt);
 
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
@@ -238,14 +266,7 @@ export default function LibraryPromptEdit() {
     if (promptData) {
       const typedPrompt = promptData as Prompt;
       setPrompt(typedPrompt);
-      setTitle(typedPrompt.title);
-      setShortDescription(typedPrompt.description);
-      setContent(typedPrompt.content);
-      setCategory(typedPrompt.category);
-      setTags(typedPrompt.tags || []);
-      setIsPublic(typedPrompt.is_public);
-      setLanguage(typedPrompt.language || DEFAULT_LANGUAGE);
-      markSaved();
+      applyPromptToForm(typedPrompt);
     }
 
     const { data: versionsData } = await supabase
@@ -1102,6 +1123,7 @@ export default function LibraryPromptEdit() {
                             promptId={prompt.id}
                             currentSlug={prompt.slug}
                             onSlugChanged={(newSlug) => {
+                              assignedSlugRef.current = newSlug;
                               setPrompt((prev) =>
                                 prev ? { ...prev, slug: newSlug } : null,
                               );

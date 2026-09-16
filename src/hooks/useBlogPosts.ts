@@ -103,8 +103,12 @@ export function useBlogPost(slugOrId: string) {
         query = query.eq("slug", slugOrId);
       }
 
-      const { data, error } = await query.single();
+      // A missing id is the normal not-found path, not an error. single()
+      // threw on zero rows and the editor rendered an empty form with Publish
+      // enabled.
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
+      if (!data) return null;
 
       // Fetch categories and tags
       const [categoriesResult, tagsResult] = await Promise.all([
@@ -123,7 +127,7 @@ export function useBlogPost(slugOrId: string) {
         categories:
           categoriesResult.data?.map((pc) => pc.blog_categories) || [],
         tags: tagsResult.data?.map((pt) => pt.blog_tags) || [],
-      } as BlogPost;
+      } as BlogPost | null;
     },
     enabled: !!slugOrId,
   });

@@ -8,6 +8,7 @@ import {
   RateLimitedError,
   GatewayError,
   DEFAULT_MODEL,
+  capText,
 } from "../_shared/llm.ts";
 import { SYSTEM_PROMPTS } from "../_shared/prompts/ai-insights.ts";
 
@@ -58,13 +59,19 @@ serve(async (req) => {
 
     await assertCredits(user_id);
 
+    // The content was always cut here; since 2026-09-16 the other fields are
+    // too, because the credit gate only checks for a balance above zero.
     const truncated = contentStr.slice(0, 12000);
+    const cappedTags = Array.isArray(tags)
+      ? tags
+          .slice(0, 20)
+          .map((t) => capText(t, 40))
+          .filter((t) => t.length > 0)
+      : [];
     const tagsLine =
-      Array.isArray(tags) && tags.length > 0
-        ? `Tags: ${tags.join(", ")}\n`
-        : "";
-    const userMessage = `Title: ${title || "(untitled)"}
-Description: ${description || "(none)"}
+      cappedTags.length > 0 ? `Tags: ${cappedTags.join(", ")}\n` : "";
+    const userMessage = `Title: ${capText(title, 200) || "(untitled)"}
+Description: ${capText(description, 2000) || "(none)"}
 ${tagsLine}
 ---
 Content:

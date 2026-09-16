@@ -45,6 +45,20 @@ export const CommentItem = ({
   const displayName = comment.author?.display_name || "Anonymous";
   const initials = displayName.slice(0, 2).toUpperCase();
 
+  // The profile route keys off the display name, so an author without one has
+  // no page to link to: /u/<uuid> is not a route. Names can hold spaces and
+  // slashes, so they are encoded.
+  const authorProfileLink = comment.author?.display_name
+    ? `/u/${encodeURIComponent(comment.author.display_name)}`
+    : null;
+
+  const avatar = (
+    <Avatar className="h-8 w-8">
+      <AvatarImage src={comment.author?.avatar_url || undefined} />
+      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+    </Avatar>
+  );
+
   const handleReply = async () => {
     if (!replyContent.trim()) return;
     setLoading(true);
@@ -85,21 +99,24 @@ export const CommentItem = ({
   return (
     <div className={`${isReply ? "ml-8 pl-4 border-l border-border" : ""}`}>
       <div className="flex gap-3 py-4">
-        <Link to={`/u/${comment.author?.display_name || comment.user_id}`}>
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={comment.author?.avatar_url || undefined} />
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-          </Avatar>
-        </Link>
+        {authorProfileLink ? (
+          <Link to={authorProfileLink}>{avatar}</Link>
+        ) : (
+          avatar
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              to={`/u/${comment.author?.display_name || comment.user_id}`}
-              className="font-medium text-sm hover:underline"
-            >
-              {displayName}
-            </Link>
+            {authorProfileLink ? (
+              <Link
+                to={authorProfileLink}
+                className="font-medium text-sm hover:underline"
+              >
+                {displayName}
+              </Link>
+            ) : (
+              <span className="font-medium text-sm">{displayName}</span>
+            )}
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(comment.created_at), {
                 addSuffix: true,

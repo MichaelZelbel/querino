@@ -47,7 +47,7 @@ export function EmbeddingsBackfillPanel() {
           prompt: c.prompt?.missing ?? 0,
           skill: c.skill?.missing ?? 0,
           workflow: c.workflow?.missing ?? 0,
-          claw: c.claw?.missing ?? 0,
+          prompt_kit: c.prompt_kit?.missing ?? 0,
         });
       }
     } catch (e: any) {
@@ -82,7 +82,7 @@ export function EmbeddingsBackfillPanel() {
         prompt: d.remaining?.prompt ?? 0,
         skill: d.remaining?.skill ?? 0,
         workflow: d.remaining?.workflow ?? 0,
-        claw: d.remaining?.claw ?? 0,
+        prompt_kit: d.remaining?.prompt_kit ?? 0,
       });
       const totalSucceeded = Object.values(d.results).reduce(
         (s, r) => s + r.succeeded,
@@ -110,7 +110,7 @@ export function EmbeddingsBackfillPanel() {
     (counts?.prompt ?? 0) +
     (counts?.skill ?? 0) +
     (counts?.workflow ?? 0) +
-    (counts?.claw ?? 0);
+    (counts?.prompt_kit ?? 0);
 
   return (
     <Card>

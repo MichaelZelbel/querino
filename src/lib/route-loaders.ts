@@ -15,6 +15,8 @@
  * replace that with the router's error boundary, which is a behaviour change.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPublicPost } from "@/hooks/usePublicBlog";
+import type { BlogPost } from "@/types/blog";
 
 const AUTHOR = "profiles:author_id ( id, display_name, avatar_url )";
 
@@ -63,25 +65,22 @@ export const loadSkill = (slug: string) => loadBySlug("skills", slug);
 export const loadWorkflow = (slug: string) => loadBySlug("workflows", slug);
 export const loadPromptKit = (slug: string) => loadBySlug("prompt_kits", slug);
 
-export interface LoadedBlogPost extends LoadedArtefact {
-  excerpt: string | null;
-  seo_title: string | null;
-  seo_description: string | null;
-  og_image_url: string | null;
-}
+export type LoadedBlogPost = BlogPost;
 
+/**
+ * The same fetch the page's query runs, author and taxonomy included, so the
+ * row can seed that query and the server-rendered HTML shows the whole
+ * article. A bare `select("*")` used to leave the page on its skeleton.
+ */
 export async function loadBlogPost(
   slug: string,
 ): Promise<LoadedBlogPost | null> {
   if (!slug) return null;
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .select("*")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-  if (error || !data) return null;
-  return data as unknown as LoadedBlogPost;
+  try {
+    return await fetchPublicPost(slug);
+  } catch {
+    return null;
+  }
 }
 
 /** The public profile page keys off display_name, the way UserProfile does. */

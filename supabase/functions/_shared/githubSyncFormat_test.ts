@@ -74,3 +74,15 @@ Deno.test("generateMarkdown carries the content and escapes quotes", () => {
   assertStringIncludes(md, "published: true");
   assertStringIncludes(md, "## Workflow\n\nstep one");
 });
+
+Deno.test("generateMarkdown escapes a backslash inside a tag", () => {
+  const md = generateMarkdown("prompt", {
+    id: ID,
+    title: "t",
+    content: "c",
+    tags: ["ends-with\\", 'has "quote"'],
+  });
+  // Both the backslash and the quote are escaped, so the closing quote of
+  // the first item is still a closing quote.
+  assertStringIncludes(md, 'tags: ["ends-with\\\\", "has \\"quote\\""]');
+});

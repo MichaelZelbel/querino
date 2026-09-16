@@ -94,6 +94,21 @@ export const CommentsSection = ({
 
   const handleEdit = async (commentId: string, content: string) => {
     try {
+      // Same check as a new comment or reply. Without it, editing was the one
+      // way to publish a text moderation would have blocked.
+      const modResult = await moderateContent(
+        { content },
+        "comment",
+        "comment",
+        itemId,
+      );
+      if (!modResult.approved) {
+        toast.error(
+          modResult.reason ||
+            "Your edit could not be saved. It appears to violate our Community Guidelines.",
+        );
+        return;
+      }
       await editComment(commentId, content);
       toast.success("Comment updated");
     } catch (err: any) {

@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
+import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
+
+// The sync button waits on this call; a Menerio that never answers used to
+// hold the browser until the platform killed the function.
+const MENERIO_TIMEOUT_MS = 15_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,16 +80,39 @@ async function handleSync(
     return json({ error: "artifact_id is required" }, 400);
   }
 
-  // 1. Load Menerio integration settings
-  const { data: integration, error: intErr } = await adminClient
+  // 1. Load Menerio integration settings. The service client has no
+  // Database type, so supabase-js resolves the row to `never`; naming the
+  // three columns this function reads is what makes them readable.
+  const { data: integrationRow, error: intErr } = await adminClient
     .from("menerio_integration")
-    .select("*")
+    .select("id, menerio_base_url, menerio_api_key")
     .eq("user_id", userId)
     .eq("is_active", true)
     .maybeSingle();
+  const integration = integrationRow as {
+    id: string;
+    menerio_base_url: string;
+    menerio_api_key: string;
+  } | null;
 
   if (intErr || !integration) {
     return json({ error: "Keine aktive Menerio-Integration" }, 400);
+  }
+
+  // The base URL column is user-writable through PostgREST, so it is checked
+  // against the one Menerio host before this user's API key is sent anywhere
+  // (see _shared/menerioUrl.ts).
+  let menerioBase: string;
+  try {
+    menerioBase = assertMenerioBaseUrl(integration.menerio_base_url);
+  } catch (urlErr) {
+    console.warn(
+      `menerio_integration ${integration.id}: ${urlErr instanceof Error ? urlErr.message : urlErr}`,
+    );
+    return json(
+      { error: "The Menerio address on this account is not allowed" },
+      400,
+    );
   }
 
   // 2. Load artifact
@@ -152,7 +180,7 @@ async function handleSync(
   };
 
   // 5. Send to Menerio
-  const menerioUrl = `${integration.menerio_base_url.replace(/\/$/, "")}/receive-note`;
+  const menerioUrl = `${menerioBase}/receive-note`;
 
   let menerioRes: Response;
   try {
@@ -163,6 +191,7 @@ async function handleSync(
         "x-api-key": integration.menerio_api_key,
       },
       body: JSON.stringify(notePayload),
+      signal: AbortSignal.timeout(MENERIO_TIMEOUT_MS),
     });
   } catch (_netErr) {
     return json(
@@ -171,23 +200,48 @@ async function handleSync(
     );
   }
 
-  if (menerioRes.status === 401) {
-    await menerioRes.text();
+  // Menerio's answer is logged and never echoed: what it says is about its
+  // own request, not ours, and an upstream body handed to the browser is a
+  // way for one service's error page to become another's. And a 401 stays
+  // upstream too: the browser client treats a 401 from functions.invoke as
+  // an expired Querino session and logs the user out, when the only thing
+  // wrong is the Menerio key they stored.
+  if (!menerioRes.ok) {
+    const errText = await menerioRes.text().catch(() => "");
+    console.error(
+      `Menerio answered ${menerioRes.status} for artifact ${artifactId}:`,
+      errText.slice(0, 500),
+    );
+    if (menerioRes.status === 401) {
+      return json(
+        {
+          error:
+            "Menerio hat den API-Key abgelehnt. Bitte prüfe deine Einstellungen unter /settings/menerio.",
+        },
+        502,
+      );
+    }
     return json(
       {
-        error:
-          "Menerio API-Key ungültig. Bitte prüfe deine Einstellungen unter /settings/menerio.",
+        error: "Sync fehlgeschlagen: Menerio hat mit einem Fehler geantwortet.",
       },
-      401,
+      502,
     );
   }
 
-  if (!menerioRes.ok) {
-    const errText = await menerioRes.text();
-    return json({ error: `Sync fehlgeschlagen: ${errText}` }, 502);
+  let menerioData: { note_id?: string; action?: string };
+  try {
+    menerioData = await menerioRes.json();
+  } catch (parseErr) {
+    console.error(
+      `Menerio answered 2xx without JSON for artifact ${artifactId}:`,
+      parseErr instanceof Error ? parseErr.message : parseErr,
+    );
+    return json(
+      { error: "Sync fehlgeschlagen: Menerio hat unerwartet geantwortet." },
+      502,
+    );
   }
-
-  const menerioData = await menerioRes.json();
 
   // 6. Update artifact sync fields
   await adminClient

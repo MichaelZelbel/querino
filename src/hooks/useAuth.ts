@@ -94,23 +94,28 @@ export function useAuth() {
     try {
       // role / plan_type / plan_source are column-restricted in the database
       // (they must not leak to team-mates), so they come from the
-      // get_my_plan() RPC which only ever returns the caller's own row.
-      const [{ data, error }, { data: planRows }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select(
-            "id, display_name, avatar_url, bio, website, twitter, github, created_at, updated_at, github_repo, github_branch, github_folder, github_sync_enabled, github_last_synced_at",
-          )
-          .eq("id", userId)
-          .maybeSingle(),
-        supabase.rpc("get_my_plan"),
-      ]);
+      // get_my_plan() RPC which only ever returns the caller's own row. The
+      // five GitHub sync columns took the same route on 2026-09-16: they were
+      // readable on every published author's row by any signed-in user.
+      const [{ data, error }, { data: planRows }, { data: githubRows }] =
+        await Promise.all([
+          supabase
+            .from("profiles")
+            .select(
+              "id, display_name, avatar_url, bio, website, twitter, github, created_at, updated_at",
+            )
+            .eq("id", userId)
+            .maybeSingle(),
+          supabase.rpc("get_my_plan"),
+          supabase.rpc("get_my_github_settings"),
+        ]);
 
       if (error) {
         console.error("Error fetching profile:", error);
       } else {
         const plan = (planRows as MyPlanRow[] | null)?.[0] ?? {};
-        setProfile(data ? ({ ...data, ...plan } as Profile) : null);
+        const github = githubRows?.[0] ?? {};
+        setProfile(data ? ({ ...data, ...github, ...plan } as Profile) : null);
       }
     } catch (err) {
       console.error("Error fetching profile:", err);

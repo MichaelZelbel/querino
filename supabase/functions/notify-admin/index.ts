@@ -161,7 +161,7 @@ serve(async (req) => {
     // trigger) authenticate with the service-role key. Reject everyone else:
     // this endpoint sends email to the admin and must not be publicly
     // triggerable. The comparison is constant-time (see internalAuth.ts).
-    if (!hasServiceRoleKey(req)) {
+    if (!(await hasServiceRoleKey(req))) {
       logStep("Rejected unauthorized caller");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

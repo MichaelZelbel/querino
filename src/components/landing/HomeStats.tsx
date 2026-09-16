@@ -53,7 +53,7 @@ export function HomeStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [promptsResult, skillsResult, workflowsResult] =
+        const [promptsResult, skillsResult, workflowsResult, kitsResult] =
           await Promise.all([
             supabase
               .from("prompts")
@@ -67,15 +67,21 @@ export function HomeStats() {
               .from("workflows")
               .select("id", { count: "exact", head: true })
               .eq("published", true),
+            supabase
+              .from("prompt_kits")
+              .select("id", { count: "exact", head: true })
+              .eq("published", true),
           ]);
 
         const promptsCount = promptsResult.count ?? 0;
         const skillsCount = skillsResult.count ?? 0;
         const workflowsCount = workflowsResult.count ?? 0;
+        const kitsCount = kitsResult.count ?? 0;
 
         setStats({
           publicPrompts: promptsCount,
-          totalArtifacts: promptsCount + skillsCount + workflowsCount,
+          totalArtifacts:
+            promptsCount + skillsCount + workflowsCount + kitsCount,
         });
       } catch (error) {
         console.error("Error fetching homepage stats:", error);

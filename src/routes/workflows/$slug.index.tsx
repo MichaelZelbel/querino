@@ -40,5 +40,9 @@ function RouteComponent() {
   // Handed to the page so its first render already has the record. The page keeps its
   // own fetch for slug changes and for staying current; this only removes the empty
   // first paint, which is the paint a crawler sees.
-  return <WorkflowDetail initialWorkflow={Route.useLoaderData()} />;
+  // The key remounts the page per slug: it seeds its state once from the initial
+  // record and never resets loading, so a client-side move from one workflow to
+  // another showed the old content under the new URL until the fetch resolved.
+  const { slug } = Route.useParams();
+  return <WorkflowDetail key={slug} initialWorkflow={Route.useLoaderData()} />;
 }

@@ -22,7 +22,8 @@ export default function UserActivity() {
         .select("id, display_name, avatar_url, bio, website, twitter, github")
         // enabled: !!username below is what guarantees this is set.
         .eq("display_name", username!)
-        .single();
+        // Zero rows is the normal not-found path; single() treated it as an error.
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -71,7 +72,7 @@ export default function UserActivity() {
         <div className="max-w-3xl mx-auto">
           {/* Back Link */}
           <Link
-            to={`/u/${username}`}
+            to={`/u/${encodeURIComponent(username || "")}`}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

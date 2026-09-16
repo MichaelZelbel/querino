@@ -51,6 +51,13 @@ export function ReviewSection({
     if (userReview) {
       setSelectedRating(userReview.rating);
       setComment(userReview.comment || "");
+    } else {
+      // The component stays mounted while itemId changes, so without this the
+      // previous item's rating and comment were shown and submitted for the
+      // next one.
+      setSelectedRating(0);
+      setComment("");
+      setShowForm(false);
     }
   }, [userReview]);
 

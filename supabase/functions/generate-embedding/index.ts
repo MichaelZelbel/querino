@@ -81,7 +81,39 @@ Deno.serve(async (req) => {
       throw e;
     }
 
-    // 4. Turn it into a vector, whichever provider is answering today.
+    const sb = getServiceClient();
+
+    // 4. Ownership, before anything is paid for. update_embedding() is
+    //    SECURITY DEFINER with no ownership check and is no longer callable by
+    //    `authenticated`, so the check lives here: you may only rewrite the
+    //    vector of your own artefact. Until 2026-09-16 this ran after the
+    //    provider call, so a 403 still cost an embedding.
+    const TABLES: Record<ItemType, string> = {
+      prompt: "prompts",
+      skill: "skills",
+      workflow: "workflows",
+      prompt_kit: "prompt_kits",
+    };
+    if (itemType && itemId) {
+      const { data: owner, error: ownErr } = await sb
+        .from(TABLES[itemType])
+        .select("author_id")
+        .eq("id", itemId)
+        .maybeSingle();
+
+      if (ownErr) {
+        console.error("[generate-embedding] ownership lookup failed:", ownErr);
+        return json({ error: "Failed to verify ownership" }, 500);
+      }
+      if (!owner) {
+        return json({ error: "Item not found" }, 404);
+      }
+      if (owner.author_id !== userId) {
+        return json({ error: "Forbidden: you do not own this item" }, 403);
+      }
+    }
+
+    // 5. Turn it into a vector, whichever provider is answering today.
     //
     //    This used to call OpenAI directly. On 23 August the OpenAI balance hit
     //    zero and every call here returned 429, which the semantic-merge caller
@@ -92,17 +124,18 @@ Deno.serve(async (req) => {
     try {
       result = await createEmbedding(text);
     } catch (e) {
+      // The provider's own message names models, keys and account state,
+      // which a caller has no business reading. It stays in the log.
       const detail = e instanceof Error ? e.message : String(e);
       console.error("[generate-embedding] no provider could answer:", detail);
-      return json({ error: "Embedding provider error", details: detail }, 502);
+      return json({ error: "Embedding provider error" }, 502);
     }
 
     const embedding = result.embedding;
 
-    // 4. Token logging (best-effort — never block response)
+    // 6. Token logging (best-effort — never block response)
     const promptTokens = result.promptTokens;
     const totalTokens = result.totalTokens;
-    const sb = getServiceClient();
 
     try {
       const { error: logErr } = await sb.rpc("record_llm_usage", {
@@ -122,35 +155,10 @@ Deno.serve(async (req) => {
       console.error("[generate-embedding] usage logging threw:", e);
     }
 
-    // 5. Optional: persist into the right artefact table.
-    //    update_embedding() is SECURITY DEFINER with no ownership check and is
-    //    no longer callable by `authenticated`, so the ownership check lives
-    //    here: you may only rewrite the vector of your own artefact.
+    // 7. Optional: persist into the right artefact table. Ownership was
+    //    checked in step 4, before the paid call.
     let written = false;
     if (itemType && itemId) {
-      const TABLES: Record<ItemType, string> = {
-        prompt: "prompts",
-        skill: "skills",
-        workflow: "workflows",
-        prompt_kit: "prompt_kits",
-      };
-      const { data: owner, error: ownErr } = await sb
-        .from(TABLES[itemType])
-        .select("author_id")
-        .eq("id", itemId)
-        .maybeSingle();
-
-      if (ownErr) {
-        console.error("[generate-embedding] ownership lookup failed:", ownErr);
-        return json({ error: "Failed to verify ownership" }, 500);
-      }
-      if (!owner) {
-        return json({ error: "Item not found" }, 404);
-      }
-      if (owner.author_id !== userId) {
-        return json({ error: "Forbidden: you do not own this item" }, 403);
-      }
-
       const embeddingStr = `[${embedding.join(",")}]`;
       const { error: updErr } = await sb.rpc("update_embedding", {
         p_item_type: itemType,

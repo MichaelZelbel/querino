@@ -22,12 +22,16 @@ import {
   RateLimitedError,
   GatewayError,
   DEFAULT_MODEL,
+  capText,
   type ChatMessage,
   type ToolDefinition,
 } from "./llm.ts";
 
 const MAX_HISTORY_TURNS = 20; // last 20 user+assistant pairs
 const CANVAS_TRUNCATE = 16000;
+// The credit gate only checks for a balance above zero, so the message is
+// capped too, not only the canvas. Since 2026-09-16.
+const MESSAGE_TRUNCATE = 4000;
 
 export interface CoachConfig {
   feature: string; // e.g. "prompt-coach"
@@ -213,12 +217,13 @@ export function startCoachServer(cfg: CoachConfig) {
       const truncatedCanvas = (canvas_content ?? "")
         .toString()
         .slice(0, CANVAS_TRUNCATE);
+      const truncatedMessage = capText(message, MESSAGE_TRUNCATE);
       const selectionBlock = selection?.text
         ? `\nselection: ${JSON.stringify(String(selection.text).slice(0, 2000))}`
         : "";
 
       const userTurn = `mode: ${mode}
-user_message: ${message}
+user_message: ${truncatedMessage}
 canvas_content: <<<
 ${truncatedCanvas}
 >>>${selectionBlock}`;
@@ -300,7 +305,12 @@ ${truncatedCanvas}
 
       // Persist history (best-effort)
       try {
-        await appendHistory(session_id, user_id, message, assistantMessage);
+        await appendHistory(
+          session_id,
+          user_id,
+          truncatedMessage,
+          assistantMessage,
+        );
       } catch (e) {
         console.error(`[${cfg.feature}] history append failed:`, e);
       }

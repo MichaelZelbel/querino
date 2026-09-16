@@ -164,7 +164,10 @@ export default function SkillEdit() {
           return;
         }
         setSkill(data);
-        setFormData({
+        // The baseline is passed explicitly: markSaved() with no argument reads
+        // the form of this render, which is still empty, and that counted every
+        // skill as dirty the moment it loaded.
+        const loaded: SkillFormData = {
           title: data.title,
           description: data.description || "",
           content: data.content,
@@ -172,8 +175,9 @@ export default function SkillEdit() {
           tags: data.tags || [],
           isPublic: data.published ?? false,
           language: data.language || DEFAULT_LANGUAGE,
-        });
-        markSaved();
+        };
+        setFormData(loaded);
+        markSaved(loaded);
       } catch (err) {
         console.error("Error fetching skill:", err);
         toast.error("Failed to load skill");
@@ -410,7 +414,7 @@ export default function SkillEdit() {
       .maybeSingle();
     if (data) {
       setSkill(data);
-      setFormData({
+      const restored: SkillFormData = {
         title: data.title,
         description: data.description || "",
         content: data.content,
@@ -418,8 +422,9 @@ export default function SkillEdit() {
         tags: data.tags || [],
         isPublic: data.published ?? false,
         language: data.language || DEFAULT_LANGUAGE,
-      });
-      markSaved();
+      };
+      setFormData(restored);
+      markSaved(restored);
     }
   };
 

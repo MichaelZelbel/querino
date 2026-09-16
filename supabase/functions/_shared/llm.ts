@@ -153,6 +153,21 @@ export async function getCallerUserId(req: Request): Promise<string> {
 }
 
 /**
+ * Cap a free-text field read from a request body. A non-string becomes an
+ * empty string; a string is cut to `max` characters.
+ *
+ * assertCredits only asks whether the caller has more than zero tokens left,
+ * so a user down to their last token could still send a canvas or prompt of
+ * any length and have the whole thing sent to the provider. Since 2026-09-16
+ * every call site caps each text field it reads through this, so the biggest
+ * call one token can buy is bounded.
+ */
+export function capText(value: unknown, max: number): string {
+  if (typeof value !== "string") return "";
+  return value.length > max ? value.slice(0, max) : value;
+}
+
+/**
  * Verify the user has remaining credits. Throws CreditsExhaustedError if not.
  */
 export async function assertCredits(

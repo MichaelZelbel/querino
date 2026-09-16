@@ -11,10 +11,13 @@ import { ArrowLeft, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { siteOrigin } from "@/config/site";
+import type { BlogPost as BlogPostRecord } from "@/types/blog";
 
-export default function BlogPost() {
+export default function BlogPost({
+  initialPost = null,
+}: { initialPost?: BlogPostRecord | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
-  const { data: post, isLoading } = usePublicPost(slug || "");
+  const { data: post, isLoading } = usePublicPost(slug || "", initialPost);
 
   if (isLoading) {
     return (

@@ -8,6 +8,7 @@ import {
   RateLimitedError,
   GatewayError,
   DEFAULT_MODEL,
+  capText,
   type ToolDefinition,
 } from "../_shared/llm.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/refine-prompt.ts";
@@ -65,7 +66,9 @@ serve(async (req) => {
       );
     }
     const body = raw as RefineBody;
-    const prompt = (body.prompt ?? "").toString().trim();
+    // Same cap as the coach canvas. The credit gate only checks for a balance
+    // above zero, so this is what bounds the size of one call.
+    const prompt = capText(body.prompt, 16000).trim();
     const framework = (body.framework ?? "auto").toString().slice(0, 64);
     const goal = (body.goal ?? "").toString().slice(0, 500);
 

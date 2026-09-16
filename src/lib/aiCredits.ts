@@ -31,8 +31,8 @@ export const CREDIT_CHARGING_FUNCTIONS: ReadonlySet<string> = new Set([
 ]);
 
 // Plain lib code such as runCanvasAI has no hook access, so the app's
-// QueryClient is bound here once by useAuth, which is always mounted under
-// the QueryClientProvider (see src/routes/__root.tsx).
+// QueryClient is bound here by getRouter (src/router.tsx), the one place that
+// creates it.
 let boundClient: QueryClient | null = null;
 
 export function bindAICreditsQueryClient(queryClient: QueryClient): void {
@@ -66,7 +66,9 @@ export function installAICreditsRefresh(queryClient: QueryClient): void {
   functions.invoke = async (name, options) => {
     const result = await invoke(name, options);
     if (!result.error && CREDIT_CHARGING_FUNCTIONS.has(name)) {
-      void refreshAICredits(queryClient);
+      // The bound client, not the one captured at install time: on the server
+      // getRouter runs once per request and the wrapper is installed only once.
+      void refreshAICredits();
     }
     return result;
   };

@@ -25,11 +25,8 @@ import {
   useCreateCollection,
   useAddToCollection,
   useRemoveFromCollection,
+  useCollectionItemDetails,
 } from "@/hooks/useCollections";
-import { usePrompts } from "@/hooks/usePrompts";
-import { useSkills } from "@/hooks/useSkills";
-import { useWorkflows } from "@/hooks/useWorkflows";
-import { usePromptKits } from "@/hooks/usePromptKits";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
@@ -51,10 +48,9 @@ export default function CollectionDetail() {
     id || "",
   );
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
-  const { data: prompts } = usePrompts();
-  const { data: skills } = useSkills();
-  const { data: workflows } = useWorkflows();
-  const { data: promptKits } = usePromptKits({});
+  // Items are resolved by id, whatever their visibility. Looking them up in the
+  // public catalogue hooks showed the owner's private items as "Unknown item".
+  const { data: itemDetails } = useCollectionItemDetails(items);
 
   const createCollection = useCreateCollection();
   const addToCollection = useAddToCollection();
@@ -66,20 +62,12 @@ export default function CollectionDetail() {
   const itemsWithData = useMemo(() => {
     return (
       items?.map((item) => {
-        let data: CollectionItemData = null;
-        if (item.item_type === "prompt") {
-          data = prompts?.find((p) => p.id === item.item_id);
-        } else if (item.item_type === "skill") {
-          data = skills?.find((s) => s.id === item.item_id);
-        } else if (item.item_type === "workflow") {
-          data = workflows?.find((w) => w.id === item.item_id);
-        } else if (item.item_type === "prompt_kit") {
-          data = promptKits?.find((k: any) => k.id === item.item_id);
-        }
+        const data: CollectionItemData =
+          itemDetails?.[`${item.item_type}:${item.item_id}`] ?? null;
         return { ...item, data };
       }) || []
     );
-  }, [items, prompts, skills, workflows, promptKits]);
+  }, [items, itemDetails]);
 
   // Filter items by type
   const filteredItems = useMemo(() => {
@@ -167,8 +155,19 @@ export default function CollectionDetail() {
     );
   }
 
-  const ownerName = collection.owner?.display_name || "Anonymous";
+  // A profile page exists only for a named owner; an unnamed one gets no link.
+  const ownerDisplayName = collection.owner?.display_name || null;
+  const ownerName = ownerDisplayName || "Anonymous";
   const ownerInitial = ownerName.charAt(0).toUpperCase();
+  const ownerBlock = (
+    <>
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={collection.owner?.avatar_url || undefined} />
+        <AvatarFallback>{ownerInitial}</AvatarFallback>
+      </Avatar>
+      <span className="text-sm text-muted-foreground">by {ownerName}</span>
+    </>
+  );
 
   const getItemIcon = (type: string) => {
     switch (type) {
@@ -260,18 +259,16 @@ export default function CollectionDetail() {
           </div>
 
           {/* Owner info */}
-          <Link
-            to={`/u/${ownerName}`}
-            className="inline-flex items-center gap-2 hover:opacity-80"
-          >
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={collection.owner?.avatar_url || undefined} />
-              <AvatarFallback>{ownerInitial}</AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-muted-foreground">
-              by {ownerName}
-            </span>
-          </Link>
+          {ownerDisplayName ? (
+            <Link
+              to={`/u/${encodeURIComponent(ownerDisplayName)}`}
+              className="inline-flex items-center gap-2 hover:opacity-80"
+            >
+              {ownerBlock}
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-2">{ownerBlock}</span>
+          )}
         </div>
 
         {/* Filter Tabs */}

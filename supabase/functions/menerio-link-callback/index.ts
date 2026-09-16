@@ -134,6 +134,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    // The prompt must be the caller's own before Menerio is told a link
+    // exists. The update at the end already checks author_id, but it runs
+    // after the outward call, so a foreign or made-up prompt_id still made
+    // Menerio record a link to it and only then got a 404.
+    const { data: ownedPrompt, error: ownedError } = await supabase
+      .from("prompts")
+      .select("id")
+      .eq("id", prompt_id)
+      .eq("author_id", user_id)
+      .maybeSingle();
+
+    if (ownedError) {
+      console.error("menerio-link-callback prompt lookup failed:", ownedError);
+      return new Response(
+        JSON.stringify({ error: "Could not look up the prompt" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    if (!ownedPrompt) {
+      return new Response(
+        JSON.stringify({
+          error: "No prompt with this id belongs to the signed-in user",
+        }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const PUBLIC_SITE_URL =
       Deno.env.get("PUBLIC_SITE_URL") || "https://querino.lovable.app";
 

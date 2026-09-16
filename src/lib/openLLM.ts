@@ -70,7 +70,12 @@ export function buildPromptForLLM(title: string, content: string): string {
 // Preference storage
 const PREFERENCE_KEY = "querino_preferred_llm";
 
+// Both helpers touch localStorage, which does not exist on the server. The
+// public detail pages render there first, and a bare localStorage read during
+// that render threw "localStorage is not defined" and replaced the whole page
+// with an error body. On the server there is no preference to read, so null.
 export function getPreferredLLM(): LLMTarget | null {
+  if (typeof window === "undefined") return null;
   const stored = localStorage.getItem(PREFERENCE_KEY);
   if (stored && LLM_OPTIONS.some((opt) => opt.id === stored)) {
     return stored as LLMTarget;
@@ -79,5 +84,6 @@ export function getPreferredLLM(): LLMTarget | null {
 }
 
 export function setPreferredLLM(llm: LLMTarget): void {
+  if (typeof window === "undefined") return;
   localStorage.setItem(PREFERENCE_KEY, llm);
 }

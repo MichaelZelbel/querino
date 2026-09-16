@@ -63,16 +63,19 @@ export default function BlogAdminTags() {
   const handleSave = async () => {
     if (!tagName.trim()) return;
 
-    if (editingTag) {
-      await updateMutation.mutateAsync({
-        id: editingTag.id,
-        data: { name: tagName },
-      });
-    } else {
-      await createMutation.mutateAsync({ name: tagName });
+    try {
+      if (editingTag) {
+        await updateMutation.mutateAsync({
+          id: editingTag.id,
+          data: { name: tagName },
+        });
+      } else {
+        await createMutation.mutateAsync({ name: tagName });
+      }
+      setIsDialogOpen(false);
+    } catch {
+      // The mutation hook already shows the error toast; the dialog stays open.
     }
-
-    setIsDialogOpen(false);
   };
 
   const handleDelete = () => {
