@@ -152,15 +152,45 @@ export async function getCallerUserId(req: Request): Promise<string> {
   return data.user.id;
 }
 
+/** The smallest reservation any call takes, whatever its size. */
+export const MIN_RESERVATION_TOKENS = 1000;
+/** Output assumed when the call site configures no max_tokens. */
+export const DEFAULT_OUTPUT_RESERVATION_TOKENS = 1000;
+/** A configured max_tokens above this is not held against a balance in full. */
+export const MAX_OUTPUT_RESERVATION_TOKENS = 4000;
+
+/**
+ * How many tokens to hold against a caller's balance before a call.
+ *
+ * Input at three characters per token, which overestimates English and is
+ * close for code, plus the output the call site allows, with a floor. The
+ * reservation is settled against the real usage afterwards, so an estimate
+ * that is too high costs nothing but a refusal at the very bottom of a
+ * balance, and that refusal is the point: until 2026-09-16 the gate only
+ * asked for one token left, and one token bought twenty parallel calls.
+ */
+export function estimateReservation(
+  messages: ChatMessage[],
+  maxTokens: number | null | undefined,
+  tools?: unknown,
+): number {
+  let chars = 0;
+  for (const m of messages) chars += (m.content ?? "").length;
+  if (tools) chars += JSON.stringify(tools).length;
+  const output =
+    typeof maxTokens === "number" && maxTokens > 0
+      ? Math.min(maxTokens, MAX_OUTPUT_RESERVATION_TOKENS)
+      : DEFAULT_OUTPUT_RESERVATION_TOKENS;
+  return Math.max(MIN_RESERVATION_TOKENS, Math.ceil(chars / 3) + output);
+}
+
 /**
  * Cap a free-text field read from a request body. A non-string becomes an
  * empty string; a string is cut to `max` characters.
  *
- * assertCredits only asks whether the caller has more than zero tokens left,
- * so a user down to their last token could still send a canvas or prompt of
- * any length and have the whole thing sent to the provider. Since 2026-09-16
- * every call site caps each text field it reads through this, so the biggest
- * call one token can buy is bounded.
+ * The caps bound the biggest single call; the reservation callLovableAI takes
+ * (estimateReservation) is what stops one balance being spent many times over
+ * by parallel calls.
  */
 export function capText(value: unknown, max: number): string {
   if (typeof value !== "string") return "";
@@ -299,10 +329,52 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
     templateVars: opts.templateVars,
   });
 
+  // Hold the estimate against the balance before spending anything. The
+  // database grants it only while it still fits, so parallel calls queue on
+  // the allowance row instead of all reading the same balance.
+  const reserved = opts.user_id
+    ? estimateReservation(opts.messages, effective.max_tokens, opts.tools)
+    : 0;
+  if (reserved > 0) {
+    const { data: granted, error: reserveErr } = await sb.rpc(
+      "reserve_llm_credits",
+      { p_user_id: opts.user_id, p_tokens: reserved },
+    );
+    if (reserveErr) {
+      // Fail closed, for the same reason assertCredits does.
+      console.error(
+        "[llm.callLovableAI] reserve_llm_credits error:",
+        reserveErr,
+      );
+      throw new Error(
+        "AI features are temporarily unavailable (credit check failed). Please try again in a moment.",
+      );
+    }
+    if (granted !== true) {
+      throw new CreditsExhaustedError(
+        "You do not have enough AI credits left for this request. They will reset shortly, or contact support@querino.ai.",
+      );
+    }
+  }
+
   let result;
   try {
     result = await callProvider(request);
   } catch (e) {
+    if (reserved > 0) {
+      // Nothing was spent, so nothing stays held. A failed release leaves the
+      // estimate charged, never the other way round.
+      const { error: releaseErr } = await sb.rpc("release_llm_credits", {
+        p_user_id: opts.user_id,
+        p_tokens: reserved,
+      });
+      if (releaseErr) {
+        console.error(
+          "[llm.callLovableAI] release_llm_credits error:",
+          releaseErr,
+        );
+      }
+    }
     // Map the transport's error onto the classes every caller already handles,
     // so rewiring the provider layer changed nothing for any of them.
     if (e instanceof ProviderHttpError) {
@@ -327,6 +399,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
   }
 
   // Best-effort token logging. Never block the response on accounting errors.
+  // This also settles the reservation; if it fails, the estimate stays charged.
   try {
     const { error } = await sb.rpc("record_llm_usage", {
       p_user_id: opts.user_id,
@@ -338,6 +411,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
       p_completion_tokens: result.usage.completion_tokens,
       p_total_tokens: result.usage.total_tokens,
       p_metadata: { ...(opts.metadata ?? {}), config_source: source },
+      p_reserved_tokens: reserved,
     });
     if (error)
       console.error("[llm.callLovableAI] record_llm_usage error:", error);

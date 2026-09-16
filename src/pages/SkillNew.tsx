@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "@/lib/router-compat";
+import { useDraftHandoff } from "@/lib/draftHandoff";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -68,6 +69,16 @@ export default function SkillNew() {
   const [language, setLanguage] = useState(
     searchParams.get("language") || DEFAULT_LANGUAGE,
   );
+  // Imports and translations hand their fields over in sessionStorage
+  // (lib/draftHandoff.ts); the ?content= reads above stay for old links.
+  useDraftHandoff(searchParams, (draft) => {
+    if (draft.title) setTitle(draft.title);
+    if (draft.description) setDescription(draft.description);
+    if (draft.content) setContent(draft.content);
+    if (draft.category) setCategory(draft.category);
+    if (draft.tags) setTags(draft.tags.split(",").filter(Boolean));
+    if (draft.language) setLanguage(draft.language);
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [moderationBlock, setModerationBlock] =
     useState<ModerationResult | null>(null);

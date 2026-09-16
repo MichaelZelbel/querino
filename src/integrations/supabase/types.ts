@@ -940,8 +940,10 @@ export type Database = {
           id: string
           is_active: boolean
           last_sync_at: string | null
-          menerio_api_key: string
+          menerio_api_key: string | null
+          menerio_api_key_secret_id: string | null
           menerio_base_url: string
+          menerio_display_name: string | null
           sync_artifact_types: string[]
           updated_at: string
           user_id: string
@@ -952,8 +954,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_sync_at?: string | null
-          menerio_api_key: string
+          menerio_api_key?: string | null
+          menerio_api_key_secret_id?: string | null
           menerio_base_url: string
+          menerio_display_name?: string | null
           sync_artifact_types?: string[]
           updated_at?: string
           user_id: string
@@ -964,8 +968,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_sync_at?: string | null
-          menerio_api_key?: string
+          menerio_api_key?: string | null
+          menerio_api_key_secret_id?: string | null
           menerio_base_url?: string
+          menerio_display_name?: string | null
           sync_artifact_types?: string[]
           updated_at?: string
           user_id?: string
@@ -1397,6 +1403,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           embedding: string | null
+          embedding_attempts: number
+          embedding_error: string | null
           embedding_failed_at: string | null
           fts: unknown
           id: string
@@ -1420,6 +1428,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
           id?: string
@@ -1443,6 +1453,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
           id?: string
@@ -1639,6 +1651,8 @@ export type Database = {
           created_at: string | null
           description: string
           embedding: string | null
+          embedding_attempts: number
+          embedding_error: string | null
           embedding_failed_at: string | null
           example_output: string | null
           fts: unknown
@@ -1666,6 +1680,8 @@ export type Database = {
           created_at?: string | null
           description: string
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           example_output?: string | null
           fts?: unknown
@@ -1693,6 +1709,8 @@ export type Database = {
           created_at?: string | null
           description?: string
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           example_output?: string | null
           fts?: unknown
@@ -1826,6 +1844,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           embedding: string | null
+          embedding_attempts: number
+          embedding_error: string | null
           embedding_failed_at: string | null
           fts: unknown
           id: string
@@ -1849,6 +1869,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
           id?: string
@@ -1872,6 +1894,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
           id?: string
@@ -2327,6 +2351,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           embedding: string | null
+          embedding_attempts: number
+          embedding_error: string | null
           embedding_failed_at: string | null
           filename: string | null
           fts: unknown
@@ -2353,6 +2379,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           filename?: string | null
           fts?: unknown
@@ -2379,6 +2407,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           embedding?: string | null
+          embedding_attempts?: number
+          embedding_error?: string | null
           embedding_failed_at?: string | null
           filename?: string | null
           fts?: unknown
@@ -2445,6 +2475,7 @@ export type Database = {
         Returns: {
           call_site: string
           caller_role: string
+          caller_users: number
           calls: number
           completion_tokens: number
           config_source: string
@@ -2452,6 +2483,7 @@ export type Database = {
           is_machine: boolean
           last_call_at: string
           prompt_tokens: number
+          site_caller_users: number
           users: number
         }[]
       }
@@ -2506,6 +2538,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      detach_llm_usage_ledger: { Args: { p_user_id: string }; Returns: number }
       enqueue_github_sync: {
         Args: {
           p_artifact_id: string
@@ -2665,9 +2698,19 @@ export type Database = {
       }
       lookup_mcp_token: { Args: { p_token_hash: string }; Returns: string }
       provision_ai_allowance: { Args: { _user_id: string }; Returns: undefined }
+      read_menerio_api_key: { Args: { p_user_id: string }; Returns: string }
       read_user_credential: {
         Args: { _credential_type: string; _team_id?: string; _user_id?: string }
         Returns: string
+      }
+      record_embedding_failure: {
+        Args: {
+          p_counts?: boolean
+          p_error: string
+          p_item_id: string
+          p_item_type: string
+        }
+        Returns: number
       }
       record_llm_usage: {
         Args: {
@@ -2678,6 +2721,7 @@ export type Database = {
           p_model: string
           p_prompt_tokens: number
           p_provider: string
+          p_reserved_tokens?: number
           p_total_tokens: number
           p_user_id: string
         }
@@ -2689,6 +2733,14 @@ export type Database = {
           team_id: string
           team_name: string
         }[]
+      }
+      release_llm_credits: {
+        Args: { p_tokens: number; p_user_id: string }
+        Returns: undefined
+      }
+      reserve_llm_credits: {
+        Args: { p_tokens: number; p_user_id: string }
+        Returns: boolean
       }
       search_prompt_kits_semantic: {
         Args: {

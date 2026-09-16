@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireMachineCaller } from "../_shared/internalAuth.ts";
 import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
 import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
+import { readMenerioApiKey } from "../_shared/menerioKey.ts";
 
 // A Menerio that does not answer within this window fails the row, which
 // the queue retries; without it a hung connection held the whole tick.
@@ -113,6 +114,13 @@ Deno.serve(async (req) => {
           );
           throw new Error("The Menerio address on this account is not allowed");
         }
+
+        // The column is blank since the key moved into Vault; a failed read
+        // throws, and the row gets another turn.
+        integration.menerio_api_key = await readMenerioApiKey(
+          adminClient,
+          item.user_id,
+        );
 
         if (item.status === "delete_pending") {
           // Handle delete: send "deleted" update to Menerio

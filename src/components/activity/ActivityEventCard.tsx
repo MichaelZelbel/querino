@@ -27,12 +27,16 @@ export function ActivityEventCard({
   const getItemLink = () => {
     if (!event.item_type || !event.item_id) return null;
 
-    const routes: Record<string, string> = {
+    // Same reason as the actor link below: /u/<uuid> is not a route, so a
+    // profile event without a username gets its title as plain text
+    // (until 2026-09-16 it fell back to the id and linked nowhere).
+    const username = event.metadata?.username;
+    const routes: Record<string, string | null> = {
       prompt: `/prompts/${event.item_id}`,
       skill: `/skills/${event.item_id}`,
       workflow: `/workflows/${event.item_id}`,
       collection: `/collections/${event.item_id}`,
-      profile: `/u/${event.metadata?.username || event.item_id}`,
+      profile: username ? `/u/${encodeURIComponent(username)}` : null,
       team: `/team/${event.item_id}/settings`,
       // The sidebar emits prompt_kit events, so without this entry those rows
       // rendered with no link at all. The detail route takes the slug and
@@ -106,20 +110,26 @@ export function ActivityEventCard({
         </div>
 
         {/* Item Title/Link */}
-        {showItemLink && itemLink && event.item_type && (
-          <div className="flex items-center gap-2 mt-1">
-            <ItemTypeIcon
-              itemType={event.item_type}
-              className="h-4 w-4 text-muted-foreground"
-            />
-            <Link
-              to={itemLink}
-              className="text-primary hover:underline font-medium truncate"
-            >
-              {itemTitle}
-            </Link>
-          </div>
-        )}
+        {showItemLink &&
+          event.item_type &&
+          (itemLink || event.item_type === "profile") && (
+            <div className="flex items-center gap-2 mt-1">
+              <ItemTypeIcon
+                itemType={event.item_type}
+                className="h-4 w-4 text-muted-foreground"
+              />
+              {itemLink ? (
+                <Link
+                  to={itemLink}
+                  className="text-primary hover:underline font-medium truncate"
+                >
+                  {itemTitle}
+                </Link>
+              ) : (
+                <span className="font-medium truncate">{itemTitle}</span>
+              )}
+            </div>
+          )}
 
         {/* Metadata Badges */}
         <div className="flex items-center gap-2 mt-2 flex-wrap">

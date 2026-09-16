@@ -76,9 +76,6 @@ verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
 [functions.customer-portal]
 verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
 
-[functions.fetch-skill-md]
-verify_jwt = false  # the function checks the session itself (getCallerUserId, since 2026-09-16); sourcePath, size and time are bounded in the function
-
 # ── Everything else: every caller sends a Supabase JWT ───────────────────────
 # Called from the browser through supabase.functions.invoke, which always sends
 # one, or from a database trigger holding the service-role key. Each still

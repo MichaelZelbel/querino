@@ -13,7 +13,9 @@ export const Route = createFileRoute("/blog/$slug")({
       description: loaderData.seo_description || loaderData.excerpt,
       canonical: `/blog/${loaderData.slug}`,
       ogType: "article",
-      ogImage: loaderData.og_image_url,
+      // Same fallback as the page (BlogPost.tsx): until 2026-09-16 a post with
+      // only a featured image shared without any image.
+      ogImage: loaderData.og_image_url || loaderData.featured_image?.url,
       publishedTime: loaderData.published_at,
       rss: true,
       jsonLd: {

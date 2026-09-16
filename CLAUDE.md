@@ -68,7 +68,7 @@ src/
   config/          # Static config (languages, pricing, stripe)
   integrations/    # Supabase client + auto-generated DB types
 supabase/
-  functions/       # 37 Edge Functions (AI calls, MCP server, GitHub sync, Menerio sync, ...)
+  functions/       # 36 Edge Functions (AI calls, MCP server, GitHub sync, Menerio sync, ...)
   functions/_shared/  # shared modules and their Deno unit tests
   migrations/      # Database migrations
 scripts/           # the `npm run check` gates (migrations, lint ratchet, deno-check ratchet)
@@ -171,6 +171,16 @@ npx supabase db push
 ```
 
 Do not edit migration files that have already been applied to production.
+
+### Deleting an account: one rule
+
+What the account made or owns goes with it; what records money survives it,
+without the person. Every artifact table cascades from its author, a team goes
+with its owner, and `llm_usage_events` keeps its rows with `user_id` NULL and
+`metadata.account_deleted = true` (`detach_llm_usage_ledger`). Both deletion
+paths run `supabase/functions/_shared/deleteUserData.ts`. A new table that
+references a user follows the same rule. Decided 2026-09-16, migration
+`20260916150000`.
 
 ## Code Conventions
 

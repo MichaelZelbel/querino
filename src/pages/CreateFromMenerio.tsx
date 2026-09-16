@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { draftUrl } from "@/lib/draftHandoff";
 import { Loader2 } from "lucide-react";
 
 /**
@@ -23,16 +24,6 @@ export default function CreateFromMenerio() {
     const menerioCallback = searchParams.get("menerio_callback") || "";
     const entityType = searchParams.get("entity_type") || "prompt";
 
-    const promptNewParams = new URLSearchParams();
-    if (title) promptNewParams.set("title", title);
-    if (body) promptNewParams.set("content", body);
-    if (menerioNoteId) promptNewParams.set("menerio_note_id", menerioNoteId);
-    if (menerioCallback)
-      promptNewParams.set("menerio_callback", menerioCallback);
-    if (entityType) promptNewParams.set("entity_type", entityType);
-
-    const targetUrl = `/prompts/new?${promptNewParams.toString()}`;
-
     if (!user) {
       // Redirect to auth, preserving the full create-from-menerio URL as return path
       const returnUrl = `/create-from-menerio?${searchParams.toString()}`;
@@ -43,6 +34,18 @@ export default function CreateFromMenerio() {
     }
 
     // User is authenticated — redirect to prompt editor with pre-filled data
+    // The note body goes through sessionStorage, not ?content= (see
+    // draftHandoff); the Menerio ids stay in the URL, PromptNew reads them there.
+    const targetUrl = draftUrl(
+      "/prompts/new",
+      { title, content: body },
+      {
+        menerio_note_id: menerioNoteId,
+        menerio_callback: menerioCallback,
+        entity_type: entityType,
+      },
+    );
+
     navigate(targetUrl, { replace: true });
   }, [user, loading, navigate, searchParams]);
 

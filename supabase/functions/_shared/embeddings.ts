@@ -32,7 +32,57 @@
 
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 1536;
-export const MAX_INPUT_CHARS = 8000;
+/**
+ * A hard ceiling on characters, whatever the token estimate says, so a huge
+ * artifact is never sent whole.
+ */
+export const MAX_INPUT_CHARS = 30_000;
+/**
+ * text-embedding-3-small refuses more than 8,191 tokens. The budget sits below
+ * that because the count is an estimate.
+ */
+export const MAX_INPUT_TOKENS = 7_000;
+
+/**
+ * An upper-bound guess at how many tokens one character costs.
+ *
+ * Until 2026-09-16 input was cut at 8,000 characters, which is about 2,000
+ * tokens of English and more than 8,191 tokens of CJK text, emoji or dense
+ * symbols: those rows were refused by the provider and retried for ever. A
+ * BPE token never covers less than one UTF-8 byte, so counting a non-ASCII
+ * character at its byte length can only overestimate. ASCII letters, digits
+ * and spaces merge into tokens of several characters; ASCII punctuation
+ * often stands alone.
+ */
+function estimatedTokenCost(codePoint: number): number {
+  if (codePoint < 0x80) {
+    const isWordish =
+      (codePoint >= 0x30 && codePoint <= 0x39) ||
+      (codePoint >= 0x41 && codePoint <= 0x5a) ||
+      (codePoint >= 0x61 && codePoint <= 0x7a) ||
+      codePoint === 0x20;
+    return isWordish ? 0.5 : 1;
+  }
+  if (codePoint < 0x800) return 2;
+  if (codePoint < 0x10000) return 3;
+  return 4;
+}
+
+/** Cut text to what the embedding model will accept, by estimated tokens. */
+export function truncateToTokenBudget(
+  text: string,
+  maxTokens: number = MAX_INPUT_TOKENS,
+): string {
+  let tokens = 0;
+  let end = 0;
+  for (const ch of text) {
+    const cost = estimatedTokenCost(ch.codePointAt(0)!);
+    if (tokens + cost > maxTokens || end + ch.length > MAX_INPUT_CHARS) break;
+    tokens += cost;
+    end += ch.length;
+  }
+  return text.slice(0, end);
+}
 
 interface Provider {
   /** Short name, for logs and for the response body. */
@@ -87,7 +137,28 @@ export interface EmbeddingResult {
   totalTokens: number;
 }
 
-export class NoEmbeddingProviderError extends Error {}
+export class NoEmbeddingProviderError extends Error {
+  /**
+   * True when every provider refused this text itself (a 4xx other than 401,
+   * 402, 403 or 429), or the text was empty. False when the failure says
+   * nothing about the text: no key, no credit, a rate limit, a 5xx, a timeout.
+   * The backfill only spends one of a row's attempts on the first kind.
+   */
+  rowFault: boolean;
+  constructor(message: string, rowFault = false) {
+    super(message);
+    this.rowFault = rowFault;
+  }
+}
+
+/** Whether an HTTP status from an embedding provider blames the input. */
+export function statusBlamesInput(status: number): boolean {
+  return (
+    status >= 400 &&
+    status < 500 &&
+    ![401, 402, 403, 404, 408, 429].includes(status)
+  );
+}
 
 /**
  * Embed one piece of text, trying each configured provider in turn.
@@ -97,8 +168,8 @@ export class NoEmbeddingProviderError extends Error {}
  * invisible for as long as it did, so say something.
  */
 export async function createEmbedding(input: string): Promise<EmbeddingResult> {
-  const text = input.slice(0, MAX_INPUT_CHARS);
-  if (!text.trim()) throw new NoEmbeddingProviderError("empty text");
+  const text = truncateToTokenBudget(input);
+  if (!text.trim()) throw new NoEmbeddingProviderError("empty text", true);
 
   const providers = embeddingProviders();
   if (providers.length === 0) {
@@ -108,6 +179,8 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
   }
 
   const failures: string[] = [];
+  // Stays true only while every provider has blamed the text itself.
+  let inputBlamed = true;
 
   for (const provider of providers) {
     try {
@@ -123,6 +196,7 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
       if (!resp.ok) {
         const body = await resp.text().catch(() => "");
         failures.push(`${provider.name}: ${resp.status} ${body.slice(0, 160)}`);
+        if (!statusBlamesInput(resp.status)) inputBlamed = false;
         continue;
       }
 
@@ -142,6 +216,7 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
         failures.push(
           `${provider.name}: expected ${EMBEDDING_DIMENSIONS} dims, got ${embedding?.length}`,
         );
+        inputBlamed = false;
         continue;
       }
 
@@ -155,11 +230,13 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
       };
     } catch (e) {
       failures.push(`${provider.name}: ${String(e).slice(0, 160)}`);
+      inputBlamed = false;
     }
   }
 
   throw new NoEmbeddingProviderError(
     `every embedding provider failed — ${failures.join(" | ")}`,
+    inputBlamed,
   );
 }
 
@@ -169,9 +246,9 @@ export function embeddableText(
   row: Record<string, unknown>,
   fields: readonly string[],
 ): string {
-  return fields
+  const joined = fields
     .map((f) => (row[f] ? String(row[f]) : ""))
     .filter(Boolean)
-    .join("\n\n")
-    .slice(0, MAX_INPUT_CHARS);
+    .join("\n\n");
+  return truncateToTokenBudget(joined);
 }

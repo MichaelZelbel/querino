@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "@/lib/router-compat";
+import { useDraftHandoff } from "@/lib/draftHandoff";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +76,16 @@ export default function PromptNew() {
   const [language, setLanguage] = useState(
     searchParams.get("language") || DEFAULT_LANGUAGE,
   );
+  // Imports and translations hand their fields over in sessionStorage
+  // (lib/draftHandoff.ts); the ?content= reads above stay for old links.
+  useDraftHandoff(searchParams, (draft) => {
+    if (draft.title) setTitle(draft.title);
+    if (draft.description) setShortDescription(draft.description);
+    if (draft.content) setContent(draft.content);
+    if (draft.category) setCategory(draft.category);
+    if (draft.tags) setTags(draft.tags.split(",").filter(Boolean));
+    if (draft.language) setLanguage(draft.language);
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Menerio callback params (from /create-from-menerio redirect)

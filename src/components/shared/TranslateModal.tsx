@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
+import { draftUrl } from "@/lib/draftHandoff";
 import { supabase } from "@/integrations/supabase/client";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -107,21 +108,23 @@ export function TranslateModal({
       // Pre-generate transliterated slug for the translated title
       const translatedSlug = data.title ? await generateSlug(data.title) : "";
 
-      // Build URL params for the "Create New" page
-      const params = new URLSearchParams();
-      if (data.title) params.set("title", data.title);
-      if (data.description) params.set("description", data.description);
-      if (data.content) params.set("content", data.content);
-      if (data.tags && Array.isArray(data.tags))
-        params.set("tags", data.tags.join(","));
-      if (category) params.set("category", category);
-      params.set("language", targetLanguage);
-      if (translatedSlug) params.set("slug", translatedSlug);
+      // Prefill for the "Create New" page. The translated body goes through
+      // sessionStorage, not ?content= (see draftHandoff).
+      const target = draftUrl(NEW_ROUTES[artifactType], {
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        tags:
+          data.tags && Array.isArray(data.tags) ? data.tags.join(",") : null,
+        category,
+        language: targetLanguage,
+        slug: translatedSlug,
+      });
 
       onOpenChange(false);
       toast.success("Translation complete! Creating new artifact…");
 
-      navigate(`${NEW_ROUTES[artifactType]}?${params.toString()}`);
+      navigate(target);
     } catch (err) {
       console.error("Translation error:", err);
       const message = err instanceof Error ? err.message : "Translation failed";

@@ -490,6 +490,22 @@ Deno.serve(async (req) => {
         );
       }
 
+      // A team sync writes, and deletes, files in the team's repository with
+      // the team's token. Until 2026-09-16 the role was selected and never
+      // read, so any member could run it. Owners and admins manage the team
+      // (is_team_admin_or_owner); members and viewers do not.
+      if (membership.role !== "owner" && membership.role !== "admin") {
+        return new Response(
+          JSON.stringify({
+            error: "Only a team owner or admin can sync the team to GitHub",
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
       // Get team settings
       const { data: team, error: teamError } = await supabase
         .from("teams")

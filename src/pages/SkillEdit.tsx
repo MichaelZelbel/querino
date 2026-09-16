@@ -847,6 +847,7 @@ export default function SkillEdit() {
           }}
           onRestoreComplete={handleRestoreComplete}
           tableConfig={SKILL_VERSIONS_CONFIG}
+          artifactLabel="skill"
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import {
   readFileAsText,
   type ArtefactType,
 } from "@/lib/markdown";
+import { draftUrl } from "@/lib/draftHandoff";
 
 export function useMarkdownImport(type: ArtefactType) {
   const navigate = useNavigate();
@@ -32,20 +33,6 @@ export function useMarkdownImport(type: ArtefactType) {
           // Override type based on hook's type
           parsed.frontmatter.type = type;
 
-          // Navigate to create page with prefilled data
-          const params = new URLSearchParams();
-          params.set("title", parsed.frontmatter.title);
-          if (parsed.frontmatter.description) {
-            params.set("description", parsed.frontmatter.description);
-          }
-          if (parsed.frontmatter.tags && parsed.frontmatter.tags.length > 0) {
-            params.set("tags", parsed.frontmatter.tags.join(","));
-          }
-          if (parsed.frontmatter.framework) {
-            params.set("framework", parsed.frontmatter.framework);
-          }
-          params.set("content", parsed.content);
-
           const routes: Record<ArtefactType, string> = {
             prompt: "/prompts/new",
             skill: "/skills/new",
@@ -53,7 +40,17 @@ export function useMarkdownImport(type: ArtefactType) {
             prompt_kit: "/prompt-kits/new",
           };
 
-          navigate(`${routes[type]}?${params.toString()}`);
+          // Navigate to create page with prefilled data. The body goes
+          // through sessionStorage, not ?content= (see draftHandoff).
+          navigate(
+            draftUrl(routes[type], {
+              title: parsed.frontmatter.title,
+              description: parsed.frontmatter.description,
+              tags: parsed.frontmatter.tags?.join(","),
+              framework: parsed.frontmatter.framework,
+              content: parsed.content,
+            }),
+          );
           toast.success("Markdown imported! Review and save your artefact.");
         } catch (err) {
           console.error("Error reading markdown file:", err);

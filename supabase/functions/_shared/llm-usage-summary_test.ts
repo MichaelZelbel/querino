@@ -7,6 +7,7 @@ import {
 } from "./llm-usage-summary.ts";
 
 function group(over: Partial<UsageGroup> = {}): UsageGroup {
+  const users = over.users ?? 1;
   return {
     call_site: "prompt-coach",
     caller_role: "free",
@@ -16,11 +17,47 @@ function group(over: Partial<UsageGroup> = {}): UsageGroup {
     prompt_tokens: 100,
     completion_tokens: 20,
     credits: 0.5,
-    users: 1,
+    users,
+    site_caller_users: users,
+    caller_users: users,
     last_call_at: "2026-08-23T10:00:00Z",
     ...over,
   };
 }
+
+Deno.test(
+  "summarizeUsage: a user served by two config sources is one user, not two",
+  () => {
+    // One free user whose calls were answered by two config rows. The database
+    // reports 1 user per group and 1 distinct user for the site and the role.
+    const rows = [
+      group({
+        config_source: "db-default",
+        users: 1,
+        site_caller_users: 1,
+        caller_users: 1,
+      }),
+      group({
+        config_source: "db-free",
+        users: 1,
+        site_caller_users: 1,
+        caller_users: 1,
+      }),
+      group({
+        call_site: "refine-prompt",
+        users: 1,
+        site_caller_users: 1,
+        caller_users: 1,
+      }),
+    ];
+    const summary = summarizeUsage(rows, []);
+    const coach = summary.call_sites.find(
+      (s) => s.call_site === "prompt-coach",
+    )!;
+    assertEquals(coach.by_caller[0].users, 1);
+    assertEquals(summary.by_caller[0].users, 1);
+  },
+);
 
 Deno.test(
   "summarizeUsage: rows for one call site collapse into a single entry",

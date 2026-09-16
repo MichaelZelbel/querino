@@ -115,6 +115,41 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
     });
   };
 
+  // Filter by category and tag. A slug nobody has is an empty page, not the
+  // whole unfiltered list, which is what an ignored filter used to hand back.
+  let categoryId: string | null = null;
+  if (categorySlug) {
+    const { data: category, error: catErr } = await supabase
+      .from("blog_categories")
+      .select("id")
+      .eq("slug", categorySlug)
+      .maybeSingle();
+    if (catErr) return lookupFailed("category", catErr);
+    if (!category) return emptyPage();
+    categoryId = category.id;
+  }
+
+  let tagId: string | null = null;
+  if (tagSlug) {
+    const { data: tag, error: tagErr } = await supabase
+      .from("blog_tags")
+      .select("id")
+      .eq("slug", tagSlug)
+      .maybeSingle();
+    if (tagErr) return lookupFailed("tag", tagErr);
+    if (!tag) return emptyPage();
+    tagId = tag.id;
+  }
+
+  // The filters are inner joins in the one query. Until 2026-09-16 each read
+  // its whole link table unpaged (PostgREST stops at 1,000 rows) and pasted
+  // every post id into an `in` list, which a big category turns into a URL
+  // too long to send. The join filters in the database and counts correctly.
+  const joins = [
+    categoryId ? "filter_category:blog_post_categories!inner(category_id)" : "",
+    tagId ? "filter_tag:blog_post_tags!inner(tag_id)" : "",
+  ].filter(Boolean);
+
   let query = supabase
     .from("blog_posts")
     .select(
@@ -131,7 +166,7 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
       seo_description,
       og_image_url,
       author:profiles!blog_posts_author_id_fkey(id, display_name, avatar_url),
-      featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text, width, height)
+      featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text, width, height)${joins.length ? ",\n      " + joins.join(",\n      ") : ""}
     `,
       { count: "exact" },
     )
@@ -139,48 +174,8 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
     .order("published_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  // Filter by category. A slug nobody has is an empty page, not the whole
-  // unfiltered list, which is what an ignored filter used to hand back.
-  if (categorySlug) {
-    const { data: category, error: catErr } = await supabase
-      .from("blog_categories")
-      .select("id")
-      .eq("slug", categorySlug)
-      .maybeSingle();
-    if (catErr) return lookupFailed("category", catErr);
-    if (!category) return emptyPage();
-
-    const { data: postIds, error: linkErr } = await supabase
-      .from("blog_post_categories")
-      .select("post_id")
-      .eq("category_id", category.id);
-    if (linkErr) return lookupFailed("category posts", linkErr);
-
-    const ids = postIds?.map((p: any) => p.post_id) || [];
-    if (ids.length === 0) return emptyPage();
-    query = query.in("id", ids);
-  }
-
-  // Filter by tag, same rules as the category filter.
-  if (tagSlug) {
-    const { data: tag, error: tagErr } = await supabase
-      .from("blog_tags")
-      .select("id")
-      .eq("slug", tagSlug)
-      .maybeSingle();
-    if (tagErr) return lookupFailed("tag", tagErr);
-    if (!tag) return emptyPage();
-
-    const { data: postIds, error: linkErr } = await supabase
-      .from("blog_post_tags")
-      .select("post_id")
-      .eq("tag_id", tag.id);
-    if (linkErr) return lookupFailed("tag posts", linkErr);
-
-    const ids = postIds?.map((p: any) => p.post_id) || [];
-    if (ids.length === 0) return emptyPage();
-    query = query.in("id", ids);
-  }
+  if (categoryId) query = query.eq("filter_category.category_id", categoryId);
+  if (tagId) query = query.eq("filter_tag.tag_id", tagId);
 
   const { data, error, count } = await query;
 
@@ -227,11 +222,14 @@ async function handleGetPosts(supabase: any, params: URLSearchParams) {
     }
   }
 
-  const enrichedPosts = posts.map((post) => ({
-    ...post,
-    categories: categoriesByPost.get(post.id) ?? [],
-    tags: tagsByPost.get(post.id) ?? [],
-  }));
+  // The filter joins exist only to filter; they are not part of a post.
+  const enrichedPosts = posts.map(
+    ({ filter_category: _category, filter_tag: _tag, ...post }) => ({
+      ...post,
+      categories: categoriesByPost.get(post.id) ?? [],
+      tags: tagsByPost.get(post.id) ?? [],
+    }),
+  );
 
   return new Response(
     JSON.stringify({

@@ -16,7 +16,8 @@ export function useCollections(userId?: string) {
         .select(
           `
           *,
-          profiles:owner_id (id, display_name, avatar_url)
+          profiles:owner_id (id, display_name, avatar_url),
+          collection_items (count)
         `,
         )
         .order("created_at", { ascending: false });
@@ -30,23 +31,16 @@ export function useCollections(userId?: string) {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Get item counts for each collection
-      const collectionsWithCounts = await Promise.all(
-        (data || []).map(async (collection) => {
-          const { count } = await supabase
-            .from("collection_items")
-            .select("*", { count: "exact", head: true })
-            .eq("collection_id", collection.id);
-
-          return {
-            ...collection,
-            owner: collection.profiles,
-            item_count: count || 0,
-          } as CollectionWithOwner;
-        }),
-      );
-
-      return collectionsWithCounts;
+      // The count comes embedded in the same request. Until 2026-09-16 this
+      // issued one extra count query per collection.
+      return (data || []).map((collection) => {
+        const { collection_items, ...rest } = collection;
+        return {
+          ...rest,
+          owner: collection.profiles,
+          item_count: collection_items?.[0]?.count ?? 0,
+        } as CollectionWithOwner;
+      });
     },
   });
 }
@@ -153,6 +147,32 @@ export function useCollectionItemDetails(items: CollectionItem[] | undefined) {
       return details;
     },
     enabled: !!items && items.length > 0,
+  });
+}
+
+/**
+ * The caller's own rows of one item type, id and title only, for the "add to
+ * collection" picker. Until 2026-09-16 CollectionEdit loaded the whole visible
+ * skills and workflows catalogues (every column) and filtered by author in the
+ * browser.
+ */
+export function useOwnItemsForPicker(
+  itemType: CollectionItem["item_type"],
+  userId: string | undefined,
+) {
+  const table = ITEM_TABLES[itemType];
+  return useQuery({
+    queryKey: ["collection-picker-items", itemType, userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(table as never)
+        .select("id, title")
+        .eq("author_id", userId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; title: string }[];
+    },
+    enabled: !!userId && !!table,
   });
 }
 

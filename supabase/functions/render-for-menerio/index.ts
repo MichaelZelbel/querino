@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
 import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
+import { readMenerioApiKey } from "../_shared/menerioKey.ts";
 
 // The sync button waits on this call; a Menerio that never answers used to
 // hold the browser until the platform killed the function.
@@ -82,20 +83,28 @@ async function handleSync(
 
   // 1. Load Menerio integration settings. The service client has no
   // Database type, so supabase-js resolves the row to `never`; naming the
-  // three columns this function reads is what makes them readable.
+  // columns this function reads is what makes them readable. The key is not
+  // one of them: it lives in Vault and is read below.
   const { data: integrationRow, error: intErr } = await adminClient
     .from("menerio_integration")
-    .select("id, menerio_base_url, menerio_api_key")
+    .select("id, menerio_base_url")
     .eq("user_id", userId)
     .eq("is_active", true)
     .maybeSingle();
   const integration = integrationRow as {
     id: string;
     menerio_base_url: string;
-    menerio_api_key: string;
   } | null;
 
   if (intErr || !integration) {
+    return json({ error: "Keine aktive Menerio-Integration" }, 400);
+  }
+
+  let menerioApiKey: string;
+  try {
+    menerioApiKey = await readMenerioApiKey(adminClient, userId);
+  } catch (keyErr) {
+    console.error("[render-for-menerio] key lookup failed:", keyErr);
     return json({ error: "Keine aktive Menerio-Integration" }, 400);
   }
 
@@ -188,7 +197,7 @@ async function handleSync(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": integration.menerio_api_key,
+        "x-api-key": menerioApiKey,
       },
       body: JSON.stringify(notePayload),
       signal: AbortSignal.timeout(MENERIO_TIMEOUT_MS),

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
+import { draftUrl } from "@/lib/draftHandoff";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -90,19 +91,6 @@ export function ImportMarkdownButton({
   };
 
   const navigateToCreate = (parsed: ParsedMarkdown) => {
-    const params = new URLSearchParams();
-    params.set("title", parsed.frontmatter.title);
-    if (parsed.frontmatter.description) {
-      params.set("description", parsed.frontmatter.description);
-    }
-    if (parsed.frontmatter.tags && parsed.frontmatter.tags.length > 0) {
-      params.set("tags", parsed.frontmatter.tags.join(","));
-    }
-    if (parsed.frontmatter.framework) {
-      params.set("framework", parsed.frontmatter.framework);
-    }
-    params.set("content", parsed.content);
-
     const routes: Record<ArtefactType, string> = {
       prompt: "/prompts/new",
       skill: "/skills/new",
@@ -110,7 +98,16 @@ export function ImportMarkdownButton({
       prompt_kit: "/prompt-kits/new",
     };
 
-    navigate(`${routes[type]}?${params.toString()}`);
+    // The body goes through sessionStorage, not ?content= (see draftHandoff).
+    navigate(
+      draftUrl(routes[type], {
+        title: parsed.frontmatter.title,
+        description: parsed.frontmatter.description,
+        tags: parsed.frontmatter.tags?.join(","),
+        framework: parsed.frontmatter.framework,
+        content: parsed.content,
+      }),
+    );
     toast.success("Markdown imported! Review and save your artefact.");
   };
 

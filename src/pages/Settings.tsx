@@ -193,9 +193,15 @@ export default function Settings() {
           .single();
 
         // Existence only — see the note in loadGithubSettings above.
+        // Scoped to the caller: saving upserts on (user_id, credential_type,
+        // team_id), so each teammate has their own row. Until 2026-09-16 there
+        // was no user_id filter, and a second visible row made maybeSingle
+        // error and the field show empty.
+        if (!user) return;
         const { data: credentialData } = await supabase
           .from("user_credentials")
           .select("id")
+          .eq("user_id", user.id)
           .eq("credential_type", "github_token")
           .eq("team_id", teamData.id)
           .maybeSingle();
@@ -205,7 +211,7 @@ export default function Settings() {
       };
       loadTeamToken();
     }
-  }, [teamData]);
+  }, [teamData, user]);
 
   // Active section observer
   useEffect(() => {

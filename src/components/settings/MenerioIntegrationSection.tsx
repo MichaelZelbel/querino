@@ -63,9 +63,13 @@ export function MenerioIntegrationSection() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+      // Never the key: since 2026-09-16 it lives in Vault and the browser can
+      // write it but not read it back. The display name is stored at connect.
       const { data, error } = await supabase
         .from("menerio_integration" as any)
-        .select("*")
+        .select(
+          "id, auto_sync, sync_artifact_types, is_active, last_sync_at, menerio_display_name",
+        )
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -84,27 +88,11 @@ export function MenerioIntegrationSection() {
         setIsActive(d.is_active ?? true);
         setLastSyncAt(d.last_sync_at || null);
         setIsConnected(true);
-        // Re-verify to get display name
-        verifyExistingConnection(d.menerio_api_key);
+        setConnectedDisplayName(d.menerio_display_name || null);
       }
       setLoading(false);
     })();
   }, [user]);
-
-  const verifyExistingConnection = async (apiKey: string) => {
-    try {
-      const res = await fetch(`${MENERIO_BASE_URL}/verify-connection`, {
-        method: "POST",
-        headers: { "x-api-key": apiKey },
-      });
-      const json = await res.json();
-      if (json.ok) {
-        setConnectedDisplayName(json.user_display_name || null);
-      }
-    } catch {
-      // Silent — we already have the integration saved
-    }
-  };
 
   const handleConnect = async () => {
     if (!user || !connectionKey.trim()) {
@@ -130,6 +118,7 @@ export function MenerioIntegrationSection() {
       const payload = {
         user_id: user.id,
         menerio_api_key: connectionKey.trim(),
+        menerio_display_name: json.user_display_name || null,
         menerio_base_url: MENERIO_BASE_URL,
         auto_sync: autoSync,
         sync_artifact_types: syncTypes,

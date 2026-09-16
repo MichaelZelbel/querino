@@ -18,10 +18,12 @@
 
 // The two callers create their clients from different pinned versions of
 // supabase-js, which TypeScript treats as unrelated types. All this module
-// needs is `.from()`, so that is all it asks for.
+// needs is `.from()` and `.rpc()`, so that is all it asks for.
 export interface ServiceClient {
   // deno-lint-ignore no-explicit-any
   from(table: string): any;
+  // deno-lint-ignore no-explicit-any
+  rpc(fn: string, args: Record<string, unknown>): any;
 }
 
 /** Rows removed (or, for the one unlink, updated) per table, in run order. */
@@ -104,10 +106,17 @@ export async function deleteUserRows(
     "ai_allowance_periods",
     del("ai_allowance_periods").eq("user_id", userId),
   );
-  await mustSucceed(
-    "llm_usage_events",
-    del("llm_usage_events").eq("user_id", userId),
-  );
+  // The one exception to deleting: the LLM ledger records what the platform
+  // spent, so its rows stay, with no user and metadata.account_deleted set
+  // (migration 20260916150000, section G). Until 2026-09-16 they were deleted,
+  // and the spend history shrank every time someone left.
+  {
+    const { data, error } = await serviceClient.rpc("detach_llm_usage_ledger", {
+      p_user_id: userId,
+    });
+    if (error) throw new Error(`llm_usage_events (detach): ${error.message}`);
+    summary["llm_usage_events (detached)"] = Number(data ?? 0);
+  }
 
   // Collection items for the user's collections first, then the collections.
   const collectionIds = await idsOf("collections", "owner_id", userId);

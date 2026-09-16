@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCallerUserId } from "../_shared/llm.ts";
+import { readMenerioApiKey } from "../_shared/menerioKey.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,13 +92,29 @@ Deno.serve(async (req) => {
     // Get the user's Menerio API key + registered base URL
     const { data: integration, error: integrationError } = await supabase
       .from("menerio_integration")
-      .select("menerio_api_key, menerio_base_url")
+      .select("menerio_base_url")
       .eq("user_id", user_id)
       .eq("is_active", true)
       .maybeSingle();
 
     if (integrationError || !integration) {
       console.error("Menerio integration lookup failed:", integrationError);
+      return new Response(
+        JSON.stringify({
+          error: "No active Menerio connection found for this user",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    let menerioApiKey: string;
+    try {
+      menerioApiKey = await readMenerioApiKey(supabase, user_id);
+    } catch (keyErr) {
+      console.error("Menerio key lookup failed:", keyErr);
       return new Response(
         JSON.stringify({
           error: "No active Menerio connection found for this user",
@@ -175,7 +192,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": integration.menerio_api_key,
+        "x-api-key": menerioApiKey,
       },
       body: JSON.stringify({
         menerio_note_id,

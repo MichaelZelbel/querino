@@ -1,5 +1,10 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { buildProviderRequest } from "./llm.ts";
+import {
+  buildProviderRequest,
+  estimateReservation,
+  MIN_RESERVATION_TOKENS,
+  MAX_OUTPUT_RESERVATION_TOKENS,
+} from "./llm.ts";
 import type { EffectiveConfig } from "./llm-config.ts";
 
 const CONFIG: EffectiveConfig = {
@@ -68,3 +73,39 @@ Deno.test(
     });
   },
 );
+
+Deno.test("estimateReservation never reserves less than the floor", () => {
+  assertEquals(
+    estimateReservation([{ role: "user", content: "hi" }], 10),
+    MIN_RESERVATION_TOKENS,
+  );
+});
+
+Deno.test(
+  "estimateReservation grows with the input, one token per three characters",
+  () => {
+    const content = "x".repeat(30_000);
+    assertEquals(
+      estimateReservation([{ role: "user", content }], 500),
+      10_000 + 500,
+    );
+  },
+);
+
+Deno.test(
+  "estimateReservation holds a large max_tokens only up to its cap",
+  () => {
+    const content = "x".repeat(9_000);
+    assertEquals(
+      estimateReservation([{ role: "user", content }], 64_000),
+      3_000 + MAX_OUTPUT_RESERVATION_TOKENS,
+    );
+  },
+);
+
+Deno.test("estimateReservation counts tool definitions as input", () => {
+  const tools = [{ description: "y".repeat(12_000) }];
+  const withTools = estimateReservation([], 1000, tools);
+  const without = estimateReservation([], 1000);
+  assertEquals(withTools > without, true);
+});

@@ -55,10 +55,9 @@ import {
   useRemoveFromCollection,
   useUpdateItemOrder,
   useCollectionItemDetails,
+  useOwnItemsForPicker,
 } from "@/hooks/useCollections";
 import { useMyPrompts } from "@/hooks/usePrompts";
-import { useSkills } from "@/hooks/useSkills";
-import { useWorkflows } from "@/hooks/useWorkflows";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -80,8 +79,8 @@ export default function CollectionEdit() {
   // The picker lists the owner's own prompts, private ones included. The public
   // catalogue hook filtered on is_public, so private prompts could not be added.
   const { data: myPrompts } = useMyPrompts(user?.id);
-  const { data: skills } = useSkills();
-  const { data: workflows } = useWorkflows();
+  const { data: mySkills } = useOwnItemsForPicker("skill", user?.id);
+  const { data: myWorkflows } = useOwnItemsForPicker("workflow", user?.id);
   // Items already in the collection are resolved by id, whatever their
   // visibility; the public catalogue showed private ones as "Unknown".
   const { data: itemDetails } = useCollectionItemDetails(items);
@@ -165,9 +164,8 @@ export default function CollectionEdit() {
 
   // Get user's artefacts for adding
   const userPrompts = myPrompts || [];
-  const userSkills = skills?.filter((s) => s.author_id === user?.id) || [];
-  const userWorkflows =
-    workflows?.filter((w) => w.author_id === user?.id) || [];
+  const userSkills = mySkills || [];
+  const userWorkflows = myWorkflows || [];
 
   const getAvailableItems = () => {
     const existingIds = new Set(items?.map((i) => i.item_id) || []);

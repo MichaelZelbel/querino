@@ -10,6 +10,10 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIKE_THRESHOLD = 5;
+// One blocked item earns one strike per this window, however often it is
+// retried. Until 2026-09-16 every retry of the same prompt was a strike, so
+// five attempts at saving one prompt suspended the account.
+const STRIKE_DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // The item types this endpoint accepts alongside an item_id. The four artifact
 // types have an owner and only that owner may file them for AI review, because
@@ -198,14 +202,15 @@ Deno.serve(async (req: Request) => {
       if (!matchedCategory) matchedCategory = hit.category || "general";
     }
 
-    // 5. PII detection (on original text, not normalized)
+    // 5. PII detection (on original text, not normalized). A hit no longer
+    // blocks or strikes: the patterns match any email address and any nine or
+    // ten digit number, which a prompt template or a code sample contains
+    // routinely. It is logged and sent to the AI review instead, which reads
+    // the context the regex cannot.
     const piiResult = detectPII(allText);
-    if (piiResult.found) {
-      matchedWords.push(...piiResult.matches);
-      if (!matchedCategory) matchedCategory = "pii";
-    }
 
     const isBlocked = matchedWords.length > 0;
+    const piiOnly = !isBlocked && piiResult.found;
 
     // 6. Log moderation event. supabase-js reports a failed insert in
     // `error` and never throws, so the outer try/catch would never see it.
@@ -216,10 +221,15 @@ Deno.serve(async (req: Request) => {
         action,
         item_type,
         item_id: item_id || null,
-        flagged_content: isBlocked ? allText.substring(0, 500) : null,
-        matched_words: isBlocked ? matchedWords : null,
-        category: matchedCategory || null,
-        result: isBlocked ? "blocked" : "cleared",
+        flagged_content:
+          isBlocked || piiOnly ? allText.substring(0, 500) : null,
+        matched_words: isBlocked
+          ? matchedWords
+          : piiOnly
+            ? piiResult.matches
+            : null,
+        category: matchedCategory || (piiOnly ? "pii" : null),
+        result: isBlocked ? "blocked" : piiOnly ? "queued" : "cleared",
         tier: "stopword",
       });
     if (eventErr) {
@@ -227,14 +237,40 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. If blocked, increment strike count. One statement in the database,
-    // so two blocked submissions landing at once cannot lose a strike.
+    // so two blocked submissions landing at once cannot lose a strike. Not
+    // when this same item (or, before it has an id, this same text) was
+    // already blocked for this user inside the window.
     if (isBlocked) {
-      const { error: strikeErr } = await serviceClient.rpc(
-        "increment_user_strike",
-        { p_user_id: user.id, p_threshold: STRIKE_THRESHOLD },
-      );
-      if (strikeErr) {
-        console.error("Failed to record strike:", strikeErr);
+      const since = new Date(
+        Date.now() - STRIKE_DEDUPE_WINDOW_MS,
+      ).toISOString();
+      let earlier = serviceClient
+        .from("moderation_events")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("item_type", item_type)
+        .eq("result", "blocked")
+        .gte("created_at", since);
+      earlier = item_id
+        ? earlier.eq("item_id", item_id)
+        : earlier
+            .is("item_id", null)
+            .eq("flagged_content", allText.substring(0, 500));
+      const { count: blockedBefore, error: dedupeErr } = await earlier;
+      if (dedupeErr) {
+        console.error("Failed to check for an earlier strike:", dedupeErr);
+      }
+      // The event logged a few lines up is one of them.
+      const alreadyStruck = !dedupeErr && (blockedBefore ?? 0) > 1;
+
+      if (!alreadyStruck) {
+        const { error: strikeErr } = await serviceClient.rpc(
+          "increment_user_strike",
+          { p_user_id: user.id, p_threshold: STRIKE_THRESHOLD },
+        );
+        if (strikeErr) {
+          console.error("Failed to record strike:", strikeErr);
+        }
       }
 
       const categoryLabels: Record<string, string> = {
@@ -262,7 +298,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 8. Queue for async AI review (Tier 2) if content passed Tier 1
+    // 8. Queue for async AI review (Tier 2) if content passed Tier 1. Since
+    // 2026-09-16 the database also files a row whenever an artifact goes
+    // public or changes while public, and one pending row per item is
+    // enforced by a unique index, so a duplicate here is expected and quiet.
     if (item_id) {
       try {
         // A failed insert comes back in `error`, not as a throw.
@@ -275,7 +314,7 @@ Deno.serve(async (req: Request) => {
             content_snapshot: allText.substring(0, 5000),
             status: "pending",
           });
-        if (queueErr) {
+        if (queueErr && queueErr.code !== "23505") {
           console.warn("Failed to queue for AI review:", queueErr);
         }
       } catch (queueErr) {

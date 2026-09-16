@@ -25,6 +25,16 @@
 //
 // Which is why this is no longer admin-only: pg_cron reaches it with
 // X-Internal-Key and no bearer token at all.
+//
+// A ROW THAT CANNOT BE EMBEDDED IS RETIRED (16 September 2026)
+//
+// A row the provider refuses for its own text (empty, or too many tokens) used
+// to be reclaimed every two minutes, for ever. Each such failure now costs the
+// row one of MAX_EMBEDDING_ATTEMPTS, recorded with the error by
+// record_embedding_failure, and a row that has used them all is no longer
+// selected. A failure that says nothing about the text (no credit, a rate
+// limit, a timeout) is recorded but costs no attempt, so an outage cannot
+// retire the backlog. Editing the text resets the count.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getServiceClient } from "../_shared/llm.ts";
@@ -36,7 +46,11 @@ import {
   createEmbedding,
   embeddableText,
   embeddingProviders,
+  NoEmbeddingProviderError,
 } from "../_shared/embeddings.ts";
+
+/** After this many failures that blame the text, a row is left alone. */
+const MAX_EMBEDDING_ATTEMPTS = 5;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,13 +135,18 @@ Deno.serve(async (req) => {
       : TABLES;
 
     // 4. Count missing per table
-    const counts: Record<string, { missing: number }> = {};
+    const counts: Record<string, { missing: number; retired: number }> = {};
     for (const cfg of TABLES) {
       const { count } = await sb
         .from(cfg.table)
         .select("id", { count: "exact", head: true })
         .is("embedding", null);
-      counts[cfg.itemType] = { missing: count ?? 0 };
+      const { count: retired } = await sb
+        .from(cfg.table)
+        .select("id", { count: "exact", head: true })
+        .is("embedding", null)
+        .gte("embedding_attempts", MAX_EMBEDDING_ATTEMPTS);
+      counts[cfg.itemType] = { missing: count ?? 0, retired: retired ?? 0 };
     }
 
     if (dryRun) {
@@ -210,6 +229,7 @@ Deno.serve(async (req) => {
         .from(cfg.table)
         .select(selectCols)
         .is("embedding", null)
+        .lt("embedding_attempts", MAX_EMBEDDING_ATTEMPTS)
         .or(claimable)
         .order(cfg.publishedColumn, { ascending: false })
         .order("updated_at", { ascending: false })
@@ -230,6 +250,7 @@ Deno.serve(async (req) => {
           .update({ updated_at: new Date().toISOString() })
           .eq("id", row.id)
           .is("embedding", null)
+          .lt("embedding_attempts", MAX_EMBEDDING_ATTEMPTS)
           .or(claimable)
           .select("id");
         if (claimErr) {
@@ -252,6 +273,7 @@ Deno.serve(async (req) => {
           r.failed++;
           if (r.errors.length < errorsCap)
             r.errors.push(`${row.id}: empty text`);
+          await recordFailure(sb, cfg.itemType, row.id, "empty text", true);
           continue;
         }
 
@@ -270,6 +292,13 @@ Deno.serve(async (req) => {
             r.failed++;
             if (r.errors.length < errorsCap)
               r.errors.push(`${row.id}: update_embedding ${updErr.message}`);
+            await recordFailure(
+              sb,
+              cfg.itemType,
+              row.id,
+              `update_embedding: ${updErr.message}`,
+              false,
+            );
             continue;
           }
 
@@ -302,6 +331,13 @@ Deno.serve(async (req) => {
           r.failed++;
           if (r.errors.length < errorsCap)
             r.errors.push(`${row.id}: ${String(e).slice(0, 120)}`);
+          await recordFailure(
+            sb,
+            cfg.itemType,
+            row.id,
+            String(e),
+            e instanceof NoEmbeddingProviderError && e.rowFault,
+          );
         }
       }
     }
@@ -332,6 +368,31 @@ Deno.serve(async (req) => {
     return json({ error: "Internal error", details: String(e) }, 500);
   }
 });
+
+/**
+ * Write a failure onto the row. Best-effort: if this write fails the row is
+ * simply tried again next tick, which is what happened before it existed.
+ */
+async function recordFailure(
+  sb: ReturnType<typeof getServiceClient>,
+  itemType: ItemType,
+  itemId: unknown,
+  message: string,
+  counts: boolean,
+): Promise<void> {
+  const { error } = await sb.rpc("record_embedding_failure", {
+    p_item_type: itemType,
+    p_item_id: itemId,
+    p_error: message.slice(0, 500),
+    p_counts: counts,
+  });
+  if (error) {
+    console.error(
+      `[backfill-embeddings] record_embedding_failure ${itemType} ${itemId}:`,
+      error,
+    );
+  }
+}
 
 /**
  * The user id behind a bearer token, or null if there is not one.

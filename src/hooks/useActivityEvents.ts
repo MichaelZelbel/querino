@@ -8,10 +8,19 @@ interface UseActivityEventsOptions {
   itemId?: string;
   itemType?: string;
   limit?: number;
+  /** Hold the query until the caller's own checks pass (default true). */
+  enabled?: boolean;
 }
 
 export function useActivityEvents(options: UseActivityEventsOptions = {}) {
-  const { teamId, actorId, itemId, itemType, limit = 20 } = options;
+  const {
+    teamId,
+    actorId,
+    itemId,
+    itemType,
+    limit = 20,
+    enabled = true,
+  } = options;
 
   return useInfiniteQuery({
     queryKey: ["activity-events", teamId, actorId, itemId, itemType],
@@ -53,6 +62,7 @@ export function useActivityEvents(options: UseActivityEventsOptions = {}) {
       return allPages.length * limit;
     },
     initialPageParam: 0,
+    enabled,
   });
 }
 

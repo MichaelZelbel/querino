@@ -15,7 +15,12 @@ export default function TeamActivity() {
   const { data: userRole, isLoading: roleLoading } = useCurrentUserTeamRole(id);
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
-    useActivityEvents({ teamId: id });
+    useActivityEvents({
+      teamId: id,
+      // Until 2026-09-16 the feed was requested before the membership check
+      // had answered; now it waits for a confirmed role in this team.
+      enabled: !!id && !roleLoading && !!userRole,
+    });
 
   const events = data?.pages.flat() || [];
 

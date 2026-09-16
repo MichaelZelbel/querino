@@ -72,7 +72,9 @@ export function VersionDetailView({
 
           <div className="space-y-1.5">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Prompt Content
+              {/* Plain "Content": this view also serves skills, workflows and
+                  prompt kits, and said "Prompt Content" for all of them. */}
+              Content
             </h4>
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <pre className="whitespace-pre-wrap font-mono text-sm text-foreground">

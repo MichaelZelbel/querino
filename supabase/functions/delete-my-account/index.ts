@@ -27,8 +27,10 @@ async function cancelStripeSubscriptions(email: string): Promise<void> {
     try {
       const stripe = new Stripe(key, { apiVersion: "2025-08-27.basil" });
 
-      // Find customer by email
-      const customers = await stripe.customers.list({ email, limit: 1 });
+      // Every customer with this email. Stripe does not keep emails unique,
+      // and until 2026-09-16 only the first one was found, so a second
+      // customer's subscription kept billing a deleted account.
+      const customers = await stripe.customers.list({ email, limit: 100 });
       if (customers.data.length === 0) {
         console.log(
           `delete-my-account - No Stripe ${mode} customer found for ${email}`,
@@ -36,35 +38,37 @@ async function cancelStripeSubscriptions(email: string): Promise<void> {
         continue;
       }
 
-      const customerId = customers.data[0].id;
-      console.log(
-        `delete-my-account - Found Stripe ${mode} customer: ${customerId}`,
-      );
-
-      // Get all active subscriptions
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "active",
-        limit: 100,
-      });
-
-      console.log(
-        `delete-my-account - Found ${subscriptions.data.length} active ${mode} subscriptions`,
-      );
-
-      // Cancel each subscription
-      for (const subscription of subscriptions.data) {
-        await stripe.subscriptions.cancel(subscription.id);
+      for (const customer of customers.data) {
+        const customerId = customer.id;
         console.log(
-          `delete-my-account - Cancelled ${mode} subscription: ${subscription.id}`,
+          `delete-my-account - Found Stripe ${mode} customer: ${customerId}`,
+        );
+
+        // Get all active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 100,
+        });
+
+        console.log(
+          `delete-my-account - Found ${subscriptions.data.length} active ${mode} subscriptions`,
+        );
+
+        // Cancel each subscription
+        for (const subscription of subscriptions.data) {
+          await stripe.subscriptions.cancel(subscription.id);
+          console.log(
+            `delete-my-account - Cancelled ${mode} subscription: ${subscription.id}`,
+          );
+        }
+
+        // Delete the Stripe customer to remove all payment data
+        await stripe.customers.del(customerId);
+        console.log(
+          `delete-my-account - Deleted Stripe ${mode} customer: ${customerId}`,
         );
       }
-
-      // Optionally delete the Stripe customer to remove all payment data
-      await stripe.customers.del(customerId);
-      console.log(
-        `delete-my-account - Deleted Stripe ${mode} customer: ${customerId}`,
-      );
     } catch (error) {
       console.error(
         `delete-my-account - Error handling Stripe ${mode}:`,

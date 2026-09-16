@@ -874,6 +874,7 @@ export default function WorkflowEdit() {
           }}
           onRestoreComplete={handleRestoreComplete}
           tableConfig={WORKFLOW_VERSIONS_CONFIG}
+          artifactLabel="workflow"
         />
       )}
     </div>
