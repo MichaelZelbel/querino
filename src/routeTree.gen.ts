@@ -33,10 +33,13 @@ import { Route as CollectionsNewRouteImport } from './routes/collections/new'
 import { Route as LibraryIndexRouteImport } from './routes/library/index'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as PromptKitsNewRouteImport } from './routes/prompt-kits/new'
+import { Route as PromptsIndexRouteImport } from './routes/prompts/index'
 import { Route as PromptsNewRouteImport } from './routes/prompts/new'
 import { Route as PromptsWizardRouteImport } from './routes/prompts/wizard'
+import { Route as SkillsIndexRouteImport } from './routes/skills/index'
 import { Route as SkillsNewRouteImport } from './routes/skills/new'
 import { Route as TeamJoinRouteImport } from './routes/team/join'
+import { Route as WorkflowsIndexRouteImport } from './routes/workflows/index'
 import { Route as WorkflowsNewRouteImport } from './routes/workflows/new'
 import { Route as BlogAdminIndexRouteImport } from './routes/blog/admin/index'
 import { Route as BlogAdminCategoriesRouteImport } from './routes/blog/admin/categories'
@@ -184,6 +187,11 @@ const PromptKitsNewRoute = PromptKitsNewRouteImport.update({
   path: '/prompt-kits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PromptsIndexRoute = PromptsIndexRouteImport.update({
+  id: '/prompts/',
+  path: '/prompts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PromptsNewRoute = PromptsNewRouteImport.update({
   id: '/prompts/new',
   path: '/prompts/new',
@@ -194,6 +202,11 @@ const PromptsWizardRoute = PromptsWizardRouteImport.update({
   path: '/prompts/wizard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SkillsIndexRoute = SkillsIndexRouteImport.update({
+  id: '/skills/',
+  path: '/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SkillsNewRoute = SkillsNewRouteImport.update({
   id: '/skills/new',
   path: '/skills/new',
@@ -202,6 +215,11 @@ const SkillsNewRoute = SkillsNewRouteImport.update({
 const TeamJoinRoute = TeamJoinRouteImport.update({
   id: '/team/join',
   path: '/team/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkflowsIndexRoute = WorkflowsIndexRouteImport.update({
+  id: '/workflows/',
+  path: '/workflows/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkflowsNewRoute = WorkflowsNewRouteImport.update({
@@ -365,6 +383,9 @@ export interface FileRoutesByFullPath {
   '/blog/': typeof BlogIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/library/': typeof LibraryIndexRoute
+  '/prompts/': typeof PromptsIndexRoute
+  '/skills/': typeof SkillsIndexRoute
+  '/workflows/': typeof WorkflowsIndexRoute
   '/blog/admin/categories': typeof BlogAdminCategoriesRoute
   '/blog/admin/media': typeof BlogAdminMediaRoute
   '/blog/admin/tags': typeof BlogAdminTagsRoute
@@ -421,6 +442,9 @@ export interface FileRoutesByTo {
   '/blog': typeof BlogIndexRoute
   '/collections': typeof CollectionsIndexRoute
   '/library': typeof LibraryIndexRoute
+  '/prompts': typeof PromptsIndexRoute
+  '/skills': typeof SkillsIndexRoute
+  '/workflows': typeof WorkflowsIndexRoute
   '/blog/admin/categories': typeof BlogAdminCategoriesRoute
   '/blog/admin/media': typeof BlogAdminMediaRoute
   '/blog/admin/tags': typeof BlogAdminTagsRoute
@@ -478,6 +502,9 @@ export interface FileRoutesById {
   '/blog/': typeof BlogIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/library/': typeof LibraryIndexRoute
+  '/prompts/': typeof PromptsIndexRoute
+  '/skills/': typeof SkillsIndexRoute
+  '/workflows/': typeof WorkflowsIndexRoute
   '/blog/admin/categories': typeof BlogAdminCategoriesRoute
   '/blog/admin/media': typeof BlogAdminMediaRoute
   '/blog/admin/tags': typeof BlogAdminTagsRoute
@@ -536,6 +563,9 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/collections/'
     | '/library/'
+    | '/prompts/'
+    | '/skills/'
+    | '/workflows/'
     | '/blog/admin/categories'
     | '/blog/admin/media'
     | '/blog/admin/tags'
@@ -592,6 +622,9 @@ export interface FileRouteTypes {
     | '/blog'
     | '/collections'
     | '/library'
+    | '/prompts'
+    | '/skills'
+    | '/workflows'
     | '/blog/admin/categories'
     | '/blog/admin/media'
     | '/blog/admin/tags'
@@ -648,6 +681,9 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/collections/'
     | '/library/'
+    | '/prompts/'
+    | '/skills/'
+    | '/workflows/'
     | '/blog/admin/categories'
     | '/blog/admin/media'
     | '/blog/admin/tags'
@@ -705,6 +741,9 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   CollectionsIndexRoute: typeof CollectionsIndexRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
+  PromptsIndexRoute: typeof PromptsIndexRoute
+  SkillsIndexRoute: typeof SkillsIndexRoute
+  WorkflowsIndexRoute: typeof WorkflowsIndexRoute
   BlogAdminCategoriesRoute: typeof BlogAdminCategoriesRoute
   BlogAdminMediaRoute: typeof BlogAdminMediaRoute
   BlogAdminTagsRoute: typeof BlogAdminTagsRoute
@@ -902,6 +941,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PromptKitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prompts/': {
+      id: '/prompts/'
+      path: '/prompts'
+      fullPath: '/prompts/'
+      preLoaderRoute: typeof PromptsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prompts/new': {
       id: '/prompts/new'
       path: '/prompts/new'
@@ -916,6 +962,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PromptsWizardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/skills/': {
+      id: '/skills/'
+      path: '/skills'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof SkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/skills/new': {
       id: '/skills/new'
       path: '/skills/new'
@@ -928,6 +981,13 @@ declare module '@tanstack/react-router' {
       path: '/team/join'
       fullPath: '/team/join'
       preLoaderRoute: typeof TeamJoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workflows/': {
+      id: '/workflows/'
+      path: '/workflows'
+      fullPath: '/workflows/'
+      preLoaderRoute: typeof WorkflowsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workflows/new': {
@@ -1145,6 +1205,9 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   CollectionsIndexRoute: CollectionsIndexRoute,
   LibraryIndexRoute: LibraryIndexRoute,
+  PromptsIndexRoute: PromptsIndexRoute,
+  SkillsIndexRoute: SkillsIndexRoute,
+  WorkflowsIndexRoute: WorkflowsIndexRoute,
   BlogAdminCategoriesRoute: BlogAdminCategoriesRoute,
   BlogAdminMediaRoute: BlogAdminMediaRoute,
   BlogAdminTagsRoute: BlogAdminTagsRoute,

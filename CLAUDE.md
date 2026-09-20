@@ -52,7 +52,25 @@ npm run check      # Migrations, lint ratchet, Deno type ratchet (runs on every 
 npm run test:unit  # Deno unit tests for supabase/functions/_shared
 npm test           # Security test suite against the deployed project (tests/security/, see its README)
 npm run preview    # Preview production build
+node scripts/check-public-pages.mjs [origin]   # Outside check: is the text in the first response? (default https://querino.ai)
 ```
+
+## Going live: a push is not a publish
+
+A push to `main` syncs the code to Lovable and rebuilds the **preview** only. querino.ai
+keeps serving the last published build until somebody publishes the Lovable project
+(the Publish button in the Lovable editor). Measured twice: 2026-08-24, and again on
+2026-09-20, when the server-render fix of 2026-09-16 turned out never to have reached
+production (the live bundle still held the old `useState(getPreferredLLM)`).
+
+Two traps. The `x-deployment-id` response header ends in a timestamp and a signature
+that change on every request, so "the header changed after my push" proves nothing; only
+the UUID in its middle names the deployment. And a green build proves nothing about what
+a crawler receives. After every publish, run `node scripts/check-public-pages.mjs`: done
+means it prints "107 of 107" (or however many the sitemap lists), not "pushed".
+
+To test the production build locally in the same runtime (Cloudflare `workerd`):
+`npm run build`, then `npx wrangler dev --config .output/server/wrangler.json --local`.
 
 ## Project Structure
 
