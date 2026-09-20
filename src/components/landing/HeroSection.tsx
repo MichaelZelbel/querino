@@ -59,8 +59,8 @@ export function HeroSection() {
               className="mb-8 max-w-xl text-lg text-muted-foreground md:text-[17px] animate-fade-in-up mx-auto lg:mx-0"
               style={{ animationDelay: "0.2s", lineHeight: 1.55 }}
             >
-              Thousands of curated prompts, your personal library, and a tiny
-              mascot who genuinely cares whether your prompts are good.
+              Curated prompts, your personal library, and a tiny mascot who
+              genuinely cares whether your prompts are good.
             </p>
 
             {/* CTAs */}

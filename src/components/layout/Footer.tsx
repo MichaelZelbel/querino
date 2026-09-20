@@ -31,6 +31,24 @@ export function Footer() {
                 Discover Prompts
               </Link>
               <Link
+                to="/prompts"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                All Prompts
+              </Link>
+              <Link
+                to="/skills"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                All Skills
+              </Link>
+              <Link
+                to="/workflows"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                All Workflows
+              </Link>
+              <Link
                 to="/library"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >

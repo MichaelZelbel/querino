@@ -153,6 +153,11 @@ export async function buildSitemap(): Promise<string> {
   const staticPages = [
     { loc: "/", priority: "1.0", changefreq: "daily" },
     { loc: "/discover", priority: "0.9", changefreq: "daily" },
+    // The plain link lists. They are how a crawler that ignores the sitemap still
+    // reaches every public artefact from the footer of any page.
+    { loc: "/prompts", priority: "0.8", changefreq: "daily" },
+    { loc: "/skills", priority: "0.8", changefreq: "daily" },
+    { loc: "/workflows", priority: "0.8", changefreq: "daily" },
     { loc: "/blog", priority: "0.8", changefreq: "daily" },
 
     // /auth intentionally excluded — login pages should not be advertised for indexing

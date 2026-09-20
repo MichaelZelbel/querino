@@ -53,7 +53,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         {
           name: "description",
           content:
-            "Discover, create, and master AI prompts. Access thousands of curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+            "Discover, create, and master AI prompts. Access curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
         },
         { name: "author", content: "Querino" },
         {
