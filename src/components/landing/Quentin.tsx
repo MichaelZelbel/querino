@@ -74,7 +74,7 @@ export function Quentin({
             animation: "querioSparkle 2.4s ease-in-out infinite",
             transformOrigin: "47px 68px",
           }}
-          fontFamily="JetBrains Mono, monospace"
+          fontFamily="'JetBrains Mono Variable', 'JetBrains Mono', monospace"
           fontWeight={700}
           fill={c1}
         >
@@ -88,7 +88,7 @@ export function Quentin({
             animationDelay: "0.6s",
             transformOrigin: "197px 86px",
           }}
-          fontFamily="JetBrains Mono, monospace"
+          fontFamily="'JetBrains Mono Variable', 'JetBrains Mono', monospace"
           fontWeight={700}
           fill={c1}
         >
@@ -105,7 +105,7 @@ export function Quentin({
             animationDelay: "1.2s",
             transformOrigin: "57px 168px",
           }}
-          fontFamily="JetBrains Mono, monospace"
+          fontFamily="'JetBrains Mono Variable', 'JetBrains Mono', monospace"
           fontWeight={700}
           fill={c1}
         >
@@ -119,7 +119,7 @@ export function Quentin({
             animationDelay: "1.8s",
             transformOrigin: "189px 160px",
           }}
-          fontFamily="JetBrains Mono, monospace"
+          fontFamily="'JetBrains Mono Variable', 'JetBrains Mono', monospace"
           fontWeight={700}
           fill={c1}
         >
@@ -257,7 +257,7 @@ export function Quentin({
           color: c1,
           letterSpacing: "0.15em",
           textTransform: "lowercase",
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: '"JetBrains Mono Variable", "JetBrains Mono", monospace',
           background: dark ? "rgba(20,18,40,0.6)" : "rgba(245,244,255,0.85)",
           padding: "3px 10px",
           borderRadius: 999,

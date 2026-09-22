@@ -1,5 +1,6 @@
 import { Link } from "@/lib/router-compat";
 import logo from "@/assets/logo.png";
+import { openConsentSettings } from "@/lib/consent";
 
 export function Footer() {
   return (
@@ -114,6 +115,13 @@ export function Footer() {
               >
                 Cookie Policy
               </Link>
+              <button
+                type="button"
+                onClick={openConsentSettings}
+                className="text-left text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Cookie settings
+              </button>
               <Link
                 to="/impressum"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

@@ -1,6 +1,11 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+/* Fonts are served from this site, never from Google (each Google request sends the visitor's
+ * IP address there without consent). Same families, axes and weights the old Google link asked for. */
+@import "@fontsource-variable/bricolage-grotesque/opsz.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 /* @tailwindcss/typography is deliberately NOT registered.
  *
  * It is in package.json and has been for a long time, but tailwind.config.ts never
@@ -31,9 +36,9 @@
 
 @theme inline {
   /* Fonts (from tailwind.config.ts fontFamily) */
-  --font-display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
-  --font-sans: Inter, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Inter Variable", Inter, system-ui, sans-serif;
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
 
   /* Display type scale with per-size line height and letter spacing */
   --text-display-xl: 3.5rem;
@@ -193,8 +198,6 @@
 @utility card-gradient {
   background: var(--gradient-card);
 }
-
-/* Fonts loaded via head() links in src/routes/__root.tsx (Bricolage Grotesque, Inter, JetBrains Mono) */
 
 :root {
   --background: 210 14% 97%;

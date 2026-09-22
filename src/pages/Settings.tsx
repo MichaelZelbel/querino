@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { openConsentSettings } from "@/lib/consent";
 import { useNavigate, Link } from "@/lib/router-compat";
 import { useTheme } from "next-themes";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -1072,10 +1073,12 @@ export default function Settings() {
                         </p>
                       </div>
                     </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link to="/cookies">
-                        Manage <ChevronRight className="ml-1 h-4 w-4" />
-                      </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openConsentSettings}
+                    >
+                      Cookie settings <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
                   </div>
                   <Separator />

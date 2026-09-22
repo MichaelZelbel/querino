@@ -123,7 +123,7 @@ export function FloatingCards({ dark = false }: FloatingCardsProps) {
                   fontSize: 11,
                   fontWeight: 600,
                   color: titleColor,
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: '"Inter Variable", Inter, sans-serif',
                   letterSpacing: "-0.01em",
                 }}
               >
@@ -160,7 +160,8 @@ export function FloatingCards({ dark = false }: FloatingCardsProps) {
               <span
                 style={{
                   fontSize: 9,
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily:
+                    '"JetBrains Mono Variable", "JetBrains Mono", monospace',
                   background: tagBg,
                   color: c.accent,
                   padding: "2px 7px",

@@ -73,7 +73,7 @@ export function TypingPrompt({ dark = false }: TypingPromptProps) {
         border: `1px solid ${dark ? "rgba(124,123,255,0.3)" : "rgba(92,91,230,0.2)"}`,
         borderRadius: 14,
         padding: "10px 14px",
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: '"JetBrains Mono Variable", "JetBrains Mono", monospace',
         fontSize: 12,
         color: dark ? "#A5A4FF" : "#5C5BE6",
         boxShadow: dark

@@ -1,21 +1,47 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  CONSENT_EVENT,
+  CONSENT_KEY,
+  readConsent,
+  saveConsent,
+  type Consent,
+} from "@/lib/consent";
 
-const COOKIE_CONSENT_KEY = "cookie-consent";
+// The old key only stored the click and nothing ever read it, so a choice saved under it
+// was never honoured. Those visitors are asked again.
+const OLD_CONSENT_KEY = "cookie-consent";
 
-type ConsentStatus = "accepted" | "declined" | null;
-
+// Two equal choices on the first screen, and nothing optional runs before one is made
+// (the gate in src/lib/consent.ts holds the host's statistics until "Accept all").
 export const CookieBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY) as ConsentStatus;
-    if (!consent) {
-      // Small delay to prevent flash on page load
-      const timer = setTimeout(() => setIsVisible(true), 500);
-      return () => clearTimeout(timer);
+    try {
+      localStorage.removeItem(OLD_CONSENT_KEY);
+    } catch {
+      // storage blocked: nothing to clean up
     }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (!readConsent()) {
+      // Small delay to prevent flash on page load
+      timer = setTimeout(() => setIsVisible(true), 500);
+    }
+    // "Cookie settings" anywhere on the site reopens the banner
+    const reopen = () => setIsVisible(true);
+    // a choice made in another tab of this site closes the banner here too
+    const synced = (e: StorageEvent) => {
+      if (e.key === CONSENT_KEY) setIsVisible(!readConsent());
+    };
+    window.addEventListener(CONSENT_EVENT, reopen);
+    window.addEventListener("storage", synced);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener(CONSENT_EVENT, reopen);
+      window.removeEventListener("storage", synced);
+    };
   }, []);
 
   // Reserve space at the bottom of the page so the fixed banner never occludes content.
@@ -41,13 +67,8 @@ export const CookieBanner = () => {
     };
   }, [isVisible]);
 
-  const handleAccept = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
-    setIsVisible(false);
-  };
-
-  const handleDecline = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "declined");
+  const choose = (choice: Consent) => {
+    saveConsent(choice);
     setIsVisible(false);
   };
 
@@ -56,17 +77,24 @@ export const CookieBanner = () => {
   return (
     <div
       ref={bannerRef}
+      role="dialog"
+      aria-live="polite"
+      aria-labelledby="cookie-banner-title"
       className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in"
     >
       <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-4 shadow-lg backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
-            <h3 className="font-display text-base font-semibold text-foreground sm:text-lg">
+            <h3
+              id="cookie-banner-title"
+              className="font-display text-base font-semibold text-foreground sm:text-lg"
+            >
               Our site uses cookies.
             </h3>
             <p className="mt-1 font-sans text-sm text-muted-foreground">
               Think of them as harmless little prompts that help us remember
-              what you like. Tap Accept to let the algorithm treat you right.{" "}
+              what you like. Tap Accept all and we also count your visit, so we
+              know which pages people actually read.{" "}
               <a
                 href="/cookies"
                 className="rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -80,18 +108,18 @@ export const CookieBanner = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDecline}
+              onClick={() => choose("essential")}
               className="min-w-[80px]"
             >
-              Decline
+              Just the essentials
             </Button>
             <Button
               variant="default"
               size="sm"
-              onClick={handleAccept}
+              onClick={() => choose("all")}
               className="min-w-[80px]"
             >
-              Accept
+              Accept all
             </Button>
           </div>
         </div>

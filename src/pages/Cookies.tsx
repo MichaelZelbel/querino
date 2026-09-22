@@ -3,6 +3,7 @@ import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { openConsentSettings } from "@/lib/consent";
 
 const Cookies = () => {
   const handlePrint = () => {
@@ -78,7 +79,7 @@ const Cookies = () => {
                     Cookies Policy
                   </h1>
                   <p className="text-muted-foreground">
-                    <strong>Last updated:</strong> December 6, 2025
+                    <strong>Last updated:</strong> September 22, 2026
                   </p>
                 </div>
                 <Button
@@ -166,56 +167,78 @@ const Cookies = () => {
                   <h2 className="text-2xl font-semibold text-foreground mt-10 mb-4">
                     The Use of Cookies
                   </h2>
+                  <p>
+                    The list below is complete: it names every Cookie the
+                    Website sets, with its real lifetime. Only one of them is
+                    optional, and it is only set after You choose "Accept all"
+                    in the cookie banner.
+                  </p>
 
                   <h3 className="text-xl font-medium text-foreground mt-6 mb-3">
-                    Type of Cookies We Use
+                    Strictly necessary (set without asking)
                   </h3>
                   <p>
-                    Cookies can be "Persistent" or "Session" Cookies. Persistent
-                    Cookies remain on your personal computer or mobile device
-                    when You go offline, while Session Cookies are deleted as
-                    soon as You close your web browser.
+                    These are needed to deliver the Website and keep it secure.
+                    They are set without consent, as § 25 (2) TDDDG allows.
                   </p>
-                  <p className="mt-2">
-                    We use both session and persistent Cookies for the purposes
-                    set out below:
-                  </p>
-
                   <ul className="list-disc pl-6 space-y-4 mt-4">
                     <li>
-                      <strong className="text-foreground">
-                        Necessary / Essential Cookies
-                      </strong>
+                      <strong className="text-foreground">__cf_bm</strong>
                       <br />
-                      Type: Session Cookies
+                      Set by: Cloudflare, for our host
                       <br />
-                      Administered by: Us
+                      Purpose: tells real visitors apart from automated bots
                       <br />
-                      Purpose: These Cookies are essential to provide You with
-                      services available through the Website and to enable You
-                      to use some of its features. They help to authenticate
-                      users and prevent fraudulent use of user accounts. Without
-                      these Cookies, the services that You have asked for cannot
-                      be provided, and We only use these Cookies to provide You
-                      with those services.
+                      Lifetime: 30 minutes
                     </li>
                     <li>
-                      <strong className="text-foreground">
-                        Functionality Cookies
-                      </strong>
+                      <strong className="text-foreground">__dpl</strong>
                       <br />
-                      Type: Persistent Cookies
+                      Set by: Lovable, our host
                       <br />
-                      Administered by: Us
+                      Purpose: serves every page from the same version of the
+                      Website
                       <br />
-                      Purpose: These Cookies allow us to remember choices You
-                      make when You use the Website, such as remembering your
-                      login details or language preference. The purpose of these
-                      Cookies is to provide You with a more personal experience
-                      and to avoid You having to re-enter your preferences every
-                      time You use the Website.
+                      Lifetime: 24 hours
                     </li>
                   </ul>
+
+                  <h3 className="text-xl font-medium text-foreground mt-6 mb-3">
+                    Statistics (only with Your consent)
+                  </h3>
+                  <ul className="list-disc pl-6 space-y-4 mt-4">
+                    <li>
+                      <strong className="text-foreground">session-id</strong>
+                      <br />
+                      Set by: Lovable, our host, for its visitor statistics
+                      <br />
+                      Purpose: counts page views and groups the pages of one
+                      visit, so We know which pages people read. It does not
+                      follow You to other websites and is not used for
+                      advertising.
+                      <br />
+                      Lifetime: 30 minutes
+                    </li>
+                  </ul>
+                  <p className="mt-4">
+                    Until You choose "Accept all", this Cookie is not written
+                    and no statistics are sent. "Just the essentials" deletes it
+                    at once if it was set earlier.
+                  </p>
+
+                  <h3 className="text-xl font-medium text-foreground mt-6 mb-3">
+                    Local storage
+                  </h3>
+                  <p>
+                    The Website also uses Your browser's local storage, which
+                    works like a Cookie but is never sent to a server by itself.
+                    It holds only what the Website needs to work or what You
+                    chose Yourself: Your cookie choice (querino-consent), Your
+                    sign-in session if You sign in, Your light or dark theme,
+                    the workspace You last opened, the AI app You prefer to open
+                    prompts in, and unsent drafts in the AI coach. None of it is
+                    used for statistics or advertising.
+                  </p>
                 </section>
 
                 <section id="choices">
@@ -223,21 +246,28 @@ const Cookies = () => {
                     Your Choices Regarding Cookies
                   </h2>
                   <p>
-                    If You prefer to avoid the use of Cookies on the Website,
-                    first You must disable the use of Cookies in your browser
-                    and then delete the Cookies saved in your browser associated
-                    with this website. You may use this option for preventing
-                    the use of Cookies at any time.
+                    When You first visit, the cookie banner offers two equal
+                    choices: "Accept all" allows the statistics Cookie, "Just
+                    the essentials" keeps only the strictly necessary ones. You
+                    can change or withdraw Your choice at any time with the
+                    "Cookie settings" link in the footer of every page, which
+                    opens the banner again.
                   </p>
-                  <p className="mt-2">
-                    If You do not accept Our Cookies, You may experience some
-                    inconvenience in your use of the Website and some features
-                    may not function properly.
+                  <p className="mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openConsentSettings}
+                      className="print:hidden"
+                    >
+                      Cookie settings
+                    </Button>
                   </p>
-                  <p className="mt-2">
-                    If You'd like to delete Cookies or instruct your web browser
-                    to delete or refuse Cookies, please visit the help pages of
-                    your web browser.
+                  <p className="mt-4">
+                    You can also delete Cookies or tell Your web browser to
+                    refuse them. The strictly necessary ones are then set again
+                    on Your next visit, because the Website cannot be delivered
+                    without them. Your browser's help pages explain how:
                   </p>
                   <ul className="list-disc pl-6 space-y-2 mt-4">
                     <li>
@@ -251,21 +281,6 @@ const Cookies = () => {
                         className="text-primary hover:underline"
                       >
                         https://support.google.com/accounts/answer/32050
-                      </a>
-                    </li>
-                    <li>
-                      For the{" "}
-                      <strong className="text-foreground">
-                        Internet Explorer
-                      </strong>{" "}
-                      web browser, please visit this page from Microsoft:{" "}
-                      <a
-                        href="http://support.microsoft.com/kb/278835"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        http://support.microsoft.com/kb/278835
                       </a>
                     </li>
                     <li>
