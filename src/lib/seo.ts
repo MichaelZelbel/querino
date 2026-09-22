@@ -14,7 +14,7 @@
 const SITE_NAME = "Querino";
 const DEFAULT_DESCRIPTION =
   "Discover and share AI prompts, skills, and workflows.";
-const DEFAULT_OG_IMAGE = "https://lovable.dev/opengraph-image-p98pqg.png";
+const DEFAULT_OG_IMAGE = "https://querino.ai/og-image.png";
 
 // The canonical origin. Unlike the browser-side helper in src/config/site.ts this never
 // asks the window, because a canonical URL that depends on which host served the page is

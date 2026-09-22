@@ -28,7 +28,6 @@ const ORGANIZATION_JSONLD = JSON.stringify({
   name: "Querino",
   url: "https://querino.ai",
   logo: "https://querino.ai/favicon.png",
-  sameAs: ["https://github.com/querino-ai"],
 });
 
 const WEBSITE_JSONLD = JSON.stringify({
@@ -73,13 +72,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:type", content: "website" },
         {
           property: "og:image",
-          content: "https://lovable.dev/opengraph-image-p98pqg.png",
+          content: "https://querino.ai/og-image.png",
         },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:site", content: "@Querino" },
         {
           name: "twitter:image",
-          content: "https://lovable.dev/opengraph-image-p98pqg.png",
+          content: "https://querino.ai/og-image.png",
         },
       ],
       links: [
