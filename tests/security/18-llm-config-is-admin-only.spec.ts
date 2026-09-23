@@ -26,6 +26,36 @@ interface ConfigRow {
   model: string;
 }
 
+// The write tests below aim a fake model at the live prompt-coach row. When one
+// of them fails, the write went through, and without this the Prompt Coach for
+// every real user was left pointing at "attacker/expensive-model" (it happened
+// on 2026-09-23, when a second copy of this suite ran spec 08's temporary admin
+// promotion at the same moment). Whatever the outcome, the row is put back.
+const PROMPT_COACH_ROW =
+  "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default";
+let promptCoachModel: string | null = null;
+
+test.beforeAll(async () => {
+  const res = await restAsService<ConfigRow[]>(
+    `${PROMPT_COACH_ROW}&select=call_site,model`,
+  );
+  promptCoachModel = res.data?.[0]?.model ?? null;
+});
+
+test.afterAll(async () => {
+  if (!promptCoachModel) return;
+  const res = await restAsService<ConfigRow[]>(
+    `${PROMPT_COACH_ROW}&select=call_site,model`,
+  );
+  if (res.data?.[0]?.model !== promptCoachModel) {
+    await restAsService(PROMPT_COACH_ROW, {
+      method: "PATCH",
+      body: { model: promptCoachModel },
+      headers: { Prefer: "return=minimal" },
+    });
+  }
+});
+
 test.describe("LLM configuration is admin-only", () => {
   test("a stranger holding the anon key gets nothing", async () => {
     const res = await fetch(
