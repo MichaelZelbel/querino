@@ -26,8 +26,15 @@ const TABLES = ["prompts", "skills", "workflows", "prompt_kits"] as const;
 /** Rows a visitor can reach by concept search, and so must be embedded. */
 async function publishedWithoutEmbedding(table: string): Promise<number> {
   const flag = table === "prompts" ? "is_public" : "published";
+  // An edit clears the embedding and the two-minute job refills it, so a row
+  // edited in the last five minutes is not yet a failure. Without this the
+  // test went red whenever anyone saved a published item just before a run
+  // (2026-09-23, 21:45: a skill saved 20 seconds before the check, embedded
+  // by the 21:48 tick).
+  const settled = new Date(Date.now() - 5 * 60_000).toISOString();
   const res = await restAsService<Array<{ id: string }>>(
-    `${table}?select=id&embedding=is.null&${flag}=is.true&limit=200`,
+    `${table}?select=id&embedding=is.null&${flag}=is.true` +
+      `&updated_at=lt.${encodeURIComponent(settled)}&limit=200`,
   );
   if (!res.ok)
     throw new Error(`counting ${table} failed: ${JSON.stringify(res.error)}`);

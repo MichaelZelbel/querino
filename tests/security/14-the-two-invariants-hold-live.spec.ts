@@ -38,7 +38,12 @@ interface Violation {
 // correct shape for those, and Supabase's own advisor rates it INFO, not an
 // error. Anything NOT listed here that turns up closed is a table somebody
 // switched RLS on for to clear a warning and then walked away from.
-const DELIBERATELY_SERVICE_ROLE_ONLY = ["github_sync_state"];
+const DELIBERATELY_SERVICE_ROLE_ONLY = [
+  "github_sync_state",
+  // The security suite's own run lock (migration 20260923150000). Only the
+  // suite's global setup, with the service role, ever touches it.
+  "security_suite_lock",
+];
 
 async function violations(): Promise<Violation[]> {
   const res = await restAsService<Violation[]>("rpc/security_invariants", {
