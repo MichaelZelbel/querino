@@ -97,73 +97,65 @@ export function Header() {
 
           {/* Workspace Picker - Desktop */}
           {user && (
-            <div className="hidden md:block border-l border-border pl-2 ml-2">
+            <div className="hidden lg:block border-l border-border pl-2 ml-2">
               <WorkspacePicker />
             </div>
           )}
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {user && (
-            <Link to="/library">
-              <Button
-                variant={isActive("/library") ? "secondary" : "ghost"}
-                size="sm"
-                className={cn(
-                  isActive("/library") && "bg-secondary font-medium",
-                )}
-              >
-                My Library
-              </Button>
-            </Link>
-          )}
-          <Link to="/discover">
             <Button
-              variant={isActive("/discover") ? "secondary" : "ghost"}
+              asChild
+              variant={isActive("/library") ? "secondary" : "ghost"}
+              size="sm"
+              className={cn(isActive("/library") && "bg-secondary font-medium")}
+            >
+              <Link to="/library">My Library</Link>
+            </Button>
+          )}
+          <Button
+            asChild
+            variant={isActive("/discover") ? "secondary" : "ghost"}
+            size="sm"
+            className={cn(isActive("/discover") && "bg-secondary font-medium")}
+          >
+            <Link to="/discover">Discover</Link>
+          </Button>
+          {user && (
+            <Button
+              asChild
+              variant={isActive("/collections") ? "secondary" : "ghost"}
               size="sm"
               className={cn(
-                isActive("/discover") && "bg-secondary font-medium",
+                isActive("/collections") && "bg-secondary font-medium",
               )}
             >
-              Discover
+              <Link to="/collections">Collections</Link>
             </Button>
-          </Link>
-          {user && (
-            <Link to="/collections">
-              <Button
-                variant={isActive("/collections") ? "secondary" : "ghost"}
-                size="sm"
-                className={cn(
-                  isActive("/collections") && "bg-secondary font-medium",
-                )}
-              >
-                Collections
-              </Button>
-            </Link>
           )}
-          <Link to="/activity">
+          {user && (
             <Button
+              asChild
               variant={isActive("/activity") ? "secondary" : "ghost"}
               size="sm"
               className={cn(
                 isActive("/activity") && "bg-secondary font-medium",
               )}
             >
-              Activity
+              <Link to="/activity">Activity</Link>
             </Button>
-          </Link>
+          )}
           {!user && (
-            <a href="/#features">
-              <Button variant="ghost" size="sm">
-                Features
-              </Button>
-            </a>
+            <Button asChild variant="ghost" size="sm">
+              <a href="/#features">Features</a>
+            </Button>
           )}
         </nav>
 
         {/* Desktop CTA / User Menu */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           {/* Command Palette Button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -262,6 +254,7 @@ export function Header() {
                   <Button
                     variant="ghost"
                     className="relative h-9 w-9 rounded-full p-0"
+                    aria-label="Account menu"
                   >
                     <Avatar className="h-9 w-9">
                       <AvatarImage
@@ -347,16 +340,12 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/auth?tab=signup">
-                <Button variant="default" size="sm">
-                  Get Started
-                </Button>
-              </Link>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/auth">Sign In</Link>
+              </Button>
+              <Button asChild variant="default" size="sm">
+                <Link to="/auth?tab=signup">Get Started</Link>
+              </Button>
             </>
           )}
         </div>
@@ -365,7 +354,7 @@ export function Header() {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileMenuOpen}
@@ -380,7 +369,7 @@ export function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="border-t border-border bg-background md:hidden">
+        <div className="border-t border-border bg-background lg:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-4 py-4">
             {/* Mobile Workspace Picker */}
             {user && (
@@ -393,60 +382,69 @@ export function Header() {
             )}
 
             {user && (
-              <Link to="/library" onClick={() => setMobileMenuOpen(false)}>
-                <Button
-                  variant={isActive("/library") ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start",
-                    isActive("/library") && "font-medium",
-                  )}
-                >
-                  My Library
-                </Button>
-              </Link>
-            )}
-            <Link to="/discover" onClick={() => setMobileMenuOpen(false)}>
               <Button
-                variant={isActive("/discover") ? "secondary" : "ghost"}
+                asChild
+                variant={isActive("/library") ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start",
-                  isActive("/discover") && "font-medium",
+                  isActive("/library") && "font-medium",
                 )}
               >
-                Discover
+                <Link to="/library" onClick={() => setMobileMenuOpen(false)}>
+                  My Library
+                </Link>
               </Button>
-            </Link>
+            )}
+            <Button
+              asChild
+              variant={isActive("/discover") ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-start",
+                isActive("/discover") && "font-medium",
+              )}
+            >
+              <Link to="/discover" onClick={() => setMobileMenuOpen(false)}>
+                Discover
+              </Link>
+            </Button>
             {user && (
-              <Link to="/collections" onClick={() => setMobileMenuOpen(false)}>
-                <Button
-                  variant={isActive("/collections") ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start",
-                    isActive("/collections") && "font-medium",
-                  )}
+              <Button
+                asChild
+                variant={isActive("/collections") ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  isActive("/collections") && "font-medium",
+                )}
+              >
+                <Link
+                  to="/collections"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Collections
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
-            <Link to="/activity" onClick={() => setMobileMenuOpen(false)}>
+            {user && (
               <Button
+                asChild
                 variant={isActive("/activity") ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start",
                   isActive("/activity") && "font-medium",
                 )}
               >
-                <Activity className="h-4 w-4 mr-2" />
-                Activity
+                <Link to="/activity" onClick={() => setMobileMenuOpen(false)}>
+                  <Activity className="h-4 w-4 mr-2" />
+                  Activity
+                </Link>
               </Button>
-            </Link>
+            )}
             {!user && (
-              <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start">
+              <Button asChild variant="ghost" className="w-full justify-start">
+                <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
                   Features
-                </Button>
-              </a>
+                </a>
+              </Button>
             )}
 
             {/* Mobile Create Section */}
@@ -455,30 +453,32 @@ export function Header() {
                 <p className="px-3 py-2 text-sm font-medium text-muted-foreground">
                   Create
                 </p>
-                <Link
-                  to="/prompts/new"
-                  onClick={() => setMobileMenuOpen(false)}
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full justify-start gap-2"
                 >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
+                  <Link
+                    to="/prompts/new"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     <Sparkles className="h-4 w-4" />
                     New Prompt
-                  </Button>
-                </Link>
-                <Link
-                  to="/prompts/wizard"
-                  onClick={() => setMobileMenuOpen(false)}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full justify-start gap-2"
                 >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
+                  <Link
+                    to="/prompts/wizard"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     <Wand2 className="h-4 w-4" />
                     Kickstart Template
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-2"
@@ -490,43 +490,65 @@ export function Header() {
                   <Upload className="h-4 w-4" />
                   Import Prompt from .md
                 </Button>
-                <Link to="/skills/new" onClick={() => setMobileMenuOpen(false)}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full justify-start gap-2"
+                >
+                  <Link
+                    to="/skills/new"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     <FileText className="h-4 w-4" />
                     New Skill
-                  </Button>
-                </Link>
-                <Link
-                  to="/workflows/new"
-                  onClick={() => setMobileMenuOpen(false)}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full justify-start gap-2"
                 >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
+                  <Link
+                    to="/workflows/new"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     <Workflow className="h-4 w-4" />
                     New Workflow
-                  </Button>
-                </Link>
-                <Link
-                  to="/prompt-kits/new"
-                  onClick={() => setMobileMenuOpen(false)}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full justify-start gap-2"
                 >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
+                  <Link
+                    to="/prompt-kits/new"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     <Package className="h-4 w-4" />
                     New Prompt Kit
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             )}
 
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setCommandPaletteOpen(true);
+                }}
+              >
+                <Command className="h-4 w-4" />
+                Search and navigate
+              </Button>
+              {user && (
+                <div className="px-3">
+                  <CreditsPill />
+                </div>
+              )}
               <ThemeToggle withLabel />
 
               {user ? (
@@ -547,53 +569,60 @@ export function Header() {
                       </p>
                     </div>
                   </div>
-                  <Link
-                    to="/profile/edit"
-                    onClick={() => setMobileMenuOpen(false)}
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="w-full justify-start gap-2"
                   >
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start gap-2"
+                    <Link
+                      to="/profile/edit"
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       <User className="h-4 w-4" />
                       Edit Profile
-                    </Button>
-                  </Link>
-                  <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start gap-2"
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="w-full justify-start gap-2"
+                  >
+                    <Link
+                      to="/settings"
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       <Settings className="h-4 w-4" />
                       Settings
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   {isAdmin && (
                     <>
-                      <Link
-                        to="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="w-full justify-start gap-2 text-primary"
                       >
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start gap-2 text-primary"
+                        <Link
+                          to="/admin"
+                          onClick={() => setMobileMenuOpen(false)}
                         >
                           <Shield className="h-4 w-4" />
                           Admin
-                        </Button>
-                      </Link>
-                      <Link
-                        to="/blog/admin"
-                        onClick={() => setMobileMenuOpen(false)}
+                        </Link>
+                      </Button>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="w-full justify-start gap-2 text-primary"
                       >
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start gap-2 text-primary"
+                        <Link
+                          to="/blog/admin"
+                          onClick={() => setMobileMenuOpen(false)}
                         >
                           <FileText className="h-4 w-4" />
                           Blog Admin
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </>
                   )}
                   <Button
@@ -610,19 +639,19 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
                       Sign In
-                    </Button>
-                  </Link>
-                  <Link
-                    to="/auth?tab=signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Button variant="default" className="w-full">
+                    </Link>
+                  </Button>
+                  <Button asChild variant="default" className="w-full">
+                    <Link
+                      to="/auth?tab=signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
                       Get Started
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </>
               )}
             </div>

@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { useNavigate, Link, useSearchParams } from "@/lib/router-compat";
 import { useDraftHandoff } from "@/lib/draftHandoff";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -37,11 +40,14 @@ import {
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { categoryOptions } from "@/types/prompt";
 import { LanguageSelect } from "@/components/shared/LanguageSelect";
 import { DEFAULT_LANGUAGE } from "@/config/languages";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateSlug } from "@/hooks/useGenerateSlug";
+import { insertWithUniqueSlug } from "@/lib/uniqueSlugInsert";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
 import { ArtifactCoachPanel } from "@/components/studio/ArtifactCoachPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -72,7 +78,11 @@ export default function PromptKitNew() {
   const isMobile = useIsMobile();
   const { checkCredits } = useAICreditsGate();
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const [moderationBlock, setModerationBlock] =
+    useState<ModerationResult | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
 
   const [content, setContent] = useState(
@@ -119,6 +129,40 @@ export default function PromptKitNew() {
       navigate("/auth?redirect=/prompt-kits/new", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  // Leave-page warning. The baseline is what the page opened with, including
+  // a draft handed over by an import or translation: that draft is applied in
+  // an effect after mount, so the baseline is taken one render later.
+  const { markSaved } = useUnsavedChanges({
+    data: {
+      title,
+      description,
+      // Trimmed: the rich editor's Markdown round trip can change trailing
+      // whitespace without the user changing anything.
+      content: content.trim(),
+      category,
+      tags,
+      isPublic,
+      language,
+    },
+    isSaving: isSubmitting,
+    onSave: () => undefined,
+    enableShortcut: false,
+  });
+  const [baselineArmed, setBaselineArmed] = useState(false);
+  useEffect(() => {
+    setBaselineArmed(true);
+  }, []);
+  useEffect(() => {
+    if (baselineArmed) markSaved();
+  }, [baselineArmed, markSaved]);
+  // After a create, navigate only once the guard has seen the clean state:
+  // the hook reads "dirty" from a ref it updates in an effect, so navigating
+  // in the same tick as markSaved() would still raise the leave prompt.
+  const [createdPath, setCreatedPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (createdPath) navigate(createdPath);
+  }, [createdPath, navigate]);
 
   const items = parsePromptKitItems(content);
 
@@ -209,32 +253,52 @@ export default function PromptKitNew() {
 
   const handleSubmit = async () => {
     if (!user || !validate()) return;
+    // Busy from the first click: moderation takes a round trip, and a second
+    // click during it would create the kit twice.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // A public kit is checked like a public prompt, skill or workflow.
+      // Kits used to go public with no moderation at all.
+      if (isPublic) {
+        const result = await moderateContent(
+          { title, description, content },
+          "publish",
+          "prompt_kit",
+        );
+        if (!result.approved) {
+          setModerationBlock(result);
+          return;
+        }
+      }
+
       const slug = await generateSlug(title.trim());
-      const { data: newKit, error } = await (
-        supabase.from("prompt_kits") as any
-      )
-        .insert({
-          title: title.trim(),
-          description: description.trim() || null,
-          content: content.trim(),
-          category,
-          tags: tags.length > 0 ? tags : null,
-          author_id: user.id,
-          team_id: currentWorkspace !== "personal" ? currentWorkspace : null,
-          published: isPublic,
-          language,
-          slug,
-        })
-        .select("id, slug")
-        .single();
+      const { data: newKit, error } = await insertWithUniqueSlug(slug, (slug) =>
+        supabase
+          .from("prompt_kits")
+          .insert({
+            title: title.trim(),
+            description: description.trim() || null,
+            content: content.trim(),
+            category,
+            tags: tags.length > 0 ? tags : null,
+            author_id: user.id,
+            team_id: currentWorkspace !== "personal" ? currentWorkspace : null,
+            published: isPublic,
+            language,
+            ...(slug ? { slug } : {}),
+          })
+          .select("id, slug")
+          .single(),
+      );
 
       if (error) {
         console.error(error);
         toast.error("Failed to create prompt kit");
         return;
       }
+      void invalidateArtifactQueries(queryClient, "prompt_kit");
       toast.success("Prompt Kit created!");
       // Promote draft coach session to deterministic id keyed on the new kit
       try {
@@ -243,11 +307,13 @@ export default function PromptKitNew() {
       } catch {
         /* ignore */
       }
-      navigate(`/prompt-kits/${newKit.slug}`);
+      markSaved();
+      setCreatedPath(`/prompt-kits/${newKit.slug}`);
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -452,7 +518,8 @@ export default function PromptKitNew() {
                             <button
                               type="button"
                               onClick={() => handleRemoveTag(t)}
-                              className="ml-1 hover:text-destructive"
+                              aria-label={`Remove tag ${t}`}
+                              className="ml-1 rounded-full p-1.5 hover:text-destructive"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -537,6 +604,13 @@ export default function PromptKitNew() {
         </div>
       </main>
       <Footer />
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

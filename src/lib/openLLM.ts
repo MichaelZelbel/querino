@@ -1,3 +1,5 @@
+import { safeStorage } from "@/lib/safeStorage";
+
 export type LLMTarget = "chatgpt" | "claude" | "gemini" | "perplexity";
 
 export interface LLMOption {
@@ -45,7 +47,7 @@ export async function openLLM(
   forceBase = false,
 ): Promise<"url" | "clipboard"> {
   if (forceBase || !prompt) {
-    window.open(LLM_BASE_URLS[model], "_blank");
+    window.open(LLM_BASE_URLS[model], "_blank", "noopener,noreferrer");
     return "clipboard";
   }
 
@@ -53,13 +55,13 @@ export async function openLLM(
   const url = LLM_URLS[model](encoded);
 
   if (url.length <= MAX_URL_LENGTH) {
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     return "url";
   }
 
   // URL too long – copy to clipboard and open blank session
   await navigator.clipboard.writeText(prompt);
-  window.open(LLM_BASE_URLS[model], "_blank");
+  window.open(LLM_BASE_URLS[model], "_blank", "noopener,noreferrer");
   return "clipboard";
 }
 
@@ -76,7 +78,7 @@ const PREFERENCE_KEY = "querino_preferred_llm";
 // with an error body. On the server there is no preference to read, so null.
 export function getPreferredLLM(): LLMTarget | null {
   if (typeof window === "undefined") return null;
-  const stored = localStorage.getItem(PREFERENCE_KEY);
+  const stored = safeStorage.getItem(PREFERENCE_KEY);
   if (stored && LLM_OPTIONS.some((opt) => opt.id === stored)) {
     return stored as LLMTarget;
   }
@@ -85,5 +87,5 @@ export function getPreferredLLM(): LLMTarget | null {
 
 export function setPreferredLLM(llm: LLMTarget): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PREFERENCE_KEY, llm);
+  safeStorage.setItem(PREFERENCE_KEY, llm);
 }

@@ -9,13 +9,13 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { GATE_SCRIPT } from "@/lib/consent";
+import { privateHead } from "@/lib/seo";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import NotFound from "@/pages/NotFound";
 import appCss from "../styles.css?url";
@@ -40,53 +40,83 @@ const WEBSITE_JSONLD = JSON.stringify({
   },
 });
 
+type RootHead = {
+  meta: Array<Record<string, string>>;
+  links: Array<Record<string, string>>;
+  scripts: Array<Record<string, string>>;
+};
+
+/**
+ * An unknown URL has no route file and so no head() of its own: the root is the
+ * only match, and the router flags it globalNotFound (there are no layout
+ * routes, so every not-found lands on the root, including a loader's
+ * notFound()). The page then gets a real "Page Not Found" title and noindex in
+ * the server HTML. It used to set them from SEOHead's useEffect, which wrote
+ * into router-managed tags and left robots=noindex behind on the next page.
+ * The router keeps the later of two tags with the same name, so appending
+ * overrides the site defaults above.
+ */
+function withNotFoundHead(isNotFound: boolean | undefined, base: RootHead) {
+  if (!isNotFound) return base;
+  const notFound = privateHead("Page Not Found");
+  return {
+    ...base,
+    meta: [...base.meta, ...notFound.meta],
+    links: [...base.links, ...notFound.links],
+  };
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
-    head: () => ({
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-        { title: "Querino - AI Prompt Library for Creators" },
-        {
-          name: "description",
-          content:
-            "Discover, create, and master AI prompts. Access curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
-        },
-        { name: "author", content: "Querino" },
-        {
-          name: "keywords",
-          content:
-            "AI prompts, prompt engineering, ChatGPT, Claude, AI tools, prompt library",
-        },
-        {
-          property: "og:title",
-          content: "Querino - AI Prompt Library for Creators",
-        },
-        {
-          property: "og:description",
-          content:
-            "Discover, create, and master AI prompts with Querino's curated library and intelligent refinement tools.",
-        },
-        { property: "og:type", content: "website" },
-        {
-          property: "og:image",
-          content: "https://querino.ai/og-image.png",
-        },
-        { name: "twitter:card", content: "summary_large_image" },
-        {
-          name: "twitter:image",
-          content: "https://querino.ai/og-image.png",
-        },
-      ],
-      links: [
-        { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: "/favicon.png", type: "image/png" },
-      ],
-      scripts: [
-        { type: "application/ld+json", children: ORGANIZATION_JSONLD },
-        { type: "application/ld+json", children: WEBSITE_JSONLD },
-      ],
-    }),
+    head: ({ match }) =>
+      withNotFoundHead(match.globalNotFound, {
+        meta: [
+          { charSet: "utf-8" },
+          {
+            name: "viewport",
+            content: "width=device-width, initial-scale=1.0",
+          },
+          { title: "Querino - AI Prompt Library for Creators" },
+          {
+            name: "description",
+            content:
+              "Discover, create, and master AI prompts. Access curated prompts, organize your personal library, and refine your AI interactions with intelligent tools.",
+          },
+          { name: "author", content: "Querino" },
+          {
+            name: "keywords",
+            content:
+              "AI prompts, prompt engineering, ChatGPT, Claude, AI tools, prompt library",
+          },
+          {
+            property: "og:title",
+            content: "Querino - AI Prompt Library for Creators",
+          },
+          {
+            property: "og:description",
+            content:
+              "Discover, create, and master AI prompts with Querino's curated library and intelligent refinement tools.",
+          },
+          { property: "og:type", content: "website" },
+          {
+            property: "og:image",
+            content: "https://querino.ai/og-image.png",
+          },
+          { name: "twitter:card", content: "summary_large_image" },
+          {
+            name: "twitter:image",
+            content: "https://querino.ai/og-image.png",
+          },
+        ],
+        links: [
+          { rel: "stylesheet", href: appCss },
+          { rel: "icon", href: "/favicon.png", type: "image/png" },
+        ],
+        scripts: [
+          { type: "application/ld+json", children: ORGANIZATION_JSONLD },
+          { type: "application/ld+json", children: WEBSITE_JSONLD },
+        ],
+      }),
     shellComponent: RootShell,
     component: RootComponent,
     notFoundComponent: () => <NotFound />,
@@ -121,7 +151,6 @@ function RootComponent() {
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
           <Sonner />
           <AuthProvider>
             <WorkspaceProvider>

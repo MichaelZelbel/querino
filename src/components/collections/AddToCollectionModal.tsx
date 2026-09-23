@@ -96,7 +96,9 @@ export function AddToCollectionModal({
             </p>
             <Button
               onClick={() =>
-                navigate(`/auth?redirect=${window.location.pathname}`)
+                navigate(
+                  `/auth?redirect=${encodeURIComponent(window.location.pathname)}`,
+                )
               }
             >
               Sign In

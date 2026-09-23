@@ -11,6 +11,7 @@ import {
   Link as LinkIcon,
   Copy,
   Loader2,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,8 +59,53 @@ import {
   useCurrentUserTeamRole,
   useUpdateTeamMemberRole,
   useRemoveTeamMember,
+  useLeaveTeam,
 } from "@/hooks/useTeams";
 import { toast } from "sonner";
+
+function LeaveTeamButton({
+  teamName,
+  pending,
+  onConfirm,
+}: {
+  teamName: string;
+  pending: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" className="gap-2" disabled={pending}>
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="h-4 w-4" />
+          )}
+          Leave team
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Leave this team?</AlertDialogTitle>
+          <AlertDialogDescription>
+            You will lose access to{" "}
+            <span className="font-medium text-foreground">"{teamName}"</span>{" "}
+            and its shared artifacts. To come back, you need a new invite link.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Leave team
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 export default function TeamSettings() {
   const { id: teamId } = useParams<{ id: string }>();
@@ -73,6 +119,7 @@ export default function TeamSettings() {
   const deleteTeam = useDeleteTeam();
   const updateMemberRole = useUpdateTeamMemberRole();
   const removeMember = useRemoveTeamMember();
+  const leaveTeam = useLeaveTeam();
   const { data: invites = [] } = useTeamInvites(teamId);
   const createInvite = useCreateTeamInvite();
   const revokeInvite = useRevokeTeamInvite();
@@ -98,6 +145,20 @@ export default function TeamSettings() {
 
   const canManage = userRole === "owner" || userRole === "admin";
   const isOwner = userRole === "owner";
+  const canLeave = userRole === "admin" || userRole === "member";
+
+  const handleLeaveTeam = async () => {
+    if (!teamId) return;
+    try {
+      await leaveTeam.mutateAsync(teamId);
+      toast.success("You left the team");
+      navigate("/library");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to leave the team",
+      );
+    }
+  };
 
   if (authLoading || !user) {
     return (
@@ -133,10 +194,17 @@ export default function TeamSettings() {
 
   if (!canManage) {
     return (
-      <main className="container max-w-4xl py-8">
+      <main className="container max-w-4xl py-8 space-y-4">
         <p className="text-muted-foreground">
           You don't have permission to manage this team.
         </p>
+        {canLeave && (
+          <LeaveTeamButton
+            teamName={team.name}
+            pending={leaveTeam.isPending}
+            onConfirm={handleLeaveTeam}
+          />
+        )}
       </main>
     );
   }
@@ -218,7 +286,11 @@ export default function TeamSettings() {
       await removeMember.mutateAsync(memberId);
       toast.success("Member removed");
     } catch (error) {
-      toast.error("Failed to remove member");
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to remove member",
+      );
     }
   };
 
@@ -246,12 +318,12 @@ export default function TeamSettings() {
 
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Team Settings</h1>
-        <Link to={`/team/${teamId}/activity`}>
-          <Button variant="outline" className="gap-2">
+        <Button asChild variant="outline" className="gap-2">
+          <Link to={`/team/${teamId}/activity`}>
             <Activity className="h-4 w-4" />
             View Activity
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <div className="space-y-8">
@@ -330,14 +402,39 @@ export default function TeamSettings() {
                         <SelectItem value="member">Member</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveMember(member.id)}
-                      aria-label="Remove member"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={removeMember.isPending}
+                          aria-label={`Remove ${member.profile?.display_name || "member"}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Remove this member?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {member.profile?.display_name || "This user"} will
+                            lose access to the team and its shared artifacts.
+                            They can only rejoin with a new invite link.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleRemoveMember(member.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Remove member
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 )}
               </div>
@@ -442,13 +539,29 @@ export default function TeamSettings() {
               Settings while this team's workspace is active. Trigger syncs from
               the Library's "Sync to GitHub" button.
             </p>
-            <Link to="/settings">
-              <Button variant="outline" size="sm">
-                Open GitHub Sync Settings
-              </Button>
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/settings">Open GitHub Sync Settings</Link>
+            </Button>
           </CardContent>
         </Card>
+
+        {canLeave && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Leave Team</CardTitle>
+              <CardDescription>
+                Stop being a member of this team
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LeaveTeamButton
+                teamName={team.name}
+                pending={leaveTeam.isPending}
+                onConfirm={handleLeaveTeam}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Danger Zone */}
         {isOwner && (

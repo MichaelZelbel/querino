@@ -42,31 +42,36 @@ export interface LoadedArtefact {
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-const SEARCH_INTERNALS = [
-  "embedding",
-  "embedding_attempts",
-  "embedding_error",
-  "embedding_failed_at",
-  "fts",
-] as const;
+// Every column of each table except the search internals (embedding,
+// embedding_attempts, embedding_error, embedding_failed_at, fts), taken from the
+// Row types in src/integrations/supabase/types.ts. Whatever a loader returns is
+// written into the HTML as the router's page data, and the internals are 1,536
+// floats and a word index: most of the 37 KB an artefact page weighed, read by
+// nobody. They used to be fetched with select("*") and deleted afterwards, so
+// the database still read and sent the vector on every server render. When a
+// table gains a column a page needs, add it here.
+const COMMON_COLUMNS =
+  "id, slug, title, description, content, category, tags, language, author_id, team_id, rating_avg, rating_count, created_at, updated_at, menerio_note_id, menerio_synced, menerio_synced_at";
+
+const DETAIL_COLUMNS = {
+  prompts: `${COMMON_COLUMNS}, summary, example_output, copies_count, is_public, published_at`,
+  skills: `${COMMON_COLUMNS}, published`,
+  workflows: `${COMMON_COLUMNS}, published, filename, json, scope`,
+  prompt_kits: `${COMMON_COLUMNS}, published`,
+} as const;
 
 async function loadBySlug(
-  table: string,
+  table: keyof typeof DETAIL_COLUMNS,
   slug: string,
 ): Promise<LoadedArtefact | null> {
   if (!slug || isUuid(slug)) return null;
   const { data, error } = await supabase
     .from(table as never)
-    .select(`*, ${AUTHOR}`)
+    .select(`${DETAIL_COLUMNS[table]}, ${AUTHOR}`)
     .eq("slug", slug)
     .maybeSingle();
   if (error || !data) return null;
   const row = { ...(data as Record<string, unknown>) };
-  // Whatever a loader returns is written into the HTML as the router's page data.
-  // The search internals are 1,536 floats and a word index: most of the 37 KB an
-  // artefact page weighed, read by nobody. The page's own fetch still gets the whole
-  // row after hydration, so nothing that renders depends on these.
-  for (const column of SEARCH_INTERNALS) delete row[column];
   return {
     ...row,
     author: (row.profiles as LoadedArtefact["author"]) ?? null,

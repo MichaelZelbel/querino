@@ -23,10 +23,21 @@ import {
   useCollection,
   useCollectionItems,
   useCreateCollection,
-  useAddToCollection,
+  useAddItemsToCollection,
   useRemoveFromCollection,
   useCollectionItemDetails,
 } from "@/hooks/useCollections";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
@@ -53,8 +64,11 @@ export default function CollectionDetail() {
   const { data: itemDetails } = useCollectionItemDetails(items);
 
   const createCollection = useCreateCollection();
-  const addToCollection = useAddToCollection();
+  const addItemsToCollection = useAddItemsToCollection();
   const removeFromCollection = useRemoveFromCollection();
+  // Busy for the whole clone (create, then add the items), not only while the
+  // collection row is created: a second click in between cloned twice.
+  const [cloning, setCloning] = useState(false);
 
   const isOwner = user?.id === collection?.owner_id;
 
@@ -87,11 +101,13 @@ export default function CollectionDetail() {
   }, [itemsWithData]);
 
   const handleCloneCollection = async () => {
+    if (cloning) return;
     if (!user || !collection || !items) {
       toast.error("Please sign in to clone this collection");
       return;
     }
 
+    setCloning(true);
     try {
       const newCollection = await createCollection.mutateAsync({
         title: `Copy of ${collection.title}`,
@@ -100,20 +116,22 @@ export default function CollectionDetail() {
         owner_id: user.id,
       });
 
-      // Add all items to the new collection
-      for (const item of items) {
-        await addToCollection.mutateAsync({
-          collection_id: newCollection.id,
+      // Add all items to the new collection in one insert, in their order.
+      await addItemsToCollection.mutateAsync({
+        collectionId: newCollection.id,
+        items: items.map((item) => ({
           item_type: item.item_type,
           item_id: item.item_id,
-        });
-      }
+        })),
+      });
 
       toast.success("Collection cloned to your library!");
       navigate(`/collections/${newCollection.id}/edit`);
     } catch (error) {
       console.error("Error cloning collection:", error);
       toast.error("Failed to clone collection");
+    } finally {
+      setCloning(false);
     }
   };
 
@@ -245,9 +263,9 @@ export default function CollectionDetail() {
                 <Button
                   variant="outline"
                   onClick={handleCloneCollection}
-                  disabled={createCollection.isPending}
+                  disabled={cloning}
                 >
-                  {createCollection.isPending ? (
+                  {cloning ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Copy className="h-4 w-4 mr-2" />
@@ -368,15 +386,40 @@ export default function CollectionDetail() {
                         </div>
                       </Link>
                       {isOwner && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveItem(item.id)}
-                          disabled={removeFromCollection.isPending}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={removeFromCollection.isPending}
+                              className="text-muted-foreground hover:text-destructive"
+                              aria-label={`Remove ${item.data?.title || "item"} from collection`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Remove from collection?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                &ldquo;{item.data?.title || "This item"}&rdquo;
+                                will be removed from this collection. The item
+                                itself is not deleted.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </CardContent>

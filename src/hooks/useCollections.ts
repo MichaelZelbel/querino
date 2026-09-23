@@ -309,6 +309,42 @@ export function useAddToCollection() {
   });
 }
 
+/**
+ * Adds several items in one insert, keeping their order, with no toast of its
+ * own. Cloning a collection used to add item by item, one round trip and one
+ * "Added to collection!" toast per item.
+ */
+export function useAddItemsToCollection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      collectionId,
+      items,
+    }: {
+      collectionId: string;
+      items: { item_type: string; item_id: string }[];
+    }) => {
+      if (items.length === 0) return;
+      const { error } = await supabase.from("collection_items").insert(
+        items.map((item, index) => ({
+          collection_id: collectionId,
+          item_type: item.item_type,
+          item_id: item.item_id,
+          sort_order: index,
+        })),
+      );
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["collection-items", variables.collectionId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
+  });
+}
+
 export function useRemoveFromCollection() {
   const queryClient = useQueryClient();
 

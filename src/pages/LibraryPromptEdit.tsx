@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -80,6 +82,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
+import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface PromptVersion {
   id: string;
@@ -97,6 +101,8 @@ export default function LibraryPromptEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const userId = user?.id;
+  const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
@@ -109,6 +115,9 @@ export default function LibraryPromptEdit() {
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  // Set synchronously before moderation, so a second click or Ctrl+S during
+  // the moderation call (which takes seconds) cannot start a second write.
+  const busyRef = useRef(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
 
   const [showVersionDrawer, setShowVersionDrawer] = useState(false);
@@ -141,19 +150,31 @@ export default function LibraryPromptEdit() {
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
 
-  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
-    data: {
-      title,
-      shortDescription,
-      content,
-      category,
-      tags,
-      isPublic,
-      language,
-    },
-    isSaving,
+  const currentForm = {
+    title,
+    shortDescription,
+    content,
+    category,
+    tags,
+    isPublic,
+    language,
+  };
+  type PromptForm = typeof currentForm;
+
+  const { isDirty, savedAt, markSaved, allowNavigationTo } = useUnsavedChanges({
+    data: currentForm,
+    isSaving: isSaving || isSavingVersion || isPublishing,
     onSave: () => handleSaveChanges(),
   });
+
+  // The last form known to match the database. Unpublish writes only the
+  // visibility, so its new baseline is this one with isPublic flipped, and any
+  // unsaved edits stay unsaved.
+  const savedFormRef = useRef<PromptForm | null>(null);
+  const markFormSaved = (form: PromptForm) => {
+    savedFormRef.current = form;
+    markSaved(form);
+  };
 
   // Put a loaded row into the form and take it as the clean baseline. The
   // baseline is passed explicitly because markSaved() with no argument reads
@@ -175,8 +196,13 @@ export default function LibraryPromptEdit() {
     setTags(form.tags);
     setIsPublic(form.isPublic);
     setLanguage(form.language);
-    markSaved(form);
+    markFormSaved(form);
   };
+
+  // slug|user of the prompt already in the form. A new user object for the
+  // same person (token refresh, tab focus) or the role query settling must
+  // not load the row again over unsaved edits.
+  const loadedKeyRef = useRef<string | null>(null);
 
   // The slug the slug editor just assigned. Changing the slug navigates to the
   // new edit URL, and the fetch effect below is keyed on the slug, so without
@@ -195,12 +221,14 @@ export default function LibraryPromptEdit() {
     async function fetchData() {
       // The admin role arrives from an async query. Deciding before it lands showed an
       // admin "Not Authorized" on every reload of someone else's prompt.
-      if (!slug || !user || roleLoading) return;
+      if (!slug || !userId || roleLoading) return;
+      if (loadedKeyRef.current === `${slug}|${userId}`) return;
 
       // The prompt behind this slug is already loaded: it is the one whose slug
       // was just renamed. Refetching would overwrite unsaved edits.
       if (assignedSlugRef.current === slug) {
         assignedSlugRef.current = null;
+        loadedKeyRef.current = `${slug}|${userId}`;
         return;
       }
 
@@ -222,7 +250,7 @@ export default function LibraryPromptEdit() {
           return;
         }
 
-        if (promptData.author_id !== user.id && !isAdmin) {
+        if (!isAdmin && !(await userCanEditArtifact(promptData, userId))) {
           setNotAuthorized(true);
           return;
         }
@@ -230,6 +258,7 @@ export default function LibraryPromptEdit() {
         const typedPrompt = promptData as Prompt;
         setPrompt(typedPrompt);
         applyPromptToForm(typedPrompt);
+        loadedKeyRef.current = `${slug}|${userId}`;
 
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
@@ -248,10 +277,13 @@ export default function LibraryPromptEdit() {
       }
     }
 
-    if (user && !roleLoading) {
+    if (userId && !roleLoading) {
       fetchData();
     }
-  }, [slug, user, isAdmin, roleLoading]);
+    // Keyed on the user's id, not the user object: a token refresh hands out
+    // a new object and reloading then wiped every unsaved edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, userId, isAdmin, roleLoading]);
 
   // Reload the prompt + versions after a restore from the version panel.
   const handleRestoreComplete = async () => {
@@ -382,24 +414,48 @@ export default function LibraryPromptEdit() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveChanges = async () => {
-    if (!validate() || !promptId || !user) return;
-
-    if (isPublic) {
-      const result = await moderateContent(
-        { title, description: shortDescription, content },
-        "edit_public",
-        "prompt",
-        promptId,
-      );
-      if (!result.approved) {
-        setModerationBlock(result);
-        return;
-      }
+  // Runs the public-content check for a form that is or is about to be public.
+  // Returns false (and shows the block dialog) when it is refused.
+  const passesModeration = async (
+    form: PromptForm,
+    action: "publish" | "edit_public",
+    extra: Record<string, string | null | undefined> = {},
+  ): Promise<boolean> => {
+    if (!promptId) return false;
+    const result = await moderateContent(
+      {
+        title: form.title,
+        description: form.shortDescription,
+        content: form.content,
+        ...extra,
+      },
+      action,
+      "prompt",
+      promptId,
+    );
+    if (!result.approved) {
+      setModerationBlock(result);
+      return false;
     }
+    return true;
+  };
 
+  const handleSaveChanges = async () => {
+    if (busyRef.current || !validate() || !promptId || !user) return;
+
+    // The form as submitted: this is what gets marked saved, so text typed
+    // while the request is in flight stays dirty.
+    const submitted = currentForm;
+    busyRef.current = true;
     setIsSaving(true);
     try {
+      if (
+        submitted.isPublic &&
+        !(await passesModeration(submitted, "edit_public"))
+      ) {
+        return;
+      }
+
       // No author_id filter: an admin is allowed in here too, and row-level security is
       // what decides. The returned rows are checked because PostgREST reports no error
       // when a write matches nothing, which used to show "saved" after saving nothing.
@@ -430,21 +486,34 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      markSaved();
+      markFormSaved(submitted);
+      void invalidateArtifactQueries(queryClient, "prompt");
       toast.success("Changes saved successfully!");
     } catch (err) {
       console.error("Error saving:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
+      busyRef.current = false;
       setIsSaving(false);
     }
   };
 
   const handleSaveAsNewVersion = async () => {
-    if (!validate() || !promptId || !user) return;
+    if (busyRef.current || !validate() || !promptId || !user) return;
 
+    const submitted = currentForm;
+    busyRef.current = true;
     setIsSavingVersion(true);
     try {
+      // The same check as an ordinary save: a new version of a public prompt
+      // is public content too.
+      if (
+        submitted.isPublic &&
+        !(await passesModeration(submitted, "edit_public"))
+      ) {
+        return;
+      }
+
       const nextVersionNumber =
         versions.length > 0 ? versions[0].version_number + 1 : 1;
 
@@ -506,11 +575,14 @@ export default function LibraryPromptEdit() {
       }
 
       setChangeNotes("");
+      markFormSaved(submitted);
+      void invalidateArtifactQueries(queryClient, "prompt");
       toast.success(`Version ${nextVersionNumber} created successfully!`);
     } catch (err) {
       console.error("Error creating version:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
+      busyRef.current = false;
       setIsSavingVersion(false);
     }
   };
@@ -539,6 +611,9 @@ export default function LibraryPromptEdit() {
         return;
       }
 
+      // The row is gone: nothing left to warn about on the way out.
+      markSaved();
+      void invalidateArtifactQueries(queryClient, "prompt");
       toast.success("Prompt deleted successfully!");
       navigate("/library");
     } catch (err) {
@@ -553,13 +628,38 @@ export default function LibraryPromptEdit() {
     summary: string;
     exampleOutput: string;
   }) => {
-    if (!promptId || !user) return;
+    if (busyRef.current || !promptId || !user) return;
+    // Publishing saves the form too. It used to write only the visibility and
+    // the summary, so the edits in the form never reached the public page.
+    if (!validate()) {
+      setShowPublishModal(false);
+      toast.error("Fix the highlighted fields before publishing.");
+      return;
+    }
 
+    const submitted: PromptForm = { ...currentForm, isPublic: true };
+    busyRef.current = true;
     setIsPublishing(true);
     try {
+      if (
+        !(await passesModeration(submitted, "publish", {
+          summary: data.summary,
+          example_output: data.exampleOutput,
+        }))
+      ) {
+        setShowPublishModal(false);
+        return;
+      }
+
       const { data: published, error } = await supabase
         .from("prompts")
         .update({
+          title: submitted.title.trim(),
+          description: submitted.shortDescription.trim(),
+          content: submitted.content.trim(),
+          category: submitted.category,
+          tags: submitted.tags.length > 0 ? submitted.tags : null,
+          language: submitted.language,
           is_public: true,
           published_at: new Date().toISOString(),
           summary: data.summary,
@@ -592,7 +692,12 @@ export default function LibraryPromptEdit() {
             }
           : null,
       );
-      setIsPublic(true);
+      // Render the new visibility before taking the baseline, so the guard
+      // compares against the form as it now is: only text typed during the
+      // publish still counts as unsaved.
+      flushSync(() => setIsPublic(true));
+      markFormSaved(submitted);
+      void invalidateArtifactQueries(queryClient, "prompt");
       setShowPublishModal(false);
       toast.success("Prompt published successfully!");
       navigate(`/prompts/${slug}`);
@@ -600,13 +705,15 @@ export default function LibraryPromptEdit() {
       console.error("Error publishing:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
+      busyRef.current = false;
       setIsPublishing(false);
     }
   };
 
   const handleUnpublish = async () => {
-    if (!promptId || !user) return;
+    if (busyRef.current || !promptId || !user) return;
 
+    busyRef.current = true;
     setIsSaving(true);
     try {
       const { data, error } = await supabase
@@ -632,11 +739,19 @@ export default function LibraryPromptEdit() {
 
       setPrompt((prev) => (prev ? { ...prev, is_public: false } : null));
       setIsPublic(false);
+      // Only the visibility was written: the stored baseline flips with it and
+      // any other unsaved edit stays unsaved.
+      markFormSaved({
+        ...(savedFormRef.current ?? currentForm),
+        isPublic: false,
+      });
+      void invalidateArtifactQueries(queryClient, "prompt");
       toast.success("Prompt unpublished. It's now private.");
     } catch (err) {
       console.error("Error unpublishing:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
+      busyRef.current = false;
       setIsSaving(false);
     }
   };
@@ -1102,7 +1217,8 @@ export default function LibraryPromptEdit() {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveTag(tag)}
-                                  className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                                  aria-label={`Remove tag ${tag}`}
+                                  className="-my-1 ml-0.5 rounded-full p-1.5 hover:bg-muted"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>
@@ -1130,6 +1246,14 @@ export default function LibraryPromptEdit() {
                               // Router navigation, not history.replaceState: the raw
                               // history call left the router's slug param on the old
                               // value, so "View Public Page" kept opening the old slug.
+                              // Same prompt, same editor, new URL: the unsaved
+                              // edits come along, so the leave-page confirm
+                              // must not fire.
+                              void invalidateArtifactQueries(
+                                queryClient,
+                                "prompt",
+                              );
+                              allowNavigationTo(`/library/${newSlug}/edit`);
                               navigate(`/library/${newSlug}/edit`, {
                                 replace: true,
                               });

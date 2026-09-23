@@ -36,7 +36,9 @@
 
 @theme inline {
   /* Fonts (from tailwind.config.ts fontFamily) */
-  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Inter Variable", Inter, system-ui, sans-serif;
+  --font-display:
+    "Bricolage Grotesque Variable", "Bricolage Grotesque", "Inter Variable",
+    Inter, system-ui, sans-serif;
   --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
 
@@ -104,7 +106,7 @@
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-fade-in: fade-in 0.5s ease-out forwards;
-  --animate-fade-in-up: fade-in-up 0.6s ease-out forwards;
+  --animate-fade-in-up: fade-in-up 0.6s ease-out both;
   --animate-scale-in: scale-in 0.3s ease-out forwards;
   --animate-slide-in-right: slide-in-right 0.4s ease-out forwards;
   --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
@@ -654,6 +656,10 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-stage *,
   .speech-bubble {
+    animation: none !important;
+  }
+  /* Entry fade: show content in place, no movement */
+  .animate-fade-in-up {
     animation: none !important;
   }
   /* Caret can keep blinking — it indicates an active input */

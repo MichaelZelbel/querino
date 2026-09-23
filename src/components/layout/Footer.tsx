@@ -26,7 +26,7 @@ export function Footer() {
             <h4 className="text-sm font-semibold text-foreground">Product</h4>
             <nav className="flex flex-col gap-2">
               <Link
-                to="/"
+                to="/discover"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Discover Prompts

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +79,8 @@ import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
+import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface WorkflowFormData {
   title: string;
@@ -93,12 +96,17 @@ export default function WorkflowEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const userId = user?.id;
+  const queryClient = useQueryClient();
   const { checkCredits } = useAICreditsGate();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Set synchronously before moderation, so a second click or Ctrl+S during
+  // the moderation call (which takes seconds) cannot start a second save.
+  const busyRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
@@ -129,7 +137,7 @@ export default function WorkflowEdit() {
 
   const { isDirty, savedAt, markSaved } = useUnsavedChanges({
     data: formData,
-    isSaving: isSubmitting,
+    isSaving: isSubmitting || isSavingVersion,
     onSave: () => handleSaveChanges(),
   });
 
@@ -146,9 +154,12 @@ export default function WorkflowEdit() {
     }
   }, [user, authLoading, navigate, slug]);
 
+  // Depends on the user's id, not the user object: a token refresh or a tab
+  // focus hands out a new object for the same person, and reloading then
+  // wiped every unsaved edit in the form.
   useEffect(() => {
     async function fetchWorkflow() {
-      if (!slug || !user) return;
+      if (!slug || !userId) return;
       try {
         const { data, error } = await (supabase.from("workflows") as any)
           .select("*")
@@ -160,7 +171,7 @@ export default function WorkflowEdit() {
           navigate("/library");
           return;
         }
-        if (data.author_id !== user.id) {
+        if (!(await userCanEditArtifact(data, userId))) {
           toast.error("You don't have permission to edit this workflow");
           navigate("/library");
           return;
@@ -197,8 +208,11 @@ export default function WorkflowEdit() {
         setLoading(false);
       }
     }
-    if (user) fetchWorkflow();
-  }, [slug, user, navigate]);
+    if (userId) fetchWorkflow();
+    // navigate and markSaved are left out on purpose: a new function identity
+    // must never reload the form over unsaved edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, userId]);
 
   const handleApplyAIContent = (newContent: string) => {
     setPreviousContent(formData.content);
@@ -282,7 +296,7 @@ export default function WorkflowEdit() {
   };
 
   const handleSaveChanges = async () => {
-    if (!user || !workflowId) return;
+    if (!user || !workflowId || busyRef.current) return;
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -292,25 +306,29 @@ export default function WorkflowEdit() {
       return;
     }
 
-    if (formData.isPublic) {
-      const result = await moderateContent(
-        {
-          title: formData.title,
-          description: formData.description,
-          content: formData.content,
-        },
-        "edit_public",
-        "workflow",
-        workflowId,
-      );
-      if (!result.approved) {
-        setModerationBlock(result);
-        return;
-      }
-    }
-
+    // The form as submitted: this is what gets marked saved, so text typed
+    // while the request is in flight stays dirty.
+    const submitted = formData;
+    busyRef.current = true;
     setIsSubmitting(true);
     try {
+      if (formData.isPublic) {
+        const result = await moderateContent(
+          {
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+          },
+          "edit_public",
+          "workflow",
+          workflowId,
+        );
+        if (!result.approved) {
+          setModerationBlock(result);
+          return;
+        }
+      }
+
       const { error } = await (supabase.from("workflows") as any)
         .update({
           title: formData.title.trim(),
@@ -326,11 +344,13 @@ export default function WorkflowEdit() {
         toast.error("Failed to update workflow");
         return;
       }
-      markSaved();
+      markSaved(submitted);
+      void invalidateArtifactQueries(queryClient, "workflow");
       toast.success("Changes saved!");
     } catch {
       toast.error("Something went wrong");
     } finally {
+      busyRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -338,7 +358,7 @@ export default function WorkflowEdit() {
   // Save the current state as a numbered version (workflow_versions), then
   // persist to the live row. Mirrors the prompts flow.
   const handleSaveAsNewVersion = async () => {
-    if (!user || !workflowId) return;
+    if (!user || !workflowId || busyRef.current) return;
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -348,25 +368,27 @@ export default function WorkflowEdit() {
       return;
     }
 
-    if (formData.isPublic) {
-      const result = await moderateContent(
-        {
-          title: formData.title,
-          description: formData.description,
-          content: formData.content,
-        },
-        "edit_public",
-        "workflow",
-        workflowId,
-      );
-      if (!result.approved) {
-        setModerationBlock(result);
-        return;
-      }
-    }
-
+    const submitted = formData;
+    busyRef.current = true;
     setIsSavingVersion(true);
     try {
+      if (formData.isPublic) {
+        const result = await moderateContent(
+          {
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+          },
+          "edit_public",
+          "workflow",
+          workflowId,
+        );
+        if (!result.approved) {
+          setModerationBlock(result);
+          return;
+        }
+      }
+
       const { data: latest } = await supabase
         .from("workflow_versions")
         .select("version_number")
@@ -410,11 +432,13 @@ export default function WorkflowEdit() {
       }
 
       setChangeNotes("");
-      markSaved();
+      markSaved(submitted);
+      void invalidateArtifactQueries(queryClient, "workflow");
       toast.success(`Version ${nextVersionNumber} created!`);
     } catch {
       toast.error("Something went wrong");
     } finally {
+      busyRef.current = false;
       setIsSavingVersion(false);
     }
   };
@@ -457,6 +481,9 @@ export default function WorkflowEdit() {
         .delete()
         .eq("id", workflowId);
       if (error) throw error;
+      // The row is gone: nothing left to warn about on the way out.
+      markSaved();
+      void invalidateArtifactQueries(queryClient, "workflow");
       toast.success("Workflow deleted");
       navigate("/library");
     } catch {
@@ -786,7 +813,8 @@ export default function WorkflowEdit() {
                             <button
                               type="button"
                               onClick={() => handleRemoveTag(tag)}
-                              className="ml-1 hover:text-destructive"
+                              aria-label={`Remove tag ${tag}`}
+                              className="-my-1 -mr-1.5 p-1.5 hover:text-destructive"
                             >
                               <X className="h-3 w-3" />
                             </button>

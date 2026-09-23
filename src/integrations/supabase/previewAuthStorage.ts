@@ -2,6 +2,24 @@
 
 // On a Lovable preview surface, broker the auth session to the editor over
 // postMessage so the project's preview surfaces share one login; else localStorage.
+import { safeStorage } from "@/lib/safeStorage";
+
+// Safari private mode and browsers with site data blocked throw on the bare
+// localStorage accessor. This runs while the Supabase client is created, at
+// app start, so a throw here took the whole app down. Returning undefined lets
+// supabase-js fall back to its in-memory store: signed in for this tab only.
+function usableLocalStorage(): Storage | undefined {
+  try {
+    const storage = window.localStorage;
+    const probe = "__querino_storage_probe__";
+    storage.setItem(probe, probe);
+    storage.removeItem(probe);
+    return storage;
+  } catch {
+    return undefined;
+  }
+}
+
 export function brokeredPreviewStorage() {
   if (typeof window === "undefined") return undefined;
   const host = location.hostname;
@@ -30,7 +48,7 @@ export function brokeredPreviewStorage() {
       )?.[1] ?? host.match(new RegExp("^(" + UUID + ")(?=[.-])", "i"))?.[1])
     : undefined;
   const framed = window.parent && window.parent !== window;
-  if (!projectId || !framed) return localStorage;
+  if (!projectId || !framed) return usableLocalStorage();
 
   // Post only to the real editor ancestor, validated as a Lovable origin, so the
   // session token can never reach an untrusted embedder.
@@ -103,21 +121,21 @@ export function brokeredPreviewStorage() {
       // the broker later goes silent. A null reply means never-synced -> keep local.
       if (res && res.ok && typeof res.value === "string") {
         if (res.value === "") {
-          localStorage.removeItem(key);
+          safeStorage.removeItem(key);
           return null;
         }
         return res.value;
       }
-      return localStorage.getItem(key);
+      return safeStorage.getItem(key);
     },
     setItem: (key: string, value: string) => {
-      localStorage.setItem(key, value);
+      safeStorage.setItem(key, value);
       return request("lovable-preview-auth:set", key, value).then(
         () => undefined,
       );
     },
     removeItem: (key: string) => {
-      localStorage.removeItem(key);
+      safeStorage.removeItem(key);
       return request("lovable-preview-auth:remove", key).then(() => undefined);
     },
   };

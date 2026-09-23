@@ -60,7 +60,7 @@ import { toast } from "sonner";
 import { moderateContent } from "@/lib/moderateContent";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
-import { siteOrigin } from "@/config/site";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -82,6 +82,9 @@ export default function PromptDetail({
   const [prompt, setPrompt] = useState<PromptWithAuthor | null>(initialPrompt);
   const [loading, setLoading] = useState(!initialPrompt);
   const [notFound, setNotFound] = useState(false);
+  // A failed request is not a missing prompt: it gets its own screen with a
+  // retry instead of "Prompt Not Found".
+  const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
@@ -108,6 +111,9 @@ export default function PromptDetail({
   const isSaved = prompt?.id ? isPromptSaved(prompt.id) : false;
   const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
   const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
+  // The author or a premium member of the prompt's team, as row-level
+  // security allows.
+  const canEdit = useCanEditArtifact(prompt);
 
   // Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
@@ -163,7 +169,7 @@ export default function PromptDetail({
 
       if (error) {
         console.error("Error fetching prompt:", error);
-        setNotFound(true);
+        setLoadError(true);
       } else if (!data) {
         // Prompt not found by current slug — check redirect history
         const { data: redirect } = await supabase
@@ -193,10 +199,12 @@ export default function PromptDetail({
           author: (data as any).profiles || null,
         };
         setPrompt(promptData);
+        setNotFound(false);
+        setLoadError(false);
       }
     } catch (err) {
       console.error("Error fetching prompt:", err);
-      setNotFound(true);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -339,13 +347,43 @@ export default function PromptDetail({
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <Header />
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <Skeleton className="mb-4 h-8 w-48" />
             <Skeleton className="mb-8 h-12 w-3/4" />
             <Skeleton className="mb-4 h-6 w-24" />
             <Skeleton className="mb-8 h-24 w-full" />
             <Skeleton className="h-48 w-full" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loadError && !prompt) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="flex-1 py-20">
+          <div className="container mx-auto max-w-4xl px-4 text-center">
+            <h1 className="mb-4 text-display-md font-bold text-foreground">
+              Couldn't load this prompt
+            </h1>
+            <p className="mb-8 text-lg text-muted-foreground">
+              Something went wrong while loading it. Check your connection and
+              try again.
+            </p>
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setLoadError(false);
+                setLoading(true);
+                void fetchPrompt();
+              }}
+            >
+              Try again
+            </Button>
           </div>
         </main>
         <Footer />
@@ -379,36 +417,11 @@ export default function PromptDetail({
     );
   }
 
-  const promptCanonical = `${siteOrigin()}/prompts/${prompt.slug}`;
-  const promptDescription =
-    prompt.summary ||
-    prompt.description ||
-    `${prompt.title} — AI prompt on Querino`;
-  const promptJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: prompt.title,
-    headline: prompt.title,
-    description: promptDescription,
-    genre: prompt.category,
-    url: promptCanonical,
-    inLanguage: prompt.language || "en",
-    ...(prompt.created_at && { datePublished: prompt.created_at }),
-    ...(prompt.updated_at && { dateModified: prompt.updated_at }),
-    ...(prompt.author?.display_name && {
-      author: { "@type": "Person", name: prompt.author.display_name },
-    }),
-    publisher: { "@type": "Organization", name: "Querino" },
-    // No aggregateRating: Google only allows ratings on specific types
-    // (Product, Book, ...) — on generic CreativeWork it is a critical
-    // "Invalid object type" error in Search Console.
-  };
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <div className="flex flex-1">
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             {/* Back Link */}
             <button
@@ -578,14 +591,17 @@ export default function PromptDetail({
                 </Button>
               )}
 
+              {canEdit && (
+                <Link to={`/library/${prompt.slug}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Prompt
+                  </Button>
+                </Link>
+              )}
+
               {isAuthor && (
                 <>
-                  <Link to={`/library/${prompt.slug}/edit`}>
-                    <Button size="lg" variant="outline" className="gap-2">
-                      <Pencil className="h-4 w-4" />
-                      Edit Prompt
-                    </Button>
-                  </Link>
                   <Button
                     size="lg"
                     variant="outline"

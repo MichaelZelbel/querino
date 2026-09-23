@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { useNavigate, Link, useSearchParams } from "@/lib/router-compat";
 import { useDraftHandoff } from "@/lib/draftHandoff";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -43,6 +46,7 @@ import {
 } from "@/lib/runCanvasAI";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateSlug } from "@/hooks/useGenerateSlug";
+import { insertWithUniqueSlug } from "@/lib/uniqueSlugInsert";
 
 export default function SkillNew() {
   const navigate = useNavigate();
@@ -51,7 +55,9 @@ export default function SkillNew() {
   const { checkCredits } = useAICreditsGate();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
 
   const [content, setContent] = useState(searchParams.get("content") || "");
@@ -97,6 +103,30 @@ export default function SkillNew() {
       navigate("/auth?redirect=/skills/new", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  // Leave-page warning. The baseline is what the page opened with, including
+  // a draft handed over by an import or translation: that draft is applied in
+  // an effect after mount, so the baseline is taken one render later.
+  const { markSaved } = useUnsavedChanges({
+    data: { title, description, content, category, tags, isPublic, language },
+    isSaving: isSubmitting,
+    onSave: () => undefined,
+    enableShortcut: false,
+  });
+  const [baselineArmed, setBaselineArmed] = useState(false);
+  useEffect(() => {
+    setBaselineArmed(true);
+  }, []);
+  useEffect(() => {
+    if (baselineArmed) markSaved();
+  }, [baselineArmed, markSaved]);
+  // After a create, navigate only once the guard has seen the clean state:
+  // the hook reads "dirty" from a ref it updates in an effect, so navigating
+  // in the same tick as markSaved() would still raise the leave prompt.
+  const [createdPath, setCreatedPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (createdPath) navigate(createdPath);
+  }, [createdPath, navigate]);
 
   const handleApplyAIContent = (newContent: string) => {
     setPreviousContent(content);
@@ -185,42 +215,50 @@ export default function SkillNew() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
-
-    if (isPublic) {
-      const result = await moderateContent(
-        { title, description, content },
-        "publish",
-        "skill",
-      );
-      if (!result.approved) {
-        setModerationBlock(result);
-        return;
-      }
-    }
-
+    // Busy from the first click: moderation takes a round trip, and a second
+    // click during it used to create the skill twice.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      if (isPublic) {
+        const result = await moderateContent(
+          { title, description, content },
+          "publish",
+          "skill",
+        );
+        if (!result.approved) {
+          setModerationBlock(result);
+          return;
+        }
+      }
+
       const slug = await generateSlug(title.trim());
 
-      const { data: newSkill, error } = await supabase
-        .from("skills")
-        .insert({
-          title: title.trim(),
-          description: description.trim() || null,
-          content: content.trim(),
-          category,
-          tags: tags.length > 0 ? tags : null,
-          author_id: user.id,
-          // The artifact belongs to the workspace that is selected, the way the Docs
-          // page promises. Without this a skill made in a team view was created
-          // personal and never showed up in the team's library.
-          team_id: currentWorkspace !== "personal" ? currentWorkspace : null,
-          published: isPublic,
-          language,
-          slug,
-        })
-        .select("id, slug")
-        .single();
+      const { data: newSkill, error } = await insertWithUniqueSlug(
+        slug,
+        (slug) =>
+          supabase
+            .from("skills")
+            .insert({
+              title: title.trim(),
+              description: description.trim() || null,
+              content: content.trim(),
+              category,
+              tags: tags.length > 0 ? tags : null,
+              author_id: user.id,
+              // The artifact belongs to the workspace that is selected, the way the Docs
+              // page promises. Without this a skill made in a team view was created
+              // personal and never showed up in the team's library.
+              team_id:
+                currentWorkspace !== "personal" ? currentWorkspace : null,
+              published: isPublic,
+              language,
+              ...(slug ? { slug } : {}),
+            })
+            .select("id, slug")
+            .single(),
+      );
 
       if (error) {
         toast.error("Failed to create skill");
@@ -232,11 +270,14 @@ export default function SkillNew() {
         promoteDraftSession(workspaceScope, user.id, newSkill.id, "skill");
       }
 
+      void invalidateArtifactQueries(queryClient, "skill");
       toast.success("Skill created!");
-      navigate(`/skills/${newSkill.slug}`);
+      markSaved();
+      setCreatedPath(`/skills/${newSkill.slug}`);
     } catch {
       toast.error("Something went wrong");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -443,7 +484,8 @@ export default function SkillNew() {
                             <button
                               type="button"
                               onClick={() => handleRemoveTag(tag)}
-                              className="ml-1 hover:text-destructive"
+                              aria-label={`Remove tag ${tag}`}
+                              className="ml-1 rounded-full p-1.5 hover:text-destructive"
                             >
                               <X className="h-3 w-3" />
                             </button>

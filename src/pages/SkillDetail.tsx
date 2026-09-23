@@ -48,7 +48,7 @@ import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
-import { siteOrigin } from "@/config/site";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
@@ -68,6 +68,9 @@ export default function SkillDetail({
   const [skill, setSkill] = useState<SkillWithAuthor | null>(initialSkill);
   const [loading, setLoading] = useState(!initialSkill);
   const [notFound, setNotFound] = useState(false);
+  // A failed request is not a missing skill: it gets its own screen with a
+  // retry instead of "Skill Not Found".
+  const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
@@ -86,6 +89,9 @@ export default function SkillDetail({
     updateSuggestionAfterChanges,
   } = useSuggestions("skill", skill?.id || "");
   const isAuthor = skill?.author_id && user?.id === skill.author_id;
+  // The author or a premium member of the skill's team, as row-level
+  // security allows.
+  const canEdit = useCanEditArtifact(skill);
 
   // Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
@@ -136,7 +142,7 @@ export default function SkillDetail({
 
       if (error) {
         console.error("Error fetching skill:", error);
-        setNotFound(true);
+        setLoadError(true);
       } else if (!data) {
         setNotFound(true);
       } else {
@@ -145,10 +151,12 @@ export default function SkillDetail({
           author: data.profiles || null,
         };
         setSkill(skillData);
+        setNotFound(false);
+        setLoadError(false);
       }
     } catch (err) {
       console.error("Error fetching skill:", err);
-      setNotFound(true);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -211,11 +219,41 @@ export default function SkillDetail({
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <Header />
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <Skeleton className="mb-4 h-8 w-48" />
             <Skeleton className="mb-8 h-12 w-3/4" />
             <Skeleton className="h-48 w-full" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loadError && !skill) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="flex-1 py-20">
+          <div className="container mx-auto max-w-4xl px-4 text-center">
+            <h1 className="mb-4 text-display-md font-bold text-foreground">
+              Couldn't load this skill
+            </h1>
+            <p className="mb-8 text-lg text-muted-foreground">
+              Something went wrong while loading it. Check your connection and
+              try again.
+            </p>
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setLoadError(false);
+                setLoading(true);
+                void fetchSkill();
+              }}
+            >
+              Try again
+            </Button>
           </div>
         </main>
         <Footer />
@@ -249,34 +287,11 @@ export default function SkillDetail({
     );
   }
 
-  const skillCanonical = `${siteOrigin()}/skills/${skill.slug || skill.id}`;
-  const skillDescription =
-    skill.description || `${skill.title} — AI skill on Querino`;
-  const skillJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: skill.title,
-    headline: skill.title,
-    description: skillDescription,
-    genre: skill.category,
-    url: skillCanonical,
-    inLanguage: skill.language || "en",
-    ...(skill.created_at && { datePublished: skill.created_at }),
-    ...(skill.updated_at && { dateModified: skill.updated_at }),
-    ...(skill.author?.display_name && {
-      author: { "@type": "Person", name: skill.author.display_name },
-    }),
-    publisher: { "@type": "Organization", name: "Querino" },
-    // No aggregateRating: Google only allows ratings on specific types
-    // (Product, Book, ...) — on generic CreativeWork it is a critical
-    // "Invalid object type" error in Search Console.
-  };
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <div className="flex flex-1">
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <button
               onClick={() => navigate(-1)}
@@ -375,14 +390,17 @@ export default function SkillDetail({
 
               <SendToLLMButtons title={skill.title} content={skill.content} />
 
+              {canEdit && (
+                <Link to={`/skills/${skill.slug}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Skill
+                  </Button>
+                </Link>
+              )}
+
               {isAuthor && (
                 <>
-                  <Link to={`/skills/${skill.slug}/edit`}>
-                    <Button size="lg" variant="outline" className="gap-2">
-                      <Pencil className="h-4 w-4" />
-                      Edit Skill
-                    </Button>
-                  </Link>
                   <Button
                     size="lg"
                     variant="outline"

@@ -224,15 +224,51 @@ export function useRemoveTeamMember() {
 
   return useMutation({
     mutationFn: async (memberId: string) => {
-      const { error } = await supabase
+      // RLS turns a forbidden delete into "0 rows, no error"; count the rows so
+      // the UI never reports a removal that did not happen.
+      const { data, error } = await supabase
         .from("team_members")
         .delete()
-        .eq("id", memberId);
+        .eq("id", memberId)
+        .select("id");
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("You do not have permission to remove this member.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
+    },
+  });
+}
+
+/** The signed-in user leaves a team by deleting their own membership row. */
+export function useLeaveTeam() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthContext();
+
+  return useMutation({
+    mutationFn: async (teamId: string) => {
+      if (!user) throw new Error("You need to be signed in.");
+
+      const { data, error } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("team_id", teamId)
+        .eq("user_id", user.id)
+        .neq("role", "owner")
+        .select("id");
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Could not leave this team. Please try again.");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      queryClient.invalidateQueries({ queryKey: ["user-teams"] });
+      queryClient.invalidateQueries({ queryKey: ["team-role"] });
     },
   });
 }

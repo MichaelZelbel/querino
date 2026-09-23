@@ -64,11 +64,9 @@ export function PremiumGate({
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
             {featureName} is a Premium feature. Contact support to learn more.
           </p>
-          <a href="mailto:support@querino.ai">
-            <Button size="sm" variant="outline" className="gap-2">
-              Contact Support
-            </Button>
-          </a>
+          <Button asChild size="sm" variant="outline" className="gap-2">
+            <a href="mailto:support@querino.ai">Contact Support</a>
+          </Button>
         </div>
       );
     }
@@ -85,11 +83,14 @@ export function PremiumGate({
           <span className="text-sm text-muted-foreground flex-1">
             {featureName} requires Premium
           </span>
-          <a href="mailto:support@querino.ai">
-            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
-              Contact Support
-            </Button>
-          </a>
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-7 text-xs"
+          >
+            <a href="mailto:support@querino.ai">Contact Support</a>
+          </Button>
         </div>
       );
     }
@@ -109,11 +110,9 @@ export function PremiumGate({
             This feature requires Querino Premium. Contact support for more
             information.
           </p>
-          <a href="mailto:support@querino.ai">
-            <Button variant="outline" className="gap-2">
-              Contact Support
-            </Button>
-          </a>
+          <Button asChild variant="outline" className="gap-2">
+            <a href="mailto:support@querino.ai">Contact Support</a>
+          </Button>
         </div>
       </div>
     );

@@ -22,7 +22,7 @@ set:function(v){v=String(v);if(!ok()&&/^\\s*session-id=/.test(v)&&!/max-age=0/i.
 var X=XMLHttpRequest.prototype,o=X.open,s=X.send;
 X.open=function(m,u){this.__qStat=String(u).indexOf(A)!==-1;return o.apply(this,arguments)};
 X.send=function(){if(this.__qStat&&!ok())return;return s.apply(this,arguments)};
-if(window.fetch){var f=window.fetch;window.fetch=function(i){var u=typeof i==="string"?i:(i&&i.url)||"";if(String(u).indexOf(A)!==-1&&!ok())return Promise.resolve(new Response(null,{status:204}));return f.apply(this,arguments)}}
+if(window.fetch){var f=window.fetch;window.fetch=function(i){var u=typeof Request!=="undefined"&&i instanceof Request?i.url:String(i);if(String(u).indexOf(A)!==-1&&!ok())return Promise.resolve(new Response(null,{status:204}));return f.apply(this,arguments)}}
 if(navigator.sendBeacon){var b=navigator.sendBeacon.bind(navigator);navigator.sendBeacon=function(u){if(String(u).indexOf(A)!==-1&&!ok())return true;return b.apply(null,arguments)}}
 })();`;
 

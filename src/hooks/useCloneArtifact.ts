@@ -2,6 +2,19 @@ import { useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  invalidateArtifactQueries,
+  type ArtifactKind,
+} from "@/lib/invalidateArtifactQueries";
+
+// The table a clone goes into decides which cached lists must refetch.
+const KIND_BY_TABLE: Record<string, ArtifactKind> = {
+  prompts: "prompt",
+  skills: "skill",
+  workflows: "workflow",
+  prompt_kits: "prompt_kit",
+};
 
 interface CloneConfig<S> {
   /** Target table, e.g. "skills" */
@@ -23,6 +36,7 @@ export function createCloneHook<S extends { id: string; title: string }>(
 ) {
   return function useCloneArtifact() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [cloning, setCloning] = useState(false);
 
     const clone = async (source: S, userId: string): Promise<string | null> => {
@@ -46,6 +60,8 @@ export function createCloneHook<S extends { id: string; title: string }>(
           return null;
         }
 
+        const kind = KIND_BY_TABLE[config.table];
+        if (kind) void invalidateArtifactQueries(queryClient, kind);
         toast.success(
           `${config.label[0].toUpperCase()}${config.label.slice(1)} cloned to your library!`,
         );

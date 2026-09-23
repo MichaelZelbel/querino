@@ -227,7 +227,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <Command className="rounded-lg border shadow-md">
         <CommandInput
-          placeholder="Search artefacts, run commands..."
+          placeholder="Search artifacts, run commands..."
           value={query}
           onValueChange={setQuery}
         />
@@ -283,11 +283,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             </>
           )}
 
-          {/* User Artefacts */}
+          {/* User artifacts */}
           {artefacts.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Your Artefacts">
+              <CommandGroup heading="Your Artifacts">
                 {artefacts.map((artefact) => {
                   const Icon = artefactIcons[artefact.type];
                   const route =

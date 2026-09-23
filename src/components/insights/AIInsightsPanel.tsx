@@ -78,6 +78,7 @@ export function AIInsightsPanel({
         variant="outline"
         size="sm"
         onClick={() => setIsOpen(true)}
+        aria-label="Open AI Insights"
         className="fixed right-0 top-1/2 -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 z-40"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -93,7 +94,7 @@ export function AIInsightsPanel({
   // Locked state for free users
   if (!isPremium) {
     return (
-      <div className="w-80 border-l bg-card flex flex-col h-full">
+      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-xl md:static md:z-auto md:w-80 md:max-w-none md:shadow-none border-l bg-card flex flex-col h-full">
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -138,7 +139,7 @@ export function AIInsightsPanel({
 
   // Full access for premium/team users
   return (
-    <div className="w-80 border-l bg-card flex flex-col h-full">
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-xl md:static md:z-auto md:w-80 md:max-w-none md:shadow-none border-l bg-card flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex items-center gap-2">

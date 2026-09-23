@@ -25,6 +25,7 @@ import {
   getAndClearRedirectPath,
   getRedirectFromParams,
 } from "@/lib/authRedirect";
+import { siteOrigin } from "@/config/site";
 
 const REDIRECT_LABELS: Record<string, string> = {
   "/library": "your library",
@@ -105,6 +106,7 @@ export default function Auth() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [signupEmail, setSignupEmail] = useState("");
   const [signupsClosed, setSignupsClosed] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
 
   // Check signup availability on mount
   useEffect(() => {
@@ -190,12 +192,46 @@ export default function Auth() {
             toast.error(error.message);
           }
         } else {
+          // Remember where the user was headed, so the restore effect above can
+          // send them on once the confirmation link brings them back signed in.
+          storeRedirectPath(safeRedirect(getRedirectFromParams(searchParams)));
           setSignupEmail(email);
           setSignupSuccess(true);
         }
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (resetSending) return;
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setErrors((prev) => ({
+        ...prev,
+        email: "Enter your email above, then ask for a reset link",
+      }));
+      return;
+    }
+    setErrors((prev) => ({ ...prev, email: undefined }));
+    setResetSending(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteOrigin()}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Check your inbox for a reset link");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not send the reset link",
+      );
+    } finally {
+      setResetSending(false);
     }
   };
 
@@ -341,13 +377,21 @@ export default function Auth() {
                       <Input
                         id="email"
                         type="email"
+                        autoComplete="email"
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={loading}
+                        aria-invalid={errors.email ? true : undefined}
+                        aria-describedby={
+                          errors.email ? "email-error" : undefined
+                        }
                       />
                       {errors.email && (
-                        <p className="text-sm text-destructive">
+                        <p
+                          id="email-error"
+                          className="text-sm text-destructive"
+                        >
                           {errors.email}
                         </p>
                       )}
@@ -358,16 +402,37 @@ export default function Auth() {
                       <Input
                         id="password"
                         type="password"
+                        autoComplete="current-password"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={loading}
+                        aria-invalid={errors.password ? true : undefined}
+                        aria-describedby={
+                          errors.password ? "password-error" : undefined
+                        }
                       />
                       {errors.password && (
-                        <p className="text-sm text-destructive">
+                        <p
+                          id="password-error"
+                          className="text-sm text-destructive"
+                        >
                           {errors.password}
                         </p>
                       )}
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleForgotPassword}
+                          disabled={resetSending || loading}
+                          className="inline-flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+                        >
+                          {resetSending && (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          )}
+                          Forgot password?
+                        </button>
+                      </div>
                     </div>
 
                     <Button
@@ -509,13 +574,21 @@ export default function Auth() {
                           <Input
                             id="signup-email"
                             type="email"
+                            autoComplete="email"
                             placeholder="you@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
+                            aria-invalid={errors.email ? true : undefined}
+                            aria-describedby={
+                              errors.email ? "signup-email-error" : undefined
+                            }
                           />
                           {errors.email && (
-                            <p className="text-sm text-destructive">
+                            <p
+                              id="signup-email-error"
+                              className="text-sm text-destructive"
+                            >
                               {errors.email}
                             </p>
                           )}
@@ -526,13 +599,23 @@ export default function Auth() {
                           <Input
                             id="signup-password"
                             type="password"
+                            autoComplete="new-password"
                             placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={loading}
+                            aria-invalid={errors.password ? true : undefined}
+                            aria-describedby={
+                              errors.password
+                                ? "signup-password-error"
+                                : undefined
+                            }
                           />
                           {errors.password && (
-                            <p className="text-sm text-destructive">
+                            <p
+                              id="signup-password-error"
+                              className="text-sm text-destructive"
+                            >
                               {errors.password}
                             </p>
                           )}

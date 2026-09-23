@@ -11,6 +11,8 @@ export interface ArtifactListOptions {
   teamId?: string;
   /** Server-side category filter (undefined/"all" = no filter). */
   category?: string;
+  /** Server-side tag filter: only rows whose tags array contains this tag. */
+  tag?: string;
   /** Browse sort. Ignored while searching (relevance order wins). */
   sortBy?: ArtifactSortOption;
   /** Cap the number of rows fetched. Public discovery surfaces pass this so
@@ -55,6 +57,7 @@ export function createArtifactListHook<T extends { id: string }>(
       authorId,
       teamId,
       category,
+      tag,
       sortBy = "newest",
       limit,
     } = options;
@@ -67,6 +70,7 @@ export function createArtifactListHook<T extends { id: string }>(
         authorId,
         teamId,
         category,
+        tag,
         sortBy,
         limit,
       ],
@@ -95,6 +99,10 @@ export function createArtifactListHook<T extends { id: string }>(
 
         if (category && category !== "all") {
           query = query.eq("category", category);
+        }
+
+        if (tag) {
+          query = query.contains("tags", [tag]);
         }
 
         if (teamId) {
@@ -127,13 +135,19 @@ export function createArtifactListHook<T extends { id: string }>(
 
         // Hybrid: append semantic-only matches for public searches
         if (published === true && searchQuery.trim().length >= 3) {
-          return await mergeWithSemantic(
+          const merged = await mergeWithSemantic(
             config.semanticType,
             searchQuery.trim(),
             ftsResults,
             fetchByIds,
             { category },
           );
+          // Semantic matches are fetched by id and skip the tag filter above.
+          return tag
+            ? merged.filter((item) =>
+                ((item as { tags?: string[] | null }).tags || []).includes(tag),
+              )
+            : merged;
         }
 
         return ftsResults;

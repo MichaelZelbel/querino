@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { useNavigate, useSearchParams, Link } from "@/lib/router-compat";
 import { useDraftHandoff } from "@/lib/draftHandoff";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -50,6 +53,7 @@ import {
   promoteDraftSession,
 } from "@/lib/runCanvasAI";
 import { generateSlug } from "@/hooks/useGenerateSlug";
+import { insertWithUniqueSlug } from "@/lib/uniqueSlugInsert";
 
 export default function PromptNew() {
   const navigate = useNavigate();
@@ -57,7 +61,9 @@ export default function PromptNew() {
   const { user, loading: authLoading } = useAuthContext();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   // Form state
   const [title, setTitle] = useState(searchParams.get("title") || "");
@@ -112,6 +118,38 @@ export default function PromptNew() {
       navigate("/auth?redirect=/prompts/new", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  // Leave-page warning. The baseline is what the page opened with, including
+  // a draft handed over by an import or translation: that draft is applied in
+  // an effect after mount, so the baseline is taken one render later.
+  const { markSaved } = useUnsavedChanges({
+    data: {
+      title,
+      shortDescription,
+      content,
+      category,
+      tags,
+      isPublic,
+      language,
+    },
+    isSaving: isSubmitting,
+    onSave: () => undefined,
+    enableShortcut: false,
+  });
+  const [baselineArmed, setBaselineArmed] = useState(false);
+  useEffect(() => {
+    setBaselineArmed(true);
+  }, []);
+  useEffect(() => {
+    if (baselineArmed) markSaved();
+  }, [baselineArmed, markSaved]);
+  // After a create, navigate only once the guard has seen the clean state:
+  // the hook reads "dirty" from a ref it updates in an effect, so navigating
+  // in the same tick as markSaved() would still raise the leave prompt.
+  const [createdPath, setCreatedPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (createdPath) navigate(createdPath);
+  }, [createdPath, navigate]);
 
   const normalizeTag = (tag: string): string => {
     return tag
@@ -201,46 +239,54 @@ export default function PromptNew() {
 
   const handleCreate = async () => {
     if (!validate() || !user) return;
-
-    // Moderation check if publishing publicly
-    if (isPublic) {
-      const result = await moderateContent(
-        { title, description: shortDescription, content },
-        "publish",
-        "prompt",
-      );
-      if (!result.approved) {
-        setModerationBlock(result);
-        return;
-      }
-    }
-
+    // Busy from the first click: moderation takes a round trip, and a second
+    // click during it used to create the prompt twice.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // Moderation check if publishing publicly
+      if (isPublic) {
+        const result = await moderateContent(
+          { title, description: shortDescription, content },
+          "publish",
+          "prompt",
+        );
+        if (!result.approved) {
+          setModerationBlock(result);
+          return;
+        }
+      }
+
       const slug = await generateSlug(title.trim());
 
-      const { data: newPrompt, error } = await supabase
-        .from("prompts")
-        .insert({
-          title: title.trim(),
-          description: shortDescription.trim(),
-          content: content.trim(),
-          category,
-          tags: tags.length > 0 ? tags : null,
-          is_public: isPublic,
-          author_id: user.id,
-          // The artifact belongs to the workspace that is selected, the way the Docs
-          // page promises. Without this a prompt made in a team view was created
-          // personal and never showed up in the team's library.
-          team_id: currentWorkspace !== "personal" ? currentWorkspace : null,
-          rating_avg: 0,
-          rating_count: 0,
-          copies_count: 0,
-          language,
-          slug,
-        })
-        .select("id, slug")
-        .single();
+      const { data: newPrompt, error } = await insertWithUniqueSlug(
+        slug,
+        (slug) =>
+          supabase
+            .from("prompts")
+            .insert({
+              title: title.trim(),
+              description: shortDescription.trim(),
+              content: content.trim(),
+              category,
+              tags: tags.length > 0 ? tags : null,
+              is_public: isPublic,
+              author_id: user.id,
+              // The artifact belongs to the workspace that is selected, the way the Docs
+              // page promises. Without this a prompt made in a team view was created
+              // personal and never showed up in the team's library.
+              team_id:
+                currentWorkspace !== "personal" ? currentWorkspace : null,
+              rating_avg: 0,
+              rating_count: 0,
+              copies_count: 0,
+              language,
+              ...(slug ? { slug } : {}),
+            })
+            .select("id, slug")
+            .single(),
+      );
 
       if (error) {
         console.error(
@@ -253,6 +299,8 @@ export default function PromptNew() {
         toast.error(`Failed to create prompt: ${error.message}`);
         return;
       }
+
+      void invalidateArtifactQueries(queryClient, "prompt");
 
       // Create version 1
       const { error: versionError } = await supabase
@@ -307,11 +355,13 @@ export default function PromptNew() {
         toast.success("Prompt created successfully!");
       }
 
-      navigate(`/prompts/${newPrompt.slug}`);
+      markSaved();
+      setCreatedPath(`/prompts/${newPrompt.slug}`);
     } catch (err) {
       console.error("Error creating prompt:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -573,7 +623,8 @@ export default function PromptNew() {
                             <button
                               type="button"
                               onClick={() => handleRemoveTag(tag)}
-                              className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                              aria-label={`Remove tag ${tag}`}
+                              className="ml-1 rounded-full p-1.5 hover:bg-muted"
                             >
                               <X className="h-3 w-3" />
                             </button>

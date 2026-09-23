@@ -44,6 +44,7 @@ import {
   ArrowUp,
   ArrowDown,
   Save,
+  Package,
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import {
@@ -67,6 +68,8 @@ import { Footer } from "@/components/layout/Footer";
 type CollectionItemData =
   { id: string; title: string; description: string | null } | null | undefined;
 
+type PickerType = "prompt" | "skill" | "workflow" | "prompt_kit";
+
 export default function CollectionEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -81,6 +84,9 @@ export default function CollectionEdit() {
   const { data: myPrompts } = useMyPrompts(user?.id);
   const { data: mySkills } = useOwnItemsForPicker("skill", user?.id);
   const { data: myWorkflows } = useOwnItemsForPicker("workflow", user?.id);
+  // collection_items accepts prompt_kit (check constraint of migration
+  // 20260916120000); the picker simply never offered it.
+  const { data: myKits } = useOwnItemsForPicker("prompt_kit", user?.id);
   // Items already in the collection are resolved by id, whatever their
   // visibility; the public catalogue showed private ones as "Unknown".
   const { data: itemDetails } = useCollectionItemDetails(items);
@@ -97,9 +103,7 @@ export default function CollectionEdit() {
   const [initialized, setInitialized] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addItemType, setAddItemType] = useState<
-    "prompt" | "skill" | "workflow"
-  >("prompt");
+  const [addItemType, setAddItemType] = useState<PickerType>("prompt");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize form when collection loads
@@ -166,6 +170,7 @@ export default function CollectionEdit() {
   const userPrompts = myPrompts || [];
   const userSkills = mySkills || [];
   const userWorkflows = myWorkflows || [];
+  const userKits = myKits || [];
 
   const getAvailableItems = () => {
     const existingIds = new Set(items?.map((i) => i.item_id) || []);
@@ -175,6 +180,8 @@ export default function CollectionEdit() {
       available = userPrompts.filter((p) => !existingIds.has(p.id));
     } else if (addItemType === "skill") {
       available = userSkills.filter((s) => !existingIds.has(s.id));
+    } else if (addItemType === "prompt_kit") {
+      available = userKits.filter((k) => !existingIds.has(k.id));
     } else {
       available = userWorkflows.filter((w) => !existingIds.has(w.id));
     }
@@ -245,6 +252,8 @@ export default function CollectionEdit() {
         return <Code className="h-4 w-4" />;
       case "workflow":
         return <Workflow className="h-4 w-4" />;
+      case "prompt_kit":
+        return <Package className="h-4 w-4" />;
       default:
         return null;
     }
@@ -397,23 +406,23 @@ export default function CollectionEdit() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5"
+                          className="h-8 w-8 sm:h-5 sm:w-5"
                           onClick={() => handleMoveItem(index, -1)}
                           disabled={index === 0 || updateItemOrder.isPending}
-                          aria-label="Move item up"
+                          aria-label={`Move ${item.data?.title || "item"} up`}
                         >
                           <ArrowUp className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5"
+                          className="h-8 w-8 sm:h-5 sm:w-5"
                           onClick={() => handleMoveItem(index, 1)}
                           disabled={
                             index === itemsWithData.length - 1 ||
                             updateItemOrder.isPending
                           }
-                          aria-label="Move item down"
+                          aria-label={`Move ${item.data?.title || "item"} down`}
                         >
                           <ArrowDown className="h-3.5 w-3.5" />
                         </Button>
@@ -447,7 +456,7 @@ export default function CollectionEdit() {
                   variant="compact"
                   icon={FileText}
                   title="No items in this collection yet"
-                  description="Add prompts, skills, or workflows from your library to organise them here."
+                  description="Add prompts, skills, workflows or prompt kits from your library to organise them here."
                   primaryAction={{
                     label: "Add item",
                     icon: Plus,
@@ -473,7 +482,7 @@ export default function CollectionEdit() {
               <Label>Type</Label>
               <Select
                 value={addItemType}
-                onValueChange={(v) => setAddItemType(v as any)}
+                onValueChange={(v) => setAddItemType(v as PickerType)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -482,6 +491,7 @@ export default function CollectionEdit() {
                   <SelectItem value="prompt">Prompt</SelectItem>
                   <SelectItem value="skill">Skill</SelectItem>
                   <SelectItem value="workflow">Workflow</SelectItem>
+                  <SelectItem value="prompt_kit">Prompt Kit</SelectItem>
                 </SelectContent>
               </Select>
             </div>

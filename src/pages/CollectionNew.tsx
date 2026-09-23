@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCreateCollection } from "@/hooks/useCollections";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -29,13 +30,32 @@ export default function CollectionNew() {
     if (notSignedIn) navigate("/auth?redirect=/collections/new");
   }, [notSignedIn, navigate]);
 
+  // Leave-page warning once the user has typed something. The empty form of
+  // the first render is the baseline.
+  const { markSaved } = useUnsavedChanges({
+    data: { title, description, isPublic },
+    isSaving: createCollection.isPending,
+    onSave: () => undefined,
+    enableShortcut: false,
+  });
+  useEffect(() => {
+    markSaved();
+  }, [markSaved]);
+  // After a create, navigate only once the guard has seen the clean state:
+  // the hook reads "dirty" from a ref it updates in an effect, so navigating
+  // in the same tick as markSaved() would still raise the leave prompt.
+  const [createdPath, setCreatedPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (createdPath) navigate(createdPath);
+  }, [createdPath, navigate]);
+
   if (notSignedIn) {
     return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !user) return;
+    if (!title.trim() || !user || createCollection.isPending) return;
 
     try {
       const collection = await createCollection.mutateAsync({
@@ -44,7 +64,8 @@ export default function CollectionNew() {
         is_public: isPublic,
         owner_id: user.id,
       });
-      navigate(`/collections/${collection.id}/edit`);
+      markSaved();
+      setCreatedPath(`/collections/${collection.id}/edit`);
     } catch (error) {
       console.error("Error creating collection:", error);
     }

@@ -111,23 +111,37 @@ export function PromptKitCard({
       <CardFooter className="flex flex-col gap-2 border-t border-border/50 pt-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            {showAuthorInfo && kit.author && (
-              <Link
-                to={`/u/${encodeURIComponent(kit.author.display_name || "")}`}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={kit.author.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px] bg-muted">
-                    {getAuthorInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
-                  {kit.author.display_name || "Anonymous"}
+            {showAuthorInfo &&
+              kit.author &&
+              (kit.author.display_name ? (
+                <Link
+                  to={`/u/${encodeURIComponent(kit.author.display_name)}`}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={kit.author.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                    {kit.author.display_name || "Anonymous"}
+                  </span>
+                </Link>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={kit.author.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                    {kit.author.display_name || "Anonymous"}
+                  </span>
                 </span>
-              </Link>
-            )}
+              ))}
             {kit.rating_count && kit.rating_count > 0 ? (
               <div className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" />
@@ -147,11 +161,17 @@ export function PromptKitCard({
 
           <div className="flex items-center gap-1">
             {isAuthor && showEditButton && (
-              <Link to={`/prompt-kits/${kit.slug}/edit`}>
-                <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
+              <Button
+                asChild
+                aria-label="Edit"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 h-8 px-2"
+              >
+                <Link to={`/prompt-kits/${kit.slug}/edit`}>
                   <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
             <Button
               size="sm"

@@ -67,7 +67,10 @@ export function useSavedPrompts() {
 
         if (error) {
           if (error.code === "23505") {
-            // Already saved (unique constraint violation)
+            // Already saved (unique constraint violation), for example from
+            // another tab. Mark it saved here too, or the button keeps
+            // offering "Save" for a prompt that is in the library.
+            setSavedPromptIds((prev) => new Set([...prev, promptId]));
             return { error: null };
           }
           return { error };

@@ -1,3 +1,5 @@
+import { safeStorage } from "@/lib/safeStorage";
+
 const REDIRECT_KEY = "querino_redirect_path";
 const DEFAULT_REDIRECT = "/library";
 
@@ -6,15 +8,15 @@ const DEFAULT_REDIRECT = "/library";
  */
 export function storeRedirectPath(path?: string | null): void {
   const redirectPath = path || DEFAULT_REDIRECT;
-  localStorage.setItem(REDIRECT_KEY, redirectPath);
+  safeStorage.setItem(REDIRECT_KEY, redirectPath);
 }
 
 /**
  * Get and clear the stored redirect path
  */
 export function getAndClearRedirectPath(): string {
-  const path = localStorage.getItem(REDIRECT_KEY);
-  localStorage.removeItem(REDIRECT_KEY);
+  const path = safeStorage.getItem(REDIRECT_KEY);
+  safeStorage.removeItem(REDIRECT_KEY);
   return path || DEFAULT_REDIRECT;
 }
 

@@ -47,6 +47,17 @@ export function refreshAICredits(
   return queryClient.invalidateQueries({ queryKey: [AI_CREDITS_QUERY_KEY] });
 }
 
+const PATCHED_MARK = "__querinoAICreditsRefresh";
+
+type FunctionsProto = {
+  invoke: (
+    this: unknown,
+    name: string,
+    options?: unknown,
+  ) => Promise<{ error: unknown }>;
+  [PATCHED_MARK]?: boolean;
+};
+
 let installed = false;
 
 /**
@@ -61,10 +72,17 @@ export function installAICreditsRefresh(queryClient: QueryClient): void {
   if (installed) return;
   installed = true;
 
-  const functions = supabase.functions;
-  const invoke = functions.invoke.bind(functions);
-  functions.invoke = async (name, options) => {
-    const result = await invoke(name, options);
+  // `supabase.functions` is a getter that builds a new FunctionsClient on every
+  // access, so assigning `supabase.functions.invoke` patched an object that
+  // was thrown away at once and no refresh ever ran. The patch goes on the
+  // class prototype, which every one of those fresh clients shares.
+  const proto = Object.getPrototypeOf(supabase.functions) as FunctionsProto;
+  // Marks the prototype as wrapped, so a second copy of this module (a hot
+  // reload, a duplicated chunk) never wraps the wrapper.
+  if (proto[PATCHED_MARK]) return;
+  const original = proto.invoke;
+  proto.invoke = async function (this: unknown, name, options) {
+    const result = await original.call(this, name, options);
     if (!result.error && CREDIT_CHARGING_FUNCTIONS.has(name)) {
       // The bound client, not the one captured at install time: on the server
       // getRouter runs once per request and the wrapper is installed only once.
@@ -72,4 +90,5 @@ export function installAICreditsRefresh(queryClient: QueryClient): void {
     }
     return result;
   };
+  proto[PATCHED_MARK] = true;
 }

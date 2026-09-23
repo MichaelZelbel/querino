@@ -63,6 +63,11 @@ import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
+import { useQueryClient } from "@tanstack/react-query";
+import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
+import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
+import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface KitFormData {
   title: string;
@@ -78,11 +83,18 @@ export default function PromptKitEdit() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
+  const userId = user?.id;
+  const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
   const { checkCredits } = useAICreditsGate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Set synchronously before moderation, so a second click or Ctrl+S during
+  // the moderation call cannot start a second save.
+  const busyRef = useRef(false);
+  const [moderationBlock, setModerationBlock] =
+    useState<ModerationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [kit, setKit] = useState<PromptKit | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
@@ -110,7 +122,7 @@ export default function PromptKitEdit() {
   const kitId = kit?.id;
   const items = parsePromptKitItems(formData.content);
 
-  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+  const { isDirty, savedAt, markSaved, allowNavigationTo } = useUnsavedChanges({
     data: formData,
     isSaving: isSubmitting,
     onSave: () => handleSave(),
@@ -133,9 +145,12 @@ export default function PromptKitEdit() {
   // this it reloaded every field and threw away unsaved edits.
   const assignedSlugRef = useRef<string | null>(null);
 
+  // Keyed on the user's id, not the user object: a token refresh or a tab
+  // focus hands out a new object for the same person, and reloading then
+  // wiped every unsaved edit in the form.
   useEffect(() => {
     async function fetchKit() {
-      if (!slug || !user) return;
+      if (!slug || !userId) return;
       // The kit behind this slug is already loaded: it is the one whose slug
       // was just renamed. Refetching would overwrite unsaved edits.
       if (assignedSlugRef.current === slug) {
@@ -153,7 +168,7 @@ export default function PromptKitEdit() {
           navigate("/library");
           return;
         }
-        if (data.author_id !== user.id) {
+        if (!(await userCanEditArtifact(data, userId))) {
           toast.error("You don't have permission to edit this kit");
           navigate("/library");
           return;
@@ -182,8 +197,11 @@ export default function PromptKitEdit() {
         setLoading(false);
       }
     }
-    if (user) fetchKit();
-  }, [slug, user, navigate]);
+    if (userId) fetchKit();
+    // navigate and markSaved are left out on purpose: a new function identity
+    // must never reload the form over unsaved edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, userId]);
 
   const normalizeTag = (tag: string) =>
     tag
@@ -267,7 +285,7 @@ export default function PromptKitEdit() {
   };
 
   const handleSave = async () => {
-    if (!user || !kitId || !kit) return;
+    if (!user || !kitId || !kit || busyRef.current) return;
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -277,8 +295,30 @@ export default function PromptKitEdit() {
       return;
     }
 
+    // The form as submitted: this is what gets marked saved, so text typed
+    // while the request is in flight stays dirty.
+    const submitted = formData;
+    busyRef.current = true;
     setIsSubmitting(true);
     try {
+      // Kits went public without the moderation every other artifact gets.
+      if (formData.isPublic) {
+        const result = await moderateContent(
+          {
+            title: formData.title,
+            description: formData.description,
+            content: formData.content,
+          },
+          kit.published ? "edit_public" : "publish",
+          "prompt_kit",
+          kitId,
+        );
+        if (!result.approved) {
+          setModerationBlock(result);
+          return;
+        }
+      }
+
       const contentChanged =
         kit.title !== formData.title.trim() ||
         (kit.description || "") !== formData.description.trim() ||
@@ -315,7 +355,9 @@ export default function PromptKitEdit() {
           .limit(1)
           .maybeSingle();
         const nextVersion = (latest?.version_number ?? 0) + 1;
-        await (supabase.from("prompt_kit_versions") as any).insert({
+        const { error: versionError } = await (
+          supabase.from("prompt_kit_versions") as any
+        ).insert({
           prompt_kit_id: kitId,
           version_number: nextVersion,
           title: kit.title,
@@ -324,6 +366,12 @@ export default function PromptKitEdit() {
           tags: kit.tags,
           change_notes: null,
         });
+        if (versionError) {
+          console.error("Error saving prompt kit version:", versionError);
+          toast.warning(
+            "Changes saved, but the previous version could not be kept in the history.",
+          );
+        }
       }
 
       setKit({
@@ -337,11 +385,13 @@ export default function PromptKitEdit() {
         language: formData.language,
       });
 
-      markSaved();
+      markSaved(submitted);
+      void invalidateArtifactQueries(queryClient, "prompt_kit");
       toast.success("Changes saved!");
     } catch {
       toast.error("Something went wrong");
     } finally {
+      busyRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -354,6 +404,9 @@ export default function PromptKitEdit() {
         .delete()
         .eq("id", kitId);
       if (error) throw error;
+      // The row is gone: nothing left to warn about on the way out.
+      markSaved();
+      void invalidateArtifactQueries(queryClient, "prompt_kit");
       toast.success("Prompt kit deleted");
       navigate("/library");
     } catch {
@@ -618,7 +671,8 @@ export default function PromptKitEdit() {
                             <button
                               type="button"
                               onClick={() => handleRemoveTag(t)}
-                              className="ml-1 hover:text-destructive"
+                              aria-label={`Remove tag ${t}`}
+                              className="-my-1 -mr-1.5 p-1.5 hover:text-destructive"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -640,7 +694,15 @@ export default function PromptKitEdit() {
                       onSlugChanged={(s) => {
                         assignedSlugRef.current = s;
                         setCurrentSlug(s);
-                        navigate(`/prompt-kits/${s}/edit`, { replace: true });
+                        void invalidateArtifactQueries(
+                          queryClient,
+                          "prompt_kit",
+                        );
+                        // Same kit, same editor, new URL: the unsaved edits
+                        // come along, so the leave-page confirm must not fire.
+                        const target = `/prompt-kits/${s}/edit`;
+                        allowNavigationTo(target);
+                        navigate(target, { replace: true });
                       }}
                     />
                   )}
@@ -721,6 +783,13 @@ export default function PromptKitEdit() {
           onRestoreComplete={() => window.location.reload()}
         />
       )}
+
+      <ModerationBlockDialog
+        open={!!moderationBlock}
+        onClose={() => setModerationBlock(null)}
+        category={moderationBlock?.category}
+        supportHint={moderationBlock?.support_hint}
+      />
     </div>
   );
 }

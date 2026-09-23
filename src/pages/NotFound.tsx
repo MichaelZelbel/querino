@@ -1,5 +1,4 @@
 import { Link, useLocation } from "@/lib/router-compat";
-import { SEOHead } from "@/components/seo/SEOHead";
 import { useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -18,10 +17,8 @@ const NotFound = () => {
 
   return (
     <>
-      {/* The catch-all has no route file, so it cannot carry a head(). The server does
-          return a real 404 for an unknown URL, which is the stronger signal; this is the
-          meta tag the page carried before, kept for crawlers that read it. */}
-      <SEOHead title="Page Not Found" noIndex />
+      {/* The title and noindex come from the root route's head() (withNotFoundHead in
+          src/routes/__root.tsx), so they are in the server HTML next to the real 404. */}
       <div className="flex min-h-screen flex-col bg-background">
         <Header />
         <main className="flex flex-1 items-center justify-center bg-muted/30 py-20">

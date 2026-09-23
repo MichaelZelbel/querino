@@ -617,7 +617,7 @@ export default function Settings() {
                       Receive updates about new prompts and features.
                     </p>
                   </div>
-                  <Switch defaultChecked disabled />
+                  <Switch disabled aria-label="Email notifications" />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -627,7 +627,7 @@ export default function Settings() {
                       Get a weekly summary of trending prompts.
                     </p>
                   </div>
-                  <Switch defaultChecked disabled />
+                  <Switch disabled aria-label="Weekly digest" />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">

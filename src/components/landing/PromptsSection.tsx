@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { useSearchPrompts } from "@/hooks/useSearchPrompts";
@@ -38,6 +39,7 @@ export function PromptsSection({
     setSearchQuery(initialSearch);
   }, [initialSearch]);
 
+  const queryClient = useQueryClient();
   const debouncedSearch = useDebounce(searchQuery, 300);
   const isSearching = debouncedSearch.trim().length > 0;
 
@@ -57,6 +59,13 @@ export function PromptsSection({
     tag: tagFilter || undefined,
     sortBy,
   });
+
+  // useSearchPrompts does not hand out refetch, so retry through its query key.
+  const retry = () =>
+    queryClient.refetchQueries({
+      queryKey: ["prompts", "search", "hybrid"],
+      type: "active",
+    });
 
   const filteredAndSortedPrompts = prompts ?? [];
 
@@ -95,6 +104,7 @@ export function PromptsSection({
               <Input
                 type="text"
                 placeholder="Search prompts..."
+                aria-label="Search prompts"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -172,9 +182,10 @@ export function PromptsSection({
         {/* Error State */}
         {error && (
           <div className="py-12 text-center">
-            <p className="text-lg text-destructive">
-              Failed to load prompts. Please try again later.
-            </p>
+            <p className="text-lg text-destructive">Failed to load prompts.</p>
+            <Button variant="outline" className="mt-4" onClick={retry}>
+              Try again
+            </Button>
           </div>
         )}
 
@@ -185,7 +196,7 @@ export function PromptsSection({
               <div
                 key={prompt.id}
                 className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.05}s` }}
+                style={{ animationDelay: `${(index % 24) * 0.04}s` }}
               >
                 <PromptCard prompt={prompt} showAuthorInfo />
               </div>
@@ -211,12 +222,17 @@ export function PromptsSection({
             variant="compact"
             icon={Search}
             title="No prompts match your filters"
-            description="Try a broader search term, or clear the category filter."
+            description={
+              tagFilter
+                ? "Try a broader search term, or clear the category and tag filters."
+                : "Try a broader search term, or clear the category filter."
+            }
             primaryAction={{
               label: "Clear filters",
               onClick: () => {
                 setCategory("all");
                 setSearchQuery("");
+                onClearTag?.();
               },
             }}
           />

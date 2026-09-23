@@ -37,20 +37,23 @@ export function BulkActionBar({
     <div
       role="region"
       aria-label="Bulk actions"
-      className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur"
+      // On a 375px phone the labelled buttons overflowed the screen: the bar is
+      // capped to the viewport, wraps, and shows icons only below "sm".
+      className="fixed bottom-6 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur sm:rounded-full"
     >
       <span className="px-2 text-sm font-medium text-foreground">
         {count} selected
       </span>
-      <div className="h-5 w-px bg-border" />
+      <div className="hidden h-5 w-px bg-border sm:block" />
       <Button
         size="sm"
         variant="ghost"
         onClick={onAddToCollection}
         className="gap-2"
+        aria-label="Add selected to a collection"
       >
         <FolderPlus className="h-4 w-4" />
-        Add to Collection
+        <span className="hidden sm:inline">Add to Collection</span>
       </Button>
       {onSyncMenerio && (
         <Button
@@ -59,13 +62,14 @@ export function BulkActionBar({
           onClick={onSyncMenerio}
           disabled={syncing}
           className="gap-2"
+          aria-label="Sync selected to Menerio"
         >
           {syncing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4" />
           )}
-          Sync to Menerio
+          <span className="hidden sm:inline">Sync to Menerio</span>
         </Button>
       )}
       <AlertDialog>
@@ -75,13 +79,14 @@ export function BulkActionBar({
             variant="ghost"
             disabled={deleting}
             className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Delete selected"
           >
             {deleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            Delete
+            <span className="hidden sm:inline">Delete</span>
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
@@ -105,7 +110,7 @@ export function BulkActionBar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <div className="h-5 w-px bg-border" />
+      <div className="hidden h-5 w-px bg-border sm:block" />
       <Button
         size="sm"
         variant="ghost"
@@ -114,7 +119,7 @@ export function BulkActionBar({
         aria-label="Clear selection"
       >
         <X className="h-4 w-4" />
-        Clear
+        <span className="hidden sm:inline">Clear</span>
       </Button>
     </div>
   );

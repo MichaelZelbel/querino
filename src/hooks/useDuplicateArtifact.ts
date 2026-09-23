@@ -2,8 +2,24 @@ import { useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 
-type ArtifactType = "prompt" | "skill" | "workflow";
+type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
+
+const TABLE_BY_TYPE = {
+  prompt: "prompts",
+  skill: "skills",
+  workflow: "workflows",
+  prompt_kit: "prompt_kits",
+} as const;
+
+const LABEL_BY_TYPE: Record<ArtifactType, string> = {
+  prompt: "Prompt",
+  skill: "Skill",
+  workflow: "Workflow",
+  prompt_kit: "Prompt kit",
+};
 
 /**
  * Generates a Windows Explorer-style duplicate title.
@@ -44,6 +60,7 @@ function escapeRegex(str: string): string {
 export function useDuplicateArtifact() {
   const [duplicating, setDuplicating] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const duplicateArtifact = async (
     type: ArtifactType,
@@ -53,12 +70,7 @@ export function useDuplicateArtifact() {
     setDuplicating(true);
 
     try {
-      const table =
-        type === "prompt"
-          ? "prompts"
-          : type === "skill"
-            ? "skills"
-            : "workflows";
+      const table = TABLE_BY_TYPE[type];
 
       // Fetch existing titles for this user to determine numbering
       const { data: existing } = await supabase
@@ -125,6 +137,20 @@ export function useDuplicateArtifact() {
             filename: artifact.filename || null,
           };
           break;
+
+        case "prompt_kit":
+          insertData = {
+            title: newTitle,
+            description: artifact.description || null,
+            content: artifact.content,
+            category: artifact.category || null,
+            tags: artifact.tags || [],
+            author_id: userId,
+            published: false,
+            language: artifact.language || "en",
+            team_id: artifact.team_id || null,
+          };
+          break;
       }
 
       const { data, error } = await (supabase.from(table) as any)
@@ -134,8 +160,8 @@ export function useDuplicateArtifact() {
 
       if (error) throw error;
 
-      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
-      toast.success(`${typeLabel} duplicated as "${newTitle}"`);
+      void invalidateArtifactQueries(queryClient, type);
+      toast.success(`${LABEL_BY_TYPE[type]} duplicated as "${newTitle}"`);
 
       // Navigate to edit page
       switch (type) {
@@ -148,13 +174,16 @@ export function useDuplicateArtifact() {
         case "workflow":
           editPath = `/workflows/${data.slug}/edit`;
           break;
+        case "prompt_kit":
+          editPath = `/prompt-kits/${data.slug}/edit`;
+          break;
       }
 
       navigate(editPath!);
       return data;
     } catch (err) {
       console.error(`Error duplicating ${type}:`, err);
-      toast.error(`Failed to duplicate ${type}`);
+      toast.error(`Failed to duplicate ${LABEL_BY_TYPE[type].toLowerCase()}`);
       return null;
     } finally {
       setDuplicating(false);

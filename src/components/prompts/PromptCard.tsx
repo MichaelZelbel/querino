@@ -153,23 +153,37 @@ export function PromptCard({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {/* Author Info */}
-            {showAuthorInfo && prompt.author && (
-              <Link
-                to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={prompt.author.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px] bg-muted">
-                    {getAuthorInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
-                  {prompt.author.display_name || "Anonymous"}
+            {showAuthorInfo &&
+              prompt.author &&
+              (prompt.author.display_name ? (
+                <Link
+                  to={`/u/${encodeURIComponent(prompt.author.display_name)}`}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={prompt.author.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                    {prompt.author.display_name || "Anonymous"}
+                  </span>
+                </Link>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={prompt.author.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                    {prompt.author.display_name || "Anonymous"}
+                  </span>
                 </span>
-              </Link>
-            )}
+              ))}
 
             {/* Rating */}
             {prompt.rating_count > 0 ? (
@@ -198,11 +212,17 @@ export function PromptCard({
 
           <div className="flex items-center gap-1">
             {isAuthor && (
-              <Link to={editUrl}>
-                <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
+              <Button
+                asChild
+                aria-label="Edit"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 h-8 px-2"
+              >
+                <Link to={editUrl}>
                   <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
             {currentUserId && !isAuthor && (
               <Button

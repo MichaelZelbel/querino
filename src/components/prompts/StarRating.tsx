@@ -35,7 +35,15 @@ export function StarRating({
 
   return (
     <div className="flex items-center gap-1">
-      <div className="flex items-center">
+      <div
+        className="flex items-center"
+        {...(readonly
+          ? {
+              role: "img",
+              "aria-label": `Rated ${Number(rating).toFixed(1)} out of 5`,
+            }
+          : { role: "group", "aria-label": "Your rating" })}
+      >
         {[1, 2, 3, 4, 5].map((index) => {
           const isFilled = index <= displayRating;
           const isHalf = !isFilled && index - 0.5 <= displayRating;
@@ -45,6 +53,14 @@ export function StarRating({
               key={index}
               type="button"
               disabled={readonly}
+              aria-hidden={readonly || undefined}
+              tabIndex={readonly ? -1 : undefined}
+              aria-label={
+                readonly
+                  ? undefined
+                  : `Rate ${index} star${index > 1 ? "s" : ""}`
+              }
+              aria-pressed={readonly ? undefined : index === Math.round(rating)}
               onClick={() => handleClick(index)}
               onMouseEnter={() => !readonly && setHoverRating(index)}
               onMouseLeave={() => !readonly && setHoverRating(0)}

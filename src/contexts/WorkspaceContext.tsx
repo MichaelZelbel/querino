@@ -4,8 +4,11 @@ import {
   useState,
   useEffect,
   useRef,
+  useMemo,
+  useCallback,
   ReactNode,
 } from "react";
+import { safeStorage } from "@/lib/safeStorage";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useUserTeams } from "@/hooks/useTeams";
 import type { TeamWithRole } from "@/types/team";
@@ -26,10 +29,14 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
 );
 
 const WORKSPACE_STORAGE_KEY = "querino_current_workspace";
+const NO_TEAMS: TeamWithRole[] = [];
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuthContext();
-  const { data: teams = [], isLoading } = useUserTeams();
+  const { data: teamsData, isLoading } = useUserTeams();
+  // A stable empty list while loading: a fresh [] each render would defeat the
+  // memoised context value below.
+  const teams = teamsData ?? NO_TEAMS;
   // The user id seen on the previous render, so a real logout (a user that
   // WAS there and is now gone) can be told apart from the first render, when
   // auth has not resolved yet and `user` is null for everyone.
@@ -40,7 +47,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Load saved workspace on mount
   useEffect(() => {
-    const saved = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+    const saved = safeStorage.getItem(WORKSPACE_STORAGE_KEY);
     if (saved && saved !== "personal") {
       setCurrentWorkspace(saved);
     }
@@ -56,7 +63,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const teamExists = teams.some((t) => t.id === currentWorkspace);
       if (!teamExists) {
         setCurrentWorkspace("personal");
-        localStorage.setItem(WORKSPACE_STORAGE_KEY, "personal");
+        safeStorage.setItem(WORKSPACE_STORAGE_KEY, "personal");
       }
     }
   }, [teams, isLoading, currentWorkspace, authLoading, user]);
@@ -67,14 +74,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     previousUserIdRef.current = user?.id ?? null;
     if (previousUserId && !user) {
       setCurrentWorkspace("personal");
-      localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+      safeStorage.removeItem(WORKSPACE_STORAGE_KEY);
     }
   }, [user]);
 
-  const switchWorkspace = (workspaceId: "personal" | string) => {
+  const switchWorkspace = useCallback((workspaceId: "personal" | string) => {
     setCurrentWorkspace(workspaceId);
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceId);
-  };
+    safeStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceId);
+  }, []);
 
   const currentTeam =
     currentWorkspace === "personal"
@@ -87,19 +94,33 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const canPublish =
     currentTeam?.role === "owner" || currentTeam?.role === "admin";
 
+  // Memoised so the many useWorkspace() consumers re-render only when the
+  // workspace really changes, not on every render of this provider.
+  const value = useMemo<WorkspaceContextType>(
+    () => ({
+      currentWorkspace,
+      currentTeam,
+      teams,
+      isLoading,
+      switchWorkspace,
+      isTeamWorkspace,
+      canManageTeam,
+      canPublish,
+    }),
+    [
+      currentWorkspace,
+      currentTeam,
+      teams,
+      isLoading,
+      switchWorkspace,
+      isTeamWorkspace,
+      canManageTeam,
+      canPublish,
+    ],
+  );
+
   return (
-    <WorkspaceContext.Provider
-      value={{
-        currentWorkspace,
-        currentTeam,
-        teams,
-        isLoading,
-        switchWorkspace,
-        isTeamWorkspace,
-        canManageTeam,
-        canPublish,
-      }}
-    >
+    <WorkspaceContext.Provider value={value}>
       {children}
     </WorkspaceContext.Provider>
   );

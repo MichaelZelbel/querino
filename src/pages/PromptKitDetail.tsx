@@ -48,7 +48,9 @@ import { DownloadMarkdownButton } from "@/components/markdown/DownloadMarkdownBu
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
-import { Languages } from "lucide-react";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { Languages, CopyPlus } from "lucide-react";
+import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
 
 interface KitWithAuthor extends PromptKit {
@@ -64,11 +66,16 @@ export default function PromptKitDetail({
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { teams } = useWorkspace();
   const { cloneKit, cloning } = useClonePromptKit();
   const [kit, setKit] = useState<KitWithAuthor | null>(initialKit);
   const [loading, setLoading] = useState(!initialKit);
   const [notFound, setNotFound] = useState(false);
+  // A failed request is not a missing kit: it gets its own screen with a
+  // retry instead of "Prompt Kit Not Found". Bumping reloadKey re-runs the fetch.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -80,6 +87,9 @@ export default function PromptKitDetail({
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
   const isAuthor = kit?.author_id && user?.id === kit.author_id;
+  // The author or a premium member of the kit's team, as row-level security
+  // allows.
+  const canEdit = useCanEditArtifact(kit);
   const hasTeams = teams && teams.length > 0;
 
   const { isPinned: isKitPinned, togglePin: toggleKitPin } =
@@ -151,7 +161,10 @@ export default function PromptKitDetail({
           .select(`*, profiles:author_id (id, display_name, avatar_url)`)
           .eq("slug", slug)
           .maybeSingle();
-        if (error || !data) {
+        if (error) {
+          console.error("Error fetching prompt kit:", error);
+          setLoadError(true);
+        } else if (!data) {
           // Try slug redirect
           const { data: redirect } = await (
             supabase.from("prompt_kit_slug_redirects") as any
@@ -174,15 +187,18 @@ export default function PromptKitDetail({
           setNotFound(true);
         } else {
           setKit({ ...data, author: data.profiles || null });
+          setNotFound(false);
+          setLoadError(false);
         }
-      } catch {
-        setNotFound(true);
+      } catch (err) {
+        console.error("Error fetching prompt kit:", err);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     }
     fetchKit();
-  }, [slug, navigate]);
+  }, [slug, navigate, reloadKey]);
 
   const handleCopyAll = async () => {
     if (!kit) return;
@@ -223,11 +239,41 @@ export default function PromptKitDetail({
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <Header />
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <Skeleton className="mb-4 h-8 w-48" />
             <Skeleton className="mb-8 h-12 w-3/4" />
             <Skeleton className="h-48 w-full" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loadError && !kit) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="flex-1 py-20">
+          <div className="container mx-auto max-w-4xl px-4 text-center">
+            <h1 className="mb-4 text-display-md font-bold text-foreground">
+              Couldn't load this prompt kit
+            </h1>
+            <p className="mb-8 text-lg text-muted-foreground">
+              Something went wrong while loading it. Check your connection and
+              try again.
+            </p>
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setLoadError(false);
+                setLoading(true);
+                setReloadKey((k) => k + 1);
+              }}
+            >
+              Try again
+            </Button>
           </div>
         </main>
         <Footer />
@@ -266,293 +312,309 @@ export default function PromptKitDetail({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 py-12">
-        <div className="container mx-auto max-w-4xl px-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
+      <div className="flex flex-1">
+        <main className="min-w-0 flex-1 py-12">
+          <div className="container mx-auto max-w-4xl px-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
 
-          <div className="mb-8">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Badge variant="secondary" className="text-sm gap-1">
-                <Package className="h-3 w-3" />
-                Prompt Kit
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                {items.length} {items.length === 1 ? "prompt" : "prompts"}
-              </Badge>
-              {kit.tags?.slice(0, 5).map((tag) => (
-                <Badge key={tag} variant="outline" className="text-sm gap-1">
-                  <Tag className="h-3 w-3" />
-                  {tag}
+            <div className="mb-8">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <Badge variant="secondary" className="text-sm gap-1">
+                  <Package className="h-3 w-3" />
+                  Prompt Kit
                 </Badge>
-              ))}
-            </div>
+                <Badge variant="outline" className="text-sm">
+                  {items.length} {items.length === 1 ? "prompt" : "prompts"}
+                </Badge>
+                {kit.tags?.slice(0, 5).map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-sm gap-1">
+                    <Tag className="h-3 w-3" />
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
 
-            <h1 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">
-              {kit.title}
-            </h1>
-            {kit.description && (
-              <p className="text-lg text-muted-foreground">{kit.description}</p>
-            )}
-
-            <div className="mt-6 flex flex-wrap items-center gap-6">
-              {kit.author && (
-                <Link
-                  to={`/u/${encodeURIComponent(kit.author.display_name || "")}`}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={kit.author.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {getAuthorInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                      {kit.author.display_name || "Anonymous"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Author</p>
-                  </div>
-                </Link>
+              <h1 className="mb-4 text-display-md font-bold text-foreground md:text-display-lg">
+                {kit.title}
+              </h1>
+              {kit.description && (
+                <p className="text-lg text-muted-foreground">
+                  {kit.description}
+                </p>
               )}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  Created {format(new Date(kit.created_at), "MMM d, yyyy")}
-                </span>
+
+              <div className="mt-6 flex flex-wrap items-center gap-6">
+                {kit.author && (
+                  <Link
+                    to={`/u/${encodeURIComponent(kit.author.display_name || "")}`}
+                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={kit.author.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getAuthorInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                        {kit.author.display_name || "Anonymous"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Author</p>
+                    </div>
+                  </Link>
+                )}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    Created {format(new Date(kit.created_at), "MMM d, yyyy")}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="mb-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              variant={copiedAll ? "success" : "default"}
-              onClick={handleCopyAll}
-              className="gap-2"
-            >
-              {copiedAll ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  Copy entire kit
-                </>
-              )}
-            </Button>
-            {isAuthor && (
-              <Link to={`/prompt-kits/${kit.slug}/edit`}>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit Kit
-                </Button>
-              </Link>
-            )}
-            {isAuthor && (
+            <div className="mb-8 flex flex-wrap gap-3">
               <Button
                 size="lg"
-                variant="outline"
-                onClick={() => setHistoryOpen(true)}
+                variant={copiedAll ? "success" : "default"}
+                onClick={handleCopyAll}
                 className="gap-2"
               >
-                <History className="h-4 w-4" />
-                History
-              </Button>
-            )}
-            {user && !isAuthor && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() =>
-                  cloneKit(
-                    {
-                      id: kit.id,
-                      title: kit.title,
-                      description: kit.description,
-                      content: kit.content,
-                      category: kit.category,
-                      tags: kit.tags,
-                    },
-                    user.id,
-                  )
-                }
-                disabled={cloning}
-                className="gap-2"
-              >
-                <GitFork className="h-4 w-4" />
-                {cloning ? "Cloning..." : "Clone to my library"}
-              </Button>
-            )}
-            {user && hasTeams && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setCopyTeamOpen(true)}
-                className="gap-2"
-              >
-                <Users className="h-4 w-4" />
-                Copy to team
-              </Button>
-            )}
-            {user && !isAuthor && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setSuggestOpen(true)}
-                className="gap-2"
-              >
-                <MessageSquarePlus className="h-4 w-4" />
-                Suggest edit
-              </Button>
-            )}
-            {user && (
-              <Button
-                size="lg"
-                variant={isPinned ? "secondary" : "outline"}
-                onClick={handleTogglePin}
-                disabled={pinning}
-                className="gap-2"
-              >
-                {isPinned ? (
+                {copiedAll ? (
                   <>
-                    <PinOff className="h-4 w-4" />
-                    Unpin
+                    <Check className="h-4 w-4" />
+                    Copied!
                   </>
                 ) : (
                   <>
-                    <Pin className="h-4 w-4" />
-                    Pin
+                    <Copy className="h-4 w-4" />
+                    Copy entire kit
                   </>
                 )}
               </Button>
-            )}
-            {user && (
-              <Button
+              {canEdit && (
+                <Link to={`/prompt-kits/${kit.slug}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Kit
+                  </Button>
+                </Link>
+              )}
+              {isAuthor && user && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => duplicateArtifact("prompt_kit", kit, user.id)}
+                  disabled={duplicating}
+                  className="gap-2"
+                >
+                  <CopyPlus className="h-4 w-4" />
+                  Duplicate
+                </Button>
+              )}
+              {isAuthor && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setHistoryOpen(true)}
+                  className="gap-2"
+                >
+                  <History className="h-4 w-4" />
+                  History
+                </Button>
+              )}
+              {user && !isAuthor && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() =>
+                    cloneKit(
+                      {
+                        id: kit.id,
+                        title: kit.title,
+                        description: kit.description,
+                        content: kit.content,
+                        category: kit.category,
+                        tags: kit.tags,
+                      },
+                      user.id,
+                    )
+                  }
+                  disabled={cloning}
+                  className="gap-2"
+                >
+                  <GitFork className="h-4 w-4" />
+                  {cloning ? "Cloning..." : "Clone to my library"}
+                </Button>
+              )}
+              {user && hasTeams && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setCopyTeamOpen(true)}
+                  className="gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  Copy to team
+                </Button>
+              )}
+              {user && !isAuthor && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setSuggestOpen(true)}
+                  className="gap-2"
+                >
+                  <MessageSquarePlus className="h-4 w-4" />
+                  Suggest edit
+                </Button>
+              )}
+              {user && (
+                <Button
+                  size="lg"
+                  variant={isPinned ? "secondary" : "outline"}
+                  onClick={handleTogglePin}
+                  disabled={pinning}
+                  className="gap-2"
+                >
+                  {isPinned ? (
+                    <>
+                      <PinOff className="h-4 w-4" />
+                      Unpin
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="h-4 w-4" />
+                      Pin
+                    </>
+                  )}
+                </Button>
+              )}
+              {user && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setCollectionOpen(true)}
+                  className="gap-2"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  Add to collection
+                </Button>
+              )}
+              <DownloadMarkdownButton
+                title={kit.title}
+                type="prompt_kit"
+                description={kit.description}
+                tags={kit.tags}
+                content={kit.content}
                 size="lg"
-                variant="outline"
-                onClick={() => setCollectionOpen(true)}
-                className="gap-2"
-              >
-                <FolderPlus className="h-4 w-4" />
-                Add to collection
-              </Button>
-            )}
-            <DownloadMarkdownButton
-              title={kit.title}
-              type="prompt_kit"
-              description={kit.description}
-              tags={kit.tags}
-              content={kit.content}
-              size="lg"
+              />
+              {user && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setTranslateOpen(true)}
+                  className="gap-2"
+                >
+                  <Languages className="h-4 w-4" />
+                  Translate
+                </Button>
+              )}
+              {isAuthor && hasMenerio && (
+                <MenerioSyncButton
+                  artifactType="prompt_kit"
+                  artifactId={kit.id}
+                  menerioSynced={!!kit.menerio_synced}
+                  menerioSyncedAt={kit.menerio_synced_at || null}
+                  menerioNoteId={kit.menerio_note_id || null}
+                />
+              )}
+            </div>
+
+            <PromptKitArticleView
+              content={kit.content || ""}
+              onCopyItem={(body, idx) => handleCopyItem(body, idx)}
+              copiedIdx={copiedIdx}
             />
-            {user && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setTranslateOpen(true)}
-                className="gap-2"
-              >
-                <Languages className="h-4 w-4" />
-                Translate
-              </Button>
-            )}
-            {isAuthor && hasMenerio && (
-              <MenerioSyncButton
-                artifactType="prompt_kit"
-                artifactId={kit.id}
-                menerioSynced={!!kit.menerio_synced}
-                menerioSyncedAt={kit.menerio_synced_at || null}
-                menerioNoteId={kit.menerio_note_id || null}
-              />
-            )}
+
+            {/* Ratings & Reviews */}
+            <PromptKitReviewSection
+              kitId={kit.id}
+              kitSlug={kit.slug || undefined}
+              userId={user?.id}
+              ratingAvg={kit.rating_avg || 0}
+              ratingCount={kit.rating_count || 0}
+            />
+
+            {/* Tabbed Content Section */}
+            <Tabs defaultValue="comments" className="mt-8">
+              <TabsList>
+                <TabsTrigger value="comments" className="gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Comments
+                </TabsTrigger>
+                <TabsTrigger value="suggestions" className="gap-2">
+                  <MessageSquarePlus className="h-4 w-4" />
+                  Suggestions
+                  {openCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 h-5 px-1.5 text-xs"
+                    >
+                      {openCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="gap-2">
+                  <ActivityIcon className="h-4 w-4" />
+                  Activity
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="comments" className="mt-6">
+                <CommentsSection
+                  itemType="prompt_kit"
+                  itemId={kit.id}
+                  teamId={(kit as any).team_id}
+                />
+              </TabsContent>
+
+              <TabsContent value="suggestions" className="mt-6">
+                <SuggestionsTab
+                  suggestions={suggestions}
+                  loading={loadingSuggestions}
+                  itemType="prompt_kit"
+                  itemId={kit.id}
+                  originalTitle={kit.title}
+                  originalDescription={kit.description || ""}
+                  originalContent={kit.content}
+                  isOwner={!!isAuthor}
+                  onReviewSuggestion={reviewSuggestion}
+                  onRequestChanges={requestChanges}
+                  onUpdateSuggestion={updateSuggestionAfterChanges}
+                  onApplySuggestion={handleApplySuggestion}
+                />
+              </TabsContent>
+
+              <TabsContent value="activity" className="mt-6">
+                <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
+              </TabsContent>
+            </Tabs>
           </div>
+        </main>
 
-          <PromptKitArticleView
-            content={kit.content || ""}
-            onCopyItem={(body, idx) => handleCopyItem(body, idx)}
-            copiedIdx={copiedIdx}
-          />
-
-          {/* Ratings & Reviews */}
-          <PromptKitReviewSection
-            kitId={kit.id}
-            kitSlug={kit.slug || undefined}
-            userId={user?.id}
-            ratingAvg={kit.rating_avg || 0}
-            ratingCount={kit.rating_count || 0}
-          />
-
-          {/* Tabbed Content Section */}
-          <Tabs defaultValue="comments" className="mt-8">
-            <TabsList>
-              <TabsTrigger value="comments" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Comments
-              </TabsTrigger>
-              <TabsTrigger value="suggestions" className="gap-2">
-                <MessageSquarePlus className="h-4 w-4" />
-                Suggestions
-                {openCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 h-5 px-1.5 text-xs"
-                  >
-                    {openCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-2">
-                <ActivityIcon className="h-4 w-4" />
-                Activity
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="comments" className="mt-6">
-              <CommentsSection
-                itemType="prompt_kit"
-                itemId={kit.id}
-                teamId={(kit as any).team_id}
-              />
-            </TabsContent>
-
-            <TabsContent value="suggestions" className="mt-6">
-              <SuggestionsTab
-                suggestions={suggestions}
-                loading={loadingSuggestions}
-                itemType="prompt_kit"
-                itemId={kit.id}
-                originalTitle={kit.title}
-                originalDescription={kit.description || ""}
-                originalContent={kit.content}
-                isOwner={!!isAuthor}
-                onReviewSuggestion={reviewSuggestion}
-                onRequestChanges={requestChanges}
-                onUpdateSuggestion={updateSuggestionAfterChanges}
-                onApplySuggestion={handleApplySuggestion}
-              />
-            </TabsContent>
-
-            <TabsContent value="activity" className="mt-6">
-              <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+        <AIInsightsPanel
+          itemType="prompt_kit"
+          itemId={kit.id}
+          isOwner={!!isAuthor}
+        />
+      </div>
       <Footer />
-
-      <AIInsightsPanel
-        itemType="prompt_kit"
-        itemId={kit.id}
-        isOwner={!!isAuthor}
-      />
 
       <TranslateModal
         open={translateOpen}

@@ -67,6 +67,7 @@ import {
 import type { Prompt } from "@/types/prompt";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UpsellModal } from "@/components/premium/UpsellModal";
+import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 
 type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 const TABLE_BY_TYPE: Record<
@@ -85,17 +86,28 @@ function SelectableCard({
   onToggle,
   children,
   label,
+  selectable = true,
 }: {
   selectMode: boolean;
   selected: boolean;
   onToggle: () => void;
   label: string;
   children: React.ReactNode;
+  /** False for someone else's prompt: it cannot be deleted or synced from here. */
+  selectable?: boolean;
 }) {
   return (
     <div className="relative">
-      <div className={cn(selectMode && "pointer-events-none")}>{children}</div>
-      {selectMode && (
+      <div
+        className={cn(
+          selectMode && "pointer-events-none",
+          selectMode && !selectable && "opacity-50",
+        )}
+        aria-disabled={selectMode && !selectable ? true : undefined}
+      >
+        {children}
+      </div>
+      {selectMode && selectable && (
         <>
           <button
             type="button"
@@ -145,6 +157,10 @@ export default function Library() {
   const [myPrompts, setMyPrompts] = useState<Prompt[]>([]);
   const [userRatings, setUserRatings] = useState<UserRatings>({});
   const [loading, setLoading] = useState(true);
+  // Set when the prompt fetch fails, so a failed load is not shown as "Your
+  // library is empty". reloadKey reruns the fetch from the Retry button.
+  const [promptsLoadError, setPromptsLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -234,15 +250,30 @@ export default function Library() {
   const [syncSuccessDialogOpen, setSyncSuccessDialogOpen] = useState(false);
 
   // Fetch user's skills and workflows - filtered by workspace
-  const { data: mySkills, isLoading: skillsLoading } = useSkills({
+  const {
+    data: mySkills,
+    isLoading: skillsLoading,
+    isError: skillsError,
+    refetch: refetchSkills,
+  } = useSkills({
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
-  const { data: myWorkflows, isLoading: workflowsLoading } = useWorkflows({
+  const {
+    data: myWorkflows,
+    isLoading: workflowsLoading,
+    isError: workflowsError,
+    refetch: refetchWorkflows,
+  } = useWorkflows({
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
-  const { data: myKits, isLoading: kitsLoading } = usePromptKits({
+  const {
+    data: myKits,
+    isLoading: kitsLoading,
+    isError: kitsError,
+    refetch: refetchKits,
+  } = usePromptKits({
     authorId: isTeamWorkspace ? undefined : user?.id,
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
   });
@@ -260,9 +291,12 @@ export default function Library() {
   });
 
   // Fetch user's collections
-  const { data: myCollections, isLoading: collectionsLoading } = useCollections(
-    user?.id,
-  );
+  const {
+    data: myCollections,
+    isLoading: collectionsLoading,
+    isError: collectionsError,
+    refetch: refetchCollections,
+  } = useCollections(user?.id);
 
   // Check Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
@@ -324,6 +358,8 @@ export default function Library() {
     setBulkDeleting(true);
     try {
       let totalDeleted = 0;
+      let totalFailed = 0;
+      const deletedIds = new Set<string>();
       for (const t of Object.keys(groupSelected) as ArtifactType[]) {
         const ids = groupSelected[t];
         if (ids.length === 0) continue;
@@ -334,29 +370,33 @@ export default function Library() {
         } else {
           q = q.eq("author_id", user.id).is("team_id", null);
         }
-        const { error } = await q;
+        // Row-level security turns a delete of someone else's row into a
+        // silent no-op, so count the rows that actually went, not the ids sent.
+        const { data: deletedRows, error } = await q.select("id");
         if (error) {
           console.error(`Bulk delete ${table} failed:`, error);
-          toast.error(`Failed to delete some ${table}`);
-        } else {
-          totalDeleted += ids.length;
+          totalFailed += ids.length;
+          continue;
         }
+        const rows = (deletedRows ?? []) as { id: string }[];
+        for (const row of rows) deletedIds.add(row.id);
+        totalDeleted += rows.length;
+        totalFailed += ids.length - rows.length;
+        if (rows.length > 0) void invalidateArtifactQueries(queryClient, t);
       }
       if (totalDeleted > 0) {
         toast.success(
           `Deleted ${totalDeleted} item${totalDeleted === 1 ? "" : "s"}.`,
         );
       }
+      if (totalFailed > 0) {
+        toast.error(
+          `Couldn't delete ${totalFailed} item${totalFailed === 1 ? "" : "s"}. You can only delete items you own.`,
+        );
+      }
       // Refresh local + cached lists
-      setMyPrompts((prev) =>
-        prev.filter((p) => !groupSelected.prompt.includes(p.id)),
-      );
-      setSavedPrompts((prev) =>
-        prev.filter((p) => !groupSelected.prompt.includes(p.id)),
-      );
-      queryClient.invalidateQueries({ queryKey: ["skills"] });
-      queryClient.invalidateQueries({ queryKey: ["workflows"] });
-      queryClient.invalidateQueries({ queryKey: ["prompt_kits"] });
+      setMyPrompts((prev) => prev.filter((p) => !deletedIds.has(p.id)));
+      setSavedPrompts((prev) => prev.filter((p) => !deletedIds.has(p.id)));
       refetchPinned();
       exitSelectMode();
     } finally {
@@ -366,11 +406,10 @@ export default function Library() {
 
   const handleBulkSyncMenerio = async () => {
     if (!user || !hasMenerio) return;
-    const syncable = selectedItems.filter((i) => i.type !== "prompt_kit");
-    if (syncable.length === 0) {
-      toast.info("Selected items can't be synced to Menerio.");
-      return;
-    }
+    // Prompt kits sync to Menerio again since migration 20260908231000 (section
+    // 23), so every selected type is queued.
+    const syncable = selectedItems;
+    if (syncable.length === 0) return;
     setBulkSyncing(true);
     try {
       const rows = syncable.map((i) => ({
@@ -619,6 +658,7 @@ export default function Library() {
     (myWorkflows?.length || 0) === 0 &&
     (myKits?.length || 0) === 0 &&
     savedPrompts.length === 0 &&
+    pinnedPrompts.length === 0 &&
     (myCollections?.length || 0) === 0;
 
   // Fetch prompts - filtered by workspace
@@ -632,6 +672,7 @@ export default function Library() {
       if (!user) return;
 
       setLoading(true);
+      setPromptsLoadError(false);
       try {
         // Fetch prompts based on workspace
         let promptsQuery = supabase.from("prompts").select("*");
@@ -654,6 +695,7 @@ export default function Library() {
 
         if (ownError) {
           console.error("Error fetching prompts:", ownError);
+          setPromptsLoadError(true);
         } else {
           setMyPrompts((ownPrompts as Prompt[]) || []);
         }
@@ -668,6 +710,7 @@ export default function Library() {
 
           if (savedError) {
             console.error("Error fetching saved prompts:", savedError);
+            setPromptsLoadError(true);
           }
 
           if (savedData && savedData.length > 0) {
@@ -680,6 +723,7 @@ export default function Library() {
 
             if (promptsError) {
               console.error("Error fetching prompts:", promptsError);
+              setPromptsLoadError(true);
             } else {
               setSavedPrompts((promptsData as Prompt[]) || []);
             }
@@ -710,6 +754,7 @@ export default function Library() {
         }
       } catch (err) {
         console.error("Error fetching library data:", err);
+        if (!cancelled) setPromptsLoadError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -723,7 +768,26 @@ export default function Library() {
     return () => {
       cancelled = true;
     };
-  }, [user, currentWorkspace, isTeamWorkspace, refetchPinned]);
+  }, [user, currentWorkspace, isTeamWorkspace, refetchPinned, reloadKey]);
+
+  const loadFailed =
+    promptsLoadError ||
+    skillsError ||
+    workflowsError ||
+    kitsError ||
+    collectionsError;
+
+  useEffect(() => {
+    if (loadFailed) toast.error("Couldn't load your library.");
+  }, [loadFailed]);
+
+  const retryLoad = () => {
+    setReloadKey((k) => k + 1);
+    void refetchSkills();
+    void refetchWorkflows();
+    void refetchKits();
+    void refetchCollections();
+  };
 
   if (authLoading) {
     return (
@@ -804,6 +868,7 @@ export default function Library() {
               <Input
                 type="text"
                 placeholder="Search your library..."
+                aria-label="Search your library"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -908,6 +973,13 @@ export default function Library() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : loadFailed && libraryIsEmpty ? (
+            <EmptyState
+              icon={LibraryIcon}
+              title="Couldn't load your library"
+              description="Something went wrong while loading. Your items are not lost; try again."
+              primaryAction={{ label: "Retry", onClick: retryLoad }}
+            />
           ) : libraryIsEmpty ? (
             <EmptyState
               icon={LibraryIcon}
@@ -930,6 +1002,17 @@ export default function Library() {
             />
           ) : (
             <div className="space-y-12">
+              {loadFailed && (
+                <div
+                  role="alert"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm"
+                >
+                  <span>Part of your library couldn't be loaded.</span>
+                  <Button size="sm" variant="outline" onClick={retryLoad}>
+                    Retry
+                  </Button>
+                </div>
+              )}
               {/* Pinned Section - only show if user has pinned items */}
               {isTypeVisible("prompts") && pinnedPrompts.length > 0 && (
                 <section>
@@ -950,6 +1033,13 @@ export default function Library() {
                         <SelectableCard
                           key={prompt.id}
                           selectMode={selectMode}
+                          // A pinned prompt can be someone else's; only the
+                          // ones this workspace owns can be bulk-selected.
+                          selectable={
+                            isTeamWorkspace
+                              ? prompt.team_id === currentWorkspace
+                              : prompt.author_id === user.id && !prompt.team_id
+                          }
                           selected={isSelected("prompt", prompt.id)}
                           onToggle={() => toggleSelect("prompt", prompt.id)}
                           label={prompt.title}

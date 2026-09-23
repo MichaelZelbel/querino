@@ -22,6 +22,12 @@ interface Result<T> {
    * after setState: the state of the current render is still the old one.
    */
   markSaved: (next?: T) => void;
+  /**
+   * Let the next navigation to this exact pathname through even while dirty.
+   * For a save that renames the slug: the editor stays mounted on the new URL
+   * with the edits still in it, so there is nothing to warn about.
+   */
+  allowNavigationTo: (pathname: string) => void;
 }
 
 function snapshot<T>(value: T): string {
@@ -57,8 +63,16 @@ export function useUnsavedChanges<T>({
   const dataRef = useRef(data);
   dataRef.current = data;
 
+  // Declared before markSaved so markSaved can settle it synchronously.
+  const dirtyRef = useRef(false);
+
   const markSaved = useCallback((next?: T) => {
     baselineRef.current = snapshot(next === undefined ? dataRef.current : next);
+    // Settle the navigation guard now, not after the next render's effect:
+    // pages call navigate() straight after markSaved (a delete, a publish, a
+    // slug rename), and the stale ref made the "unsaved changes" confirm fire
+    // on a form that had just been saved.
+    dirtyRef.current = baselineRef.current !== snapshot(dataRef.current);
     setSavedAt(new Date());
     force((n) => n + 1);
   }, []);
@@ -74,7 +88,6 @@ export function useUnsavedChanges<T>({
     savingRef.current = isSaving;
   }, [isSaving]);
 
-  const dirtyRef = useRef(isDirty);
   useEffect(() => {
     dirtyRef.current = isDirty;
   }, [isDirty]);
@@ -106,11 +119,24 @@ export function useUnsavedChanges<T>({
 
   // In-app navigation guard (beforeunload does not fire on router navigation).
   // TanStack Router's blocker replaces react-router's useBlocker (data-router API).
+  const allowedPathRef = useRef<string | null>(null);
+  const allowNavigationTo = useCallback((pathname: string) => {
+    allowedPathRef.current = pathname;
+  }, []);
+
   const blocker = useBlocker({
-    shouldBlockFn: ({ current, next }) =>
-      enableNavigationGuard &&
-      dirtyRef.current &&
-      current.pathname !== next.pathname,
+    shouldBlockFn: ({ current, next }) => {
+      if (allowedPathRef.current !== null) {
+        const allowed = allowedPathRef.current === next.pathname;
+        allowedPathRef.current = null;
+        if (allowed) return false;
+      }
+      return (
+        enableNavigationGuard &&
+        dirtyRef.current &&
+        current.pathname !== next.pathname
+      );
+    },
     enableBeforeUnload: false,
     withResolver: true,
   });
@@ -127,5 +153,5 @@ export function useUnsavedChanges<T>({
     }
   }, [blocker]);
 
-  return { isDirty, savedAt, markSaved };
+  return { isDirty, savedAt, markSaved, allowNavigationTo };
 }

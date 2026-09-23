@@ -79,6 +79,7 @@ const Discover = () => {
     published: true,
     sortBy: tabSort,
     category: tabCategory,
+    tag: tagFilter || undefined,
     limit: DISCOVER_LIMIT,
   };
   const { data: skills, isLoading: skillsLoading } = useSkills({
@@ -94,16 +95,11 @@ const Discover = () => {
     searchQuery: debouncedKitSearch,
   });
 
-  const byTag = <T extends { tags?: string[] | null }>(
-    items: T[] | undefined,
-  ): T[] =>
-    (items || []).filter(
-      (item) => !tagFilter || (item.tags || []).includes(tagFilter),
-    );
-
-  const visibleSkills = byTag(skills);
-  const visibleWorkflows = byTag(workflows);
-  const visibleKits = byTag(kits);
+  // The tag is filtered on the server (see useArtifactList), so the 60-row cap
+  // applies to tagged rows rather than hiding matches past the first 60.
+  const visibleSkills = skills || [];
+  const visibleWorkflows = workflows || [];
+  const visibleKits = kits || [];
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -156,7 +152,7 @@ const Discover = () => {
         Top Rated
       </Button>
       <Select value={tabCategory} onValueChange={setTabCategory}>
-        <SelectTrigger className="h-9 w-[160px]">
+        <SelectTrigger className="h-9 w-[160px]" aria-label="Category">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -175,6 +171,9 @@ const Discover = () => {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
+        <h1 className="sr-only">
+          Discover prompts, skills, workflows and kits
+        </h1>
         <div className="container mx-auto max-w-full px-4 py-8 overflow-x-hidden">
           <Tabs
             value={activeTab}
@@ -220,6 +219,7 @@ const Discover = () => {
                   #{tagFilter}
                 </span>
                 <button
+                  type="button"
                   onClick={clearTag}
                   className="text-muted-foreground underline-offset-2 hover:underline"
                 >
@@ -244,6 +244,7 @@ const Discover = () => {
                   <Input
                     type="text"
                     placeholder="Search prompt kits..."
+                    aria-label="Search prompt kits"
                     value={kitSearch}
                     onChange={(e) => setKitSearch(e.target.value)}
                     className="pl-10"
@@ -276,12 +277,16 @@ const Discover = () => {
                     title={
                       debouncedKitSearch
                         ? "No prompt kits match your search"
-                        : "No prompt kits published yet"
+                        : tagFilter
+                          ? `No prompt kits tagged #${tagFilter}`
+                          : "No prompt kits published yet"
                     }
                     description={
                       debouncedKitSearch
                         ? "Try a different keyword or clear the search."
-                        : "Be the first to publish a Prompt Kit for the community."
+                        : tagFilter
+                          ? "Clear the tag to see everything that is published."
+                          : "Be the first to publish a Prompt Kit for the community."
                     }
                     primaryAction={
                       debouncedKitSearch
@@ -289,11 +294,13 @@ const Discover = () => {
                             label: "Clear search",
                             onClick: () => setKitSearch(""),
                           }
-                        : {
-                            label: "Create a Prompt Kit",
-                            to: "/prompt-kits/new",
-                            icon: Sparkles,
-                          }
+                        : tagFilter
+                          ? { label: "Clear tag", onClick: clearTag }
+                          : {
+                              label: "Create a Prompt Kit",
+                              to: "/prompt-kits/new",
+                              icon: Sparkles,
+                            }
                     }
                   />
                 )}
@@ -307,6 +314,7 @@ const Discover = () => {
                   <Input
                     type="text"
                     placeholder="Search skills..."
+                    aria-label="Search skills"
                     value={skillSearch}
                     onChange={(e) => setSkillSearch(e.target.value)}
                     className="pl-10"
@@ -339,12 +347,16 @@ const Discover = () => {
                     title={
                       debouncedSkillSearch
                         ? "No skills match your search"
-                        : "No skills published yet"
+                        : tagFilter
+                          ? `No skills tagged #${tagFilter}`
+                          : "No skills published yet"
                     }
                     description={
                       debouncedSkillSearch
                         ? "Try a different keyword or clear the search."
-                        : "Be the first to publish a Skill for the community."
+                        : tagFilter
+                          ? "Clear the tag to see everything that is published."
+                          : "Be the first to publish a Skill for the community."
                     }
                     primaryAction={
                       debouncedSkillSearch
@@ -352,11 +364,13 @@ const Discover = () => {
                             label: "Clear search",
                             onClick: () => setSkillSearch(""),
                           }
-                        : {
-                            label: "Create a Skill",
-                            to: "/skills/new",
-                            icon: Sparkles,
-                          }
+                        : tagFilter
+                          ? { label: "Clear tag", onClick: clearTag }
+                          : {
+                              label: "Create a Skill",
+                              to: "/skills/new",
+                              icon: Sparkles,
+                            }
                     }
                   />
                 )}
@@ -370,6 +384,7 @@ const Discover = () => {
                   <Input
                     type="text"
                     placeholder="Search workflows..."
+                    aria-label="Search workflows"
                     value={workflowSearch}
                     onChange={(e) => setWorkflowSearch(e.target.value)}
                     className="pl-10"
@@ -406,12 +421,16 @@ const Discover = () => {
                     title={
                       debouncedWorkflowSearch
                         ? "No workflows match your search"
-                        : "No workflows published yet"
+                        : tagFilter
+                          ? `No workflows tagged #${tagFilter}`
+                          : "No workflows published yet"
                     }
                     description={
                       debouncedWorkflowSearch
                         ? "Try a different keyword or clear the search."
-                        : "Be the first to publish a Workflow for the community."
+                        : tagFilter
+                          ? "Clear the tag to see everything that is published."
+                          : "Be the first to publish a Workflow for the community."
                     }
                     primaryAction={
                       debouncedWorkflowSearch
@@ -419,11 +438,13 @@ const Discover = () => {
                             label: "Clear search",
                             onClick: () => setWorkflowSearch(""),
                           }
-                        : {
-                            label: "Create a Workflow",
-                            to: "/workflows/new",
-                            icon: Sparkles,
-                          }
+                        : tagFilter
+                          ? { label: "Clear tag", onClick: clearTag }
+                          : {
+                              label: "Create a Workflow",
+                              to: "/workflows/new",
+                              icon: Sparkles,
+                            }
                     }
                   />
                 )}

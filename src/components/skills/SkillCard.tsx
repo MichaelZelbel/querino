@@ -124,23 +124,37 @@ export function SkillCard({
       <CardFooter className="flex flex-col gap-2 border-t border-border/50 pt-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            {showAuthorInfo && skill.author && (
-              <Link
-                to={`/u/${encodeURIComponent(skill.author.display_name || "")}`}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={skill.author.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px] bg-muted">
-                    {getAuthorInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
-                  {skill.author.display_name || "Anonymous"}
+            {showAuthorInfo &&
+              skill.author &&
+              (skill.author.display_name ? (
+                <Link
+                  to={`/u/${encodeURIComponent(skill.author.display_name)}`}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={skill.author.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                    {skill.author.display_name || "Anonymous"}
+                  </span>
+                </Link>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={skill.author.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getAuthorInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs truncate max-w-[80px] hover:text-primary transition-colors">
+                    {skill.author.display_name || "Anonymous"}
+                  </span>
                 </span>
-              </Link>
-            )}
+              ))}
 
             {/* Rating */}
             {skill.rating_count && skill.rating_count > 0 ? (
@@ -162,11 +176,17 @@ export function SkillCard({
 
           <div className="flex items-center gap-1">
             {isAuthor && showEditButton && (
-              <Link to={`/skills/${skill.slug}/edit`}>
-                <Button size="sm" variant="ghost" className="gap-1.5 h-8 px-2">
+              <Button
+                asChild
+                aria-label="Edit"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 h-8 px-2"
+              >
+                <Link to={`/skills/${skill.slug}/edit`}>
                   <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
             {currentUserId && !isAuthor && (
               <Button

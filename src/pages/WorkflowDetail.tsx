@@ -54,7 +54,7 @@ import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { format } from "date-fns";
-import { siteOrigin } from "@/config/site";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
@@ -76,6 +76,9 @@ export default function WorkflowDetail({
   );
   const [loading, setLoading] = useState(!initialWorkflow);
   const [notFound, setNotFound] = useState(false);
+  // A failed request is not a missing workflow: it gets its own screen with a
+  // retry instead of "Workflow Not Found".
+  const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(true);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -94,6 +97,9 @@ export default function WorkflowDetail({
     updateSuggestionAfterChanges,
   } = useSuggestions("workflow", workflow?.id || "");
   const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
+  // The author or a premium member of the workflow's team, as row-level
+  // security allows.
+  const canEdit = useCanEditArtifact(workflow);
 
   // Menerio integration
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
@@ -148,7 +154,7 @@ export default function WorkflowDetail({
 
       if (error) {
         console.error("Error fetching workflow:", error);
-        setNotFound(true);
+        setLoadError(true);
       } else if (!data) {
         setNotFound(true);
       } else {
@@ -157,10 +163,12 @@ export default function WorkflowDetail({
           author: data.profiles || null,
         };
         setWorkflow(workflowData);
+        setNotFound(false);
+        setLoadError(false);
       }
     } catch (err) {
       console.error("Error fetching workflow:", err);
-      setNotFound(true);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -238,11 +246,41 @@ export default function WorkflowDetail({
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <Header />
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <Skeleton className="mb-4 h-8 w-48" />
             <Skeleton className="mb-8 h-12 w-3/4" />
             <Skeleton className="h-48 w-full" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loadError && !workflow) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="flex-1 py-20">
+          <div className="container mx-auto max-w-4xl px-4 text-center">
+            <h1 className="mb-4 text-display-md font-bold text-foreground">
+              Couldn't load this workflow
+            </h1>
+            <p className="mb-8 text-lg text-muted-foreground">
+              Something went wrong while loading it. Check your connection and
+              try again.
+            </p>
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setLoadError(false);
+                setLoading(true);
+                void fetchWorkflow();
+              }}
+            >
+              Try again
+            </Button>
           </div>
         </main>
         <Footer />
@@ -276,34 +314,11 @@ export default function WorkflowDetail({
     );
   }
 
-  const workflowCanonical = `${siteOrigin()}/workflows/${workflow.slug || workflow.id}`;
-  const workflowDescription =
-    workflow.description || `${workflow.title} — AI workflow on Querino`;
-  const workflowJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: workflow.title,
-    headline: workflow.title,
-    description: workflowDescription,
-    genre: workflow.category,
-    url: workflowCanonical,
-    inLanguage: workflow.language || "en",
-    ...(workflow.created_at && { datePublished: workflow.created_at }),
-    ...(workflow.updated_at && { dateModified: workflow.updated_at }),
-    ...(workflow.author?.display_name && {
-      author: { "@type": "Person", name: workflow.author.display_name },
-    }),
-    publisher: { "@type": "Organization", name: "Querino" },
-    // No aggregateRating: Google only allows ratings on specific types
-    // (Product, Book, ...) — on generic CreativeWork it is a critical
-    // "Invalid object type" error in Search Console.
-  };
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <div className="flex flex-1">
-        <main className="flex-1 py-12">
+        <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <button
               onClick={() => navigate(-1)}
@@ -418,14 +433,17 @@ export default function WorkflowDetail({
                 content={getWorkflowContent()}
               />
 
+              {canEdit && (
+                <Link to={`/workflows/${workflow.slug}/edit`}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Workflow
+                  </Button>
+                </Link>
+              )}
+
               {isAuthor && (
                 <>
-                  <Link to={`/workflows/${workflow.slug}/edit`}>
-                    <Button size="lg" variant="outline" className="gap-2">
-                      <Pencil className="h-4 w-4" />
-                      Edit Workflow
-                    </Button>
-                  </Link>
                   <Button
                     size="lg"
                     variant="outline"

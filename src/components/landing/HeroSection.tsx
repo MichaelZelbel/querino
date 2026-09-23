@@ -35,7 +35,7 @@ export function HeroSection() {
               }}
             >
               <Sparkles className="h-4 w-4" />
-              The AI Prompt Library
+              Prompts, skills, workflows and kits
             </div>
 
             {/* Headline — Bricolage Grotesque, gradient on last two words */}
@@ -51,7 +51,8 @@ export function HeroSection() {
             >
               Discover, Create &amp;
               <br />
-              Master <span className="querino-grad-text">AI Prompts</span>
+              Share{" "}
+              <span className="querino-grad-text">AI Prompts &amp; Skills</span>
             </h1>
 
             {/* Sub-copy (witty default) */}
@@ -59,8 +60,9 @@ export function HeroSection() {
               className="mb-8 max-w-xl text-lg text-muted-foreground md:text-[17px] animate-fade-in-up mx-auto lg:mx-0"
               style={{ animationDelay: "0.2s", lineHeight: 1.55 }}
             >
-              Curated prompts, your personal library, and a tiny mascot who
-              genuinely cares whether your prompts are good.
+              Prompts, skills, workflows and prompt kits in one personal
+              library, plus a tiny mascot who genuinely cares whether your
+              prompts are good.
             </p>
 
             {/* CTAs */}
@@ -68,17 +70,17 @@ export function HeroSection() {
               className="flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start animate-fade-in-up"
               style={{ animationDelay: "0.3s" }}
             >
-              <Link to="/discover">
-                <Button variant="hero" size="xl" className="gap-2">
+              <Button asChild variant="hero" size="xl" className="gap-2">
+                <Link to="/discover">
                   Start Exploring
                   <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to={user ? "/library" : "/auth?redirect=/library"}>
-                <Button variant="hero-outline" size="xl">
+                </Link>
+              </Button>
+              <Button asChild variant="hero-outline" size="xl">
+                <Link to={user ? "/library" : "/auth?redirect=/library"}>
                   View Your Library
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
 
             {/* Stats row (existing) */}

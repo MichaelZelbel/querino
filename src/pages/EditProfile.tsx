@@ -319,6 +319,7 @@ export default function EditProfile() {
                     <Globe className="h-5 w-5 text-muted-foreground" />
                     <Input
                       placeholder="yourwebsite.com"
+                      aria-label="Website"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
                     />
@@ -328,6 +329,7 @@ export default function EditProfile() {
                     <Twitter className="h-5 w-5 text-muted-foreground" />
                     <Input
                       placeholder="username"
+                      aria-label="X username"
                       value={twitter}
                       onChange={(e) => setTwitter(e.target.value)}
                     />
@@ -337,6 +339,7 @@ export default function EditProfile() {
                     <Github className="h-5 w-5 text-muted-foreground" />
                     <Input
                       placeholder="username"
+                      aria-label="GitHub username"
                       value={github}
                       onChange={(e) => setGithub(e.target.value)}
                     />

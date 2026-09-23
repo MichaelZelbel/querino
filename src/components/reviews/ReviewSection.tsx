@@ -4,6 +4,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/components/prompts/StarRating";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -133,7 +144,7 @@ export function ReviewSection({
     <div className="space-y-4">
       {/* Compact Rating Card */}
       <div className="rounded-xl border border-border bg-card p-5">
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {/* Overall Rating - Left side */}
           <div className="flex items-center gap-3">
             <div className="flex items-baseline gap-1.5">
@@ -214,15 +225,37 @@ export function ReviewSection({
                 </Button>
               )}
               {userReview && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={submitting}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={submitting}
+                      className="text-destructive hover:text-destructive"
+                      aria-label="Delete your review"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete your review?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Your rating and comment will be removed. This cannot be
+                        undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete review
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
           </div>

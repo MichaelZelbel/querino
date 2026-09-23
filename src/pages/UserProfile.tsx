@@ -137,7 +137,7 @@ export default function UserProfile() {
               <Skeleton className="h-24 w-24 rounded-full" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-96" />
+                <Skeleton className="h-4 w-96 max-w-full" />
                 <Skeleton className="h-4 w-64" />
               </div>
             </div>

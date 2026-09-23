@@ -54,15 +54,29 @@ export function SendToLLMButtons({
     const fullPrompt = buildPromptForLLM(title, content);
 
     if (needsClipboardFallback(llm, fullPrompt)) {
-      // Long prompt: copy first, then show confirmation dialog
-      await navigator.clipboard.writeText(fullPrompt);
+      // Long prompt: copy first, then show confirmation dialog. The clipboard
+      // write rejects when the page lacks focus or permission; without the
+      // catch that was an unhandled rejection and a button that did nothing.
+      try {
+        await navigator.clipboard.writeText(fullPrompt);
+      } catch {
+        toast.error(
+          "Could not copy the prompt to your clipboard. Copy it from the page instead.",
+        );
+        return;
+      }
       setPreferredLLM(llm);
       setPreferred(llm);
       setClipboardDialog({ open: true, llm });
       return;
     }
 
-    const result = await openLLM(llm, fullPrompt);
+    try {
+      await openLLM(llm, fullPrompt);
+    } catch {
+      toast.error("Could not open the chat. Please try again.");
+      return;
+    }
     setPreferredLLM(llm);
     setPreferred(llm);
     const llmName = LLM_OPTIONS.find((o) => o.id === llm)?.name;
