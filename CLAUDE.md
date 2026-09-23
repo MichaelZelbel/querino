@@ -22,6 +22,14 @@ endpoint also has a human button, use `requireMachineOrAdmin`, not a body flag.
 `tests/security/` fails when this is broken. Run `npm test` before shipping an
 edge function.
 
+The suite shares one live test account, and every push to `main` starts it in
+CI. Two runs at once corrupt each other (2026-09-23: a local run overlapped the
+CI run of the same push and left the live Prompt Coach on a fake model). Its
+global setup therefore takes the one-row lock in `security_suite_lock` and
+waits while another run holds it, so a local `npm test` right after a push
+simply queues behind CI. Never run two copies from one machine in parallel
+either, and never have a subagent start one in the background.
+
 ## Non-negotiable product policy
 
 **No checkout, ever.** Querino must not contain a working payment/checkout

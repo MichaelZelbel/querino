@@ -12,6 +12,9 @@ export default defineConfig({
   testDir: "./tests/security",
   testMatch: "**/*.spec.ts",
 
+  // One run at a time across machines and CI (migration 20260923150000).
+  globalSetup: "./tests/security/global-setup.ts",
+
   // Several tests move the same test account's credit balance and put it back.
   // Running them at once would have them read each other's half-done state.
   fullyParallel: false,
