@@ -21,6 +21,7 @@ import {
 import {
   callProvider,
   ProviderHttpError,
+  PROVIDER_TIMEOUT_MS,
   type ProviderRequest,
   type ToolDefinition as ProviderToolDefinition,
   type ToolChoice,
@@ -394,6 +395,14 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
         );
       }
       throw new GatewayError(e.status, e.message);
+    }
+    // The provider timeout in llm-providers.ts aborts the fetch with a
+    // TimeoutError; the reservation above is already released by then.
+    if (e instanceof DOMException && e.name === "TimeoutError") {
+      throw new GatewayError(
+        504,
+        `Provider ${effective.provider} did not answer within ${PROVIDER_TIMEOUT_MS / 1000} seconds`,
+      );
     }
     throw e;
   }

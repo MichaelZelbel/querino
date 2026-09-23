@@ -11,7 +11,8 @@ import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
 import { readMenerioApiKey } from "../_shared/menerioKey.ts";
 
 // A Menerio that does not answer within this window fails the row, which
-// the queue retries; without it a hung connection held the whole tick.
+// the queue retries (see fail_menerio_sync_queue_row); without it a hung
+// connection held the whole tick.
 const MENERIO_TIMEOUT_MS = 15_000;
 
 const corsHeaders = {
@@ -62,17 +63,19 @@ Deno.serve(async (req) => {
     // 2. Process each claimed entry
     for (const item of queue) {
       try {
-        // Check user has active menerio integration with auto_sync. A read
-        // error is thrown, not treated as "no integration": until 2026-09-16
-        // a transient database failure here marked the row completed with
+        // Check the user has an active menerio integration. A read error is
+        // thrown, not treated as "no integration": until 2026-09-16 a
+        // transient database failure here marked the row completed with
         // "skipped", and the artifact was never sent. Thrown, it lands in
-        // failed and gets another turn.
+        // failed, and claim_menerio_sync_queue hands it back after a backoff
+        // (1, 2, 4, 8, 16 minutes) until it has failed five times. Until
+        // 2026-09-23 the claim never looked at failed rows, so "gets another
+        // turn" was only true on paper.
         const { data: integration, error: integrationErr } = await adminClient
           .from("menerio_integration")
           .select("*")
           .eq("user_id", item.user_id)
           .eq("is_active", true)
-          .eq("auto_sync", true)
           .maybeSingle();
 
         if (integrationErr) {
@@ -85,7 +88,25 @@ Deno.serve(async (req) => {
           await markCompleted(
             adminClient,
             item.id,
-            "skipped: no active auto-sync integration",
+            "skipped: no active integration",
+          );
+          processed++;
+          continue;
+        }
+
+        // auto_sync governs only what the database queued on its own when an
+        // artifact changed. A row the user queued with the sync button
+        // (source 'manual') and a delete marker for an artifact that was
+        // already in Menerio are sent whatever auto_sync says; until
+        // 2026-09-23 both were skipped when auto_sync was off, so the bulk
+        // sync button did nothing for exactly the users who sync by hand.
+        const autoQueuedSync =
+          item.source === "trigger" && item.status !== "delete_pending";
+        if (autoQueuedSync && integration.auto_sync !== true) {
+          await markCompleted(
+            adminClient,
+            item.id,
+            "skipped: auto-sync is off",
           );
           processed++;
           continue;
@@ -140,15 +161,28 @@ Deno.serve(async (req) => {
 
         processed++;
       } catch (err) {
+        // An artifact deleted between queueing and this tick has nothing left
+        // to send; its own delete trigger queues the delete marker. Retrying
+        // it five times only filled the log.
+        if (err instanceof ArtifactGone) {
+          await markCompleted(adminClient, item.id, `skipped: ${err.message}`);
+          processed++;
+          continue;
+        }
         const errMsg = err instanceof Error ? err.message : "Unknown error";
-        await adminClient
-          .from("menerio_sync_queue")
-          .update({
-            status: "failed",
-            error_message: errMsg,
-            processed_at: new Date().toISOString(),
-          })
-          .eq("id", item.id);
+        // One statement counts the failure and sets the backoff, and keeps a
+        // delete a delete (status delete_failed) for the next claim.
+        const { error: failErr } = await callRpc(
+          adminClient,
+          "fail_menerio_sync_queue_row",
+          { p_id: item.id, p_error: errMsg },
+        );
+        if (failErr) {
+          console.error(
+            `recording the failure of queue row ${item.id} failed:`,
+            failErr.message,
+          );
+        }
         failed++;
       }
     }
@@ -170,6 +204,33 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Thrown by handleSync when the row names an artifact that no longer exists.
+class ArtifactGone extends Error {
+  constructor(artifactId: string) {
+    super(`artifact ${artifactId} no longer exists`);
+    this.name = "ArtifactGone";
+  }
+}
+
+// The service client has no Database type, so supabase-js types every rpc
+// argument object as `undefined`; this says what the call really takes. The
+// client is typed loosely for the reason given in _shared/menerioKey.ts.
+interface RpcClient {
+  rpc(
+    fn: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<{ error: { message: string } | null }>;
+}
+
+async function callRpc(
+  client: unknown,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<{ error: { message: string } | null }> {
+  // Called as a method, so supabase-js keeps its `this`.
+  return await (client as RpcClient).rpc(fn, args);
+}
 
 // The service client is created without the generated Database type and the
 // table name is chosen at run time, so supabase-js resolves the row to `never`
@@ -197,8 +258,15 @@ async function handleSync(
 
   const artifact = data as SyncableArtifact | null;
 
-  if (error || !artifact) {
-    throw new Error(`Artifact not found: ${item.artifact_id}`);
+  // A read error is retried; only a clean "no such row" means the artifact is
+  // gone.
+  if (error) {
+    throw new Error(
+      `reading ${tableName} ${item.artifact_id}: ${error.message}`,
+    );
+  }
+  if (!artifact) {
+    throw new ArtifactGone(item.artifact_id);
   }
 
   // The queue row names an artifact by id and the insert policy used to check
@@ -389,12 +457,8 @@ function buildBody(type: string, a: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-async function markCompleted(
-  client: ReturnType<typeof createClient>,
-  id: string,
-  note: string,
-) {
-  await client
+async function markCompleted(client: unknown, id: string, note: string) {
+  await (client as ReturnType<typeof createClient>)
     .from("menerio_sync_queue")
     .update({
       status: "completed",

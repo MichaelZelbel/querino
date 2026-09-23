@@ -106,18 +106,28 @@ async function loadHistory(
     .select("id, message")
     .eq("session_id", sessionId)
     .eq("user_id", userId)
-    .order("id", { ascending: true });
+    // Newest first and limited, then reversed below. Oldest-first with no
+    // limit hit PostgREST's 1000-row cap on a long session and dropped the
+    // NEWEST turns, so the coach answered a conversation from weeks ago.
+    .order("id", { ascending: false })
+    .limit(MAX_HISTORY_TURNS * 2);
 
   if (error) {
     console.error("[coach.loadHistory] error:", error);
     return [];
   }
 
+  const rows = (
+    (data ?? []) as Array<{
+      id: number;
+      message: StoredMessage;
+    }>
+  )
+    .slice()
+    .reverse();
+
   const messages: ChatMessage[] = [];
-  for (const row of (data ?? []) as Array<{
-    id: number;
-    message: StoredMessage;
-  }>) {
+  for (const row of rows) {
     const m = row.message;
     if (!m || typeof m.content !== "string") continue;
     if (m.type === "human") messages.push({ role: "user", content: m.content });

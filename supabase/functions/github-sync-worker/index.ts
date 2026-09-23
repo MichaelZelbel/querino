@@ -45,6 +45,11 @@ function callRpc<T>(
 
 const BATCH_SIZE = 25;
 const MAX_ATTEMPTS = 3;
+// GitHub that does not answer within this window fails the attempt, which the
+// queue retries. Without it one hung connection held the whole tick until the
+// platform killed the isolate, and every row it had claimed sat in
+// 'processing' until the stale window let it go.
+const GITHUB_TIMEOUT_MS = 15_000;
 
 type Operation = "upsert" | "delete";
 
@@ -57,6 +62,7 @@ interface QueueRow {
   team_id: string | null;
   payload: Record<string, unknown>;
   attempts: number;
+  created_at: string;
 }
 
 interface GitHubSettings {
@@ -104,6 +110,7 @@ async function ghGetFile(
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
       },
+      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     },
   );
   if (res.status === 404) return null;
@@ -143,6 +150,7 @@ async function ghPutFile(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     },
   );
   if (res.status === 409 || res.status === 422) {
@@ -220,6 +228,7 @@ async function ghDeleteFile(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ message, sha, branch }),
+      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     },
   );
   // Only a 2xx or a 404 means the file is gone. Until 2026-09-16 a 422 was
@@ -264,26 +273,37 @@ async function ghDeleteFileFresh(
 
 // ---------------- Settings & token loading ----------------
 
+// Returns null only when the settings really are missing: no team repository,
+// sync switched off, no stored token. A failed read throws, so the row takes
+// the normal retry path. Until 2026-09-23 every read error here was dropped,
+// and a database or Vault hiccup marked the row 'skipped' with
+// "github_sync_not_configured": that change never reached GitHub.
 async function loadGitHubSettings(
   supabase: ReturnType<typeof createClient>,
   ownerUserId: string | null,
   teamId: string | null,
 ): Promise<GitHubSettings | null> {
   if (teamId) {
-    const { data: team } = await supabase
+    const { data: team, error: teamErr } = await supabase
       .from("teams")
       .select("id, github_repo, github_branch, github_folder")
       .eq("id", teamId)
       .maybeSingle();
+    if (teamErr) throw new Error(`reading team ${teamId}: ${teamErr.message}`);
     if (!team || !team.github_repo) return null;
 
     // Encrypted at rest in Vault; read_user_credential is the only way in and
     // it is service-role only (finding H3).
-    const { data: teamToken } = await callRpc<string>(
+    const { data: teamToken, error: teamTokenErr } = await callRpc<string>(
       supabase,
       "read_user_credential",
       { _credential_type: "github_token", _team_id: teamId },
     );
+    if (teamTokenErr) {
+      throw new Error(
+        `reading the GitHub token of team ${teamId}: ${teamTokenErr.message}`,
+      );
+    }
     if (!teamToken) return null;
 
     return {
@@ -298,18 +318,26 @@ async function loadGitHubSettings(
 
   if (!ownerUserId) return null;
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("github_sync_enabled, github_repo, github_branch, github_folder")
     .eq("id", ownerUserId)
     .maybeSingle();
+  if (profileErr) {
+    throw new Error(`reading profile ${ownerUserId}: ${profileErr.message}`);
+  }
   if (!profile?.github_sync_enabled || !profile?.github_repo) return null;
 
-  const { data: ownerToken } = await callRpc<string>(
+  const { data: ownerToken, error: ownerTokenErr } = await callRpc<string>(
     supabase,
     "read_user_credential",
     { _credential_type: "github_token", _user_id: ownerUserId },
   );
+  if (ownerTokenErr) {
+    throw new Error(
+      `reading the GitHub token of ${ownerUserId}: ${ownerTokenErr.message}`,
+    );
+  }
   if (!ownerToken) return null;
 
   return {
@@ -367,10 +395,23 @@ async function processQueue(
     return { processed: 0, done: 0, failed: 0, skipped: 0 };
   }
 
+  // "Newest row wins" needs the rows in queue order, and the claim's
+  // UPDATE ... RETURNING promises no order at all. Until 2026-09-23 an older
+  // row could supersede a newer one and push stale content.
+  //
+  // The key includes the target (the team, or the user when there is no
+  // team): when an artifact moves between owners the trigger queues a delete
+  // for the old target and an upsert for the new one, and both have to run.
+  const ordered = [...claimed].sort(
+    (a, b) => Date.parse(a.created_at) - Date.parse(b.created_at),
+  );
   const latestByArtifact = new Map<string, QueueRow>();
   const supersededIds: string[] = [];
-  for (const row of claimed) {
-    const key = `${row.artifact_type}:${row.artifact_id}`;
+  for (const row of ordered) {
+    const target = row.team_id
+      ? `team:${row.team_id}`
+      : `user:${row.owner_user_id}`;
+    const key = `${row.artifact_type}:${row.artifact_id}:${target}`;
     const existing = latestByArtifact.get(key);
     if (!existing) {
       latestByArtifact.set(key, row);
@@ -433,6 +474,36 @@ async function processQueue(
               id: job.artifact_id,
             });
           }
+        }
+
+        // When an artifact moves between a user and a team (or two teams)
+        // whose settings point at the same repository and folder, the old
+        // path and the new one are the same file. If the new owner's upsert
+        // already recorded it, deleting here would remove the artifact from
+        // GitHub altogether, so the file is left alone.
+        if (path) {
+          const { data: others, error: othersErr } = await supabase
+            .from("github_sync_state")
+            .select("target_scope, target_id")
+            .eq("artifact_type", job.artifact_type)
+            .eq("artifact_id", job.artifact_id)
+            .eq("repo", settings.repo)
+            .eq("branch", settings.branch)
+            .eq("path", path);
+          if (othersErr) {
+            throw new Error(`reading github_sync_state: ${othersErr.message}`);
+          }
+          const heldByAnotherOwner = (
+            (others ?? []) as Array<{
+              target_scope: string;
+              target_id: string;
+            }>
+          ).some(
+            (o) =>
+              o.target_scope !== settings.scope ||
+              o.target_id !== settings.target_id,
+          );
+          if (heldByAnotherOwner) path = undefined;
         }
 
         if (path) {

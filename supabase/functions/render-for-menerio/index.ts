@@ -1,7 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
 import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
-import { readMenerioApiKey } from "../_shared/menerioKey.ts";
+import {
+  MissingMenerioKeyError,
+  readMenerioApiKey,
+} from "../_shared/menerioKey.ts";
 
 // The sync button waits on this call; a Menerio that never answers used to
 // hold the browser until the platform killed the function.
@@ -96,7 +99,17 @@ async function handleSync(
     menerio_base_url: string;
   } | null;
 
-  if (intErr || !integration) {
+  // A failed read is not a missing integration. Until 2026-09-23 both answered
+  // "Keine aktive Menerio-Integration" with a 400, so a database or Vault
+  // outage told the user to reconnect Menerio and left no trace in the logs.
+  if (intErr) {
+    console.error(
+      "[render-for-menerio] reading menerio_integration failed:",
+      intErr.message,
+    );
+    return json({ error: "Reading the Menerio integration failed" }, 500);
+  }
+  if (!integration) {
     return json({ error: "Keine aktive Menerio-Integration" }, 400);
   }
 
@@ -104,8 +117,14 @@ async function handleSync(
   try {
     menerioApiKey = await readMenerioApiKey(adminClient, userId);
   } catch (keyErr) {
-    console.error("[render-for-menerio] key lookup failed:", keyErr);
-    return json({ error: "Keine aktive Menerio-Integration" }, 400);
+    if (keyErr instanceof MissingMenerioKeyError) {
+      return json({ error: "Keine aktive Menerio-Integration" }, 400);
+    }
+    console.error(
+      "[render-for-menerio] key lookup failed:",
+      keyErr instanceof Error ? keyErr.message : keyErr,
+    );
+    return json({ error: "Reading the Menerio key failed" }, 500);
   }
 
   // The base URL column is user-writable through PostgREST, so it is checked
@@ -132,7 +151,14 @@ async function handleSync(
     .eq("id", artifactId)
     .maybeSingle();
 
-  if (artErr || !artifact) {
+  if (artErr) {
+    console.error(
+      `[render-for-menerio] reading ${tableName} ${artifactId} failed:`,
+      artErr.message,
+    );
+    return json({ error: "Reading the artifact failed" }, 500);
+  }
+  if (!artifact) {
     return json({ error: `Artefakt nicht gefunden` }, 404);
   }
 

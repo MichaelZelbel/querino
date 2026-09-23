@@ -40,6 +40,20 @@ export interface ProviderRequest {
   toolChoice?: ToolChoice;
   apiKey: string;
   fetchImpl?: typeof fetch;
+  /** A caller's own cancellation; the provider timeout below applies as well. */
+  signal?: AbortSignal;
+}
+
+// Edge functions are killed at 150 s of wall time. A provider that never
+// answers used to hold the request until that kill, and a killed isolate never
+// reaches the catch in callLovableAI that releases the credit reservation, so
+// the user's estimate stayed charged. Aborting at 110 s leaves time for the
+// release and for the caller to answer with an error.
+export const PROVIDER_TIMEOUT_MS = 110_000;
+
+function providerSignal(req: ProviderRequest): AbortSignal {
+  const timeout = AbortSignal.timeout(PROVIDER_TIMEOUT_MS);
+  return req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
 }
 
 export interface ProviderResult {
@@ -189,6 +203,7 @@ async function callOpenAICompatible(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: providerSignal(req),
     }),
   )) as {
     choices?: Array<{
@@ -254,6 +269,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: providerSignal(req),
     }),
   )) as {
     content?: Array<{
@@ -344,6 +360,7 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: providerSignal(req),
     }),
   )) as {
     candidates?: Array<{

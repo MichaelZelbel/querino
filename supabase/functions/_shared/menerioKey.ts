@@ -6,6 +6,17 @@
 // sends a user's key to Menerio reads it through here, so a missing key is a
 // loud error rather than an "x-api-key: null" header.
 
+/**
+ * The account has no key stored. Kept apart from a failed read so a caller can
+ * answer "not connected" for this one and "something broke" for the rest.
+ */
+export class MissingMenerioKeyError extends Error {
+  constructor() {
+    super("This account has no Menerio key stored");
+    this.name = "MissingMenerioKeyError";
+  }
+}
+
 interface RpcClient {
   rpc(
     fn: string,
@@ -32,7 +43,7 @@ export async function readMenerioApiKey(
     throw new Error(`reading the Menerio key: ${error.message}`);
   }
   if (typeof data !== "string" || data.length === 0) {
-    throw new Error("This account has no Menerio key stored");
+    throw new MissingMenerioKeyError();
   }
   return data;
 }
