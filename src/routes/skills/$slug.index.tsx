@@ -15,7 +15,7 @@ export const Route = createFileRoute("/skills/$slug/")({
     const description =
       loaderData.summary ||
       loaderData.description ||
-      `${loaderData.title} — AI skill on Querino`;
+      `${loaderData.title}, an AI skill on Querino`;
     return pageHead({
       title: loaderData.title,
       description,

@@ -158,7 +158,8 @@ export async function buildSitemap(): Promise<string> {
     { loc: "/prompts", priority: "0.8", changefreq: "daily" },
     { loc: "/skills", priority: "0.8", changefreq: "daily" },
     { loc: "/workflows", priority: "0.8", changefreq: "daily" },
-    { loc: "/blog", priority: "0.8", changefreq: "daily" },
+    { loc: "/docs", priority: "0.5", changefreq: "monthly" },
+    { loc: "/community-guidelines", priority: "0.3", changefreq: "yearly" },
 
     // /auth intentionally excluded — login pages should not be advertised for indexing
     { loc: "/terms", priority: "0.3", changefreq: "yearly" },
@@ -195,6 +196,12 @@ export async function buildSitemap(): Promise<string> {
         `Sitemap query for ${table} failed: ${result.error.message}`,
       );
     }
+  }
+
+  // /blog is only advertised once there is a published post to read; an empty
+  // blog index is a thin page a crawler should not be sent to.
+  if ((blogPosts.data?.length ?? 0) > 0) {
+    staticPages.push({ loc: "/blog", priority: "0.8", changefreq: "daily" });
   }
 
   const urls: string[] = [];

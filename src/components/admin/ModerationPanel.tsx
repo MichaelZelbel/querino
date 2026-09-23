@@ -207,6 +207,38 @@ export function ModerationPanel() {
   );
 }
 
+/**
+ * A failed read keeps whatever list was already on screen and says so,
+ * instead of rendering an empty list that looks like "nothing to moderate".
+ */
+function LoadErrorBanner({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="flex flex-wrap items-center justify-between gap-2 rounded border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+    >
+      <span>Could not load: {message}</span>
+      <Button variant="outline" size="sm" className="gap-1" onClick={onRetry}>
+        <RefreshCw className="h-3 w-3" /> Retry
+      </Button>
+    </div>
+  );
+}
+
+function loadErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message) return message;
+  }
+  return "unknown error";
+}
+
 function StopwordsTab() {
   const [stopwords, setStopwords] = useState<Stopword[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,18 +246,25 @@ function StopwordsTab() {
   const [newCategory, setNewCategory] = useState("general");
   const [bulkInput, setBulkInput] = useState("");
   const [showBulk, setShowBulk] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStopwords();
   }, []);
 
   const fetchStopwords = async () => {
-    setLoading(true);
-    const { data } = (await supabase
+    const { data, error } = (await supabase
       .from("moderation_stopwords")
       .select("*")
       .order("created_at", { ascending: false })) as any;
-    setStopwords(data || []);
+    if (error) {
+      const message = loadErrorMessage(error);
+      setLoadError(message);
+      toast.error(`Could not load stopwords: ${message}`);
+    } else {
+      setLoadError(null);
+      setStopwords(data || []);
+    }
     setLoading(false);
   };
 
@@ -275,9 +314,10 @@ function StopwordsTab() {
           ? "Nothing was added: one of the words is already in the list, and the whole batch is rejected together. Remove it and try again."
           : `Nothing was added: ${error.message}`,
       );
-    } else {
-      toast.success(`Added ${words.length} stopwords`);
+      // The typed list stays in the box so it can be corrected and resent.
+      return;
     }
+    toast.success(`Added ${words.length} stopwords`);
     setBulkInput("");
     setShowBulk(false);
     fetchStopwords();
@@ -299,6 +339,9 @@ function StopwordsTab() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <LoadErrorBanner message={loadError} onRetry={fetchStopwords} />
+      )}
       <div className="flex gap-2 items-end flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <Input
@@ -404,6 +447,7 @@ function ModerationLogTab() {
   const [events, setEvents] = useState<ModerationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterResult, setFilterResult] = useState<string>("all");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const profileNames = useProfileNames(events.map((e) => e.user_id));
 
   useEffect(() => {
@@ -411,7 +455,6 @@ function ModerationLogTab() {
   }, [filterResult]);
 
   const fetchEvents = async () => {
-    setLoading(true);
     let query = (supabase.from("moderation_events") as any)
       .select("*")
       .order("created_at", { ascending: false })
@@ -421,8 +464,15 @@ function ModerationLogTab() {
       query = query.eq("result", filterResult);
     }
 
-    const { data } = await query;
-    setEvents(data || []);
+    const { data, error } = await query;
+    if (error) {
+      const message = loadErrorMessage(error);
+      setLoadError(message);
+      toast.error(`Could not load the moderation log: ${message}`);
+    } else {
+      setLoadError(null);
+      setEvents(data || []);
+    }
     setLoading(false);
   };
 
@@ -430,6 +480,9 @@ function ModerationLogTab() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <LoadErrorBanner message={loadError} onRetry={fetchEvents} />
+      )}
       <div className="flex gap-2 items-center">
         <Select value={filterResult} onValueChange={setFilterResult}>
           <SelectTrigger className="w-[160px]">
@@ -512,6 +565,7 @@ function AIReviewQueueTab() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [processing, setProcessing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const profileNames = useProfileNames(items.map((i) => i.user_id));
 
   useEffect(() => {
@@ -519,7 +573,6 @@ function AIReviewQueueTab() {
   }, [filterStatus]);
 
   const fetchItems = async () => {
-    setLoading(true);
     let query = (supabase.from("moderation_review_queue") as any)
       .select("*")
       .order("created_at", { ascending: false })
@@ -529,8 +582,15 @@ function AIReviewQueueTab() {
       query = query.eq("status", filterStatus);
     }
 
-    const { data } = await query;
-    setItems(data || []);
+    const { data, error } = await query;
+    if (error) {
+      const message = loadErrorMessage(error);
+      setLoadError(message);
+      toast.error(`Could not load the review queue: ${message}`);
+    } else {
+      setLoadError(null);
+      setItems(data || []);
+    }
     setLoading(false);
   };
 
@@ -579,6 +639,9 @@ function AIReviewQueueTab() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <LoadErrorBanner message={loadError} onRetry={fetchItems} />
+      )}
       <div className="flex gap-2 items-center flex-wrap">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-[160px]">
@@ -727,6 +790,7 @@ function QueueStatusBadge({ status }: { status: string }) {
 function SuspensionsTab() {
   const [suspensions, setSuspensions] = useState<UserSuspension[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const profileNames = useProfileNames(suspensions.map((s) => s.user_id));
 
   useEffect(() => {
@@ -734,11 +798,17 @@ function SuspensionsTab() {
   }, []);
 
   const fetchSuspensions = async () => {
-    setLoading(true);
-    const { data } = await (supabase.from("user_suspensions") as any)
+    const { data, error } = await (supabase.from("user_suspensions") as any)
       .select("*")
       .order("strike_count", { ascending: false });
-    setSuspensions(data || []);
+    if (error) {
+      const message = loadErrorMessage(error);
+      setLoadError(message);
+      toast.error(`Could not load suspensions: ${message}`);
+    } else {
+      setLoadError(null);
+      setSuspensions(data || []);
+    }
     setLoading(false);
   };
 
@@ -780,6 +850,9 @@ function SuspensionsTab() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <LoadErrorBanner message={loadError} onRetry={fetchSuspensions} />
+      )}
       <p className="text-sm text-muted-foreground">
         {suspensions.filter((s) => s.suspended).length} users currently
         suspended, {suspensions.length} users with strikes

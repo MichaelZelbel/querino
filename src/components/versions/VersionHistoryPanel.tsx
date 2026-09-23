@@ -199,8 +199,9 @@ export function VersionHistoryPanel({
         (latest.description ?? "") === (currentPrompt.description ?? "") &&
         latest.content === currentPrompt.content;
 
+      let snapshotId: string | null = null;
       if (!currentMatchesLatest) {
-        const { error: snapshotError } = await supabase
+        const { data: snapshotRow, error: snapshotError } = await supabase
           .from(tableConfig.versionsTable as any)
           .insert({
             [tableConfig.idColumn]: promptId,
@@ -210,17 +211,52 @@ export function VersionHistoryPanel({
             content: currentPrompt.content,
             tags: currentPrompt.tags,
             change_notes: `Snapshot before restoring v${restoringVersion.version_number}`,
-          });
+          })
+          .select("id")
+          .maybeSingle();
 
         if (snapshotError) {
           console.error("Error snapshotting current content:", snapshotError);
           toast.error("Failed to preserve current content. Restore cancelled.");
           return;
         }
+        snapshotId = (snapshotRow as { id: string } | null)?.id ?? null;
         nextVersionNumber += 1;
       }
 
-      // Create a new version entry for the restoration
+      // Update the live artifact before writing the "Restored" row. There is
+      // no author filter here: RLS decides who may edit (team editors too),
+      // and an update it refuses comes back as zero rows, not as an error.
+      const { data: updatedRows, error: updateError } = await supabase
+        .from(tableConfig.artifactTable as any)
+        .update({
+          title: restoringVersion.title,
+          description: restoringVersion.description || "",
+          content: restoringVersion.content,
+          tags: restoringVersion.tags,
+        })
+        .eq("id", promptId)
+        .select("id");
+
+      if (updateError || !updatedRows || updatedRows.length === 0) {
+        console.error(
+          `Restore did not update the ${artifactLabel}:`,
+          updateError ?? promptId,
+        );
+        // The restore did not happen, so the snapshot would be false history.
+        if (snapshotId) {
+          await supabase
+            .from(tableConfig.versionsTable as "prompt_versions")
+            .delete()
+            .eq("id", snapshotId);
+        }
+        toast.error(
+          `Failed to restore: the ${artifactLabel} could not be updated.`,
+        );
+        return;
+      }
+
+      // Record the restoration in the history
       const { error: versionError } = await supabase
         .from(tableConfig.versionsTable as any)
         .insert({
@@ -234,40 +270,11 @@ export function VersionHistoryPanel({
         });
 
       if (versionError) {
+        // The content is restored; only the history entry is missing.
         console.error("Error creating restore version:", versionError);
-        toast.error("Failed to restore version. Please try again.");
-        return;
-      }
-
-      // Update the live artifact with restored content
-      const { data: updatedRows, error: updateError } = await supabase
-        .from(tableConfig.artifactTable as any)
-        .update({
-          title: restoringVersion.title,
-          description: restoringVersion.description || "",
-          content: restoringVersion.content,
-          tags: restoringVersion.tags,
-        })
-        .eq("id", promptId)
-        .eq("author_id", user.id)
-        .select("id");
-
-      if (updateError) {
-        console.error(`Error updating ${artifactLabel}:`, updateError);
-        toast.error(
-          `Version entry created but failed to update ${artifactLabel}.`,
+        toast.warning(
+          `Restored, but the history entry for v${restoringVersion.version_number} could not be saved.`,
         );
-        return;
-      }
-
-      // Row level security turns an update the caller may not make into a
-      // silent no-op with no error, so an empty result is a failure too.
-      if (!updatedRows || updatedRows.length === 0) {
-        console.error(`Restore matched no ${artifactLabel} row:`, promptId);
-        toast.error(
-          `Version entry created but the ${artifactLabel} was not updated.`,
-        );
-        return;
       }
 
       toast.success(`Restored to version v${restoringVersion.version_number}`);

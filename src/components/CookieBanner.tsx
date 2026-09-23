@@ -67,6 +67,19 @@ export const CookieBanner = () => {
     };
   }, [isVisible]);
 
+  // The banner renders last in the page, so a keyboard user would otherwise
+  // reach it only after tabbing through everything. Move focus to it when it
+  // appears, unless the visitor is already typing somewhere.
+  useEffect(() => {
+    if (!isVisible) return;
+    const active = document.activeElement as HTMLElement | null;
+    const typing =
+      !!active &&
+      (active.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+    if (!typing) bannerRef.current?.focus({ preventScroll: true });
+  }, [isVisible]);
+
   const choose = (choice: Consent) => {
     saveConsent(choice);
     setIsVisible(false);
@@ -80,18 +93,28 @@ export const CookieBanner = () => {
       role="dialog"
       aria-live="polite"
       aria-labelledby="cookie-banner-title"
-      className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in"
+      tabIndex={-1}
+      className="fixed bottom-0 left-0 right-0 z-50 p-2 outline-hidden animate-fade-in sm:p-4"
     >
-      <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-4 shadow-lg backdrop-blur-sm sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-3 shadow-lg backdrop-blur-sm sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex-1">
             <h3
               id="cookie-banner-title"
-              className="font-display text-base font-semibold text-foreground sm:text-lg"
+              className="sr-only font-display text-base font-semibold text-foreground sm:not-sr-only sm:text-lg"
             >
               Our site uses cookies.
             </h3>
-            <p className="mt-1 font-sans text-sm text-muted-foreground">
+            <p className="font-sans text-sm text-muted-foreground sm:hidden">
+              We use cookies, and Accept all also counts your visit.{" "}
+              <a
+                href="/cookies"
+                className="rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Learn more
+              </a>
+            </p>
+            <p className="mt-1 hidden font-sans text-sm text-muted-foreground sm:block">
               Think of them as harmless little prompts that help us remember
               what you like. Tap Accept all and we also count your visit, so we
               know which pages people actually read.{" "}
@@ -104,12 +127,12 @@ export const CookieBanner = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={() => choose("essential")}
-              className="min-w-[80px]"
+              className="h-8 flex-1 px-3 text-xs sm:h-9 sm:flex-none sm:min-w-[80px] sm:text-sm"
             >
               Just the essentials
             </Button>
@@ -117,7 +140,7 @@ export const CookieBanner = () => {
               variant="default"
               size="sm"
               onClick={() => choose("all")}
-              className="min-w-[80px]"
+              className="h-8 flex-1 px-3 text-xs sm:h-9 sm:flex-none sm:min-w-[80px] sm:text-sm"
             >
               Accept all
             </Button>

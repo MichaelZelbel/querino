@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "@/lib/router-compat";
 import { useQueryClient } from "@tanstack/react-query";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
@@ -6,7 +7,7 @@ import { useSearchPrompts } from "@/hooks/useSearchPrompts";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, TrendingUp, Clock, Star } from "lucide-react";
+import { Search, TrendingUp, Clock, Star, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,6 +22,12 @@ interface PromptsSectionProps {
   initialSearch?: string;
   /** Called when the user clears the active tag filter. */
   onClearTag?: () => void;
+  /**
+   * Show only this many cards and a "See all in Discover" link instead of
+   * paging with Load more. Defaults to 6 when the section shows its own
+   * header (the home page) and to no limit otherwise (Discover).
+   */
+  previewCount?: number;
 }
 
 export function PromptsSection({
@@ -28,7 +35,9 @@ export function PromptsSection({
   tagFilter = "",
   initialSearch = "",
   onClearTag,
+  previewCount = showHeader ? 6 : undefined,
 }: PromptsSectionProps) {
+  const isPreview = previewCount !== undefined;
   const [category, setCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState<SortOption>("trending");
@@ -52,12 +61,14 @@ export function PromptsSection({
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    isSemantic,
   } = useSearchPrompts({
     searchQuery: debouncedSearch,
     isPublic: true,
     category,
     tag: tagFilter || undefined,
     sortBy,
+    ...(isPreview ? { pageSize: previewCount } : {}),
   });
 
   // useSearchPrompts does not hand out refetch, so retry through its query key.
@@ -67,7 +78,13 @@ export function PromptsSection({
       type: "active",
     });
 
-  const filteredAndSortedPrompts = prompts ?? [];
+  const allPrompts = prompts ?? [];
+  const filteredAndSortedPrompts = isPreview
+    ? allPrompts.slice(0, previewCount)
+    : allPrompts;
+  const discoverHref = debouncedSearch.trim()
+    ? `/discover?q=${encodeURIComponent(debouncedSearch.trim())}`
+    : "/discover";
 
   const sortOptions: {
     value: SortOption;
@@ -134,9 +151,11 @@ export function PromptsSection({
               </Button>
             ))}
           </div>
-          {isSearching && (
+          {isSearching && !isLoading && (
             <p className="text-center text-sm text-muted-foreground">
-              Showing results by relevance
+              {isSemantic
+                ? "Showing results by relevance"
+                : "Showing prompts that contain your search words"}
             </p>
           )}
 
@@ -161,7 +180,7 @@ export function PromptsSection({
 
         {/* Loading State */}
         {isLoading && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
@@ -191,11 +210,11 @@ export function PromptsSection({
 
         {/* Prompts Grid */}
         {!isLoading && !error && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredAndSortedPrompts.map((prompt, index) => (
               <div
                 key={prompt.id}
-                className="animate-fade-in-up"
+                className="min-w-0 animate-fade-in-up"
                 style={{ animationDelay: `${(index % 24) * 0.04}s` }}
               >
                 <PromptCard prompt={prompt} showAuthorInfo />
@@ -204,7 +223,21 @@ export function PromptsSection({
           </div>
         )}
 
-        {!isLoading && !error && hasNextPage && (
+        {!isLoading &&
+          !error &&
+          isPreview &&
+          filteredAndSortedPrompts.length > 0 && (
+            <div className="mt-8 flex justify-center">
+              <Button asChild variant="outline" className="gap-2">
+                <Link to={discoverHref}>
+                  See all in Discover
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          )}
+
+        {!isLoading && !error && !isPreview && hasNextPage && (
           <div className="mt-8 flex justify-center">
             <Button
               variant="outline"

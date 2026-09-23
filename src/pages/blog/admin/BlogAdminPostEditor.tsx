@@ -26,7 +26,16 @@ import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Save, Eye, ArrowLeft } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { format } from "date-fns";
 import type { BlogPostFormData, BlogPostStatus } from "@/types/blog";
+
+/** An ISO timestamp as the local time a datetime-local input expects. */
+function toLocalInputValue(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "yyyy-MM-dd'T'HH:mm");
+}
 
 function generateSlug(title: string): string {
   return title
@@ -88,7 +97,11 @@ export default function BlogAdminPostEditor() {
         // when the post was published used to land afterwards and flip it
         // back to draft.
         const { status: _status, ...draft } = data;
-        await updateMutation.mutateAsync({ id: post.id, data: draft });
+        await updateMutation.mutateAsync({
+          id: post.id,
+          data: draft,
+          silent: true,
+        });
       }
     },
     delay: 3000,
@@ -362,17 +375,31 @@ export default function BlogAdminPostEditor() {
                   <SelectContent>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    {/* Nothing publishes scheduled posts, so it is no longer
+                        a choice. A post that already carries the status still
+                        shows it instead of an empty box. */}
+                    {formData.status === "scheduled" && (
+                      <SelectItem value="scheduled" disabled>
+                        Scheduled (not supported)
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {formData.status === "scheduled" && (
+                  <p className="text-xs text-muted-foreground">
+                    Scheduled publishing is not supported. Publish the post or
+                    save it as a draft.
+                  </p>
+                )}
               </div>
 
-              {formData.status === "scheduled" && (
+              {formData.status !== "draft" && (
                 <div className="space-y-2">
-                  <Label>Publish Date</Label>
+                  <Label htmlFor="published_at">Publish Date</Label>
                   <Input
+                    id="published_at"
                     type="datetime-local"
-                    value={formData.published_at?.slice(0, 16) || ""}
+                    value={toLocalInputValue(formData.published_at)}
                     onChange={(e) =>
                       updateField(
                         "published_at",

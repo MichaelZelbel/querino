@@ -114,7 +114,8 @@ export default function TeamSettings() {
   const { data: team, isLoading: teamLoading } = useTeam(teamId);
   const { data: members = [], isLoading: membersLoading } =
     useTeamMembers(teamId);
-  const { data: userRole } = useCurrentUserTeamRole(teamId);
+  const { data: userRole, isLoading: roleLoading } =
+    useCurrentUserTeamRole(teamId);
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
   const updateMemberRole = useUpdateTeamMemberRole();
@@ -125,6 +126,9 @@ export default function TeamSettings() {
   const revokeInvite = useRevokeTeamInvite();
 
   const [teamName, setTeamName] = useState("");
+  // When the clipboard refuses (no permission, insecure context), the link is
+  // shown here so it can still be selected and copied by hand.
+  const [copyFallback, setCopyFallback] = useState<string | null>(null);
 
   // Initialize form when team loads
   useEffect(() => {
@@ -171,7 +175,7 @@ export default function TeamSettings() {
     );
   }
 
-  if (teamLoading || membersLoading) {
+  if (teamLoading || membersLoading || roleLoading) {
     return (
       <main className="container max-w-4xl py-8">
         <div className="animate-pulse space-y-4">
@@ -219,7 +223,11 @@ export default function TeamSettings() {
       });
       toast.success("Team settings saved");
     } catch (error) {
-      toast.error("Failed to save settings");
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to save settings",
+      );
     }
   };
 
@@ -230,10 +238,17 @@ export default function TeamSettings() {
         teamId: team.id,
         userId: user.id,
       });
-      await navigator.clipboard
-        .writeText(inviteUrl(invite.token))
-        .catch(() => {});
-      toast.success("Invite link created and copied to clipboard");
+      const url = inviteUrl(invite.token);
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopyFallback(null);
+        toast.success("Invite link created and copied to clipboard");
+      } catch {
+        setCopyFallback(url);
+        toast.error(
+          "Invite link created, but it could not be copied. Copy it from the box below.",
+        );
+      }
     } catch (error) {
       console.error("Error creating invite:", error);
       toast.error("Failed to create invite link");
@@ -241,11 +256,14 @@ export default function TeamSettings() {
   };
 
   const handleCopyInvite = async (token: string) => {
+    const url = inviteUrl(token);
     try {
-      await navigator.clipboard.writeText(inviteUrl(token));
+      await navigator.clipboard.writeText(url);
+      setCopyFallback(null);
       toast.success("Invite link copied");
     } catch {
-      toast.error("Failed to copy link");
+      setCopyFallback(url);
+      toast.error("Could not copy the link. Copy it from the box below.");
     }
   };
 
@@ -334,20 +352,31 @@ export default function TeamSettings() {
             <CardDescription>Basic settings for your team</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="team-name">Team Name</Label>
-              <Input
-                id="team-name"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={handleSaveSettings}
-              disabled={updateTeam.isPending}
-            >
-              {updateTeam.isPending ? "Saving..." : "Save Changes"}
-            </Button>
+            {isOwner ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="team-name">Team Name</Label>
+                  <Input
+                    id="team-name"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={updateTeam.isPending}
+                >
+                  {updateTeam.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{team.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  Only the team owner can rename the team.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -463,6 +492,22 @@ export default function TeamSettings() {
                 </Button>
               </div>
 
+              {copyFallback && (
+                <div className="space-y-1">
+                  <Label htmlFor="invite-link-fallback" className="text-xs">
+                    Copy this link by hand
+                  </Label>
+                  <Input
+                    id="invite-link-fallback"
+                    readOnly
+                    value={copyFallback}
+                    autoFocus
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="font-mono text-xs"
+                  />
+                </div>
+              )}
+
               {invites.length > 0 && (
                 <div className="space-y-2">
                   {invites.map((invite) => {
@@ -472,7 +517,7 @@ export default function TeamSettings() {
                         key={invite.id}
                         className="flex items-center gap-2 rounded-lg border border-border p-2 text-sm"
                       >
-                        <code className="min-w-0 flex-1 truncate bg-muted px-2 py-1 rounded text-xs">
+                        <code className="min-w-0 flex-1 select-all truncate bg-muted px-2 py-1 rounded text-xs">
                           {inviteUrl(invite.token)}
                         </code>
                         <span className="shrink-0 text-xs text-muted-foreground">

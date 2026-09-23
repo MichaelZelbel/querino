@@ -15,7 +15,7 @@ export const Route = createFileRoute("/prompts/$slug/")({
     const description =
       loaderData.summary ||
       loaderData.description ||
-      `${loaderData.title} — AI prompt on Querino`;
+      `${loaderData.title}, an AI prompt on Querino`;
     return pageHead({
       title: loaderData.title,
       description,

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/functionError";
+import { safeStorage } from "@/lib/safeStorage";
 
 export type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -72,6 +73,9 @@ export function promptSessionKey(
   return artifactSessionKey("prompt", workspaceScope, userId, promptId);
 }
 
+/** Fallback for draft ids when localStorage is blocked. */
+const memoryDraftIds = new Map<string, string>();
+
 /**
  * Get or create a draft session id for a new artifact page.
  * Persisted in localStorage so it survives refreshes.
@@ -87,10 +91,13 @@ export function getOrCreateDraftSessionId(
   // 2026-09-16 (SendToLLMButtons); a fresh id per server render is harmless,
   // because the client reads its own stored one on hydration.
   if (typeof window === "undefined") return crypto.randomUUID();
-  const existing = localStorage.getItem(key);
+  // safeStorage never throws (private mode, blocked site data). When storage
+  // is unavailable the in-memory map keeps the id stable across re-renders.
+  const existing = safeStorage.getItem(key) ?? memoryDraftIds.get(key);
   if (existing) return existing;
   const id = crypto.randomUUID();
-  localStorage.setItem(key, id);
+  memoryDraftIds.set(key, id);
+  safeStorage.setItem(key, id);
   return id;
 }
 
@@ -120,24 +127,21 @@ export function promoteDraftSession(
     userId,
     newArtifactId,
   );
-  localStorage.setItem(finalKey, finalSessionId);
+  safeStorage.setItem(finalKey, finalSessionId);
 
   // Migrate chat messages from draft session key to final session key
   const draftMsgKey = `prompt_coach_messages:${draftId}`;
   const finalMsgKey = `prompt_coach_messages:${finalSessionId}`;
-  try {
-    const draftMessages = localStorage.getItem(draftMsgKey);
-    if (draftMessages) {
-      localStorage.setItem(finalMsgKey, draftMessages);
-      localStorage.removeItem(draftMsgKey);
-    }
-  } catch {
-    // ignore storage errors
+  const draftMessages = safeStorage.getItem(draftMsgKey);
+  if (draftMessages) {
+    safeStorage.setItem(finalMsgKey, draftMessages);
+    safeStorage.removeItem(draftMsgKey);
   }
 
   // Remove the draft session key
   const draftKey = draftSessionKey(artifactType, workspaceScope, userId);
-  localStorage.removeItem(draftKey);
+  memoryDraftIds.delete(draftKey);
+  safeStorage.removeItem(draftKey);
 
   return finalSessionId;
 }
@@ -202,7 +206,7 @@ export async function runCanvasAI(
         userId,
         artifactId,
       );
-      localStorage.setItem(key, data.session.id);
+      safeStorage.setItem(key, data.session.id);
     }
   }
 

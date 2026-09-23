@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Navigate } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -11,9 +11,16 @@ import {
   LayoutDashboard,
   ChevronLeft,
   Loader2,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/blog/admin" },
@@ -22,6 +29,56 @@ const navItems = [
   { icon: Tags, label: "Tags", href: "/blog/admin/tags" },
   { icon: Image, label: "Media", href: "/blog/admin/media" },
 ];
+
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+            <a href="/" aria-label="Back to site">
+              <ChevronLeft className="h-4 w-4" />
+            </a>
+          </Button>
+          <span className="font-semibold">Blog Admin</span>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 space-y-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            end={item.href === "/blog/admin"}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+            activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-border">
+        <a
+          href="/blog"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          View Blog →
+        </a>
+      </div>
+    </div>
+  );
+}
 
 interface BlogAdminLayoutProps {
   children: ReactNode;
@@ -37,6 +94,7 @@ export function BlogAdminLayout({
   const location = useLocation();
   const { user, loading: authLoading } = useAuthContext();
   const { role, isLoading: roleLoading } = useUserRole();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (authLoading || roleLoading) {
     return (
@@ -67,71 +125,50 @@ export function BlogAdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-muted/30">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border flex-shrink-0">
-        <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                <a href="/" aria-label="Back to site">
-                  <ChevronLeft className="h-4 w-4" />
-                </a>
-              </Button>
-              <span className="font-semibold">Blog Admin</span>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-3 space-y-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                end={item.href === "/blog/admin"}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  "text-muted-foreground hover:text-foreground hover:bg-muted",
-                )}
-                activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary"
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-border">
-            <a
-              href="/blog"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              View Blog →
-            </a>
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col md:flex-row bg-muted/30">
+      {/* Sidebar: fixed column from md up */}
+      <aside className="hidden md:block w-64 bg-card border-r border-border flex-shrink-0">
+        <SidebarContent />
       </aside>
+
+      {/* Below md the sidebar opens from a menu button */}
+      <div className="md:hidden flex items-center gap-2 bg-card border-b border-border px-4 py-2">
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open blog admin menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0">
+            <SheetTitle className="sr-only">Blog Admin menu</SheetTitle>
+            <SidebarContent onNavigate={() => setMenuOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        <span className="font-semibold">Blog Admin</span>
+      </div>
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         {(title || actions) && (
-          <header className="bg-card border-b border-border px-6 py-4">
-            <div className="flex items-center justify-between">
+          <header className="bg-card border-b border-border px-4 py-4 md:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h1 className="text-xl font-semibold">{title}</h1>
               {actions && (
-                <div className="flex items-center gap-2">{actions}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {actions}
+                </div>
               )}
             </div>
           </header>
         )}
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-auto">{children}</div>
+        <div className="flex-1 p-4 md:p-6 overflow-auto">{children}</div>
       </main>
     </div>
   );

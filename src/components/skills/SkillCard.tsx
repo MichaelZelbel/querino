@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { avatarImageProps } from "@/lib/avatar";
 import { Copy, Check, Pencil, Files, BookOpen, Pin, Star } from "lucide-react";
 import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
@@ -64,17 +65,17 @@ export function SkillCard({
   };
 
   return (
-    <Card variant="prompt" className="flex h-full flex-col">
+    <Card variant="prompt" className="flex h-full min-w-0 flex-col">
       <Link to={detailUrl} className="block">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1.5 flex-1">
+            <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 {isPinned && (
                   <Pin className="h-3.5 w-3.5 text-warning fill-warning" />
                 )}
                 <BookOpen className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
+                <h3 className="min-w-0 break-words font-semibold leading-tight text-foreground hover:text-primary transition-colors">
                   {skill.title}
                 </h3>
                 {showAuthorBadge && isAuthor && (
@@ -99,8 +100,8 @@ export function SkillCard({
       </Link>
 
       <CardContent className="flex-1 pb-3">
-        <div className="relative rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
-          <div className="line-clamp-3 whitespace-pre-wrap">
+        <div className="relative min-w-0 rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
+          <div className="line-clamp-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {skill.content}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-muted/50 to-transparent rounded-b-lg" />
@@ -133,7 +134,9 @@ export function SkillCard({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Avatar className="h-5 w-5">
-                    <AvatarImage src={skill.author.avatar_url || undefined} />
+                    <AvatarImage
+                      {...avatarImageProps(skill.author.avatar_url, 20)}
+                    />
                     <AvatarFallback className="text-[10px] bg-muted">
                       {getAuthorInitials()}
                     </AvatarFallback>
@@ -145,7 +148,9 @@ export function SkillCard({
               ) : (
                 <span className="flex items-center gap-2">
                   <Avatar className="h-5 w-5">
-                    <AvatarImage src={skill.author.avatar_url || undefined} />
+                    <AvatarImage
+                      {...avatarImageProps(skill.author.avatar_url, 20)}
+                    />
                     <AvatarFallback className="text-[10px] bg-muted">
                       {getAuthorInitials()}
                     </AvatarFallback>

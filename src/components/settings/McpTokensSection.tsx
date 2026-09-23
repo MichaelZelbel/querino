@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -120,6 +120,8 @@ export function McpTokensSection() {
   // One-time reveal dialog
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const revealedTokenRef = useRef<HTMLElement>(null);
 
   // Revoke confirm
   const [revokeTarget, setRevokeTarget] = useState<TokenRow | null>(null);
@@ -180,6 +182,7 @@ export function McpTokensSection() {
 
       if (error) throw error;
 
+      setCopyFailed(false);
       setRevealedToken(raw);
       setCreateOpen(false);
       setNewName("");
@@ -215,10 +218,26 @@ export function McpTokensSection() {
 
   const copyRevealed = async () => {
     if (!revealedToken) return;
-    await navigator.clipboard.writeText(revealedToken);
-    setCopied(true);
-    toast.success("Token copied — store it now, it won't be shown again");
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      await navigator.clipboard.writeText(revealedToken);
+      setCopyFailed(false);
+      setCopied(true);
+      toast.success("Token copied — store it now, it won't be shown again");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // The token is shown only once, so a refused clipboard must not lose
+      // it: it stays on screen, selected, to be copied by hand.
+      setCopyFailed(true);
+      toast.error("Could not copy automatically. Copy the token by hand.");
+      const node = revealedTokenRef.current;
+      const selection = window.getSelection();
+      if (node && selection) {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
   };
 
   return (
@@ -383,7 +402,10 @@ export function McpTokensSection() {
             </AlertDescription>
           </Alert>
           <div className="flex items-center gap-2 mt-2">
-            <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono text-foreground break-all">
+            <code
+              ref={revealedTokenRef}
+              className="flex-1 select-all rounded-md bg-muted px-3 py-2 text-xs font-mono text-foreground break-all"
+            >
               {revealedToken}
             </code>
             <Button
@@ -400,6 +422,12 @@ export function McpTokensSection() {
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
+          {copyFailed && (
+            <p className="text-xs text-destructive">
+              Your browser blocked the clipboard. The token above is selected:
+              press Ctrl+C (⌘C on a Mac) to copy it.
+            </p>
+          )}
           <DialogFooter>
             <Button onClick={() => setRevealedToken(null)}>
               I've saved it

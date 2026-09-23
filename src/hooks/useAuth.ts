@@ -59,6 +59,11 @@ export function useAuth() {
   // The user id whose profile has been requested, so the startup pair of
   // answers (the INITIAL_SESSION event and getSession) fetches it once.
   const profileRequestedForRef = useRef<string | null>(null);
+  // The effect's profile loader, so refreshProfile can re-run it with the
+  // same guards (account changed in flight, provider unmounted).
+  const fetchProfileRef = useRef<((userId: string) => Promise<void>) | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -168,6 +173,8 @@ export function useAuth() {
       }
     };
 
+    fetchProfileRef.current = fetchProfile;
+
     // Set up auth state listener FIRST
     const {
       data: { subscription },
@@ -183,9 +190,21 @@ export function useAuth() {
 
     return () => {
       cancelled = true;
+      fetchProfileRef.current = null;
       subscription.unsubscribe();
     };
   }, [queryClient, router]);
+
+  /**
+   * Re-read the signed-in user's profile, e.g. after the profile page saved a
+   * new display name or avatar, so the header shows it without a reload.
+   */
+  const refreshProfile = useCallback(async () => {
+    const userId = currentUserIdRef.current;
+    const fetchProfile = fetchProfileRef.current;
+    if (!userId || !fetchProfile) return;
+    await fetchProfile(userId);
+  }, []);
 
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
@@ -282,6 +301,7 @@ export function useAuth() {
       signInWithGoogle,
       signInWithGithub,
       signOut,
+      refreshProfile,
     }),
     [
       user,
@@ -293,6 +313,7 @@ export function useAuth() {
       signInWithGoogle,
       signInWithGithub,
       signOut,
+      refreshProfile,
     ],
   );
 }

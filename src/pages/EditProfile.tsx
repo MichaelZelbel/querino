@@ -34,7 +34,12 @@ import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuthContext();
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    refreshProfile,
+  } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -103,6 +108,11 @@ export default function EditProfile() {
 
   async function handleSave() {
     if (!user) return;
+    // Saving mid-upload would store the old avatar URL (Ctrl+S included).
+    if (uploading) {
+      toast.info("Wait for the avatar upload to finish, then save.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -122,6 +132,9 @@ export default function EditProfile() {
       if (error) throw error;
 
       markSaved();
+      // The header reads the profile from the auth context, which otherwise
+      // kept the old name and avatar until a reload.
+      await refreshProfile();
       toast.success("Profile updated successfully!");
 
       // Navigate to public profile
@@ -132,7 +145,16 @@ export default function EditProfile() {
       }
     } catch (err) {
       console.error("Error saving profile:", err);
-      toast.error("Failed to save profile");
+      // profiles_display_name_unique_ci: display names are unique, ignoring case.
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? (err as { code?: unknown }).code
+          : undefined;
+      toast.error(
+        code === "23505"
+          ? "That display name is taken. Choose another one."
+          : "Failed to save profile",
+      );
     } finally {
       setSaving(false);
     }
@@ -360,7 +382,7 @@ export default function EditProfile() {
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || uploading}
                   className="gap-2"
                   title="Save (⌘S / Ctrl+S)"
                 >

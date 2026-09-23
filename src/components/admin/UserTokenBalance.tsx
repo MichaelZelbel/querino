@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { adjustAllowance } from "./adjustAllowance";
 
 interface AllowancePeriod {
   id: string;
@@ -21,9 +22,12 @@ export function UserTokenBalance({
   allowances,
   onUpdate,
 }: UserTokenBalanceProps) {
+  const { user: adminUser } = useAuthContext();
   const allowance = allowances[userId];
-  const [value, setValue] = useState<number | null>(null);
+  // The field text, so clearing the box is not read as "set to 0".
+  const [value, setValue] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   // Calculate remaining tokens
   const remainingTokens = allowance
@@ -31,70 +35,79 @@ export function UserTokenBalance({
     : null;
 
   useEffect(() => {
-    setValue(remainingTokens);
+    setValue(remainingTokens === null ? "" : String(remainingTokens));
   }, [remainingTokens]);
 
+  const revert = () =>
+    setValue(remainingTokens === null ? "" : String(remainingTokens));
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(e.target.value, 10);
-    if (!isNaN(newValue) && newValue >= 0) {
-      setValue(newValue);
-    } else if (e.target.value === "") {
-      setValue(0);
-    }
+    const raw = e.target.value;
+    if (raw === "" || /^\d+$/.test(raw)) setValue(raw);
   };
 
-  const handleBlur = async () => {
-    if (!allowance || value === null || value === remainingTokens) return;
+  const save = async () => {
+    if (!allowance || remainingTokens === null || savingRef.current) return;
+    const target = parseInt(value, 10);
+    // Nothing typed, or the value did not change: nothing to save.
+    if (Number.isNaN(target) || target < 0) {
+      revert();
+      return;
+    }
+    if (target === remainingTokens) return;
+    if (!adminUser) {
+      toast.error("Admin authentication required");
+      revert();
+      return;
+    }
 
+    savingRef.current = true;
     setSaving(true);
     try {
-      // If the admin sets remaining tokens higher than what's currently granted,
-      // we need to increase tokens_granted to accommodate the new value
-      let newTokensGranted = allowance.tokens_granted;
-      let newTokensUsed = allowance.tokens_used;
-
-      if (value > allowance.tokens_granted) {
-        // Admin wants more remaining than currently granted
-        // Set tokens_granted = value (the new remaining), tokens_used = 0
-        newTokensGranted = value;
-        newTokensUsed = 0;
-      } else {
-        // Normal case: adjust tokens_used to achieve desired remaining
-        // remaining = tokens_granted - tokens_used
-        // tokens_used = tokens_granted - remaining
-        newTokensUsed = Math.max(allowance.tokens_granted - value, 0);
-      }
-
-      const { error } = await supabase
-        .from("ai_allowance_periods")
-        .update({
-          tokens_granted: newTokensGranted,
-          tokens_used: newTokensUsed,
-        })
-        .eq("id", allowance.id);
-
-      if (error) throw error;
-
-      // Update local state
-      onUpdate(userId, {
-        ...allowance,
-        tokens_granted: newTokensGranted,
-        tokens_used: newTokensUsed,
+      // The admin asked for "remaining = target" while looking at
+      // remainingTokens. Apply that difference to the row as it is now, so a
+      // charge that landed since the page loaded is not erased.
+      const remainingDelta = target - remainingTokens;
+      const { next, audited } = await adjustAllowance({
+        allowanceId: allowance.id,
+        userId,
+        adminId: adminUser.id,
+        grantedDelta: 0,
+        usedDelta: -remainingDelta,
+        via: "inline_balance",
       });
 
-      toast.success("Remaining tokens updated");
+      onUpdate(userId, {
+        ...allowance,
+        tokens_granted: next.tokens_granted,
+        tokens_used: next.tokens_used,
+      });
+
+      if (audited) {
+        toast.success("Remaining tokens updated");
+      } else {
+        toast.warning("Remaining tokens updated, but the audit log failed");
+      }
     } catch (error) {
       console.error("Error updating tokens:", error);
-      toast.error("Failed to update tokens");
-      // Reset to original value
-      setValue(remainingTokens);
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to update tokens",
+      );
+      revert();
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
+      e.preventDefault();
+      void save();
+    } else if (e.key === "Escape") {
+      revert();
       e.currentTarget.blur();
     }
   };
@@ -107,11 +120,14 @@ export function UserTokenBalance({
     <Input
       type="number"
       min={0}
-      value={value ?? 0}
+      inputMode="numeric"
+      value={value}
       onChange={handleChange}
-      onBlur={handleBlur}
+      onBlur={() => void save()}
       onKeyDown={handleKeyDown}
       disabled={saving}
+      title="Remaining tokens. Press Enter to save, Escape to undo."
+      aria-label="Remaining tokens"
       className="w-24 h-8 text-sm"
     />
   );

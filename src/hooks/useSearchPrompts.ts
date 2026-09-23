@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
-import { mergeWithSemantic } from "./useSemanticMerge";
+import { mergeWithSemanticDetailed } from "./useSemanticMerge";
 
 export interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -23,6 +23,12 @@ interface UseSearchPromptsOptions {
 }
 
 const SEARCH_RESULT_CAP = 50;
+
+interface PromptPage {
+  rows: PromptWithAuthor[];
+  /** True when semantic matches were merged in (relevance-ranked search). */
+  semantic: boolean;
+}
 
 async function fetchPromptsByIds(ids: string[]): Promise<PromptWithAuthor[]> {
   if (ids.length === 0) return [];
@@ -70,11 +76,11 @@ export function useSearchPrompts({
       pageSize,
     ],
     initialPageParam: 0,
-    getNextPageParam: (lastPage: PromptWithAuthor[], allPages) => {
+    getNextPageParam: (lastPage: PromptPage, allPages) => {
       if (isSearching) return undefined; // search is single-shot
-      return lastPage.length === pageSize ? allPages.length : undefined;
+      return lastPage.rows.length === pageSize ? allPages.length : undefined;
     },
-    queryFn: async ({ pageParam }): Promise<PromptWithAuthor[]> => {
+    queryFn: async ({ pageParam }): Promise<PromptPage> => {
       let query = supabase
         .from("prompts")
         .select(`*, profiles:author_id (id, display_name, avatar_url)`);
@@ -138,7 +144,7 @@ export function useSearchPrompts({
 
       // Hybrid: append semantic-only matches for public searches
       if (isSearching && isPublic && trimmed.length >= 3) {
-        return await mergeWithSemantic(
+        return await mergeWithSemanticDetailed(
           "prompt",
           trimmed,
           ftsResults,
@@ -147,13 +153,17 @@ export function useSearchPrompts({
         );
       }
 
-      return ftsResults;
+      return { rows: ftsResults, semantic: false };
     },
     staleTime: 1000 * 60,
   });
 
   return {
-    data: query.data ? query.data.pages.flat() : undefined,
+    data: query.data
+      ? query.data.pages.flatMap((page) => page.rows)
+      : undefined,
+    /** True when the current search merged in semantic (meaning) matches. */
+    isSemantic: query.data?.pages.some((page) => page.semantic) ?? false,
     isLoading: query.isLoading,
     error: query.error,
     hasNextPage: query.hasNextPage,

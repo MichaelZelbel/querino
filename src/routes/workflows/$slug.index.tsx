@@ -15,7 +15,7 @@ export const Route = createFileRoute("/workflows/$slug/")({
     const description =
       loaderData.summary ||
       loaderData.description ||
-      `${loaderData.title} — AI workflow on Querino`;
+      `${loaderData.title}, an AI workflow on Querino`;
     return pageHead({
       title: loaderData.title,
       description,

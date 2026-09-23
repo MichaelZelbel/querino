@@ -20,6 +20,9 @@ export function ThemeToggle({
 }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  // Controlled so the tooltip closes the moment focus leaves the button; left
+  // to itself it stayed on screen after keyboard focus had moved on.
+  const [tipOpen, setTipOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -49,6 +52,7 @@ export function ThemeToggle({
       size="icon"
       className={className ?? "h-9 w-9"}
       onClick={() => setTheme(next)}
+      onBlur={() => setTipOpen(false)}
       aria-label={label}
     >
       {/* Render both and animate so there's no layout shift before mount */}
@@ -59,7 +63,7 @@ export function ThemeToggle({
   );
 
   return (
-    <Tooltip>
+    <Tooltip delayDuration={400} open={tipOpen} onOpenChange={setTipOpen}>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent>
         <p>Toggle theme</p>

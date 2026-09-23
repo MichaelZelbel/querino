@@ -58,6 +58,8 @@ import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
 import { moderateContent } from "@/lib/moderateContent";
+import { applySuggestionToArtifact } from "@/lib/applySuggestion";
+import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { format } from "date-fns";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
@@ -281,39 +283,26 @@ export default function PromptDetail({
     }
   };
 
-  const handleApplySuggestion = async (suggestion: any) => {
-    if (!prompt) return;
+  const handleApplySuggestion = async (
+    suggestion: SuggestionWithAuthor,
+  ): Promise<boolean> => {
+    if (!prompt) return false;
 
-    const updates: any = { content: suggestion.content };
-    if (suggestion.title) updates.title = suggestion.title;
-    if (suggestion.description) updates.description = suggestion.description;
-
-    if (prompt.is_public) {
-      const result = await moderateContent(
-        {
-          title: updates.title ?? prompt.title,
-          description: updates.description ?? prompt.description,
-          content: updates.content,
-        },
-        "edit_public",
-        "prompt",
-        prompt.id,
-      );
-      if (!result.approved) {
-        toast.error(
-          result.reason ||
-            "This suggestion was blocked by moderation and cannot be applied to a public prompt.",
-        );
-        return;
-      }
-    }
-
-    const { error } = await supabase
-      .from("prompts")
-      .update(updates)
-      .eq("id", prompt.id);
-
-    if (error) throw error;
+    const applied = await applySuggestionToArtifact(
+      "prompt",
+      {
+        id: prompt.id,
+        author_id: prompt.author_id,
+        title: prompt.title,
+        description: prompt.description,
+        content: prompt.content,
+        tags: prompt.tags,
+        isPublic: prompt.is_public,
+      },
+      suggestion,
+      user?.id,
+    );
+    if (!applied) return false;
 
     // Refresh the prompt data
     const { data } = await supabase
@@ -329,6 +318,7 @@ export default function PromptDetail({
         author: (data as any).profiles || null,
       });
     }
+    return true;
   };
 
   const getAuthorInitials = () => {
@@ -446,9 +436,10 @@ export default function PromptDetail({
                 )}
                 {prompt.tags && prompt.tags.length > 0 && (
                   <>
-                    {prompt.tags.slice(0, 5).map((tag) => (
+                    {prompt.tags.slice(0, 5).map((tag, i) => (
                       <Link
                         key={tag}
+                        className={i >= 2 ? "hidden sm:inline-flex" : undefined}
                         to={`/discover?tag=${encodeURIComponent(tag)}`}
                       >
                         <Badge
@@ -468,7 +459,7 @@ export default function PromptDetail({
                 {prompt.title}
               </h1>
 
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base text-muted-foreground sm:text-lg">
                 {prompt.description}
               </p>
 
@@ -477,6 +468,7 @@ export default function PromptDetail({
                 {prompt.author && (
                   <Link
                     to={`/u/${encodeURIComponent(prompt.author.display_name || "")}`}
+                    disabled={!prompt.author.display_name}
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="h-10 w-10">
@@ -506,12 +498,14 @@ export default function PromptDetail({
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>
-                    {(prompt.copies_count ?? 0).toLocaleString()} copies
-                  </span>
-                </div>
+                {(prompt.copies_count ?? 0) > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>
+                      {(prompt.copies_count ?? 0).toLocaleString()} copies
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -849,9 +843,9 @@ export default function PromptDetail({
             />
 
             {/* Tabbed Content Section */}
-            <Tabs defaultValue="details" className="mt-8">
+            <Tabs defaultValue="comments" className="mt-8">
               <TabsList>
-                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="details">Activity</TabsTrigger>
                 <TabsTrigger value="comments">Comments</TabsTrigger>
                 <TabsTrigger value="suggestions" className="gap-2">
                   Suggestions

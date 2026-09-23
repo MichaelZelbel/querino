@@ -65,7 +65,8 @@ interface SuggestionReviewModalProps {
   originalDescription: string;
   originalContent: string;
   isOwner: boolean;
-  onAccept: (reviewComment?: string) => Promise<void>;
+  /** Resolves false when nothing was accepted; the modal then stays open. */
+  onAccept: (reviewComment?: string) => Promise<boolean | void>;
   onReject: (reviewComment?: string) => Promise<void>;
   onRequestChanges: (
     requestedChanges: string[],
@@ -101,7 +102,8 @@ export function SuggestionReviewModal({
   const handleAccept = async () => {
     setIsAccepting(true);
     try {
-      await onAccept(reviewComment || undefined);
+      const accepted = await onAccept(reviewComment || undefined);
+      if (accepted === false) return;
       toast.success("Suggestion accepted and applied");
       onOpenChange(false);
     } catch (err: any) {

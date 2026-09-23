@@ -612,6 +612,7 @@ export type Database = {
           created_at: string
           id: string
           last_error: string | null
+          next_attempt_at: string | null
           operation: string
           owner_user_id: string | null
           payload: Json
@@ -627,6 +628,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_error?: string | null
+          next_attempt_at?: string | null
           operation: string
           owner_user_id?: string | null
           payload?: Json
@@ -642,6 +644,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_error?: string | null
+          next_attempt_at?: string | null
           operation?: string
           owner_user_id?: string | null
           payload?: Json
@@ -986,7 +989,10 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          next_attempt_at: string | null
           processed_at: string | null
+          retry_count: number
+          source: string
           status: string
           user_id: string
         }
@@ -997,7 +1003,10 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          next_attempt_at?: string | null
           processed_at?: string | null
+          retry_count?: number
+          source?: string
           status?: string
           user_id: string
         }
@@ -1008,7 +1017,10 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          next_attempt_at?: string | null
           processed_at?: string | null
+          retry_count?: number
+          source?: string
           status?: string
           user_id?: string
         }
@@ -2502,6 +2514,7 @@ export type Database = {
           created_at: string
           id: string
           last_error: string | null
+          next_attempt_at: string | null
           operation: string
           owner_user_id: string | null
           payload: Json
@@ -2523,6 +2536,8 @@ export type Database = {
           artifact_type: string
           created_at: string
           id: string
+          retry_count: number
+          source: string
           status: string
           user_id: string
         }[]
@@ -2550,6 +2565,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      enqueue_github_sync_move: {
+        Args: {
+          p_artifact_id: string
+          p_artifact_type: string
+          p_new_author: string
+          p_new_team: string
+          p_old_author: string
+          p_old_slug: string
+          p_old_team: string
+          p_old_title: string
+        }
+        Returns: undefined
+      }
       ensure_ai_allowance: {
         Args: {
           _created_by?: string
@@ -2571,6 +2599,10 @@ export type Database = {
           tokens_used: number
           user_id: string
         }[]
+      }
+      fail_menerio_sync_queue_row: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
       }
       generate_slug: { Args: { title: string }; Returns: string }
       generate_unique_slug: {
@@ -2696,6 +2728,7 @@ export type Database = {
         Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
       }
+      leave_team: { Args: { p_team_id: string }; Returns: undefined }
       lookup_mcp_token: { Args: { p_token_hash: string }; Returns: string }
       provision_ai_allowance: { Args: { _user_id: string }; Returns: undefined }
       read_menerio_api_key: { Args: { p_user_id: string }; Returns: string }

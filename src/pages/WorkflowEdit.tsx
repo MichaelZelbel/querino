@@ -111,10 +111,15 @@ export default function WorkflowEdit() {
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [showVersionPanel, setShowVersionPanel] = useState(false);
+  // workflow_versions is author-only under RLS, so team editors get the editor
+  // without the version features they could not use.
+  const isArtifactAuthor = !!user && workflow?.author_id === user.id;
   const [changeNotes, setChangeNotes] = useState("");
 
   // AI-undo state
   const [previousContent, setPreviousContent] = useState<string | null>(null);
+  // Read by Undo, so a toast's Undo sees the content from apply time.
+  const previousContentRef = useRef<string | null>(null);
 
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
@@ -215,15 +220,19 @@ export default function WorkflowEdit() {
   }, [slug, userId]);
 
   const handleApplyAIContent = (newContent: string) => {
+    // The coach calls the handler from the latest render, so this is the
+    // editor text at apply time, including anything typed during the request.
+    previousContentRef.current = formData.content;
     setPreviousContent(formData.content);
     setFormData((prev) => ({ ...prev, content: newContent }));
   };
 
   const handleUndoAI = () => {
-    if (previousContent !== null) {
-      setFormData((prev) => ({ ...prev, content: previousContent! }));
-      setPreviousContent(null);
-    }
+    const restore = previousContentRef.current;
+    if (restore === null) return;
+    previousContentRef.current = null;
+    setFormData((prev) => ({ ...prev, content: restore }));
+    setPreviousContent(null);
   };
 
   const normalizeTag = (tag: string) => {
@@ -358,7 +367,7 @@ export default function WorkflowEdit() {
   // Save the current state as a numbered version (workflow_versions), then
   // persist to the live row. Mirrors the prompts flow.
   const handleSaveAsNewVersion = async () => {
-    if (!user || !workflowId || busyRef.current) return;
+    if (!user || !workflowId || !isArtifactAuthor || busyRef.current) return;
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -601,27 +610,31 @@ export default function WorkflowEdit() {
                 )}
                 Save Changes
               </Button>
-              <Button
-                onClick={handleSaveAsNewVersion}
-                disabled={isSubmitting || isSavingVersion}
-                variant="secondary"
-                className="gap-2"
-              >
-                {isSavingVersion ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <GitBranch className="h-4 w-4" />
-                )}
-                Save as New Version
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => setShowVersionPanel(true)}
-              >
-                <History className="h-4 w-4" />
-                Version History
-              </Button>
+              {isArtifactAuthor && (
+                <>
+                  <Button
+                    onClick={handleSaveAsNewVersion}
+                    disabled={isSubmitting || isSavingVersion}
+                    variant="secondary"
+                    className="gap-2"
+                  >
+                    {isSavingVersion ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <GitBranch className="h-4 w-4" />
+                    )}
+                    Save as New Version
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setShowVersionPanel(true)}
+                  >
+                    <History className="h-4 w-4" />
+                    Version History
+                  </Button>
+                </>
+              )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
@@ -846,22 +859,24 @@ export default function WorkflowEdit() {
                   </div>
 
                   {/* Change Notes */}
-                  <div className="space-y-2">
-                    <Label htmlFor="changeNotes">
-                      Change Notes (for new version)
-                    </Label>
-                    <Textarea
-                      id="changeNotes"
-                      value={changeNotes}
-                      onChange={(e) => setChangeNotes(e.target.value)}
-                      placeholder="Optional: Describe what changed in this version"
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      These notes will be saved when you click "Save as New
-                      Version"
-                    </p>
-                  </div>
+                  {isArtifactAuthor && (
+                    <div className="space-y-2">
+                      <Label htmlFor="changeNotes">
+                        Change Notes (for new version)
+                      </Label>
+                      <Textarea
+                        id="changeNotes"
+                        value={changeNotes}
+                        onChange={(e) => setChangeNotes(e.target.value)}
+                        placeholder="Optional: Describe what changed in this version"
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        These notes will be saved when you click "Save as New
+                        Version"
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -888,7 +903,7 @@ export default function WorkflowEdit() {
         supportHint={moderationBlock?.support_hint}
       />
 
-      {workflowId && (
+      {workflowId && isArtifactAuthor && (
         <VersionHistoryPanel
           open={showVersionPanel}
           onOpenChange={setShowVersionPanel}

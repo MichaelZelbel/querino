@@ -138,12 +138,19 @@ export function useUpdateTeam() {
         Pick<Team, "name" | "github_repo" | "github_branch" | "github_folder">
       >;
     }) => {
-      const { error } = await supabase
+      // Only the owner may update a team (RLS "Team owners can update their
+      // teams"). For anyone else the update matches zero rows and returns no
+      // error, so read the row back and treat "nothing came back" as refused.
+      const { data, error } = await supabase
         .from("teams")
         .update(updates)
-        .eq("id", teamId);
+        .eq("id", teamId)
+        .select("id");
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Only the team owner can change the team's settings.");
+      }
     },
     onSuccess: (_, { teamId }) => {
       queryClient.invalidateQueries({ queryKey: ["team", teamId] });
@@ -252,18 +259,14 @@ export function useLeaveTeam() {
     mutationFn: async (teamId: string) => {
       if (!user) throw new Error("You need to be signed in.");
 
-      const { data, error } = await supabase
-        .from("team_members")
-        .delete()
-        .eq("team_id", teamId)
-        .eq("user_id", user.id)
-        .neq("role", "owner")
-        .select("id");
-
-      if (error) throw error;
-      if (!data || data.length === 0) {
-        throw new Error("Could not leave this team. Please try again.");
-      }
+      // An RPC, not a delete: team_members is only readable with Premium, and
+      // a delete reaches only readable rows, so a member whose Premium had
+      // lapsed could never leave. leave_team() removes the caller's own
+      // non-owner row and says why when there is nothing to remove.
+      const { error } = await supabase.rpc("leave_team", {
+        p_team_id: teamId,
+      });
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });

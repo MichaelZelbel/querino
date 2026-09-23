@@ -148,8 +148,13 @@ export function Header() {
             </Button>
           )}
           {!user && (
-            <Button asChild variant="ghost" size="sm">
-              <a href="/#features">Features</a>
+            <Button
+              asChild
+              variant={isActive("/docs") ? "secondary" : "ghost"}
+              size="sm"
+              className={cn(isActive("/docs") && "bg-secondary font-medium")}
+            >
+              <Link to="/docs">Docs</Link>
             </Button>
           )}
         </nav>
@@ -157,7 +162,7 @@ export function Header() {
         {/* Desktop CTA / User Menu */}
         <div className="hidden items-center gap-3 lg:flex">
           {/* Command Palette Button */}
-          <Tooltip>
+          <Tooltip delayDuration={400}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -440,10 +445,17 @@ export function Header() {
               </Button>
             )}
             {!user && (
-              <Button asChild variant="ghost" className="w-full justify-start">
-                <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
-                  Features
-                </a>
+              <Button
+                asChild
+                variant={isActive("/docs") ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  isActive("/docs") && "font-medium",
+                )}
+              >
+                <Link to="/docs" onClick={() => setMobileMenuOpen(false)}>
+                  Docs
+                </Link>
               </Button>
             )}
 

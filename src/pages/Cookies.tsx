@@ -280,7 +280,7 @@ const Cookies = () => {
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        https://support.google.com/accounts/answer/32050
+                        Google Chrome help
                       </a>
                     </li>
                     <li>
@@ -293,7 +293,7 @@ const Cookies = () => {
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored
+                        Firefox help
                       </a>
                     </li>
                     <li>
@@ -306,7 +306,7 @@ const Cookies = () => {
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac
+                        Safari help
                       </a>
                     </li>
                     <li>

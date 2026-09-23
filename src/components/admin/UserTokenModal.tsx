@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { adjustAllowance } from "./adjustAllowance";
 
 interface AllowancePeriodFull {
   id: string;
@@ -111,64 +112,36 @@ export function UserTokenModal({
       return;
     }
 
+    const grantedDelta = tokensGranted - allowance.tokens_granted;
+    const usedDelta = tokensUsed - allowance.tokens_used;
+    if (grantedDelta === 0 && usedDelta === 0) {
+      onOpenChange(false);
+      return;
+    }
+
     setSaving(true);
     try {
-      // Calculate changes for audit log
-      const oldTokensGranted = allowance.tokens_granted;
-      const oldTokensUsed = allowance.tokens_used;
-      const tokensGrantedDelta = tokensGranted - oldTokensGranted;
-      const tokensUsedDelta = tokensUsed - oldTokensUsed;
+      // The edit is applied as a change to the row as it is now: charges made
+      // since this dialog opened stay charged.
+      const { next, audited } = await adjustAllowance({
+        allowanceId: allowance.id,
+        userId,
+        displayName,
+        adminId: adminUser.id,
+        grantedDelta,
+        usedDelta,
+        via: "token_modal",
+      });
 
-      // Update the allowance period
-      const { error: updateError } = await supabase
-        .from("ai_allowance_periods")
-        .update({
-          tokens_granted: tokensGranted,
-          tokens_used: tokensUsed,
-        })
-        .eq("id", allowance.id);
-
-      if (updateError) throw updateError;
-
-      // Log the admin adjustment to llm_usage_events
-      const { error: logError } = await supabase
-        .from("llm_usage_events")
-        .insert({
-          user_id: userId,
-          idempotency_key: `admin_adjustment_${allowance.id}_${Date.now()}`,
-          feature: "admin_balance_adjustment",
-          total_tokens: tokensGrantedDelta, // Net change in granted tokens
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          credits_charged: 0,
-          metadata: {
-            admin_id: adminUser.id,
-            admin_action: "balance_adjustment",
-            allowance_period_id: allowance.id,
-            target_user_id: userId,
-            target_display_name: displayName,
-            previous_tokens_granted: oldTokensGranted,
-            new_tokens_granted: tokensGranted,
-            tokens_granted_delta: tokensGrantedDelta,
-            previous_tokens_used: oldTokensUsed,
-            new_tokens_used: tokensUsed,
-            tokens_used_delta: tokensUsedDelta,
-            previous_remaining: oldTokensGranted - oldTokensUsed,
-            new_remaining: tokensGranted - tokensUsed,
-            adjusted_at: new Date().toISOString(),
-          },
-        });
-
-      if (logError) {
-        console.error("Failed to log admin adjustment:", logError);
+      if (!audited) {
         // Don't fail the operation, just warn
         toast.warning("Balance updated but audit log failed");
       }
 
       const updatedAllowance = {
         ...allowance,
-        tokens_granted: tokensGranted,
-        tokens_used: tokensUsed,
+        tokens_granted: next.tokens_granted,
+        tokens_used: next.tokens_used,
       };
 
       setAllowance(updatedAllowance);
@@ -177,7 +150,11 @@ export function UserTokenModal({
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving token balance:", error);
-      toast.error("Failed to update token balance");
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to update token balance",
+      );
     } finally {
       setSaving(false);
     }

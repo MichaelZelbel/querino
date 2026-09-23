@@ -3,6 +3,6 @@ import { privateHead } from "@/lib/seo";
 import Auth from "@/pages/Auth";
 
 export const Route = createFileRoute("/auth")({
-  head: () => privateHead("Sign In"),
+  head: () => privateHead("Sign in or sign up"),
   component: Auth,
 });

@@ -43,11 +43,45 @@ const absolute = (url: string) =>
     ? url
     : `${SITE_ORIGIN}${url.startsWith("/") ? url : `/${url}`}`;
 
+const MAX_DESCRIPTION = 160;
+
+/**
+ * Search engines cut a meta description at roughly 160 characters. Cut it
+ * ourselves on a word boundary so the snippet ends on a whole word.
+ */
+export function trimDescription(text: string, max = MAX_DESCRIPTION): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${base.replace(/[\s.,;:!?-]+$/, "")}\u2026`;
+}
+
+/** The first CreativeWork block, which only artefact detail pages carry. */
+function creativeWorkBlock(
+  jsonLd: PageHead["jsonLd"],
+): Record<string, unknown> | undefined {
+  if (!jsonLd) return undefined;
+  return [jsonLd].flat().find((block) => block["@type"] === "CreativeWork");
+}
+
 export function pageHead(page: PageHead) {
   const fullTitle = page.title.includes(SITE_NAME)
     ? page.title
     : `${page.title} | ${SITE_NAME}`;
-  const description = page.description || DEFAULT_DESCRIPTION;
+  const description = trimDescription(page.description || DEFAULT_DESCRIPTION);
+  // A detail page (one prompt, skill, workflow or kit) is an article, not the
+  // website itself; its structured data already says so.
+  const work = creativeWorkBlock(page.jsonLd);
+  const ogType = page.ogType ?? (work ? "article" : "website");
+  const publishedTime =
+    page.publishedTime ??
+    (typeof work?.datePublished === "string" ? work.datePublished : null);
+  const workAuthor = work?.author as { name?: unknown } | undefined;
+  const author =
+    page.author ??
+    (typeof workAuthor?.name === "string" ? workAuthor.name : null);
   const ogImage = page.ogImage || DEFAULT_OG_IMAGE;
   const canonical = page.canonical ? absolute(page.canonical) : null;
 
@@ -56,7 +90,7 @@ export function pageHead(page: PageHead) {
     { name: "description", content: description },
     { property: "og:title", content: fullTitle },
     { property: "og:description", content: description },
-    { property: "og:type", content: page.ogType ?? "website" },
+    { property: "og:type", content: ogType },
     { property: "og:site_name", content: SITE_NAME },
     { property: "og:image", content: ogImage },
     { name: "twitter:card", content: "summary_large_image" },
@@ -67,14 +101,13 @@ export function pageHead(page: PageHead) {
 
   if (canonical) meta.push({ property: "og:url", content: canonical });
   if (page.noIndex) meta.push({ name: "robots", content: "noindex, nofollow" });
-  if (page.ogType === "article") {
-    if (page.publishedTime)
+  if (ogType === "article") {
+    if (publishedTime)
       meta.push({
         property: "article:published_time",
-        content: page.publishedTime,
+        content: publishedTime,
       });
-    if (page.author)
-      meta.push({ property: "article:author", content: page.author });
+    if (author) meta.push({ property: "article:author", content: author });
   }
 
   const links: Array<Record<string, string>> = [];

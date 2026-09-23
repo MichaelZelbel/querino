@@ -312,24 +312,33 @@ export default function Settings() {
     }
   };
 
+  const isTeamOwner = currentTeam?.role === "owner";
+
   const handleSaveTeamGithubSettings = async () => {
     if (!currentTeam || !user) return;
-    if (teamGithubRepo && !teamGithubRepo.includes("/")) {
+    if (isTeamOwner && teamGithubRepo && !teamGithubRepo.includes("/")) {
       toast.error("Repository must be in format owner/repo");
       return;
     }
-    setSavingTeamGithub(true);
     const cleanFolder = teamGithubFolder.replace(/^\/+|\/+$/g, "");
+    if (!isTeamOwner && (!teamGithubToken || teamGithubToken.includes("•"))) {
+      toast.info("Enter a new access token to save it.");
+      return;
+    }
+    setSavingTeamGithub(true);
     try {
-      const { error: teamError } = await supabase
-        .from("teams")
-        .update({
-          github_repo: teamGithubRepo || null,
-          github_branch: teamGithubBranch || "main",
-          github_folder: cleanFolder || null,
-        })
-        .eq("id", currentTeam.id);
-      if (teamError) throw teamError;
+      // Only the owner may change the team row (RLS). Everyone else saves
+      // just their own token for this team, which is per user.
+      if (isTeamOwner) {
+        await updateTeam.mutateAsync({
+          teamId: currentTeam.id,
+          updates: {
+            github_repo: teamGithubRepo || null,
+            github_branch: teamGithubBranch || "main",
+            github_folder: cleanFolder || null,
+          },
+        });
+      }
 
       if (teamGithubToken && !teamGithubToken.includes("•")) {
         const { error: tokenError } = await supabase
@@ -349,7 +358,11 @@ export default function Settings() {
       setTeamConnectionStatus("idle");
     } catch (error) {
       console.error("Error saving team GitHub settings:", error);
-      toast.error("Failed to save team GitHub settings");
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to save team GitHub settings",
+      );
     } finally {
       setSavingTeamGithub(false);
     }
@@ -736,6 +749,8 @@ export default function Settings() {
                           <strong>{currentTeam?.name}</strong> workspace. Team
                           members with editor+ access can sync to this
                           repository.
+                          {!isTeamOwner &&
+                            " Only the team owner can change the repository, branch and folder; you can save your own access token for this team."}
                         </p>
                       </div>
 
@@ -780,6 +795,7 @@ export default function Settings() {
                         <Input
                           id="teamGithubRepo"
                           placeholder="organization/team-repo"
+                          disabled={!isTeamOwner}
                           value={teamGithubRepo}
                           onChange={(e) => setTeamGithubRepo(e.target.value)}
                         />
@@ -790,6 +806,7 @@ export default function Settings() {
                           <Input
                             id="teamGithubBranch"
                             placeholder="main"
+                            disabled={!isTeamOwner}
                             value={teamGithubBranch}
                             onChange={(e) =>
                               setTeamGithubBranch(e.target.value)
@@ -801,6 +818,7 @@ export default function Settings() {
                           <Input
                             id="teamGithubFolder"
                             placeholder="prompts"
+                            disabled={!isTeamOwner}
                             value={teamGithubFolder}
                             onChange={(e) =>
                               setTeamGithubFolder(e.target.value)
@@ -827,8 +845,10 @@ export default function Settings() {
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Saving...
                             </>
-                          ) : (
+                          ) : isTeamOwner ? (
                             "Save Team GitHub Settings"
+                          ) : (
+                            "Save My Token"
                           )}
                         </Button>
                         <Button

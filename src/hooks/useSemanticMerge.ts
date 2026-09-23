@@ -38,6 +38,13 @@ async function getQueryEmbedding(query: string): Promise<number[] | null> {
   const cached = embeddingCache.get(trimmed);
   if (cached) return cached;
 
+  // generate-embedding needs a signed-in caller (it answers 401 otherwise and
+  // charges the caller's credits), so a visitor gets keyword search only.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
   try {
     const { data, error } = await supabase.functions.invoke(
       "generate-embedding",
@@ -134,25 +141,47 @@ export async function mergeWithSemantic<T extends { id: string }>(
   fetchByIds: (ids: string[]) => Promise<T[]>,
   opts: MergeOptions = {},
 ): Promise<T[]> {
+  const { rows } = await mergeWithSemanticDetailed(
+    itemType,
+    query,
+    existing,
+    fetchByIds,
+    opts,
+  );
+  return rows;
+}
+
+/**
+ * Same as mergeWithSemantic, but also says whether semantic matches were
+ * actually appended (`semantic: false` means the list is keyword matches
+ * only, e.g. for a signed-out visitor, whose search skips the embedding).
+ */
+export async function mergeWithSemanticDetailed<T extends { id: string }>(
+  itemType: ItemType,
+  query: string,
+  existing: T[],
+  fetchByIds: (ids: string[]) => Promise<T[]>,
+  opts: MergeOptions = {},
+): Promise<{ rows: T[]; semantic: boolean }> {
   const semantic = await fetchSemanticMatches(itemType, query, {
     threshold: opts.threshold,
     count: opts.count,
   });
-  if (semantic.length === 0) return existing;
+  if (semantic.length === 0) return { rows: existing, semantic: false };
 
   const existingIds = new Set(existing.map((e) => e.id));
   const newOnes = semantic.filter((s) => !existingIds.has(s.id));
-  if (newOnes.length === 0) return existing;
+  if (newOnes.length === 0) return { rows: existing, semantic: false };
 
   const hydrated = (await fetchByIds(newOnes.map((n) => n.id))).filter((row) =>
     passesFilters(row, opts.category, opts.tag),
   );
-  if (hydrated.length === 0) return existing;
+  if (hydrated.length === 0) return { rows: existing, semantic: false };
   // Preserve similarity ordering from semantic search
   const orderById = new Map(newOnes.map((n, idx) => [n.id, idx]));
   hydrated.sort(
     (a, b) => (orderById.get(a.id) ?? 0) - (orderById.get(b.id) ?? 0),
   );
 
-  return [...existing, ...hydrated];
+  return { rows: [...existing, ...hydrated], semantic: true };
 }

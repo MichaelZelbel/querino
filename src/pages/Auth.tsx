@@ -11,7 +11,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +23,7 @@ import {
   storeRedirectPath,
   getAndClearRedirectPath,
   getRedirectFromParams,
+  clearRedirectPath,
 } from "@/lib/authRedirect";
 import { siteOrigin } from "@/config/site";
 
@@ -133,11 +133,14 @@ export default function Auth() {
   useEffect(() => {
     if (!authLoading && user && !hasRedirected.current) {
       hasRedirected.current = true;
-      // Check localStorage first (for OAuth return), then URL params
+      // A redirect named in this URL is what the person is doing right now,
+      // so it wins. The stored path (saved before an OAuth trip or at sign-up,
+      // valid for an hour) only fills in when the URL names none: OAuth and
+      // the confirmation email come back to a bare /auth.
       const storedPath = safeRedirect(getAndClearRedirectPath());
       const urlRedirect = safeRedirect(getRedirectFromParams(searchParams));
-      // Prefer stored path if it exists and isn't the default, otherwise use URL param
-      const redirectTo = storedPath !== "/library" ? storedPath : urlRedirect;
+      const redirectTo =
+        urlRedirect !== DEFAULT_REDIRECT ? urlRedirect : storedPath;
       navigate(redirectTo, { replace: true });
     }
   }, [user, authLoading, navigate, searchParams]);
@@ -177,6 +180,9 @@ export default function Auth() {
           }
         } else {
           toast.success("Welcome back!");
+          // This sign-in goes where the URL says; an older stored path from
+          // an abandoned sign-up must not fire on some later visit.
+          clearRedirectPath();
           const redirectTo = safeRedirect(getRedirectFromParams(searchParams));
           navigate(redirectTo, { replace: true });
         }
@@ -299,12 +305,15 @@ export default function Auth() {
                 alt="Querino"
                 className="mx-auto mb-4 h-12 w-12"
               />
-              <CardTitle className="text-2xl font-bold">
-                Welcome to Querino
-              </CardTitle>
+              <h1 className="text-2xl font-bold leading-none tracking-tight">
+                {activeTab === "signup"
+                  ? "Create your Querino account"
+                  : "Welcome back to Querino"}
+              </h1>
               <CardDescription>
-                Sign in to access your prompt library and create amazing AI
-                prompts
+                {activeTab === "signup"
+                  ? "Free to join. Keep your prompts, skills and workflows in one library."
+                  : "Sign in to your library of prompts, skills and workflows."}
               </CardDescription>
             </CardHeader>
 
@@ -403,7 +412,6 @@ export default function Auth() {
                         id="password"
                         type="password"
                         autoComplete="current-password"
-                        placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={loading}
@@ -600,7 +608,6 @@ export default function Auth() {
                             id="signup-password"
                             type="password"
                             autoComplete="new-password"
-                            placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={loading}

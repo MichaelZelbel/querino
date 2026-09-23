@@ -145,24 +145,30 @@ export function ReviewSection({
       {/* Compact Rating Card */}
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          {/* Overall Rating - Left side */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold text-foreground">
-                {Number(ratingAvg || 0).toFixed(1)}
-              </span>
-              <span className="text-muted-foreground text-sm">/5</span>
+          {/* Overall Rating - Left side. Unrated shows words, not "0.0 /5". */}
+          {ratingCount ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-bold text-foreground">
+                  {Number(ratingAvg || 0).toFixed(1)}
+                </span>
+                <span className="text-muted-foreground text-sm">/5</span>
+              </div>
+              <div className="flex flex-col">
+                <StarRating rating={ratingAvg || 0} readonly size="sm" />
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  {ratingCount} {ratingCount === 1 ? "review" : "reviews"}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <StarRating rating={ratingAvg || 0} readonly size="sm" />
-              <span className="text-xs text-muted-foreground mt-0.5">
-                {ratingCount || 0} {ratingCount === 1 ? "review" : "reviews"}
-              </span>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm font-medium text-muted-foreground">
+              No ratings yet
+            </p>
+          )}
 
-          {/* Divider */}
-          <div className="h-10 w-px bg-border" />
+          {/* Divider, only while both sides sit on one line */}
+          <div className="hidden h-10 w-px bg-border sm:block" />
 
           {/* User Rating - Right side */}
           <div className="flex-1">

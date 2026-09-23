@@ -225,7 +225,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <Command className="rounded-lg border shadow-md">
+      {/* The search results come from the server and match on description
+          and content too; cmdk's own filter re-matched them on the visible
+          title and hid them. Every group below is filtered by hand. */}
+      <Command className="rounded-lg border shadow-md" shouldFilter={false}>
         <CommandInput
           placeholder="Search artifacts, run commands..."
           value={query}

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { avatarImageProps } from "@/lib/avatar";
 import { Copy, Check, Pencil, Package, Star } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
@@ -59,14 +60,14 @@ export function PromptKitCard({
   };
 
   return (
-    <Card variant="prompt" className="flex h-full flex-col">
+    <Card variant="prompt" className="flex h-full min-w-0 flex-col">
       <Link to={detailUrl} className="block">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1.5 flex-1">
+            <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <Package className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold leading-tight text-foreground hover:text-primary transition-colors">
+                <h3 className="min-w-0 break-words font-semibold leading-tight text-foreground hover:text-primary transition-colors">
                   {kit.title}
                 </h3>
                 {showAuthorBadge && isAuthor && (
@@ -88,8 +89,10 @@ export function PromptKitCard({
       </Link>
 
       <CardContent className="flex-1 pb-3">
-        <div className="relative rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
-          <div className="line-clamp-3 whitespace-pre-wrap">{kit.content}</div>
+        <div className="relative min-w-0 rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
+          <div className="line-clamp-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+            {kit.content}
+          </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-muted/50 to-transparent rounded-b-lg" />
         </div>
 
@@ -120,7 +123,9 @@ export function PromptKitCard({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Avatar className="h-5 w-5">
-                    <AvatarImage src={kit.author.avatar_url || undefined} />
+                    <AvatarImage
+                      {...avatarImageProps(kit.author.avatar_url, 20)}
+                    />
                     <AvatarFallback className="text-[10px] bg-muted">
                       {getAuthorInitials()}
                     </AvatarFallback>
@@ -132,7 +137,9 @@ export function PromptKitCard({
               ) : (
                 <span className="flex items-center gap-2">
                   <Avatar className="h-5 w-5">
-                    <AvatarImage src={kit.author.avatar_url || undefined} />
+                    <AvatarImage
+                      {...avatarImageProps(kit.author.avatar_url, 20)}
+                    />
                     <AvatarFallback className="text-[10px] bg-muted">
                       {getAuthorInitials()}
                     </AvatarFallback>

@@ -46,6 +46,8 @@ import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
 import { useMenerioIntegration } from "@/hooks/useMenerioIntegration";
 import { toast } from "sonner";
+import { applySuggestionToArtifact } from "@/lib/applySuggestion";
+import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { format } from "date-fns";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
@@ -179,19 +181,26 @@ export default function SkillDetail({
     }
   };
 
-  const handleApplySuggestion = async (suggestion: any) => {
-    if (!skill) return;
+  const handleApplySuggestion = async (
+    suggestion: SuggestionWithAuthor,
+  ): Promise<boolean> => {
+    if (!skill) return false;
 
-    const updates: any = { content: suggestion.content };
-    if (suggestion.title) updates.title = suggestion.title;
-    if (suggestion.description) updates.description = suggestion.description;
-
-    const { error } = await supabase
-      .from("skills")
-      .update(updates)
-      .eq("id", skill.id);
-
-    if (error) throw error;
+    const applied = await applySuggestionToArtifact(
+      "skill",
+      {
+        id: skill.id,
+        author_id: skill.author_id,
+        title: skill.title,
+        description: skill.description,
+        content: skill.content,
+        tags: skill.tags,
+        isPublic: skill.published,
+      },
+      suggestion,
+      user?.id,
+    );
+    if (!applied) return false;
 
     const { data } = await (supabase.from("skills") as any)
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
@@ -201,6 +210,7 @@ export default function SkillDetail({
     if (data) {
       setSkill({ ...data, author: data.profiles || null });
     }
+    return true;
   };
 
   const getAuthorInitials = () => {
@@ -309,9 +319,10 @@ export default function SkillDetail({
                 </Badge>
                 {skill.tags && skill.tags.length > 0 && (
                   <>
-                    {skill.tags.slice(0, 5).map((tag) => (
+                    {skill.tags.slice(0, 5).map((tag, i) => (
                       <Link
                         key={tag}
+                        className={i >= 2 ? "hidden sm:inline-flex" : undefined}
                         to={`/discover?type=skills&tag=${encodeURIComponent(tag)}`}
                       >
                         <Badge
@@ -332,7 +343,7 @@ export default function SkillDetail({
               </h1>
 
               {skill.description && (
-                <p className="text-lg text-muted-foreground">
+                <p className="text-base text-muted-foreground sm:text-lg">
                   {skill.description}
                 </p>
               )}
@@ -341,6 +352,7 @@ export default function SkillDetail({
                 {skill.author && (
                   <Link
                     to={`/u/${encodeURIComponent(skill.author.display_name || "")}`}
+                    disabled={!skill.author.display_name}
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="h-10 w-10">
@@ -564,9 +576,9 @@ export default function SkillDetail({
             />
 
             {/* Tabbed Content Section */}
-            <Tabs defaultValue="details" className="mt-8">
+            <Tabs defaultValue="comments" className="mt-8">
               <TabsList>
-                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="details">Activity</TabsTrigger>
                 <TabsTrigger value="comments">Comments</TabsTrigger>
                 <TabsTrigger value="suggestions" className="gap-2">
                   Suggestions

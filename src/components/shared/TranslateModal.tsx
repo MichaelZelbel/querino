@@ -63,7 +63,7 @@ export function TranslateModal({
   const {
     checkCredits,
     hasCredits,
-    isLoading: creditsLoading,
+
     credits,
   } = useAICreditsGate();
   const { user } = useAuthContext();
@@ -189,7 +189,9 @@ export function TranslateModal({
             disabled={
               isTranslating ||
               !targetLanguage ||
-              (!creditsLoading && !hasCredits)
+              // Unknown credits (null) are not zero credits: the server
+              // refuses on its own, so only a known empty balance blocks.
+              (credits !== null && credits.remainingCredits <= 0)
             }
             className="gap-2"
           >

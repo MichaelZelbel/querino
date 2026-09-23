@@ -35,7 +35,8 @@ interface SuggestionsTabProps {
     suggestionId: string,
     data: { title?: string; description?: string; content: string },
   ) => Promise<void>;
-  onApplySuggestion: (suggestion: SuggestionWithAuthor) => Promise<void>;
+  /** Resolves false when the suggestion was not applied (e.g. blocked by moderation). */
+  onApplySuggestion: (suggestion: SuggestionWithAuthor) => Promise<boolean>;
 }
 
 const statusColors: Record<string, string> = {
@@ -106,10 +107,14 @@ export function SuggestionsTab({
     );
   }
 
-  const handleAccept = async (reviewComment?: string) => {
-    if (!selectedSuggestion) return;
-    await onApplySuggestion(selectedSuggestion);
+  const handleAccept = async (reviewComment?: string): Promise<boolean> => {
+    if (!selectedSuggestion) return false;
+    // Only mark it accepted once it was really applied; the apply step has
+    // already told the user why when it was not (e.g. moderation).
+    const applied = await onApplySuggestion(selectedSuggestion);
+    if (!applied) return false;
     await onReviewSuggestion(selectedSuggestion.id, "accepted", reviewComment);
+    return true;
   };
 
   const handleReject = async (reviewComment?: string) => {

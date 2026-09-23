@@ -23,9 +23,12 @@ const NotFound = () => {
         <Header />
         <main className="flex flex-1 items-center justify-center bg-muted/30 py-20">
           <div className="text-center">
-            <h1 className="mb-4 text-6xl font-bold text-foreground">404</h1>
-            <p className="mb-6 text-xl text-muted-foreground">
-              Oops! This page doesn't exist.
+            <p className="mb-2 text-6xl font-bold text-foreground">404</p>
+            <h1 className="mb-4 text-2xl font-semibold text-foreground">
+              Page not found
+            </h1>
+            <p className="mb-6 text-muted-foreground">
+              The address may be mistyped, or the page was moved or deleted.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button asChild className="gap-2">
@@ -37,7 +40,7 @@ const NotFound = () => {
               <Button asChild variant="outline" className="gap-2">
                 <Link to="/discover">
                   <Compass className="h-4 w-4" />
-                  Explore Discover
+                  Go to Discover
                 </Link>
               </Button>
             </div>

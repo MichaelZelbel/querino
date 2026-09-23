@@ -30,6 +30,8 @@ import {
   Activity as ActivityIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { applySuggestionToArtifact } from "@/lib/applySuggestion";
+import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
 import { format } from "date-fns";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
@@ -122,20 +124,32 @@ export default function PromptKitDetail({
     updateSuggestionAfterChanges,
   } = useSuggestions("prompt_kit", kit?.id || "");
 
-  const handleApplySuggestion = async (suggestion: any) => {
-    if (!kit) return;
-    const updates: any = { content: suggestion.content };
-    if (suggestion.title) updates.title = suggestion.title;
-    if (suggestion.description) updates.description = suggestion.description;
-    const { error } = await (supabase.from("prompt_kits") as any)
-      .update(updates)
-      .eq("id", kit.id);
-    if (error) throw error;
+  const handleApplySuggestion = async (
+    suggestion: SuggestionWithAuthor,
+  ): Promise<boolean> => {
+    if (!kit) return false;
+
+    const applied = await applySuggestionToArtifact(
+      "prompt_kit",
+      {
+        id: kit.id,
+        author_id: kit.author_id,
+        title: kit.title,
+        description: kit.description,
+        content: kit.content,
+        tags: kit.tags,
+        isPublic: kit.published,
+      },
+      suggestion,
+      user?.id,
+    );
+    if (!applied) return false;
     const { data } = await (supabase.from("prompt_kits") as any)
       .select(`*, profiles:author_id (id, display_name, avatar_url)`)
       .eq("slug", kit.slug)
       .maybeSingle();
     if (data) setKit({ ...data, author: data.profiles || null });
+    return true;
   };
 
   useEffect(() => {
@@ -332,8 +346,12 @@ export default function PromptKitDetail({
                 <Badge variant="outline" className="text-sm">
                   {items.length} {items.length === 1 ? "prompt" : "prompts"}
                 </Badge>
-                {kit.tags?.slice(0, 5).map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-sm gap-1">
+                {kit.tags?.slice(0, 5).map((tag, i) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className={`text-sm gap-1 ${i >= 2 ? "hidden sm:inline-flex" : ""}`}
+                  >
                     <Tag className="h-3 w-3" />
                     {tag}
                   </Badge>
@@ -344,7 +362,7 @@ export default function PromptKitDetail({
                 {kit.title}
               </h1>
               {kit.description && (
-                <p className="text-lg text-muted-foreground">
+                <p className="text-base text-muted-foreground sm:text-lg">
                   {kit.description}
                 </p>
               )}
@@ -353,6 +371,7 @@ export default function PromptKitDetail({
                 {kit.author && (
                   <Link
                     to={`/u/${encodeURIComponent(kit.author.display_name || "")}`}
+                    disabled={!kit.author.display_name}
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="h-10 w-10">

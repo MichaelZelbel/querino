@@ -40,13 +40,12 @@ export function HeroSection() {
 
             {/* Headline — Bricolage Grotesque, gradient on last two words */}
             <h1
-              className="mb-6 font-display font-bold text-foreground animate-fade-in-up"
+              className="mb-6 font-display font-bold text-balance text-foreground animate-fade-in-up"
               style={{
                 fontSize: "clamp(2.4rem, 5vw, 3.6rem)",
                 lineHeight: 1.05,
                 letterSpacing: "-0.035em",
                 animationDelay: "0.1s",
-                textWrap: "balance" as never,
               }}
             >
               Discover, Create &amp;
@@ -77,8 +76,8 @@ export function HeroSection() {
                 </Link>
               </Button>
               <Button asChild variant="hero-outline" size="xl">
-                <Link to={user ? "/library" : "/auth?redirect=/library"}>
-                  View Your Library
+                <Link to={user ? "/library" : "/auth?tab=signup"}>
+                  {user ? "View Your Library" : "Create free account"}
                 </Link>
               </Button>
             </div>

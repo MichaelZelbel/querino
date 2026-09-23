@@ -40,6 +40,7 @@ export function AIInsightsPanel({
   isOwner,
 }: AIInsightsPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [openedByUser, setOpenedByUser] = useState(false);
   const { user } = useAuthContext();
   const {
     insights,
@@ -71,164 +72,191 @@ export function AIInsightsPanel({
     return null;
   }
 
+  const openTab = (extra?: string) => (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => {
+        setIsOpen(true);
+        setOpenedByUser(true);
+      }}
+      aria-label="Open AI Insights"
+      className={cn(
+        "fixed right-0 top-1/2 -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 z-40",
+        extra,
+      )}
+    >
+      <ChevronLeft className="h-4 w-4" />
+      {isPremium ? (
+        <Sparkles className="h-4 w-4" />
+      ) : (
+        <Lock className="h-4 w-4" />
+      )}
+    </Button>
+  );
+
+  const close = () => {
+    setIsOpen(false);
+    setOpenedByUser(false);
+  };
+
+  // Below md the open panel is a full-screen overlay, so there it appears only
+  // after a tap on the tab; open by default, it covered every detail page.
+  const panelClass = cn(
+    "fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-xl md:static md:z-auto md:w-80 md:max-w-none md:shadow-none border-l bg-card flex flex-col h-full",
+    !openedByUser && "hidden md:flex",
+  );
+  const mobileTab = openedByUser ? null : openTab("md:hidden");
+
   // Collapsed state for free users - show lock icon
-  if (!isOpen) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open AI Insights"
-        className="fixed right-0 top-1/2 -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 z-40"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        {isPremium ? (
-          <Sparkles className="h-4 w-4" />
-        ) : (
-          <Lock className="h-4 w-4" />
-        )}
-      </Button>
-    );
-  }
+  if (!isOpen) return openTab();
 
   // Locked state for free users
   if (!isPremium) {
     return (
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-xl md:static md:z-auto md:w-80 md:max-w-none md:shadow-none border-l bg-card flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-semibold text-sm">AI Insights</h3>
-            <Badge variant="secondary" className="text-xs gap-1">
-              <Crown className="h-3 w-3" />
-              Premium
-            </Badge>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => setIsOpen(false)}
-            aria-label="Close insights"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-
-        {/* Locked Content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Lock className="h-8 w-8 text-primary" />
-          </div>
-          <h4 className="font-semibold text-foreground mb-2">
-            Premium Feature
-          </h4>
-          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-            AI Insights is a Premium feature. Contact support to learn more.
-          </p>
-          <a href="mailto:support@querino.ai">
-            <Button variant="outline" className="gap-2">
-              Contact Support
+      <>
+        {mobileTab}
+        <div className={panelClass}>
+          {/* Header */}
+          <div className="p-4 border-b flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold text-sm">AI Insights</h3>
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Crown className="h-3 w-3" />
+                Premium
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={close}
+              aria-label="Close insights"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
-          </a>
+          </div>
+
+          {/* Locked Content */}
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <h4 className="font-semibold text-foreground mb-2">
+              Premium Feature
+            </h4>
+            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+              AI Insights is a Premium feature. Contact support to learn more.
+            </p>
+            <a href="mailto:support@querino.ai">
+              <Button variant="outline" className="gap-2">
+                Contact Support
+              </Button>
+            </a>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Full access for premium/team users
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-xl md:static md:z-auto md:w-80 md:max-w-none md:shadow-none border-l bg-card flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold text-sm">AI Insights</h3>
-        </div>
-        <div className="flex items-center gap-1">
-          {isOwner !== false && (
+    <>
+      {mobileTab}
+      <div className={panelClass}>
+        {/* Header */}
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-sm">AI Insights</h3>
+          </div>
+          <div className="flex items-center gap-1">
+            {isOwner !== false && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={hasInsights ? handleRefresh : handleGenerate}
+                disabled={generating}
+                aria-label={
+                  hasInsights ? "Refresh insights" : "Generate insights"
+                }
+              >
+                <RefreshCw
+                  className={cn("h-3.5 w-3.5", generating && "animate-spin")}
+                />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={hasInsights ? handleRefresh : handleGenerate}
-              disabled={generating}
-              aria-label={
-                hasInsights ? "Refresh insights" : "Generate insights"
-              }
+              onClick={close}
+              aria-label="Close insights"
             >
-              <RefreshCw
-                className={cn("h-3.5 w-3.5", generating && "animate-spin")}
-              />
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => setIsOpen(false)}
-            aria-label="Close insights"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="p-4 space-y-4">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        ) : !hasInsights ? (
-          <div className="p-6 text-center">
-            <Sparkles className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground mb-4">
-              Generate AI-powered insights for this {itemType}
-            </p>
-            <Button onClick={handleGenerate} disabled={generating} size="sm">
-              {generating ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Insights
-                </>
-              )}
-            </Button>
-            {error && <p className="text-xs text-destructive mt-3">{error}</p>}
-          </div>
-        ) : (
-          <ScrollArea className="h-full">
-            <div className="p-4">
-              {insights?.summary ? (
-                <div className="text-sm space-y-3 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-muted-foreground [&_li]:my-1 [&_strong]:text-foreground [&_strong]:font-medium [&_code]:text-primary [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs">
-                  <ReactMarkdown>{insights.summary}</ReactMarkdown>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  No insights available
-                </p>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ) : !hasInsights ? (
+            <div className="p-6 text-center">
+              <Sparkles className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Generate AI-powered insights for this {itemType}
+              </p>
+              <Button onClick={handleGenerate} disabled={generating} size="sm">
+                {generating ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Insights
+                  </>
+                )}
+              </Button>
+              {error && (
+                <p className="text-xs text-destructive mt-3">{error}</p>
               )}
             </div>
-          </ScrollArea>
-        )}
+          ) : (
+            <ScrollArea className="h-full">
+              <div className="p-4">
+                {insights?.summary ? (
+                  <div className="text-sm space-y-3 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-muted-foreground [&_li]:my-1 [&_strong]:text-foreground [&_strong]:font-medium [&_code]:text-primary [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs">
+                    <ReactMarkdown>{insights.summary}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    No insights available
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          )}
 
-        {generating && hasInsights && (
-          <div className="p-4 text-center">
-            <RefreshCw className="h-6 w-6 mx-auto animate-spin text-primary mb-2" />
-            <p className="text-xs text-muted-foreground">
-              Refreshing insights...
-            </p>
-          </div>
-        )}
+          {generating && hasInsights && (
+            <div className="p-4 text-center">
+              <RefreshCw className="h-6 w-6 mx-auto animate-spin text-primary mb-2" />
+              <p className="text-xs text-muted-foreground">
+                Refreshing insights...
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -174,19 +174,30 @@ export function useCreateBlogPost() {
 
       if (error) throw error;
 
-      // Add categories and tags
+      // Add categories and tags. The post itself exists at this point, so a
+      // failed link is reported rather than failing the whole create.
       if (category_ids?.length) {
-        await supabase
+        const { error: categoryError } = await supabase
           .from("blog_post_categories")
           .insert(
             category_ids.map((id) => ({ post_id: post.id, category_id: id })),
           );
+        if (categoryError) {
+          toast.error(
+            `Post created, but its categories were not saved: ${categoryError.message}`,
+          );
+        }
       }
 
       if (tag_ids?.length) {
-        await supabase
+        const { error: tagError } = await supabase
           .from("blog_post_tags")
           .insert(tag_ids.map((id) => ({ post_id: post.id, tag_id: id })));
+        if (tagError) {
+          toast.error(
+            `Post created, but its tags were not saved: ${tagError.message}`,
+          );
+        }
       }
 
       return post;
@@ -201,57 +212,100 @@ export function useCreateBlogPost() {
   });
 }
 
+/**
+ * Saves of one post run one after another. The category and tag links are
+ * rewritten as "delete all, insert the new set"; two saves overlapping (the
+ * 3 s autosave and a click on Publish) interleaved those steps and could
+ * leave a post with duplicate or missing links.
+ */
+const postSaveQueue = new Map<string, Promise<unknown>>();
+
+function runInPostQueue<T>(postId: string, task: () => Promise<T>): Promise<T> {
+  const previous = postSaveQueue.get(postId) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(task);
+  postSaveQueue.set(postId, next);
+  void next
+    .catch(() => undefined)
+    .finally(() => {
+      if (postSaveQueue.get(postId) === next) postSaveQueue.delete(postId);
+    });
+  return next;
+}
+
+async function relinkCategories(postId: string, categoryIds: string[]) {
+  const { error: deleteError } = await supabase
+    .from("blog_post_categories")
+    .delete()
+    .eq("post_id", postId);
+  if (deleteError) {
+    throw new Error(`Could not update categories: ${deleteError.message}`);
+  }
+  if (!categoryIds.length) return;
+  const { error: insertError } = await supabase
+    .from("blog_post_categories")
+    .insert(
+      categoryIds.map((catId) => ({ post_id: postId, category_id: catId })),
+    );
+  if (insertError) {
+    throw new Error(`Could not update categories: ${insertError.message}`);
+  }
+}
+
+async function relinkTags(postId: string, tagIds: string[]) {
+  const { error: deleteError } = await supabase
+    .from("blog_post_tags")
+    .delete()
+    .eq("post_id", postId);
+  if (deleteError) {
+    throw new Error(`Could not update tags: ${deleteError.message}`);
+  }
+  if (!tagIds.length) return;
+  const { error: insertError } = await supabase
+    .from("blog_post_tags")
+    .insert(tagIds.map((tagId) => ({ post_id: postId, tag_id: tagId })));
+  if (insertError) {
+    throw new Error(`Could not update tags: ${insertError.message}`);
+  }
+}
+
 export function useUpdateBlogPost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       data,
     }: {
       id: string;
       data: Partial<BlogPostFormData>;
-    }) => {
-      const { category_ids, tag_ids, ...postData } = data;
+      /** Autosave: no success toast. Errors are still shown. */
+      silent?: boolean;
+    }) =>
+      runInPostQueue(id, async () => {
+        const { category_ids, tag_ids, ...postData } = data;
 
-      const { data: post, error } = await supabase
-        .from("blog_posts")
-        .update(postData)
-        .eq("id", id)
-        .select()
-        .single();
+        const { data: post, error } = await supabase
+          .from("blog_posts")
+          .update(postData)
+          .eq("id", id)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Update categories
-      if (category_ids !== undefined) {
-        await supabase.from("blog_post_categories").delete().eq("post_id", id);
-        if (category_ids.length) {
-          await supabase.from("blog_post_categories").insert(
-            category_ids.map((catId) => ({
-              post_id: id,
-              category_id: catId,
-            })),
-          );
+        if (category_ids !== undefined) {
+          await relinkCategories(id, category_ids);
         }
-      }
-
-      // Update tags
-      if (tag_ids !== undefined) {
-        await supabase.from("blog_post_tags").delete().eq("post_id", id);
-        if (tag_ids.length) {
-          await supabase
-            .from("blog_post_tags")
-            .insert(tag_ids.map((tagId) => ({ post_id: id, tag_id: tagId })));
+        if (tag_ids !== undefined) {
+          await relinkTags(id, tag_ids);
         }
-      }
 
-      return post;
-    },
+        return post;
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
       queryClient.invalidateQueries({ queryKey: ["blog-post", variables.id] });
-      toast.success("Post updated");
+      if (!variables.silent) toast.success("Post updated");
     },
     onError: (error) => {
       toast.error(`Failed to update post: ${error.message}`);

@@ -213,12 +213,15 @@
 
   --primary: 239 67% 59%;
   --primary-foreground: 0 0% 100%;
+  /* Indigo for text (links, icons). Same as --primary in light mode. */
+  --link: 239 67% 59%;
 
   --secondary: 210 14% 93%;
   --secondary-foreground: 210 11% 14%;
 
   --muted: 210 14% 93%;
-  --muted-foreground: 210 11% 45%;
+  /* 42% keeps muted text at 4.5:1 or more on --muted (was 4.14:1 at 45%) */
+  --muted-foreground: 210 11% 42%;
 
   --accent: 239 67% 95%;
   --accent-foreground: 239 67% 45%;
@@ -294,8 +297,13 @@
   --popover: 220 20% 13%;
   --popover-foreground: 210 14% 97%;
 
-  --primary: 239 67% 65%;
+  /* One indigo cannot do both jobs on a near-black page: white text on it
+     needs it darker, indigo text on the page needs it lighter. 63% gives
+     white button text 4.78:1 (was 4.32:1 at 65%); --link at 72% gives text
+     links 5.35:1 on cards and 4.61:1 on --secondary (was 3.81:1). */
+  --primary: 239 67% 63%;
   --primary-foreground: 0 0% 100%;
+  --link: 239 67% 72%;
 
   --secondary: 220 20% 18%;
   --secondary-foreground: 210 14% 97%;
@@ -335,6 +343,17 @@
   --sidebar-accent-foreground: 239 67% 75%;
   --sidebar-border: 220 20% 20%;
   --sidebar-ring: 239 67% 65%;
+}
+
+/* Dark mode: indigo text uses --link (see the note on --primary above). The
+   :where() keeps this at the specificity of .text-primary itself, so hover and
+   other state utilities on the same element still win. */
+@layer utilities {
+  :where(.dark) .text-primary,
+  :where(.dark) .hover\:text-primary:hover,
+  :where(.dark) .focus\:text-primary:focus {
+    color: hsl(var(--link));
+  }
 }
 
 @layer base {

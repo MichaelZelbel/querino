@@ -140,10 +140,15 @@ export default function LibraryPromptEdit() {
 
   // Undo state for AI edits
   const [previousContent, setPreviousContent] = useState<string | null>(null);
+  // Read by Undo, so a toast's Undo sees the content from apply time.
+  const previousContentRef = useRef<string | null>(null);
 
   // AI coach panel state (mobile sheet)
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [showVersionPanel, setShowVersionPanel] = useState(false);
+  // prompt_versions is author-only under RLS, so team editors and admins get
+  // the editor without the version features they could not use.
+  const isArtifactAuthor = !!user && prompt?.author_id === user.id;
   const [moderationBlock, setModerationBlock] =
     useState<ModerationResult | null>(null);
 
@@ -499,7 +504,14 @@ export default function LibraryPromptEdit() {
   };
 
   const handleSaveAsNewVersion = async () => {
-    if (busyRef.current || !validate() || !promptId || !user) return;
+    if (
+      busyRef.current ||
+      !validate() ||
+      !promptId ||
+      !user ||
+      !isArtifactAuthor
+    )
+      return;
 
     const submitted = currentForm;
     busyRef.current = true;
@@ -759,18 +771,22 @@ export default function LibraryPromptEdit() {
   // AI Coach: apply content to the editor only. Versions are created on
   // explicit save — per-apply inserts spammed history with drafts ahead of
   // the live prompt and raced on version numbers.
-  const handleApplyAIContent = async (newContent: string) => {
+  const handleApplyAIContent = (newContent: string) => {
+    // The coach calls the handler from the latest render, so `content` is the
+    // editor text at apply time, including anything typed during the request.
+    previousContentRef.current = content;
     setPreviousContent(content);
     setContent(newContent);
   };
 
   // AI Coach: undo last AI edit
   const handleUndoAI = () => {
-    if (previousContent !== null) {
-      setContent(previousContent);
-      setPreviousContent(null);
-      toast.success("AI edit undone.");
-    }
+    const restore = previousContentRef.current;
+    if (restore === null) return;
+    previousContentRef.current = null;
+    setContent(restore);
+    setPreviousContent(null);
+    toast.success("AI edit undone.");
   };
 
   // Coach panel element (reused for desktop + mobile sheet)
@@ -933,14 +949,16 @@ export default function LibraryPromptEdit() {
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => setShowVersionPanel(true)}
-              >
-                <History className="h-4 w-4" />
-                Version History
-              </Button>
+              {isArtifactAuthor && (
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setShowVersionPanel(true)}
+                >
+                  <History className="h-4 w-4" />
+                  Version History
+                </Button>
+              )}
 
               <Button
                 variant="outline"
@@ -990,19 +1008,21 @@ export default function LibraryPromptEdit() {
                 Save Changes
               </Button>
 
-              <Button
-                onClick={handleSaveAsNewVersion}
-                disabled={isSaving || isSavingVersion}
-                variant="secondary"
-                className="gap-2"
-              >
-                {isSavingVersion ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <GitBranch className="h-4 w-4" />
-                )}
-                Save as New Version
-              </Button>
+              {isArtifactAuthor && (
+                <Button
+                  onClick={handleSaveAsNewVersion}
+                  disabled={isSaving || isSavingVersion}
+                  variant="secondary"
+                  className="gap-2"
+                >
+                  {isSavingVersion ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <GitBranch className="h-4 w-4" />
+                  )}
+                  Save as New Version
+                </Button>
+              )}
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -1281,22 +1301,24 @@ export default function LibraryPromptEdit() {
                       </div>
 
                       {/* Change Notes */}
-                      <div className="space-y-2">
-                        <Label htmlFor="changeNotes">
-                          Change Notes (for new version)
-                        </Label>
-                        <Textarea
-                          id="changeNotes"
-                          value={changeNotes}
-                          onChange={(e) => setChangeNotes(e.target.value)}
-                          placeholder="Optional: Describe what changed in this version"
-                          rows={2}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          These notes will be saved when you click "Save as New
-                          Version"
-                        </p>
-                      </div>
+                      {isArtifactAuthor && (
+                        <div className="space-y-2">
+                          <Label htmlFor="changeNotes">
+                            Change Notes (for new version)
+                          </Label>
+                          <Textarea
+                            id="changeNotes"
+                            value={changeNotes}
+                            onChange={(e) => setChangeNotes(e.target.value)}
+                            placeholder="Optional: Describe what changed in this version"
+                            rows={2}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            These notes will be saved when you click "Save as
+                            New Version"
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1327,7 +1349,7 @@ export default function LibraryPromptEdit() {
       />
 
       {/* Full version manager (view / compare / restore) */}
-      {promptId && (
+      {promptId && isArtifactAuthor && (
         <VersionHistoryPanel
           open={showVersionPanel}
           onOpenChange={setShowVersionPanel}

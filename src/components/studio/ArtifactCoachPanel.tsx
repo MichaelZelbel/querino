@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -181,6 +181,17 @@ export function ArtifactCoachPanel({
   workspaceId,
   sessionId,
 }: ArtifactCoachPanelProps) {
+  // The AI reply arrives after an await, so read the parent's handlers from
+  // refs: calling the ones captured at Send time would apply against stale
+  // editor content, and a toast's Undo would call a closure that never saw
+  // the apply.
+  const onApplyContentRef = useRef(onApplyContent);
+  const onUndoRef = useRef(onUndo);
+  useEffect(() => {
+    onApplyContentRef.current = onApplyContent;
+    onUndoRef.current = onUndo;
+  });
+  const undoLatest = useCallback(() => onUndoRef.current(), []);
   const config = COACH_CONFIG[artifactType];
   const storageKey = `prompt_coach_messages:${sessionId}`;
 
@@ -271,15 +282,13 @@ export function ArtifactCoachPanel({
       setMessages((prev) => [...prev, assistantMsg]);
 
       if (result.canvas?.updated && result.canvas.content) {
-        onApplyContent(result.canvas.content, result.canvas.changeNote);
+        onApplyContentRef.current(
+          result.canvas.content,
+          result.canvas.changeNote,
+        );
         toast(`AI updated the ${artifactType}`, {
           description: result.canvas.changeNote || "Content was modified",
-          action: canUndo
-            ? undefined
-            : {
-                label: "Undo",
-                onClick: onUndo,
-              },
+          action: { label: "Undo", onClick: undoLatest },
         });
       }
     } catch (err) {

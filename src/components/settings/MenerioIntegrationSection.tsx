@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -16,7 +16,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import menerioLogo from "@/assets/menerio-logo.png";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Info, Unplug } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Loader2,
+  CheckCircle2,
+  Info,
+  Unplug,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const MENERIO_BASE_URL =
@@ -57,42 +75,47 @@ export function MenerioIntegrationSection() {
   const [existingId, setExistingId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
+  // A failed read is not "not connected": showing the connect form then
+  // invited a second connection on top of one that exists.
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Load existing integration on mount
-  useEffect(() => {
+  const loadIntegration = useCallback(async () => {
     if (!user) return;
-    (async () => {
-      // Never the key: since 2026-09-16 it lives in Vault and the browser can
-      // write it but not read it back. The display name is stored at connect.
-      const { data, error } = await supabase
-        .from("menerio_integration" as any)
-        .select(
-          "id, auto_sync, sync_artifact_types, is_active, last_sync_at, menerio_display_name",
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
+    setLoading(true);
+    setLoadError(null);
+    // Never the key: since 2026-09-16 it lives in Vault and the browser can
+    // write it but not read it back. The display name is stored at connect.
+    const { data, error } = await supabase
+      .from("menerio_integration" as any)
+      .select(
+        "id, auto_sync, sync_artifact_types, is_active, last_sync_at, menerio_display_name",
+      )
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-      if (!error && data) {
-        const d = data as any;
-        setExistingId(d.id);
-        setAutoSync(d.auto_sync ?? true);
-        setSyncTypes(
-          d.sync_artifact_types || [
-            "prompt",
-            "prompt_kit",
-            "skill",
-            "workflow",
-          ],
-        );
-        setIsActive(d.is_active ?? true);
-        setLastSyncAt(d.last_sync_at || null);
-        setIsConnected(true);
-        setConnectedDisplayName(d.menerio_display_name || null);
-      }
-      setLoading(false);
-    })();
+    if (error) {
+      console.error("Menerio integration load error:", error);
+      setLoadError(error.message || "Unknown error");
+    } else if (data) {
+      const d = data as any;
+      setExistingId(d.id);
+      setAutoSync(d.auto_sync ?? true);
+      setSyncTypes(
+        d.sync_artifact_types || ["prompt", "prompt_kit", "skill", "workflow"],
+      );
+      setIsActive(d.is_active ?? true);
+      setLastSyncAt(d.last_sync_at || null);
+      setIsConnected(true);
+      setConnectedDisplayName(d.menerio_display_name || null);
+    }
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    void loadIntegration();
+  }, [loadIntegration]);
 
   const handleConnect = async () => {
     if (!user || !connectionKey.trim()) {
@@ -238,6 +261,21 @@ export function MenerioIntegrationSection() {
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : loadError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+              <span>Could not load your Menerio connection: {loadError}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => void loadIntegration()}
+              >
+                <RefreshCw className="h-3 w-3" /> Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
         ) : !isConnected ? (
           /* ── Not connected: show key input + Connect button ── */
           <div className="space-y-4">
@@ -335,24 +373,47 @@ export function MenerioIntegrationSection() {
                   "Save settings"
                 )}
               </Button>
-              <Button
-                variant="outline"
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-                className="text-destructive hover:text-destructive"
-              >
-                {disconnecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Disconnecting…
-                  </>
-                ) : (
-                  <>
-                    <Unplug className="mr-2 h-4 w-4" />
-                    Disconnect
-                  </>
-                )}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={disconnecting}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    {disconnecting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Disconnecting…
+                      </>
+                    ) : (
+                      <>
+                        <Unplug className="mr-2 h-4 w-4" />
+                        Disconnect
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Disconnect Menerio?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Querino stops syncing your artifacts to Menerio and
+                      forgets the connection key. Notes already in Menerio stay
+                      there. To reconnect you need to paste a connection key
+                      again.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDisconnect}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Disconnect
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </>
         )}

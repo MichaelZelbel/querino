@@ -32,13 +32,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { categoryOptions } from "@/types/prompt";
+import { useAuthContext } from "@/contexts/AuthContext";
 import type { ArtifactSortOption } from "@/hooks/useArtifactList";
 
-const VALID_TABS = ["prompts", "kits", "skills", "workflows"];
+const VALID_TABS = ["prompts", "skills", "workflows", "kits"];
 
 const Discover = () => {
   // Deep-linkable state: /discover?type=skills&tag=planning&q=meeting
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuthContext();
   const tagFilter = searchParams.get("tag") || "";
   const initialQuery = searchParams.get("q") || "";
   const typeParam = searchParams.get("type") || "prompts";
@@ -174,7 +176,7 @@ const Discover = () => {
         <h1 className="sr-only">
           Discover prompts, skills, workflows and kits
         </h1>
-        <div className="container mx-auto max-w-full px-4 py-8 overflow-x-hidden">
+        <div className="container mx-auto max-w-full px-4 py-8 overflow-x-clip">
           <Tabs
             value={activeTab}
             onValueChange={handleTabChange}
@@ -190,10 +192,6 @@ const Discover = () => {
                     <Sparkles className="h-4 w-4" />
                     Prompts
                   </TabsTrigger>
-                  <TabsTrigger value="kits" className="gap-2 whitespace-nowrap">
-                    <Package className="h-4 w-4" />
-                    Prompt Kits
-                  </TabsTrigger>
                   <TabsTrigger
                     value="skills"
                     className="gap-2 whitespace-nowrap"
@@ -207,6 +205,10 @@ const Discover = () => {
                   >
                     <Workflow className="h-4 w-4" />
                     Workflows
+                  </TabsTrigger>
+                  <TabsTrigger value="kits" className="gap-2 whitespace-nowrap">
+                    <Package className="h-4 w-4" />
+                    Prompt Kits
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -252,7 +254,7 @@ const Discover = () => {
                 </div>
                 {tabToolbar(!!debouncedKitSearch.trim())}
                 {kitsLoading ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                       <div
                         key={i}
@@ -265,7 +267,7 @@ const Discover = () => {
                     ))}
                   </div>
                 ) : visibleKits.length > 0 ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {visibleKits.map((kit) => (
                       <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />
                     ))}
@@ -296,11 +298,17 @@ const Discover = () => {
                           }
                         : tagFilter
                           ? { label: "Clear tag", onClick: clearTag }
-                          : {
-                              label: "Create a Prompt Kit",
-                              to: "/prompt-kits/new",
-                              icon: Sparkles,
-                            }
+                          : user
+                            ? {
+                                label: "Create a Prompt Kit",
+                                to: "/prompt-kits/new",
+                                icon: Sparkles,
+                              }
+                            : {
+                                label: "Sign up to create a kit",
+                                to: "/auth?tab=signup",
+                                icon: Sparkles,
+                              }
                     }
                   />
                 )}
@@ -322,7 +330,7 @@ const Discover = () => {
                 </div>
                 {tabToolbar(!!debouncedSkillSearch.trim())}
                 {skillsLoading ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                       <div
                         key={i}
@@ -335,7 +343,7 @@ const Discover = () => {
                     ))}
                   </div>
                 ) : visibleSkills.length > 0 ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {visibleSkills.map((skill) => (
                       <SkillCard key={skill.id} skill={skill} showAuthorInfo />
                     ))}
@@ -366,11 +374,17 @@ const Discover = () => {
                           }
                         : tagFilter
                           ? { label: "Clear tag", onClick: clearTag }
-                          : {
-                              label: "Create a Skill",
-                              to: "/skills/new",
-                              icon: Sparkles,
-                            }
+                          : user
+                            ? {
+                                label: "Create a Skill",
+                                to: "/skills/new",
+                                icon: Sparkles,
+                              }
+                            : {
+                                label: "Sign up to create a skill",
+                                to: "/auth?tab=signup",
+                                icon: Sparkles,
+                              }
                     }
                   />
                 )}
@@ -392,7 +406,7 @@ const Discover = () => {
                 </div>
                 {tabToolbar(!!debouncedWorkflowSearch.trim())}
                 {workflowsLoading ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                       <div
                         key={i}
@@ -405,7 +419,7 @@ const Discover = () => {
                     ))}
                   </div>
                 ) : visibleWorkflows.length > 0 ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {visibleWorkflows.map((workflow) => (
                       <WorkflowCard
                         key={workflow.id}
@@ -440,11 +454,17 @@ const Discover = () => {
                           }
                         : tagFilter
                           ? { label: "Clear tag", onClick: clearTag }
-                          : {
-                              label: "Create a Workflow",
-                              to: "/workflows/new",
-                              icon: Sparkles,
-                            }
+                          : user
+                            ? {
+                                label: "Create a Workflow",
+                                to: "/workflows/new",
+                                icon: Sparkles,
+                              }
+                            : {
+                                label: "Sign up to create a workflow",
+                                to: "/auth?tab=signup",
+                                icon: Sparkles,
+                              }
                     }
                   />
                 )}

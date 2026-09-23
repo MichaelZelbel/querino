@@ -15,7 +15,6 @@ import {
   Globe,
   Twitter,
   Github,
-  UserPlus,
   Sparkles,
   BookOpen,
   Workflow,
@@ -24,6 +23,29 @@ import {
 import type { Prompt } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { Workflow as WorkflowType } from "@/types/workflow";
+
+/** How many artifacts of each kind a profile page shows. */
+const PROFILE_LIST_LIMIT = 60;
+
+// What PromptCard / SkillCard / WorkflowCard and their clone buttons read.
+const PROMPT_CARD_COLUMNS =
+  "id, slug, title, description, summary, content, category, tags, language, example_output, author_id, team_id, is_public, rating_avg, rating_count, copies_count, created_at, updated_at, menerio_synced, menerio_synced_at";
+const SKILL_CARD_COLUMNS =
+  "id, slug, title, description, content, category, tags, language, author_id, team_id, published, rating_avg, rating_count, created_at, updated_at, menerio_synced, menerio_synced_at";
+const WORKFLOW_CARD_COLUMNS =
+  "id, slug, title, description, content, json, category, tags, language, author_id, team_id, published, rating_avg, rating_count, created_at, updated_at, menerio_synced, menerio_synced_at";
+
+function MoreNote({ kind }: { kind: string }) {
+  return (
+    <p className="mt-6 text-center text-sm text-muted-foreground">
+      Showing the {PROFILE_LIST_LIMIT} newest {kind}. Find the rest on{" "}
+      <Link to="/discover" className="text-primary hover:underline">
+        Discover
+      </Link>
+      .
+    </p>
+  );
+}
 
 interface PublicProfile {
   id: string;
@@ -45,6 +67,12 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState("prompts");
+  // Which lists were cut at PROFILE_LIST_LIMIT.
+  const [truncated, setTruncated] = useState({
+    prompts: false,
+    skills: false,
+    workflows: false,
+  });
 
   useEffect(() => {
     async function fetchProfile() {
@@ -74,36 +102,51 @@ export default function UserProfile() {
 
         setProfile(profileData);
 
-        // Fetch published prompts, skills, workflows in parallel
+        // Fetch published prompts, skills, workflows in parallel. Only the
+        // columns the cards (and their clone buttons) read: select("*") also
+        // downloaded every row's embedding vector and search index, with no
+        // limit. One row past the limit is asked for to know there are more.
         const [promptsRes, skillsRes, workflowsRes] = await Promise.all([
           supabase
             .from("prompts")
-            .select("*")
+            .select(PROMPT_CARD_COLUMNS)
             .eq("author_id", profileData.id)
             .eq("is_public", true)
-            .order("created_at", { ascending: false }),
+            .order("created_at", { ascending: false })
+            .limit(PROFILE_LIST_LIMIT + 1),
           supabase
             .from("skills")
-            .select("*")
+            .select(SKILL_CARD_COLUMNS)
             .eq("author_id", profileData.id)
             .eq("published", true)
-            .order("created_at", { ascending: false }) as any,
+            .order("created_at", { ascending: false })
+            .limit(PROFILE_LIST_LIMIT + 1) as any,
           supabase
             .from("workflows")
-            .select("*")
+            .select(WORKFLOW_CARD_COLUMNS)
             .eq("author_id", profileData.id)
             .eq("published", true)
-            .order("created_at", { ascending: false }) as any,
+            .order("created_at", { ascending: false })
+            .limit(PROFILE_LIST_LIMIT + 1) as any,
         ]);
+
+        const promptRows = promptsRes.data ?? [];
+        const skillRows = skillsRes.data ?? [];
+        const workflowRows = workflowsRes.data ?? [];
+        setTruncated({
+          prompts: promptRows.length > PROFILE_LIST_LIMIT,
+          skills: skillRows.length > PROFILE_LIST_LIMIT,
+          workflows: workflowRows.length > PROFILE_LIST_LIMIT,
+        });
 
         // The Prompt type promises non-null slug, ratings, counts, is_public and
         // created_at; the prompts table allows NULL on all six. Widening Prompt to
         // match costs 25 further strict errors and a product decision about what a
         // prompt without a slug should render, so it is recorded as a migration risk
         // rather than decided here. See migration/migration-risks.md.
-        setPrompts((promptsRes.data ?? []) as Prompt[]);
-        setSkills(skillsRes.data || []);
-        setWorkflows(workflowsRes.data || []);
+        setPrompts(promptRows.slice(0, PROFILE_LIST_LIMIT) as Prompt[]);
+        setSkills(skillRows.slice(0, PROFILE_LIST_LIMIT));
+        setWorkflows(workflowRows.slice(0, PROFILE_LIST_LIMIT));
       } catch (err) {
         console.error("Error fetching profile:", err);
         setNotFound(true);
@@ -245,10 +288,6 @@ export default function UserProfile() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2" disabled>
-                <UserPlus className="h-4 w-4" />
-                Follow (coming soon)
-              </Button>
               <Link to={`/u/${encodeURIComponent(username || "")}/activity`}>
                 <Button variant="outline" className="gap-2">
                   <Activity className="h-4 w-4" />
@@ -267,15 +306,18 @@ export default function UserProfile() {
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="prompts" className="gap-2">
                 <Sparkles className="h-4 w-4" />
-                Prompts ({prompts.length})
+                Prompts ({prompts.length}
+                {truncated.prompts ? "+" : ""})
               </TabsTrigger>
               <TabsTrigger value="skills" className="gap-2">
                 <BookOpen className="h-4 w-4" />
-                Skills ({skills.length})
+                Skills ({skills.length}
+                {truncated.skills ? "+" : ""})
               </TabsTrigger>
               <TabsTrigger value="workflows" className="gap-2">
                 <Workflow className="h-4 w-4" />
-                Workflows ({workflows.length})
+                Workflows ({workflows.length}
+                {truncated.workflows ? "+" : ""})
               </TabsTrigger>
             </TabsList>
 
@@ -299,6 +341,7 @@ export default function UserProfile() {
                   ))}
                 </div>
               )}
+              {truncated.prompts && <MoreNote kind="prompts" />}
             </TabsContent>
 
             <TabsContent value="skills">
@@ -320,6 +363,7 @@ export default function UserProfile() {
                   ))}
                 </div>
               )}
+              {truncated.skills && <MoreNote kind="skills" />}
             </TabsContent>
 
             <TabsContent value="workflows">
@@ -341,6 +385,7 @@ export default function UserProfile() {
                   ))}
                 </div>
               )}
+              {truncated.workflows && <MoreNote kind="workflows" />}
             </TabsContent>
           </Tabs>
         </div>

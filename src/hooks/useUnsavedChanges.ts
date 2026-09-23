@@ -72,7 +72,12 @@ export function useUnsavedChanges<T>({
     // pages call navigate() straight after markSaved (a delete, a publish, a
     // slug rename), and the stale ref made the "unsaved changes" confirm fire
     // on a form that had just been saved.
-    dirtyRef.current = baselineRef.current !== snapshot(dataRef.current);
+    // Not "baseline !== current data": pages call setFormData(loaded) and then
+    // markSaved(loaded) in the same tick, when dataRef still holds the previous
+    // render's form, and that comparison left every freshly loaded editor
+    // flagged dirty. What was just saved is by definition not unsaved; the
+    // next render recomputes isDirty against the new baseline below.
+    dirtyRef.current = false;
     setSavedAt(new Date());
     force((n) => n + 1);
   }, []);
@@ -88,9 +93,9 @@ export function useUnsavedChanges<T>({
     savingRef.current = isSaving;
   }, [isSaving]);
 
-  useEffect(() => {
-    dirtyRef.current = isDirty;
-  }, [isDirty]);
+  // Synced during render, not in an effect keyed on isDirty: when markSaved
+  // cleared the ref but isDirty was already false, that effect never re-ran.
+  dirtyRef.current = isDirty;
 
   // Cmd/Ctrl+S shortcut
   useEffect(() => {

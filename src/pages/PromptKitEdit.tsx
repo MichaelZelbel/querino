@@ -98,11 +98,16 @@ export default function PromptKitEdit() {
   const [loading, setLoading] = useState(true);
   const [kit, setKit] = useState<PromptKit | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  // prompt_kit_versions and update_prompt_kit_slug are author-only, so team
+  // editors get the editor without the features they could not use.
+  const isArtifactAuthor = !!user && kit?.author_id === user.id;
   const [currentSlug, setCurrentSlug] = useState<string>("");
   const [showCoachSheet, setShowCoachSheet] = useState(false);
 
   // AI undo state
   const [previousContent, setPreviousContent] = useState<string | null>(null);
+  // Read by Undo, so a toast's Undo sees the content from apply time.
+  const previousContentRef = useRef<string | null>(null);
 
   // AI metadata suggestion state
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
@@ -232,16 +237,20 @@ export default function PromptKitEdit() {
   };
 
   const handleApplyAIContent = (content: string) => {
+    // The coach calls the handler from the latest render, so this is the
+    // editor text at apply time, including anything typed during the request.
+    previousContentRef.current = formData.content;
     setPreviousContent(formData.content);
     setFormData((f) => ({ ...f, content }));
   };
 
   const handleUndoAI = () => {
-    if (previousContent !== null) {
-      setFormData((f) => ({ ...f, content: previousContent }));
-      setPreviousContent(null);
-      toast.success("Reverted last AI change");
-    }
+    const restore = previousContentRef.current;
+    if (restore === null) return;
+    previousContentRef.current = null;
+    setFormData((f) => ({ ...f, content: restore }));
+    setPreviousContent(null);
+    toast.success("Reverted last AI change");
   };
 
   const handleSuggestMetadata = async () => {
@@ -345,7 +354,7 @@ export default function PromptKitEdit() {
       // update has gone through. Inserting first left a phantom version behind
       // whenever the update failed. The snapshot is built from `kit`, which
       // still holds the pre-update values at this point.
-      if (contentChanged) {
+      if (contentChanged && isArtifactAuthor) {
         const { data: latest } = await (
           supabase.from("prompt_kit_versions") as any
         )
@@ -469,14 +478,16 @@ export default function PromptKitEdit() {
                   </SheetContent>
                 </Sheet>
               )}
-              <Button
-                variant="outline"
-                onClick={() => setVersionHistoryOpen(true)}
-                className="gap-2"
-              >
-                <History className="h-4 w-4" />
-                History
-              </Button>
+              {isArtifactAuthor && (
+                <Button
+                  variant="outline"
+                  onClick={() => setVersionHistoryOpen(true)}
+                  className="gap-2"
+                >
+                  <History className="h-4 w-4" />
+                  History
+                </Button>
+              )}
               <SaveStateBadge
                 isDirty={isDirty}
                 isSaving={isSubmitting}
@@ -687,7 +698,7 @@ export default function PromptKitEdit() {
                     onChange={(v) => setFormData({ ...formData, language: v })}
                   />
 
-                  {currentSlug && user && (
+                  {currentSlug && isArtifactAuthor && (
                     <PromptKitSlugEditor
                       promptKitId={kitId!}
                       currentSlug={currentSlug}
@@ -768,7 +779,7 @@ export default function PromptKitEdit() {
       </main>
       <Footer />
 
-      {kitId && (
+      {kitId && isArtifactAuthor && (
         <PromptKitVersionHistoryPanel
           open={versionHistoryOpen}
           onOpenChange={setVersionHistoryOpen}

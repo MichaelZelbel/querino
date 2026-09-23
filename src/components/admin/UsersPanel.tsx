@@ -388,15 +388,29 @@ export function UsersPanel() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {/* An admin cannot change their own role: demoting
+                            yourself locks you out of this panel, and only
+                            another admin could undo it. The title sits on a
+                            wrapper because a disabled control shows none. */}
                         <Select
                           value={getUserRole(u.id)}
+                          disabled={u.id === user?.id}
                           onValueChange={(value) =>
                             handleRoleChange(u.id, value as AppRole)
                           }
                         >
-                          <SelectTrigger className="w-36">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <span
+                            className="inline-block"
+                            title={
+                              u.id === user?.id
+                                ? "You cannot change your own role. Ask another admin."
+                                : undefined
+                            }
+                          >
+                            <SelectTrigger className="w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </span>
                           <SelectContent>
                             <SelectItem value="free">free</SelectItem>
                             <SelectItem value="premium">premium</SelectItem>
