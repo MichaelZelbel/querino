@@ -8,7 +8,7 @@ Verified against the code:
 |---|---|---|
 | Legacy UUID artifact URLs | 8 of 11 (`/prompts/<uuid>`, `/skills/<uuid>`, `/workflows/<uuid>`) | **Real, fixable loss.** `PromptDetail`/`SkillDetail`/`WorkflowDetail` look the record up by `slug` only (`.eq("slug", slug)`), then fall back to the `*_slug_redirects` table. A UUID matches neither, so the page renders the "not found" branch — which we recently gave `noIndex`. These artifacts still exist; Google just can't reach them anymore and the accumulated link equity is being thrown away. |
 | `/pricing` | 1 | **Intentional.** We deleted the page on purpose. Nothing to fix. |
-| `/prompts/export-everything-an-ai-knows-about-you-godspeed-import` | 1 | Either deleted or renamed without a redirect row. Needs a one-off check. |
+| `/prompts/export-everything-an-ai-knows-about-you-mission-control-import` | 1 | Either deleted or renamed without a redirect row. Needs a one-off check. |
 | `/discover?tag=ide` | 1 | Facet URL with no server-rendered content. Intentional to leave out of the index. |
 
 So: the `noindex` half is working as designed, and the Soft 404 half is **one real bug** (UUID URLs no longer resolve) plus expected noise.
