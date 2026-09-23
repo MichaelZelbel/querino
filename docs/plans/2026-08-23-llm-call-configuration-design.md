@@ -399,7 +399,7 @@ Preset lists go stale as models ship and are retired. Three ways forward, in
 rising order of effort: fetch live from a provider's own catalogue (`GET
 https://openrouter.ai/api/v1/models` is public and returns 200 with no API key,
 tested 2026-08-23 by hand, from a terminal, never from the app); keep one shared
-table that Querino, Menerio and the hub all read; or a provisioning service both
+table that Querino, Menerio and Mission Control all read; or a provisioning service both
 apps call.
 
 The natural home is Querino itself, which is already the cross-app AI-artifacts

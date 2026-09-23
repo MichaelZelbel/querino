@@ -1,4 +1,4 @@
--- The three larger findings the 2026-09-16 audit left open (hub decision D-214).
+-- The three larger findings the 2026-09-16 audit left open (godspeed decision D-214).
 --
 -- 1. MODERATION NO LONGER DEPENDS ON THE CLIENT ASKING FOR IT.
 --

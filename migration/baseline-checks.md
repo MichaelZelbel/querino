@@ -42,14 +42,14 @@ exit=0
   290:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   293:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-C:\hub\dev\querino\supabase\functions\github-sync\index.ts
+C:\godspeed\dev\querino\supabase\functions\github-sync\index.ts
   772:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   785:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-C:\hub\dev\querino\supabase\functions\mcp-server\index.ts
+C:\godspeed\dev\querino\supabase\functions\mcp-server\index.ts
   1056:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-C:\hub\dev\querino\supabase\functions\process-menerio-sync-queue\index.ts
+C:\godspeed\dev\querino\supabase\functions\process-menerio-sync-queue\index.ts
   122:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   123:9   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   175:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -82,7 +82,7 @@ C:\hub\dev\querino\supabase\functions\process-menerio-sync-queue\index.ts
       105 |
       106 |     const rows = await sqlQuery<UsageRow>(
       107 |       `SELECT model, provider, metadata FROM llm_usage_events
-        at C:\hub\dev\querino\tests\security\19-a-call-site-uses-its-configured-model.spec.ts:104:80
+        at C:\godspeed\dev\querino\tests\security\19-a-call-site-uses-its-configured-model.spec.ts:104:80
 
   1 failed
     tests\security\19-a-call-site-uses-its-configured-model.spec.ts:62:3 › a call site uses its configured model › the ledger records the configured model, not the code default 

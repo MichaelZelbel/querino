@@ -2,7 +2,7 @@
 //
 // Querino already keeps the cross-application AI-artifacts registry, so it is
 // the natural place for one shared list of which models exist, what they cost
-// and which of them can call tools. Menerio, the hub and anything later read
+// and which of them can call tools. Menerio, Mission Control and anything later read
 // this rather than each keeping their own constant that goes stale in three
 // days, which is exactly what happened to Querino's own.
 //

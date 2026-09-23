@@ -66,7 +66,7 @@ ALTER TABLE public.llm_models ENABLE ROW LEVEL SECURITY;
 
 -- Readable by anyone, unlike every other table in this file's neighbourhood.
 -- This is a mirror of a catalogue OpenRouter already serves to the public with
--- no API key, so there is nothing here to protect, and the hub and Menerio are
+-- no API key, so there is nothing here to protect, and Mission Control and Menerio are
 -- meant to read it. Writes are service-role only: no INSERT, UPDATE or DELETE
 -- policy exists, so the anon key in every visitor's bundle can look and not
 -- touch.
@@ -79,7 +79,7 @@ CREATE POLICY "Anyone can read llm_models"
 COMMENT ON TABLE public.llm_models IS
   'Mirror of a provider''s public model catalogue, refreshed nightly by '
   'sync-llm-models. Deliberately world-readable: it is public data, and it is '
-  'the shared list Querino, Menerio and the hub read. Its real job is memory: '
+  'the shared list Querino, Menerio and Mission Control read. Its real job is memory: '
   'a retirement is only detectable by diffing today''s catalogue against this.';
 
 -- ---------------------------------------------------------------------------

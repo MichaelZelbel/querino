@@ -1,6 +1,6 @@
 # Bring the sitemap and the RSS feed into the app, then retire the Cloudflare rewrite
 
-Paste this whole file into a new Claude Code session in `c:\hub\dev\querino`.
+Paste this whole file into a new Claude Code session in `c:\godspeed\dev\querino`.
 
 You can do everything here yourself except one step in the Cloudflare dashboard, which is
 Michael's to click and comes last, after the app is already serving the replacement. Do

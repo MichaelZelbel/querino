@@ -1,5 +1,5 @@
 -- The smaller database findings the 2026-09-16 audit verified and left open
--- (hub decision D-214). Each section says what was wrong.
+-- (godspeed decision D-214). Each section says what was wrong.
 
 -- ---------------------------------------------------------------------------
 -- A. A renamed skill or workflow keeps its address.

@@ -1,7 +1,7 @@
 -- A CDN-served copy of the model catalogue.
 --
 -- The llm-models endpoint is open on purpose: it mirrors a catalogue OpenRouter
--- already serves to the public with no key, and Menerio and the hub are meant
+-- already serves to the public with no key, and Menerio and Mission Control are meant
 -- to read it. The obvious worry is somebody hammering it, and the plan was to
 -- answer that with Cache-Control so Cloudflare would serve repeat requests
 -- itself.

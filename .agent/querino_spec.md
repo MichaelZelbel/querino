@@ -314,7 +314,7 @@ In short: Querino should feel like a **creative studio for AI prompting**, not j
 
 * Age: 28-38  
 * Income: $70k-120k  
-* Location: Major Tech Hub Cities (e.g., Austin, Seattle, Berlin)  
+* Location: Major Tech Cities (e.g., Austin, Seattle, Berlin)  
 * Occupation: Freelance AI Content Creator, Digital Marketer, Mid-level UX Designer leveraging AI
 
 #### Key Insights
@@ -333,7 +333,7 @@ Struggles to organize a growing collection of prompts across various documents a
 
 * Age: 22-30  
 * Income: $50k-80k  
-* Location: University Towns, Entry-level Tech Hubs  
+* Location: University Towns, Entry-level Tech Centers  
 * Occupation: Junior Developer, Data Analyst, AI/ML Student, Tech Enthusiast Hobbyist
 
 #### Key Insights

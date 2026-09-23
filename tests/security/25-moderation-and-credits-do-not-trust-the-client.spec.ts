@@ -1,5 +1,5 @@
 // The two larger findings of the 2026-09-16 audit that a REST client could
-// walk around (hub decision D-214).
+// walk around (godspeed decision D-214).
 //
 // Moderation. The only way into moderation_review_queue was the
 // moderate-content edge function, called by the browser before it saved, and

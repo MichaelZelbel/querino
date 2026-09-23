@@ -1,5 +1,5 @@
 // The smaller findings of the 2026-09-16 audit that can be seen from outside
-// (hub decision D-214, migration 20260916150000). Each test names the hole it
+// (godspeed decision D-214, migration 20260916150000). Each test names the hole it
 // closes. Nothing here writes a row that survives the test.
 
 import { test, expect } from "@playwright/test";

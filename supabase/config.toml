@@ -53,7 +53,7 @@ verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; the Admin page bu
 verify_jwt = false  # serves /rss.xml and /sitemap.xml; feed readers and crawlers send no headers
 
 [functions.llm-models]
-verify_jwt = false  # the shared model catalogue; public data, read by Menerio and the hub with no credential
+verify_jwt = false  # the shared model catalogue; public data, read by Menerio and Mission Control with no credential
 
 [functions.blog-api]
 verify_jwt = false  # public blog REST for external clients
