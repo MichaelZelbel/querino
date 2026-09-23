@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCallerUserId } from "../_shared/llm.ts";
 import { readMenerioApiKey } from "../_shared/menerioKey.ts";
+import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,9 +65,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate callback URL: must be https. Host is allowlisted below against
-    // the user's stored Menerio base URL so an attacker cannot exfiltrate the
-    // API key to an arbitrary domain even if they know the victim's user_id.
+    // Validate callback URL: must be https. Its host is allowlisted below
+    // against the one Menerio host, so the API key cannot be sent anywhere
+    // else.
     let callbackUrl: URL;
     try {
       callbackUrl = new URL(menerio_callback);
@@ -126,26 +127,43 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Allowlist check: callback host must match the user's registered Menerio base URL
+    // Allowlist check. menerio_base_url is user-writable through PostgREST,
+    // so matching the callback against it alone let anyone point both at a
+    // host of their choosing and receive their own API key there, or make
+    // this function POST to any address from inside the Supabase network.
+    // The stored address is first checked against the one Menerio host
+    // (_shared/menerioUrl.ts), and the callback must be on exactly that
+    // host, with no credentials and no port.
+    let allowedHost: string;
     try {
-      const baseUrl = new URL(integration.menerio_base_url);
-      if (baseUrl.host !== callbackUrl.host) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "menerio_callback host does not match registered Menerio base URL",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-    } catch {
+      allowedHost = new URL(assertMenerioBaseUrl(integration.menerio_base_url))
+        .host;
+    } catch (urlErr) {
+      console.warn(
+        `menerio-link-callback: ${urlErr instanceof Error ? urlErr.message : urlErr}`,
+      );
       return new Response(
-        JSON.stringify({ error: "Stored Menerio base URL is invalid" }),
+        JSON.stringify({
+          error: "The Menerio address on this account is not allowed",
+        }),
         {
-          status: 500,
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    if (
+      callbackUrl.host !== allowedHost ||
+      callbackUrl.username !== "" ||
+      callbackUrl.password !== ""
+    ) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "menerio_callback host does not match registered Menerio base URL",
+        }),
+        {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
@@ -187,31 +205,53 @@ Deno.serve(async (req) => {
     const PUBLIC_SITE_URL =
       Deno.env.get("PUBLIC_SITE_URL") || "https://querino.lovable.app";
 
-    // Call back to Menerio to create the bidirectional link
-    const callbackRes = await fetch(menerio_callback, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": menerioApiKey,
-      },
-      body: JSON.stringify({
-        menerio_note_id,
-        app_name: "querino",
-        external_id: prompt_id,
-        external_url: `${PUBLIC_SITE_URL}/prompts/${prompt_slug || prompt_id}`,
-        entity_type: "prompt",
-      }),
-    });
+    // Call back to Menerio to create the bidirectional link. The checked URL
+    // is what is fetched, not the raw string. A redirect is not followed: it
+    // would carry the API key to wherever Menerio's answer pointed. A Menerio
+    // that does not answer in 15 s fails the request instead of holding it.
+    let callbackRes: Response;
+    try {
+      callbackRes = await fetch(callbackUrl.href, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": menerioApiKey,
+        },
+        body: JSON.stringify({
+          menerio_note_id,
+          app_name: "querino",
+          external_id: prompt_id,
+          external_url: `${PUBLIC_SITE_URL}/prompts/${prompt_slug || prompt_id}`,
+          entity_type: "prompt",
+        }),
+        redirect: "manual",
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (fetchErr) {
+      console.error("Menerio callback request failed:", fetchErr);
+      return new Response(
+        JSON.stringify({ error: "Menerio callback failed" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    const callbackBody = await callbackRes.text();
-    console.log("Menerio callback response:", callbackRes.status, callbackBody);
+    // The body is logged, shortened, and never handed to the client: the
+    // response of a remote host is not this function's to relay.
+    const callbackBody = await callbackRes.text().catch(() => "");
+    console.log(
+      "Menerio callback response:",
+      callbackRes.status,
+      callbackBody.slice(0, 500),
+    );
 
     if (!callbackRes.ok) {
       return new Response(
         JSON.stringify({
           error: "Menerio callback failed",
           status: callbackRes.status,
-          body: callbackBody,
         }),
         {
           status: 502,

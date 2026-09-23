@@ -15,6 +15,14 @@ import { readMenerioApiKey } from "../_shared/menerioKey.ts";
 // connection held the whole tick.
 const MENERIO_TIMEOUT_MS = 15_000;
 
+// The platform kills a function at 150 s, and ten rows that each wait out the
+// 15 s timeout (plus the reads around it) can come close. A killed tick left
+// its rows in 'processing', and the stale re-claim then counted a failure for
+// each one that was never tried. After this many milliseconds no new row is
+// started; the rest go back to 'pending' or 'delete_pending' with their
+// retry_count as it was.
+const TICK_DEADLINE_MS = 100_000;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -25,6 +33,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // The tick's clock starts with the request, before anything is claimed.
+  const startedAt = Date.now();
 
   // Machine-only. Before this check, anyone could force a sync on demand.
   const denied = await requireMachineCaller(req, corsHeaders);
@@ -59,16 +70,28 @@ Deno.serve(async (req) => {
 
     let processed = 0;
     let failed = 0;
+    let released = 0;
 
     // 2. Process each claimed entry
-    for (const item of queue) {
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      if (Date.now() - startedAt > TICK_DEADLINE_MS) {
+        const rest = queue.slice(i);
+        await releaseUnstarted(adminClient, rest);
+        released = rest.length;
+        console.warn(
+          `Tick deadline reached; released ${rest.length} unstarted row(s)`,
+        );
+        break;
+      }
       try {
         // Check the user has an active menerio integration. A read error is
         // thrown, not treated as "no integration": until 2026-09-16 a
         // transient database failure here marked the row completed with
         // "skipped", and the artifact was never sent. Thrown, it lands in
         // failed, and claim_menerio_sync_queue hands it back after a backoff
-        // (1, 2, 4, 8, 16 minutes) until it has failed five times. Until
+        // of 1, 2, 4 and 8 minutes, until it has failed five times (the fifth
+        // failure is the last; its 16-minute wait is never used). Until
         // 2026-09-23 the claim never looked at failed rows, so "gets another
         // turn" was only true on paper.
         const { data: integration, error: integrationErr } = await adminClient
@@ -195,7 +218,7 @@ Deno.serve(async (req) => {
       .eq("status", "completed")
       .lt("processed_at", cutoff);
 
-    return json({ processed, failed, total: queue.length });
+    return json({ processed, failed, released, total: queue.length });
   } catch (err) {
     console.error("process-menerio-sync-queue error:", err);
     return json(
@@ -455,6 +478,60 @@ function buildBody(type: string, a: Record<string, unknown>): string {
   }
 
   return lines.join("\n");
+}
+
+// Rows a tick claimed but never started go back to where the claim took them
+// from: the claim hands each one back as 'pending' or 'delete_pending', so
+// that is the status it gets. retry_count is left alone, because nothing was
+// tried. Only rows still in a processing state are touched, in case the stale
+// window already gave one to another tick.
+async function releaseUnstarted(
+  client: unknown,
+  items: Array<{ id: string; status: string }>,
+) {
+  // The same typing gap as callRpc: without the Database type supabase-js
+  // types the update argument as `never`, so the chain is named here.
+  const queueTable = () =>
+    (client as ReturnType<typeof createClient>).from(
+      "menerio_sync_queue",
+    ) as unknown as {
+      update(values: Record<string, unknown>): {
+        in(
+          column: string,
+          values: string[],
+        ): {
+          eq(
+            column: string,
+            value: string,
+          ): PromiseLike<{ error: { message: string } | null }>;
+        };
+      };
+    };
+  const groups: Array<[string, string, string[]]> = [
+    [
+      "pending",
+      "processing",
+      items.filter((r) => r.status !== "delete_pending").map((r) => r.id),
+    ],
+    [
+      "delete_pending",
+      "delete_processing",
+      items.filter((r) => r.status === "delete_pending").map((r) => r.id),
+    ],
+  ];
+  for (const [status, claimedAs, ids] of groups) {
+    if (ids.length === 0) continue;
+    const { error } = await queueTable()
+      .update({ status, claimed_at: null })
+      .in("id", ids)
+      .eq("status", claimedAs);
+    if (error) {
+      console.error(
+        `releasing ${ids.length} queue row(s) failed:`,
+        error.message,
+      );
+    }
+  }
 }
 
 async function markCompleted(client: unknown, id: string, note: string) {

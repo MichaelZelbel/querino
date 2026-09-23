@@ -2,7 +2,7 @@
 // Processes pending entries in github_sync_queue and pushes/deletes files
 // in the owner's GitHub repository (personal or team) via the Contents API.
 //
-// Triggered by pg_cron every ~30s. Machine-only: it opens a service-role
+// Triggered by pg_cron every 2 minutes. Machine-only: it opens a service-role
 // client and pushes users' artifacts with their stored GitHub tokens, so the
 // caller has to prove it is one of our jobs (see _shared/internalAuth.ts).
 
@@ -50,6 +50,14 @@ const MAX_ATTEMPTS = 3;
 // platform killed the isolate, and every row it had claimed sat in
 // 'processing' until the stale window let it go.
 const GITHUB_TIMEOUT_MS = 15_000;
+// The platform kills a function at 150 s. A batch of 25 jobs that each wait
+// out a few 15 s timeouts can run far past that, and every row the killed
+// tick still held came back later with an attempt counted that never
+// happened. After this many milliseconds no new job is started; the rows not
+// yet begun go back to 'pending' with their attempt handed back. One job
+// already running can still take several GitHub calls, which is what the
+// remaining 50 s are for.
+const TICK_DEADLINE_MS = 100_000;
 
 type Operation = "upsert" | "delete";
 
@@ -352,29 +360,92 @@ async function loadGitHubSettings(
 
 // ---------------- Artifact loading ----------------
 
+// Returns null only when the artifact really is gone. A failed read throws:
+// until 2026-09-23 the error was dropped, a transient database failure looked
+// like "not found", and the cleanup branch deleted the user's file from GitHub.
 async function loadArtifact(
   supabase: ReturnType<typeof createClient>,
   type: ArtifactType,
   id: string,
 ): Promise<Record<string, any> | null> {
   const table = TABLE_FOR_TYPE[type];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from(table)
     .select("*")
     .eq("id", id)
     .maybeSingle();
+  if (error) throw new Error(`reading ${table} ${id}: ${error.message}`);
   return (data as Record<string, any> | null) ?? null;
+}
+
+// The recorded file of one artifact in one target, or null when there is
+// none. A failed read throws for the same reason as loadArtifact: "no record"
+// and "could not read the record" lead to different writes on GitHub.
+async function loadSyncState(
+  supabase: ReturnType<typeof createClient>,
+  job: QueueRow,
+  settings: GitHubSettings,
+): Promise<{ path: string | null; sha: string | null } | null> {
+  const { data, error } = await supabase
+    .from("github_sync_state")
+    .select("path, sha")
+    .eq("artifact_type", job.artifact_type)
+    .eq("artifact_id", job.artifact_id)
+    .eq("target_scope", settings.scope)
+    .eq("target_id", settings.target_id)
+    .maybeSingle();
+  if (error) throw new Error(`reading github_sync_state: ${error.message}`);
+  return (data as { path: string | null; sha: string | null } | null) ?? null;
+}
+
+// Rows claimed by a tick that ran out of time go back to 'pending' untouched:
+// the claim counted an attempt for each, and none was made, so it is handed
+// back. Only rows still in 'processing' are touched, in case the stale window
+// already gave one to another tick.
+async function releaseUnstarted(
+  supabase: ReturnType<typeof createClient>,
+  jobs: QueueRow[],
+): Promise<void> {
+  for (const job of jobs) {
+    const { error } = await supabase
+      .from("github_sync_queue")
+      .update({
+        status: "pending",
+        attempts: Math.max(job.attempts - 1, 0),
+        claimed_at: null,
+      })
+      .eq("id", job.id)
+      .eq("status", "processing");
+    if (error) {
+      console.error(`releasing queue row ${job.id} failed:`, error.message);
+    }
+  }
+}
+
+// Queue order, and within the same instant an upsert before a delete. When an
+// artifact moves to another owner, the trigger queues a delete for the old
+// target and an upsert for the new one in the same statement, so both carry
+// the same created_at. If the delete ran first and both targets use the same
+// repository path, it removed the file before the upsert recorded it as the
+// new owner's, and the "leave the file alone" check below never saw it.
+function queueOrder(a: QueueRow, b: QueueRow): number {
+  const byTime = Date.parse(a.created_at) - Date.parse(b.created_at);
+  if (byTime !== 0) return byTime;
+  if (a.operation !== b.operation) return a.operation === "upsert" ? -1 : 1;
+  return 0;
 }
 
 // ---------------- Main worker ----------------
 
 async function processQueue(
   supabase: ReturnType<typeof createClient>,
+  startedAt: number,
 ): Promise<{
   processed: number;
   done: number;
   failed: number;
   skipped: number;
+  released: number;
 }> {
   // One SQL call claims the batch: it flips the rows to 'processing', bumps
   // attempts and stamps claimed_at inside a single statement with
@@ -392,7 +463,7 @@ async function processQueue(
 
   if (fetchErr) throw new Error(`Failed to claim queue: ${fetchErr.message}`);
   if (!claimed || claimed.length === 0) {
-    return { processed: 0, done: 0, failed: 0, skipped: 0 };
+    return { processed: 0, done: 0, failed: 0, skipped: 0, released: 0 };
   }
 
   // "Newest row wins" needs the rows in queue order, and the claim's
@@ -402,9 +473,7 @@ async function processQueue(
   // The key includes the target (the team, or the user when there is no
   // team): when an artifact moves between owners the trigger queues a delete
   // for the old target and an upsert for the new one, and both have to run.
-  const ordered = [...claimed].sort(
-    (a, b) => Date.parse(a.created_at) - Date.parse(b.created_at),
-  );
+  const ordered = [...claimed].sort(queueOrder);
   const latestByArtifact = new Map<string, QueueRow>();
   const supersededIds: string[] = [];
   for (const row of ordered) {
@@ -430,10 +499,26 @@ async function processQueue(
   let done = 0;
   let failed = 0;
   let skipped = 0;
+  let released = 0;
+
+  // The Map keeps the order in which each key was first seen, and a key's
+  // newest row can be later than another key's; the jobs are sorted again so
+  // they run in queue order with the upsert-before-delete tie-break.
+  const jobs = [...latestByArtifact.values()].sort(queueOrder);
 
   // The claim already marked every row 'processing' and counted the attempt,
   // so there is nothing to write before starting on a job.
-  for (const job of latestByArtifact.values()) {
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
+    if (Date.now() - startedAt > TICK_DEADLINE_MS) {
+      const rest = jobs.slice(i);
+      await releaseUnstarted(supabase, rest);
+      released = rest.length;
+      console.warn(
+        `Tick deadline reached; released ${rest.length} unstarted row(s)`,
+      );
+      break;
+    }
     try {
       const settings = await loadGitHubSettings(
         supabase,
@@ -454,17 +539,10 @@ async function processQueue(
       }
 
       if (job.operation === "delete") {
-        const { data: state } = await supabase
-          .from("github_sync_state")
-          .select("path, sha")
-          .eq("artifact_type", job.artifact_type)
-          .eq("artifact_id", job.artifact_id)
-          .eq("target_scope", settings.scope)
-          .eq("target_id", settings.target_id)
-          .maybeSingle();
+        const state = await loadSyncState(supabase, job, settings);
 
-        let path = state?.path as string | undefined;
-        let sha = state?.sha as string | undefined;
+        let path = state?.path ?? undefined;
+        let sha = state?.sha ?? undefined;
 
         if (!path) {
           const slug = (job.payload?.slug as string | undefined) ?? null;
@@ -481,27 +559,34 @@ async function processQueue(
         // path and the new one are the same file. If the new owner's upsert
         // already recorded it, deleting here would remove the artifact from
         // GitHub altogether, so the file is left alone.
+        //
+        // GitHub treats "Owner/Repo" and "owner/repo" as the same repository,
+        // and the two settings pages store whatever was typed, so the
+        // repository is compared case-insensitively here rather than with an
+        // exact match in the query.
         if (path) {
           const { data: others, error: othersErr } = await supabase
             .from("github_sync_state")
-            .select("target_scope, target_id")
+            .select("target_scope, target_id, repo")
             .eq("artifact_type", job.artifact_type)
             .eq("artifact_id", job.artifact_id)
-            .eq("repo", settings.repo)
             .eq("branch", settings.branch)
             .eq("path", path);
           if (othersErr) {
             throw new Error(`reading github_sync_state: ${othersErr.message}`);
           }
+          const repo = settings.repo.toLowerCase();
           const heldByAnotherOwner = (
             (others ?? []) as Array<{
               target_scope: string;
               target_id: string;
+              repo: string | null;
             }>
           ).some(
             (o) =>
-              o.target_scope !== settings.scope ||
-              o.target_id !== settings.target_id,
+              (o.repo ?? "").toLowerCase() === repo &&
+              (o.target_scope !== settings.scope ||
+                o.target_id !== settings.target_id),
           );
           if (heldByAnotherOwner) path = undefined;
         }
@@ -550,14 +635,7 @@ async function processQueue(
         job.artifact_id,
       );
       if (!artifact) {
-        const { data: state } = await supabase
-          .from("github_sync_state")
-          .select("path, sha")
-          .eq("artifact_type", job.artifact_type)
-          .eq("artifact_id", job.artifact_id)
-          .eq("target_scope", settings.scope)
-          .eq("target_id", settings.target_id)
-          .maybeSingle();
+        const state = await loadSyncState(supabase, job, settings);
         if (state?.path && state?.sha) {
           await ghDeleteFileFresh(
             settings.repo,
@@ -611,14 +689,7 @@ async function processQueue(
       });
       const markdown = generateMarkdown(job.artifact_type, artifact);
 
-      const { data: oldState } = await supabase
-        .from("github_sync_state")
-        .select("path, sha")
-        .eq("artifact_type", job.artifact_type)
-        .eq("artifact_id", job.artifact_id)
-        .eq("target_scope", settings.scope)
-        .eq("target_id", settings.target_id)
-        .maybeSingle();
+      const oldState = await loadSyncState(supabase, job, settings);
 
       if (oldState?.path && oldState.path !== newPath && oldState.sha) {
         try {
@@ -687,22 +758,38 @@ async function processQueue(
       console.error(`Job ${job.id} failed:`, message);
       // job.attempts is the value after the claim incremented it, so it is
       // this attempt's number, not the previous one's.
-      await supabase
+      //
+      // A retry waits 2^attempts minutes (2, then 4); claim_github_sync_queue
+      // skips a row until its next_attempt_at has passed. Until 2026-09-23 a
+      // failed row was handed straight back at the next tick, so a GitHub
+      // outage of a few minutes used all three attempts.
+      const nextAttemptAt = new Date(
+        Date.now() + 2 ** Math.min(job.attempts, 10) * 60_000,
+      ).toISOString();
+      const { error: failErr } = await supabase
         .from("github_sync_queue")
         .update({
           status: job.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
           last_error: message.slice(0, 500),
+          next_attempt_at: nextAttemptAt,
         })
         .eq("id", job.id);
+      if (failErr) {
+        console.error(
+          `recording the failure of queue row ${job.id} failed:`,
+          failErr.message,
+        );
+      }
       failed++;
     }
   }
 
   return {
-    processed: latestByArtifact.size,
+    processed: latestByArtifact.size - released,
     done,
     failed,
     skipped,
+    released,
   };
 }
 
@@ -710,6 +797,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // The tick's clock starts with the request, before anything is claimed.
+  const startedAt = Date.now();
 
   // Machine-only. Before this check, anyone could drain the queue on demand.
   const denied = await requireMachineCaller(req, corsHeaders);
@@ -720,7 +810,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const result = await processQueue(supabase);
+    const result = await processQueue(supabase, startedAt);
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

@@ -15,6 +15,18 @@ import {
   modeInstructions,
 } from "../_shared/prompts/canvas-ai.ts";
 
+const ALLOWED_MODES: ReadonlySet<string> = new Set([
+  "chat_only",
+  "collab_edit",
+  "rewrite",
+]);
+const ALLOWED_ARTIFACT_TYPES: ReadonlySet<string> = new Set([
+  "prompt",
+  "skill",
+  "workflow",
+  "prompt_kit",
+]);
+
 /**
  * The prompt this call site sends when nobody has overridden it.
  *
@@ -84,16 +96,51 @@ serve(async (req) => {
       );
     }
 
+    // mode and artifactType are written into the system prompt verbatim, so
+    // anything but the known values is refused: until 2026-09-23 a caller
+    // could put any text there and it reached the model as instructions.
+    // The values are the ones src/lib/runCanvasAI.ts declares. A missing one
+    // keeps its old default.
+    const requestedMode: unknown = mode || "chat_only";
+    const requestedType: unknown = artifactType || "prompt";
+    if (
+      typeof requestedMode !== "string" ||
+      !ALLOWED_MODES.has(requestedMode)
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: `mode must be one of: ${[...ALLOWED_MODES].join(", ")}`,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    if (
+      typeof requestedType !== "string" ||
+      !ALLOWED_ARTIFACT_TYPES.has(requestedType)
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: `artifactType must be one of: ${[...ALLOWED_ARTIFACT_TYPES].join(", ")}`,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // The credit gate above only asks for a balance above zero, so the size of
     // what one call may send is bounded here. The canvas cap is the one
     // coach.ts uses.
     const cappedCanvas = capText(canvasContent, 16000);
     const cappedMessage = capText(message, 4000);
-    const requestedMode = mode || "chat_only";
 
     const systemPrompt = buildSystemPrompt(
       requestedMode,
-      artifactType || "prompt",
+      requestedType,
       cappedCanvas,
     );
 
@@ -120,7 +167,7 @@ serve(async (req) => {
         // advertises rather than only some of them.
         templateVars: {
           mode: requestedMode,
-          artifactType: artifactType || "prompt",
+          artifactType: requestedType,
           canvasContent: cappedCanvas,
           modeInstructions: modeInstructions(requestedMode),
         },

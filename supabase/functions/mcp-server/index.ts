@@ -239,9 +239,10 @@ function buildMcpServer(auth: Auth) {
    * The body of every search_* tool.
    *
    * Two passes, because an empty answer is the one answer an agent cannot
-   * check: first "every word appears somewhere", then, only if that found
-   * nothing, "any word appears somewhere". A near miss the caller can reject
-   * beats a clean "nothing found" it will repeat as fact.
+   * check: first "every word appears somewhere", then, only if that matches
+   * nothing at all, "any word appears somewhere". A near miss the caller can
+   * reject beats a clean "nothing found" it will repeat as fact. The offset
+   * pages within whichever pass answers, never across the two.
    *
    * Ownership is filtered here rather than by RLS, because this client holds
    * the service-role key. `published` is deliberately not filtered: these
@@ -268,8 +269,9 @@ function buildMcpServer(auth: Auth) {
     const answer = (rows: unknown[] | null) =>
       searchResult(rows ?? [], window.limit, window.offset);
 
+    const strictFilters = allTermsFilters(SEARCH_COLUMNS, query);
     let strict = select();
-    for (const filter of allTermsFilters(SEARCH_COLUMNS, query)) {
+    for (const filter of strictFilters) {
       strict = strict.or(filter);
     }
 
@@ -281,6 +283,26 @@ function buildMcpServer(auth: Auth) {
     // One term is already its own loose pass, and a blank query has no terms
     // at all; sending `or=()` in either case would be a parse error.
     if (!loose || tokenizeSearchQuery(query).length < 2) return answer(data);
+
+    // Every page of one search comes from the same pass. An empty strict page
+    // past offset 0 may only mean the strict matches ran out; until
+    // 2026-09-23 that page fell through to the loose pass at the same offset,
+    // so page 3 of a strict answer came back as loose matches 60 to 90, a
+    // different list that skipped its own first pages. The loose pass is used
+    // only when the strict pass matches nothing at all.
+    if (window.offset > 0) {
+      let anyStrict = sb
+        .from(table)
+        .select("id")
+        .eq("author_id", auth.userId)
+        .limit(1);
+      for (const filter of strictFilters) {
+        anyStrict = anyStrict.or(filter);
+      }
+      const { data: strictRows, error: strictErr } = await anyStrict;
+      if (strictErr) return toolError(strictErr.message);
+      if (strictRows && strictRows.length > 0) return answer(data);
+    }
 
     const { data: partial, error: partialError } = await select().or(loose);
     if (partialError) return toolError(partialError.message);
