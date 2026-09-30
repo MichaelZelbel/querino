@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { VersionHistoryPanel } from "@/components/versions";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
+import { recordPromptCopy } from "@/lib/promptCopies";
 import { RefinePromptModal } from "@/components/prompts/RefinePromptModal";
 
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
@@ -62,7 +63,8 @@ import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
-import { formatCount, formatUtcDate } from "@/components/shared/formatDate";
+import { formatCount } from "@/components/shared/formatDate";
+import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 
 interface PromptWithAuthor extends Prompt {
@@ -223,6 +225,7 @@ export default function PromptDetail({
 
     try {
       await navigator.clipboard.writeText(prompt.content);
+      recordPromptCopy(prompt.id);
       setCopied(true);
       toast.success("Prompt copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
@@ -493,7 +496,9 @@ export default function PromptDetail({
                 {prompt.published_at && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>Published {formatUtcDate(prompt.published_at)}</span>
+                    <span>
+                      Published <LocalDate value={prompt.published_at} />
+                    </span>
                   </div>
                 )}
 
@@ -719,7 +724,11 @@ export default function PromptDetail({
 
             {/* Send to LLM - directly above content */}
             <div className="mb-6 rounded-xl border border-border bg-card p-6">
-              <SendToLLMButtons title={prompt.title} content={prompt.content} />
+              <SendToLLMButtons
+                title={prompt.title}
+                content={prompt.content}
+                promptId={prompt.id}
+              />
             </div>
 
             {/* Prompt Content */}

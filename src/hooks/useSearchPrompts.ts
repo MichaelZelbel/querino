@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { mergeWithSemanticDetailed } from "./useSemanticMerge";
 import { applyOrder, promptBrowseOrder } from "@/lib/listOrder";
+import { withPartialMatch } from "@/lib/searchFallback";
 
 export interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -82,23 +83,26 @@ export function useSearchPrompts({
       return lastPage.rows.length === pageSize ? allPages.length : undefined;
     },
     queryFn: async ({ pageParam }): Promise<PromptPage> => {
-      let query = supabase
-        .from("prompts")
-        .select(`*, profiles:author_id (id, display_name, avatar_url)`);
-
-      if (isPublic) {
-        query = query.eq("is_public", true);
-      } else if (userId) {
-        query = query.eq("author_id", userId);
-      }
-
-      if (category && category !== "all") {
-        query = query.eq("category", category);
-      }
-
-      if (tag) {
-        query = query.contains("tags", [tag]);
-      }
+      // The rows this list may show, before any search: built once, so the
+      // partial-match fallback below asks within exactly the same scope.
+      const scoped = () => {
+        let q = supabase
+          .from("prompts")
+          .select(`*, profiles:author_id (id, display_name, avatar_url)`);
+        if (isPublic) {
+          q = q.eq("is_public", true);
+        } else if (userId) {
+          q = q.eq("author_id", userId);
+        }
+        if (category && category !== "all") {
+          q = q.eq("category", category);
+        }
+        if (tag) {
+          q = q.contains("tags", [tag]);
+        }
+        return q;
+      };
+      let query = scoped();
 
       if (isSearching) {
         // 'simple' instead of 'english' so German and mixed catalogues match.
@@ -120,8 +124,16 @@ export function useSearchPrompts({
         query = query.range(from, from + pageSize - 1);
       }
 
-      const { data, error } = await query;
+      let { data, error } = await query;
       if (error) throw new Error(error.message);
+
+      // Whole words found nothing: try the words as fragments ("summar").
+      if (isSearching && (data ?? []).length === 0) {
+        ({ data, error } = await withPartialMatch(scoped(), trimmed).limit(
+          SEARCH_RESULT_CAP,
+        ));
+        if (error) throw new Error(error.message);
+      }
 
       const ftsResults: PromptWithAuthor[] = (data as any[]).map((item) => ({
         ...item,

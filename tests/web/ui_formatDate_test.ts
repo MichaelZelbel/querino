@@ -1,5 +1,9 @@
 import { assertEquals } from "@std/assert";
-import { formatCount, formatUtcDate } from "@/components/shared/formatDate.ts";
+import {
+  formatCount,
+  formatDateIn,
+  formatUtcDate,
+} from "@/components/shared/formatDate.ts";
 
 // 23:30 UTC is already the next day east of UTC and still the same day west of
 // it. The server (UTC) and every browser must print the same text, or React
@@ -29,4 +33,18 @@ Deno.test("long style, and missing or broken dates print nothing", () => {
 Deno.test("counts use one grouping whatever the visitor's locale", () => {
   assertEquals(formatCount(1234567), "1,234,567");
   assertEquals(formatCount(null), "0");
+});
+
+// 2026-09-30: after the first render the browser shows the visitor's own zone.
+Deno.test("the same instant is its own calendar date in each zone", () => {
+  assertEquals(formatDateIn(LATE, "short", "UTC"), "Sep 23, 2026");
+  assertEquals(formatDateIn(LATE, "short", "Europe/Berlin"), "Sep 24, 2026");
+  assertEquals(
+    formatDateIn(LATE, "long", "America/Los_Angeles"),
+    "September 23, 2026",
+  );
+});
+
+Deno.test("an unknown zone falls back to UTC instead of failing", () => {
+  assertEquals(formatDateIn(LATE, "short", "Not/AZone"), "Sep 23, 2026");
 });

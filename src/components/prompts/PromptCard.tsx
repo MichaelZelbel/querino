@@ -13,6 +13,7 @@ import { avatarImageProps } from "@/lib/avatar";
 import { Copy, Check, Star, Pencil, Files, Pin } from "lucide-react";
 import { MenerioSyncBadge } from "@/components/menerio/MenerioSyncBadge";
 import { SendToLLMButtons } from "@/components/prompts/SendToLLMButtons";
+import { recordPromptCopy } from "@/lib/promptCopies";
 import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
@@ -50,6 +51,7 @@ export function PromptCard({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(prompt.content);
+      recordPromptCopy(prompt.id);
       setCopied(true);
       toast.success("Prompt copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
@@ -246,6 +248,7 @@ export function PromptCard({
               <SendToLLMButtons
                 title={prompt.title}
                 content={prompt.content}
+                promptId={prompt.id}
                 variant="compact"
               />
             )}

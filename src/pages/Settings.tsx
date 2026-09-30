@@ -320,6 +320,10 @@ export default function Settings() {
   };
 
   const isTeamOwner = currentTeam?.role === "owner";
+  // The token a team syncs with is saved by its owner or an admin (2026-09-30);
+  // the database refuses anyone else's.
+  const canSaveTeamToken =
+    currentTeam?.role === "owner" || currentTeam?.role === "admin";
 
   const handleSaveTeamGithubSettings = async () => {
     if (!currentTeam || !user) return;
@@ -399,9 +403,9 @@ export default function Settings() {
     }
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (scope: "local" | "global" = "local") => {
     signingOut.current = true;
-    const { error } = await signOut();
+    const { error } = await signOut(scope);
     if (error) {
       signingOut.current = false;
       toast.error("Failed to sign out");
@@ -499,11 +503,10 @@ export default function Settings() {
             <AlertDescription className="flex-1">
               <span className="font-medium">
                 {isTeamWorkspace
-                  ? `Team: ${currentTeam?.name}`
-                  : "Personal Workspace"}
+                  ? `Team: ${currentTeam?.name}.`
+                  : "Personal Workspace."}
               </span>
               <span className="text-muted-foreground ml-2">
-                —{" "}
                 {isTeamWorkspace
                   ? "GitHub sync settings below apply to this team's artefacts."
                   : "GitHub sync settings below apply to your personal artefacts."}
@@ -546,7 +549,7 @@ export default function Settings() {
             <Separator className="my-4" />
             <Button
               variant="ghost"
-              onClick={handleSignOut}
+              onClick={() => handleSignOut()}
               className="w-full justify-start gap-3 text-destructive hover:text-destructive"
             >
               <LogOut className="h-4 w-4" />
@@ -759,43 +762,47 @@ export default function Settings() {
                           members with editor+ access can sync to this
                           repository.
                           {!isTeamOwner &&
-                            " Only the team owner can change the repository, branch and folder; you can save your own access token for this team."}
+                            (canSaveTeamToken
+                              ? " Only the team owner can change the repository, branch and folder; as an admin you can save the access token the team syncs with."
+                              : " Only the team's owner and admins can set this up. Once they have, you can sync the team's artifacts too.")}
                         </p>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="teamGithubToken"
-                          className="flex items-center gap-2"
-                        >
-                          <Key className="h-4 w-4" />
-                          Personal Access Token
-                        </Label>
-                        <Input
-                          id="teamGithubToken"
-                          type="password"
-                          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                          value={teamGithubToken}
-                          onChange={(e) => {
-                            setTeamGithubToken(e.target.value);
-                            setTeamConnectionStatus("idle");
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Create a token at{" "}
-                          <a
-                            href="https://github.com/settings/tokens/new?scopes=repo&description=Querino%20Sync"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
+                      {canSaveTeamToken && (
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="teamGithubToken"
+                            className="flex items-center gap-2"
                           >
-                            GitHub Settings
-                          </a>{" "}
-                          with{" "}
-                          <code className="bg-muted px-1 rounded">repo</code>{" "}
-                          scope.
-                        </p>
-                      </div>
+                            <Key className="h-4 w-4" />
+                            Personal Access Token
+                          </Label>
+                          <Input
+                            id="teamGithubToken"
+                            type="password"
+                            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                            value={teamGithubToken}
+                            onChange={(e) => {
+                              setTeamGithubToken(e.target.value);
+                              setTeamConnectionStatus("idle");
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Create a token at{" "}
+                            <a
+                              href="https://github.com/settings/tokens/new?scopes=repo&description=Querino%20Sync"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              GitHub Settings
+                            </a>{" "}
+                            with{" "}
+                            <code className="bg-muted px-1 rounded">repo</code>{" "}
+                            scope.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <Label htmlFor="teamGithubRepo">
@@ -844,51 +851,53 @@ export default function Settings() {
                         </p>
                       )}
 
-                      <div className="flex flex-wrap gap-3">
-                        <Button
-                          onClick={handleSaveTeamGithubSettings}
-                          disabled={savingTeamGithub}
-                        >
-                          {savingTeamGithub ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Saving...
-                            </>
-                          ) : isTeamOwner ? (
-                            "Save Team GitHub Settings"
-                          ) : (
-                            "Save My Token"
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleTestConnection(true)}
-                          disabled={
-                            testingTeamConnection ||
-                            !teamGithubRepo ||
-                            !teamGithubToken
-                          }
-                        >
-                          {testingTeamConnection ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Testing...
-                            </>
-                          ) : teamConnectionStatus === "success" ? (
-                            <>
-                              <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                              Connected
-                            </>
-                          ) : teamConnectionStatus === "error" ? (
-                            <>
-                              <XCircle className="mr-2 h-4 w-4 text-destructive" />
-                              Failed
-                            </>
-                          ) : (
-                            "Test Connection"
-                          )}
-                        </Button>
-                      </div>
+                      {canSaveTeamToken && (
+                        <div className="flex flex-wrap gap-3">
+                          <Button
+                            onClick={handleSaveTeamGithubSettings}
+                            disabled={savingTeamGithub}
+                          >
+                            {savingTeamGithub ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                              </>
+                            ) : isTeamOwner ? (
+                              "Save Team GitHub Settings"
+                            ) : (
+                              "Save My Token"
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleTestConnection(true)}
+                            disabled={
+                              testingTeamConnection ||
+                              !teamGithubRepo ||
+                              !teamGithubToken
+                            }
+                          >
+                            {testingTeamConnection ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Testing...
+                              </>
+                            ) : teamConnectionStatus === "success" ? (
+                              <>
+                                <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                                Connected
+                              </>
+                            ) : teamConnectionStatus === "error" ? (
+                              <>
+                                <XCircle className="mr-2 h-4 w-4 text-destructive" />
+                                Failed
+                              </>
+                            ) : (
+                              "Test Connection"
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </>
                   ) : loadingPersonalGithub ? (
                     <div className="flex items-center justify-center py-4">
@@ -1091,6 +1100,28 @@ export default function Settings() {
                     </Button>
                   </div>
                   <Separator />
+                  {/* Every device */}
+                  <div className="flex items-center justify-between gap-4 py-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <LogOut className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium">Sign out everywhere</p>
+                        <p className="text-sm text-muted-foreground">
+                          Ends your session on every device and browser, this
+                          one included. Useful after signing in on a computer
+                          that is not yours.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSignOut("global")}
+                    >
+                      Sign out everywhere
+                    </Button>
+                  </div>
+                  <Separator />
                   {/* Cookies */}
                   <div className="flex items-center justify-between gap-4 py-3">
                     <div className="flex items-start gap-3 min-w-0">
@@ -1187,7 +1218,7 @@ export default function Settings() {
                               </li>
                               <li>
                                 All your prompts, skills, workflows and prompt
-                                kits — including every saved version
+                                kits, including every saved version
                               </li>
                               <li>All collections, pins and saved artifacts</li>
                               <li>

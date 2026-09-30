@@ -9,4 +9,4 @@ export {
   orIlikeContains,
   ownedByUserOrTeams,
   tokenizeSearchQuery,
-} from "../../supabase/functions/_shared/postgrestFilter";
+} from "../../supabase/functions/_shared/postgrestFilter.ts";

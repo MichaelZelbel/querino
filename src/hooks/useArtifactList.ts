@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeWithSemantic } from "./useSemanticMerge";
 import { hasArtifactListScope } from "@/lib/artifactListScope";
+import { withPartialMatch } from "@/lib/searchFallback";
 import {
   artifactListSelect,
   type ArtifactListTable,
@@ -81,53 +82,66 @@ export function createArtifactListHook<T extends { id: string }>(
       ],
       enabled: hasArtifactListScope({ published, authorId, teamId }),
       queryFn: async () => {
-        let query = (supabase.from(config.table as any) as any).select(
-          artifactListSelect(config.table),
-        );
+        const trimmed = searchQuery.trim();
+        // The rows this list may show, in its order, before any search: built
+        // once, so the partial-match fallback asks within the same scope.
+        const scoped = () => {
+          let q = (supabase.from(config.table as any) as any).select(
+            artifactListSelect(config.table),
+          );
 
-        if (sortBy === "rating") {
-          query = query
-            .order("rating_avg", { ascending: false })
-            .order("rating_count", { ascending: false })
-            .order("created_at", { ascending: false });
-        } else {
-          query = query.order("created_at", { ascending: false });
-        }
+          if (sortBy === "rating") {
+            q = q
+              .order("rating_avg", { ascending: false })
+              .order("rating_count", { ascending: false })
+              .order("created_at", { ascending: false });
+          } else {
+            q = q.order("created_at", { ascending: false });
+          }
 
-        if (published !== undefined) {
-          query = query.eq("published", published);
-        }
+          if (published !== undefined) {
+            q = q.eq("published", published);
+          }
 
-        if (category && category !== "all") {
-          query = query.eq("category", category);
-        }
+          if (category && category !== "all") {
+            q = q.eq("category", category);
+          }
 
-        if (tag) {
-          query = query.contains("tags", [tag]);
-        }
+          if (tag) {
+            q = q.contains("tags", [tag]);
+          }
 
-        if (teamId) {
-          query = query.eq("team_id", teamId);
-        } else if (authorId) {
-          query = query.eq("author_id", authorId).is("team_id", null);
-        }
+          if (teamId) {
+            q = q.eq("team_id", teamId);
+          } else if (authorId) {
+            q = q.eq("author_id", authorId).is("team_id", null);
+          }
 
-        if (searchQuery.trim()) {
+          if (limit) {
+            q = q.limit(limit);
+          }
+          return q;
+        };
+
+        let query = scoped();
+        if (trimmed) {
           // `fts` is a stored generated column over title, description and
           // content (migration 20260908210000). PostgREST cannot filter on a
           // comma-separated list of columns; it used to read only the title.
-          query = query.textSearch("fts", searchQuery.trim(), {
+          query = query.textSearch("fts", trimmed, {
             type: "websearch",
             config: "simple",
           });
         }
 
-        if (limit) {
-          query = query.limit(limit);
-        }
-
-        const { data, error } = await query;
+        let { data, error } = await query;
         if (error) throw error;
+
+        // Whole words found nothing: try the words as fragments ("summar").
+        if (trimmed && (data ?? []).length === 0) {
+          ({ data, error } = await withPartialMatch(scoped(), trimmed));
+          if (error) throw error;
+        }
 
         const ftsResults = (data || []).map((item: any) => ({
           ...item,

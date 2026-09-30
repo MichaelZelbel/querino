@@ -53,7 +53,7 @@ import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { Languages, CopyPlus } from "lucide-react";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
-import { formatUtcDate } from "@/components/shared/formatDate";
+import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 
 interface KitWithAuthor extends PromptKit {
@@ -392,7 +392,9 @@ export default function PromptKitDetail({
                 )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Created {formatUtcDate(kit.created_at)}</span>
+                  <span>
+                    Created <LocalDate value={kit.created_at} />
+                  </span>
                 </div>
               </div>
             </div>

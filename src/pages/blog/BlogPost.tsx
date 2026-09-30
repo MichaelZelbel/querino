@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { BlogPost as BlogPostRecord } from "@/types/blog";
-import { formatUtcDate } from "@/components/shared/formatDate";
+import { LocalDate } from "@/components/shared/LocalDate";
 
 export default function BlogPost({
   initialPost = null,
@@ -66,9 +66,9 @@ export default function BlogPost({
 
   const authorName = post.author?.display_name || "Anonymous";
   const authorInitial = authorName.charAt(0).toUpperCase();
-  const publishedDate = post.published_at
-    ? formatUtcDate(post.published_at, "long")
-    : null;
+  const publishedDate = post.published_at ? (
+    <LocalDate value={post.published_at} style="long" />
+  ) : null;
 
   return (
     <>

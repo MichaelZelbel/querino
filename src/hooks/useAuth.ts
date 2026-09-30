@@ -37,7 +37,7 @@ async function checkOAuthSignupAllowed(authUser: User) {
         "We've reached our early access limit. Join the waitlist at support@querino.ai.",
         { duration: 8000 },
       );
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     }
   } catch (err) {
     console.error("Error in OAuth signup check:", err);
@@ -282,14 +282,21 @@ export function useAuth() {
     return { error };
   }, []);
 
-  const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    // The SIGNED_OUT event above already empties the caches. This stays for a
-    // failed signOut that emits no event: the person pressed "sign out" and
-    // must not keep seeing the account's rows.
-    queryClient.clear();
-    return { error };
-  }, [queryClient]);
+  // "local" signs out this browser only. supabase-js defaults to "global",
+  // which ended the session on every device the person was signed in on, so
+  // signing out of a borrowed laptop also signed them out of their phone.
+  // "global" stays available as Settings' "Sign out everywhere" (2026-09-30).
+  const signOut = useCallback(
+    async (scope: "local" | "global" = "local") => {
+      const { error } = await supabase.auth.signOut({ scope });
+      // The SIGNED_OUT event above already empties the caches. This stays for a
+      // failed signOut that emits no event: the person pressed "sign out" and
+      // must not keep seeing the account's rows.
+      queryClient.clear();
+      return { error };
+    },
+    [queryClient],
+  );
 
   // One object per real change, so the auth context does not hand every
   // consumer a new value (and a re-render) each time the provider renders.

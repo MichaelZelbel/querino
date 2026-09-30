@@ -50,7 +50,7 @@ import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
-import { formatUtcDate } from "@/components/shared/formatDate";
+import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 
 interface SkillWithAuthor extends Skill {
@@ -374,7 +374,9 @@ export default function SkillDetail({
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Created {formatUtcDate(skill.created_at)}</span>
+                  <span>
+                    Created <LocalDate value={skill.created_at} />
+                  </span>
                 </div>
               </div>
             </div>

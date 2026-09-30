@@ -18,7 +18,8 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signInWithGithub: () => Promise<{ error: Error | null }>;
-  signOut: () => Promise<{ error: Error | null }>;
+  /** This browser only unless `scope` is "global" (every device). */
+  signOut: (scope?: "local" | "global") => Promise<{ error: Error | null }>;
   /** Re-read the signed-in user's profile (after editing it). */
   refreshProfile: () => Promise<void>;
 }

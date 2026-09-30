@@ -25,16 +25,20 @@ import {
   needsClipboardFallback,
 } from "@/lib/openLLM";
 import { toast } from "sonner";
+import { recordPromptCopy } from "@/lib/promptCopies";
 
 interface SendToLLMButtonsProps {
   title: string;
   content: string;
+  /** A saved prompt's id: sending it to a chat counts as copying it. */
+  promptId?: string;
   variant?: "full" | "compact";
 }
 
 export function SendToLLMButtons({
   title,
   content,
+  promptId,
   variant = "full",
 }: SendToLLMButtonsProps) {
   // Start with no preference and read the stored one after mount. The server
@@ -59,6 +63,7 @@ export function SendToLLMButtons({
       // catch that was an unhandled rejection and a button that did nothing.
       try {
         await navigator.clipboard.writeText(fullPrompt);
+        recordPromptCopy(promptId);
       } catch {
         toast.error(
           "Could not copy the prompt to your clipboard. Copy it from the page instead.",
@@ -73,6 +78,7 @@ export function SendToLLMButtons({
 
     try {
       await openLLM(llm, fullPrompt);
+      recordPromptCopy(promptId);
     } catch {
       toast.error("Could not open the chat. Please try again.");
       return;

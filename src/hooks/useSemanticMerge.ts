@@ -10,7 +10,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const MIN_QUERY_LEN = 3;
-const DEFAULT_THRESHOLD = 0.25;
+// Cosine similarity a meaning-based match needs. At 0.25 a nonsense search
+// still brought back "related" prompts. Measured on 2026-09-30 against the
+// public prompts: "zzqqxx-nothing" and "qwerty asdf lorem" top out at 0.326
+// and 0.306; real searches ("write a cover letter", "privacy audit", "review
+// my python code") score 0.36 to 0.56 for their best matches and keep two to
+// four of them at 0.33. Keyword results come first either way.
+const DEFAULT_THRESHOLD = 0.33;
 const DEFAULT_COUNT = 30;
 
 type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
