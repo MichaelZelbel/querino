@@ -82,8 +82,8 @@ test.describe("the admin page can read the prompt it would send", () => {
 
     expect(
       configs.length,
-      "the registry seeds seventeen call sites",
-    ).toBeGreaterThanOrEqual(17);
+      "the registry seeds sixteen call sites (canvas-ai left on 2026-09-30)",
+    ).toBeGreaterThanOrEqual(16);
 
     const empty = configs
       .filter((c) => !(c.default_system_prompt ?? "").trim())

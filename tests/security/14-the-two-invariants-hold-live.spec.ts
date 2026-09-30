@@ -43,6 +43,10 @@ const DELIBERATELY_SERVICE_ROLE_ONLY = [
   // The security suite's own run lock (migration 20260923150000). Only the
   // suite's global setup, with the service role, ever touches it.
   "security_suite_lock",
+  // One row per visitor, prompt and day, so a copy counts once (migration
+  // 20260930130300). Only record_prompt_copy, which runs as its owner, and the
+  // daily prune touch it; the browser must never read its visitor hashes.
+  "prompt_copy_events",
 ];
 
 async function violations(): Promise<Violation[]> {

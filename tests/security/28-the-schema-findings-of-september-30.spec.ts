@@ -292,6 +292,9 @@ test.describe("What the browser roles can reach in the catalogue", () => {
       "is_team_member",
       "is_team_member_for_item",
       "is_team_owner",
+      // Copy and "send to" on a public prompt count a copy, signed in or not
+      // (migration 20260930130300). It changes nothing but the counter.
+      "record_prompt_copy",
       "search_prompt_kits_semantic",
       "search_prompts_semantic",
       "search_skills_semantic",
