@@ -164,14 +164,6 @@ export const CALL_SITES: CallSiteMeta[] = [
     requiresTools: true,
   },
   {
-    call_site: "canvas-ai",
-    description: "The canvas assistant that edits an artifact in place.",
-    provider: DEFAULT_PROVIDER,
-    model: DEFAULT_MODEL,
-    placeholders: ["mode", "artifactType", "canvasContent", "modeInstructions"],
-    requiresTools: false,
-  },
-  {
     call_site: "ai-moderate-content",
     description: "Classifies queued user content against the content policies.",
     provider: DEFAULT_PROVIDER,

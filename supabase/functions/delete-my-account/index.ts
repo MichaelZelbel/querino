@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { deleteUserRows } from "../_shared/deleteUserData.ts";
 
 const corsHeaders = {
@@ -9,75 +8,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Cancel all active Stripe subscriptions for a given email
-async function cancelStripeSubscriptions(email: string): Promise<void> {
-  const stripeKeys = [
-    { key: Deno.env.get("STRIPE_SECRET_KEY"), mode: "live" },
-    { key: Deno.env.get("STRIPE_SANDBOX_SECRET_KEY"), mode: "sandbox" },
-  ];
-
-  for (const { key, mode } of stripeKeys) {
-    if (!key) {
-      console.log(
-        `delete-my-account - Stripe ${mode} key not configured, skipping`,
-      );
-      continue;
-    }
-
-    try {
-      const stripe = new Stripe(key, { apiVersion: "2025-08-27.basil" });
-
-      // Every customer with this email. Stripe does not keep emails unique,
-      // and until 2026-09-16 only the first one was found, so a second
-      // customer's subscription kept billing a deleted account.
-      const customers = await stripe.customers.list({ email, limit: 100 });
-      if (customers.data.length === 0) {
-        console.log(
-          `delete-my-account - No Stripe ${mode} customer found for ${email}`,
-        );
-        continue;
-      }
-
-      for (const customer of customers.data) {
-        const customerId = customer.id;
-        console.log(
-          `delete-my-account - Found Stripe ${mode} customer: ${customerId}`,
-        );
-
-        // Get all active subscriptions
-        const subscriptions = await stripe.subscriptions.list({
-          customer: customerId,
-          status: "active",
-          limit: 100,
-        });
-
-        console.log(
-          `delete-my-account - Found ${subscriptions.data.length} active ${mode} subscriptions`,
-        );
-
-        // Cancel each subscription
-        for (const subscription of subscriptions.data) {
-          await stripe.subscriptions.cancel(subscription.id);
-          console.log(
-            `delete-my-account - Cancelled ${mode} subscription: ${subscription.id}`,
-          );
-        }
-
-        // Delete the Stripe customer to remove all payment data
-        await stripe.customers.del(customerId);
-        console.log(
-          `delete-my-account - Deleted Stripe ${mode} customer: ${customerId}`,
-        );
-      }
-    } catch (error) {
-      console.error(
-        `delete-my-account - Error handling Stripe ${mode}:`,
-        error,
-      );
-      // Continue with deletion even if Stripe fails - log the error but don't block
-    }
-  }
-}
+// Stripe is not part of deleting an account. Until 2026-09-30 this function
+// cancelled every subscription and deleted every Stripe customer that shared
+// the user's email, with the live key, although Querino has sold nothing since
+// checkout was switched off in February 2026. If that Stripe account served
+// anything else, deleting a Querino account would have cancelled it. Querino has
+// no payment path (see CLAUDE.md), so there is nothing here to clean up.
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -153,11 +89,8 @@ serve(async (req) => {
 
     const userId = user.id;
     const userEmail = user.email;
-    console.log(
-      "delete-my-account - Deleting account for user:",
-      userId,
-      userEmail,
-    );
+    // The id is enough to trace a deletion; an email does not belong in logs.
+    console.log("delete-my-account - Deleting account for user:", userId);
 
     // Parse request body for confirmation
     const { confirmation } = await req.json();
@@ -185,12 +118,6 @@ serve(async (req) => {
       displayName = profileData?.display_name || null;
     } catch (e) {
       console.log("delete-my-account - Could not fetch display name:", e);
-    }
-
-    // Cancel Stripe subscriptions first (before deleting any data)
-    if (userEmail) {
-      console.log("delete-my-account - Cancelling Stripe subscriptions...");
-      await cancelStripeSubscriptions(userEmail);
     }
 
     // Every row the user owns, in an order the foreign keys accept. The

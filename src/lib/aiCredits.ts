@@ -15,7 +15,6 @@ export const AI_CREDITS_QUERY_KEY = "ai-credits-summary";
  */
 export const CREDIT_CHARGING_FUNCTIONS: ReadonlySet<string> = new Set([
   "ai-insights",
-  "canvas-ai",
   "prompt-coach",
   "skill-coach",
   "workflow-coach",

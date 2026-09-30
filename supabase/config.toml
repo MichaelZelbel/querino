@@ -49,32 +49,16 @@ verify_jwt = false  # pg_cron every 2min, X-Internal-Key only; the Admin page bu
 
 # ── Public by design: the caller is a stranger and that is the point ──────────
 
-[functions.api]
-verify_jwt = false  # serves /rss.xml and /sitemap.xml; feed readers and crawlers send no headers
-
 [functions.llm-models]
 verify_jwt = false  # the shared model catalogue; public data, read by Menerio and Mission Control with no credential
-
-[functions.blog-api]
-verify_jwt = false  # public blog REST for external clients
 
 [functions.mcp-server]
 verify_jwt = false  # MCP clients send `Bearer qrn_mcp_…`, which is not a Supabase JWT; true breaks every client
 
-# ── Caller not established, so left as found ─────────────────────────────────
-# Nothing in src/ or supabase/ calls these by name. That means either an
-# external caller nobody wrote down, or dead code. Tightening the gateway on a
-# caller you cannot name is how you find out who it was, in production. Find
-# the caller, then decide.
-
-[functions.canvas-ai]
-verify_jwt = false  # TODO: no caller found in this repository
-
-[functions.create-checkout]
-verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
-
-[functions.customer-portal]
-verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
+# ── Removed 2026-09-30 ────────────────────────────────────────────────────────
+# api and blog-api (the site serves /rss.xml and /sitemap.xml itself), canvas-ai
+# (the coaches replaced it; never called), create-checkout, customer-portal and
+# check-subscription (Querino has no payment path). Deleted from production too.
 
 # ── Everything else: every caller sends a Supabase JWT ───────────────────────
 # Called from the browser through supabase.functions.invoke, which always sends
@@ -86,9 +70,6 @@ verify_jwt = false  # TODO: no caller found in this repository (Stripe flow)
 verify_jwt = true  # admin panel only, through supabase.functions.invoke with a session JWT
 
 [functions.ai-insights]
-verify_jwt = true
-
-[functions.check-subscription]
 verify_jwt = true
 
 [functions.delete-my-account]

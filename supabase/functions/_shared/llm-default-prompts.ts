@@ -29,7 +29,6 @@ import { SYSTEM_PROMPTS as aiInsights } from "./prompts/ai-insights.ts";
 import { SYSTEM_PROMPT as promptWizard } from "./prompts/prompt-wizard.ts";
 import { SYSTEM_PROMPT as refinePrompt } from "./prompts/refine-prompt.ts";
 import { SYSTEM_PROMPT as translateArtifact } from "./prompts/translate-artifact.ts";
-import { SYSTEM_PROMPT as canvasAi } from "./prompts/canvas-ai.ts";
 import { SYSTEM_PROMPT as aiModerateContent } from "./prompts/ai-moderate-content.ts";
 
 /** Call site to the prompt it would send with no row and no override. */
@@ -49,7 +48,6 @@ export const DEFAULT_SYSTEM_PROMPTS: Record<string, string> = {
   "prompt-wizard": promptWizard,
   "prompt-refinement": refinePrompt,
   "translate-artifact": translateArtifact,
-  "canvas-ai": canvasAi,
   "ai-moderate-content": aiModerateContent,
 };
 

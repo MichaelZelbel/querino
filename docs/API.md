@@ -166,54 +166,6 @@ Sync prompts, skills, and workflows to a GitHub repository.
 
 ---
 
-### POST `/create-checkout`
-
-Create a Stripe checkout session for subscription.
-
-**Request Body:**
-```json
-{
-  "priceId": "string - Stripe price ID"
-}
-```
-
-**Response:**
-```json
-{
-  "url": "string - Stripe checkout URL"
-}
-```
-
----
-
-### POST `/customer-portal`
-
-Get Stripe customer portal URL for subscription management.
-
-**Response:**
-```json
-{
-  "url": "string - Stripe portal URL"
-}
-```
-
----
-
-### POST `/check-subscription`
-
-Check user's current subscription status.
-
-**Response:**
-```json
-{
-  "subscribed": true,
-  "planType": "premium",
-  "planSource": "stripe"
-}
-```
-
----
-
 ### POST `/ensure-token-allowance`
 
 Ensure user has an active AI token allowance period.
@@ -288,27 +240,12 @@ Common HTTP status codes:
 
 ## Public Endpoints (No Auth Required)
 
-### GET `/api/sitemap.xml`
+The site itself serves these, not an edge function (the `api` function that
+used to serve them was removed on 2026-09-30):
 
-Returns an XML sitemap for SEO crawlers containing all public pages and content.
-
-**Response:** XML sitemap with all static pages and dynamic content (blog posts, prompts, skills, workflows, prompt kits).
-
-**Headers:**
-- `Content-Type: application/xml; charset=utf-8`
-- `Cache-Control: public, max-age=3600`
-
----
-
-### GET `/api/rss.xml`
-
-Returns an RSS 2.0 feed of published blog posts.
-
-**Response:** RSS XML feed with the 20 most recent blog posts.
-
-**Headers:**
-- `Content-Type: application/rss+xml; charset=utf-8`
-- `Cache-Control: public, max-age=3600`
+- `GET https://querino.ai/sitemap.xml`: every public page, prompt, skill,
+  workflow and prompt kit.
+- `GET https://querino.ai/rss.xml`: the published blog posts.
 
 ---
 

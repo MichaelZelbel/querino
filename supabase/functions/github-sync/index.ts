@@ -814,9 +814,10 @@ Updated:
 - ${prompts.length} prompt(s)
 - ${skills.length} skill(s)
 - ${workflows.length} workflow(s)
-- ${promptKits.length} prompt kit(s)
-
-Synced by: ${user.email}`;
+- ${promptKits.length} prompt kit(s)`;
+    // No "Synced by: <email>" line (removed 2026-09-30): a commit message lives
+    // for ever in the repository's history, which may be public, and the login
+    // email is not the author's to publish there.
 
     const newCommitSha = await createCommit(
       owner,

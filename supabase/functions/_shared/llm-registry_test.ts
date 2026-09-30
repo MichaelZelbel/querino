@@ -51,12 +51,12 @@ Deno.test(
 // The count is asserted separately because llm-registry.ts has claimed "eleven
 // of the seventeen" in a comment since 2026-08-23 with nothing checking it.
 Deno.test("eleven of the seventeen call sites need tool calling", () => {
-  assertEquals(CALL_SITES.length, 17);
+  assertEquals(CALL_SITES.length, 16);
   assertEquals(CALL_SITES.filter((c) => c.requiresTools).length, 11);
 });
 
 Deno.test(
-  "the call sites that need no tools are the insights, wizard and canvas ones",
+  "the call sites that need no tools are the insights and wizard ones",
   () => {
     const free = CALL_SITES.filter((c) => !c.requiresTools)
       .map((c) => c.call_site)
@@ -66,7 +66,6 @@ Deno.test(
       "ai-insights-prompt_kit",
       "ai-insights-skill",
       "ai-insights-workflow",
-      "canvas-ai",
       "prompt-wizard",
     ]);
   },

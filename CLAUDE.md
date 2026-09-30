@@ -34,9 +34,11 @@ either, and never have a subagent start one in the background.
 
 **No checkout, ever.** Querino must not contain a working payment/checkout
 flow: no Stripe checkout, no pricing/purchase page, no customer portal.
-The "contact support@querino.ai" stubs in `src/hooks/useStripeCheckout.ts`
-and `src/hooks/useSubscription.ts` are intentional. Premium is granted
-manually. Do not "fix" or restore any self-serve payment path.
+Premium is granted manually. Do not "fix" or restore any self-serve payment
+path. Since 2026-09-30 there is no payment code at all: the two unused
+"contact support" hooks and the create-checkout, customer-portal and
+check-subscription functions were deleted, and deleting an account no longer
+touches Stripe.
 
 ## Tech Stack
 
@@ -47,7 +49,7 @@ manually. Do not "fix" or restore any self-serve payment path.
 - **AI**: edge functions call the LLM provider directly through `supabase/functions/_shared/llm.ts`
   (OpenRouter, OpenAI or the Lovable gateway; the model per call site is configured in the admin panel).
   The old n8n orchestration is gone: there is no `n8n/` directory and no `N8N_*` secret.
-- **Payments**: none (see the product policy above; the Stripe functions are dormant stubs)
+- **Payments**: none (see the product policy above)
 - **Package Manager**: bun (bun.lock present) or npm
 
 ## Development Commands
@@ -95,7 +97,7 @@ src/
   config/          # Static config (languages, pricing, stripe)
   integrations/    # Supabase client + auto-generated DB types
 supabase/
-  functions/       # 36 Edge Functions (AI calls, MCP server, GitHub sync, Menerio sync, ...)
+  functions/       # 30 Edge Functions (AI calls, MCP server, GitHub sync, Menerio sync, ...)
   functions/_shared/  # shared modules and their Deno unit tests
   migrations/      # Database migrations
 scripts/           # the `npm run check` gates (migrations, lint ratchet, deno-check ratchet)

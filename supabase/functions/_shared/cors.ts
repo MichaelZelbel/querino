@@ -1,5 +1,5 @@
 // Origin allowlist for browser-facing edge functions that spend AI credits.
-// Public and integration endpoints (mcp-server, menerio callbacks, blog-api)
+// Public and integration endpoints (mcp-server, the menerio callbacks)
 // deliberately keep wildcard CORS: they are meant to be called from anywhere,
 // and two of them are called by Menerio's own frontend, so scoping them would
 // break that integration rather than protect it.

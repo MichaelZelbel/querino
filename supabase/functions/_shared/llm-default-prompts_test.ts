@@ -15,10 +15,6 @@ import {
 import { CALL_SITES } from "./llm-registry.ts";
 import { interpolatePrompt } from "./llm-config.ts";
 import { buildSystemPrompt } from "./coach.ts";
-import {
-  SYSTEM_PROMPT as CANVAS_AI_PROMPT,
-  modeInstructions,
-} from "./prompts/canvas-ai.ts";
 import { SYSTEM_PROMPT as TRANSLATE_PROMPT } from "./prompts/translate-artifact.ts";
 import { SYSTEM_PROMPT as SKILL_COACH_PROMPT } from "./prompts/skill-coach.ts";
 
@@ -172,43 +168,10 @@ Deno.test(
 // ── Golden tests ────────────────────────────────────────────────────────────
 //
 // Two call sites had their prompt turned into a {{placeholder}} template as
-// part of this move. These expectations were taken from the code as it stood
+// part of this move (canvas-ai, removed with its function on 2026-09-30, and
+// translate-artifact). These expectations were taken from the code as it stood
 // before the move, so they fail if the rewrite changed a single character of
 // what the model receives.
-
-Deno.test(
-  "canvas-ai: the template interpolates to the prompt the old builder produced",
-  () => {
-    const vars = {
-      mode: "collab_edit",
-      artifactType: "skill",
-      canvasContent: "Line one of the canvas.\nLine two.",
-      modeInstructions: modeInstructions("collab_edit"),
-    };
-    assertEquals(
-      interpolatePrompt(CANVAS_AI_PROMPT, vars),
-      'You are a professional prompt engineering assistant ("Prompt Coach").\nYou are helping the user improve their skill content.\n\nCURRENT CANVAS CONTENT:\n---\nLine one of the canvas.\nLine two.\n---\n\nMODE: collab_edit\nThe user wants collaborative editing. If the request is clear, return the full updated content in canvas.content with canvas.updated = true. If the request is unclear, ask ONE concise clarification question and set canvas.updated to false.\n\nRULES:\n- You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no extra text.\n- JSON schema:\n  {\n    "assistantMessage": "string — your explanation, advice, or clarification question",\n    "canvas": {\n      "updated": boolean,\n      "content": "string — the FULL updated content (only if updated is true)",\n      "changeNote": "string — brief description of changes (only if updated is true)"\n    }\n  }\n- When canvas.updated is false, omit content and changeNote or set them to null.\n- When canvas.updated is true, return the COMPLETE content, not a diff.\n- Be concise but helpful in your assistantMessage.\n- If the user\'s request is unclear, ask ONE clarification question and do NOT modify the canvas.',
-    );
-  },
-);
-
-Deno.test("canvas-ai: each mode still gets its own paragraph", () => {
-  assert(
-    modeInstructions("chat_only").startsWith("The user wants advice only"),
-  );
-  assert(
-    modeInstructions("rewrite").startsWith("The user wants a full rewrite"),
-  );
-  assert(
-    modeInstructions("collab_edit").startsWith(
-      "The user wants collaborative editing",
-    ),
-  );
-  assertEquals(
-    modeInstructions("anything else"),
-    modeInstructions("collab_edit"),
-  );
-});
 
 // Identical to the old prompt but for one line. That line told the model to
 // preserve "template variables like {{variable}}", and this prompt is now
