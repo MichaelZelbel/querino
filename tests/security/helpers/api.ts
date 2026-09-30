@@ -12,6 +12,49 @@ import {
   serviceRoleKey,
 } from "./env";
 
+// ── The wire ──────────────────────────────────────────────────────────
+
+/**
+ * fetch with a deadline and one retry.
+ *
+ * On 2026-09-30 spec 18 timed out at 30 s with nothing in Supabase's logs for
+ * those 30 s: no function boot, no auth call, no database query. The request
+ * never arrived, so the suite reported a network stall on the runner's side as
+ * a failed security test. Node's fetch waits up to 300 s by default, so a stall
+ * only ever showed up as the test's own timeout, which says nothing.
+ *
+ * Retrying is safe for this suite because every call it makes is either a
+ * refusal (nothing happens either time) or idempotent: paid calls carry an
+ * idempotency key, and the admin and job calls write the same values twice.
+ */
+async function wireFetch(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  const path = url.replace(/^https:\/\/[^/]+/, "");
+  throw new Error(
+    `No answer from ${path} within ${timeoutMs / 1000} s, twice. That is a network ` +
+      `stall between this machine and Supabase, not a security finding. (${String(lastError)})`,
+  );
+}
+
+/** PostgREST and GoTrue answer in well under a second when they answer at all. */
+const QUICK_MS = 12_000;
+/** The slowest function measured in a week of production logs took 23.7 s. */
+const FUNCTION_MS = 25_000;
+
 export interface FnResponse {
   status: number;
   body: unknown;
@@ -59,11 +102,11 @@ export async function callFunction(
       break;
   }
 
-  const res = await fetch(`${FUNCTIONS_URL}/${name}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body ?? {}),
-  });
+  const res = await wireFetch(
+    `${FUNCTIONS_URL}/${name}`,
+    { method: "POST", headers, body: JSON.stringify(body ?? {}) },
+    FUNCTION_MS,
+  );
 
   const text = await res.text();
   let parsed: unknown = text;
@@ -101,11 +144,15 @@ export async function signInTestUser(): Promise<Session> {
   if (cachedSession) return cachedSession;
   const { email, password } = requireTestUser();
 
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: { apikey: ANON_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  const res = await wireFetch(
+    `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+    {
+      method: "POST",
+      headers: { apikey: ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    },
+    QUICK_MS,
+  );
   const json = (await res.json()) as {
     access_token?: string;
     user?: { id: string };
@@ -144,16 +191,20 @@ async function rest<T>(
   bearer: string,
   opts: RestOptions = {},
 ): Promise<RestResponse<T>> {
-  const res = await fetch(`${REST_URL}/${path}`, {
-    method: opts.method ?? "GET",
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${bearer}`,
-      "Content-Type": "application/json",
-      ...(opts.headers ?? {}),
+  const res = await wireFetch(
+    `${REST_URL}/${path}`,
+    {
+      method: opts.method ?? "GET",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${bearer}`,
+        "Content-Type": "application/json",
+        ...(opts.headers ?? {}),
+      },
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     },
-    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
-  });
+    QUICK_MS,
+  );
 
   const text = await res.text();
   let parsed: unknown = null;
@@ -216,20 +267,24 @@ export async function callMcpTool(
   toolName: string,
   args: Record<string, unknown>,
 ): Promise<{ status: number; text: string; isError: boolean }> {
-  const res = await fetch(`${FUNCTIONS_URL}/mcp-server`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json, text/event-stream",
+  const res = await wireFetch(
+    `${FUNCTIONS_URL}/mcp-server`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: toolName, arguments: args },
+      }),
     },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "tools/call",
-      params: { name: toolName, arguments: args },
-    }),
-  });
+    FUNCTION_MS,
+  );
 
   const raw = await res.text();
   const payload = raw

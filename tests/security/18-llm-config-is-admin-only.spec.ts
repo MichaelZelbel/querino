@@ -24,6 +24,7 @@ import { ANON_KEY, REST_URL } from "./helpers/env";
 interface ConfigRow {
   call_site: string;
   model: string;
+  enabled?: boolean;
 }
 
 // The write tests below aim a fake model at the live prompt-coach row. When one
@@ -31,26 +32,37 @@ interface ConfigRow {
 // every real user was left pointing at "attacker/expensive-model" (it happened
 // on 2026-09-23, when a second copy of this suite ran spec 08's temporary admin
 // promotion at the same moment). Whatever the outcome, the row is put back.
+//
+// `enabled` too: within two minutes of that write the nightly model sync saw an
+// unknown model and switched the row off, and the model was put back on
+// 2026-09-23 but the switch was not, until 2026-09-30.
 const PROMPT_COACH_ROW =
   "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default";
-let promptCoachModel: string | null = null;
+let promptCoach: { model: string; enabled: boolean } | null = null;
 
 test.beforeAll(async () => {
   const res = await restAsService<ConfigRow[]>(
-    `${PROMPT_COACH_ROW}&select=call_site,model`,
+    `${PROMPT_COACH_ROW}&select=call_site,model,enabled`,
   );
-  promptCoachModel = res.data?.[0]?.model ?? null;
+  const row = res.data?.[0];
+  promptCoach = row
+    ? { model: row.model, enabled: row.enabled !== false }
+    : null;
 });
 
 test.afterAll(async () => {
-  if (!promptCoachModel) return;
+  if (!promptCoach) return;
   const res = await restAsService<ConfigRow[]>(
-    `${PROMPT_COACH_ROW}&select=call_site,model`,
+    `${PROMPT_COACH_ROW}&select=call_site,model,enabled`,
   );
-  if (res.data?.[0]?.model !== promptCoachModel) {
+  const now = res.data?.[0];
+  if (
+    now?.model !== promptCoach.model ||
+    (now?.enabled !== false) !== promptCoach.enabled
+  ) {
     await restAsService(PROMPT_COACH_ROW, {
       method: "PATCH",
-      body: { model: promptCoachModel },
+      body: { model: promptCoach.model, enabled: promptCoach.enabled },
       headers: { Prefer: "return=minimal" },
     });
   }

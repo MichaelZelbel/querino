@@ -60,9 +60,17 @@ A red test here is a statement about production, not about the suite.
 | `07-idempotent-charging` | double charging | now, and it must stay green through Phase 2 |
 | `08-admin-can-still-run-the-jobs` | the human button on a machine endpoint | now |
 
-As of 2026-09-08 the suite is 24 spec files and every test is green. The table
-above lists the first eight, which were written for the 2026-08-20 audit; the
-rest carry their own subject in their filename.
+| `27-long-content-and-thin-balances-are-refused-first` | 2026-09-30: embeddings charged with no reservation; translations cut at 16,000 characters | migrations and functions of 2026-09-30 deployed |
+| `28-the-schema-findings-of-september-30` | 2026-09-30: team credentials without a seat, forged ratings and counters, stopwords readable, discussions moved, and the rest of `20260930100000` to `20260930100900` | those migrations applied |
+
+As of 2026-09-30 the suite is 29 spec files. The table above lists the first
+eight, written for the 2026-08-20 audit, and the two written for the
+2026-09-30 one; the rest carry their own subject in their filename.
+
+Every request has a deadline (12 s for PostgREST and sign-in, 25 s for
+functions) and is tried twice (`wireFetch` in `helpers/api.ts`). On 2026-09-30
+spec 18 timed out while Supabase's logs showed no request at all: a network
+stall on the runner's side, which now says so instead of failing as a test.
 
 ## The rule these tests exist to enforce
 
