@@ -1232,6 +1232,32 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_copy_events: {
+        Row: {
+          copied_on: string
+          prompt_id: string
+          visitor_key: string
+        }
+        Insert: {
+          copied_on?: string
+          prompt_id: string
+          visitor_key: string
+        }
+        Update: {
+          copied_on?: string
+          prompt_id?: string
+          visitor_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_copy_events_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_kit_coach_messages: {
         Row: {
           id: number
@@ -2730,6 +2756,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hook_before_user_created: { Args: { event: Json }; Returns: Json }
       increment_user_strike: {
         Args: { p_threshold?: number; p_user_id: string }
         Returns: {
@@ -2801,6 +2828,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_prompt_copy: { Args: { p_prompt_id: string }; Returns: undefined }
       redeem_team_invite: {
         Args: { p_token: string }
         Returns: {
