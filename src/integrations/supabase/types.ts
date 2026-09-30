@@ -1416,6 +1416,7 @@ export type Database = {
           description: string | null
           embedding: string | null
           embedding_attempts: number
+          embedding_claimed_at: string | null
           embedding_error: string | null
           embedding_failed_at: string | null
           fts: unknown
@@ -1441,6 +1442,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
@@ -1466,6 +1468,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
@@ -1664,6 +1667,7 @@ export type Database = {
           description: string
           embedding: string | null
           embedding_attempts: number
+          embedding_claimed_at: string | null
           embedding_error: string | null
           embedding_failed_at: string | null
           example_output: string | null
@@ -1693,6 +1697,7 @@ export type Database = {
           description: string
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           example_output?: string | null
@@ -1722,6 +1727,7 @@ export type Database = {
           description?: string
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           example_output?: string | null
@@ -1758,6 +1764,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_suite_lock: {
+        Row: {
+          acquired_at: string
+          holder: string
+          id: number
+        }
+        Insert: {
+          acquired_at?: string
+          holder: string
+          id?: number
+        }
+        Update: {
+          acquired_at?: string
+          holder?: string
+          id?: number
+        }
+        Relationships: []
       }
       skill_reviews: {
         Row: {
@@ -1857,6 +1881,7 @@ export type Database = {
           description: string | null
           embedding: string | null
           embedding_attempts: number
+          embedding_claimed_at: string | null
           embedding_error: string | null
           embedding_failed_at: string | null
           fts: unknown
@@ -1882,6 +1907,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
@@ -1907,6 +1933,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           fts?: unknown
@@ -2364,6 +2391,7 @@ export type Database = {
           description: string | null
           embedding: string | null
           embedding_attempts: number
+          embedding_claimed_at: string | null
           embedding_error: string | null
           embedding_failed_at: string | null
           filename: string | null
@@ -2392,6 +2420,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           filename?: string | null
@@ -2420,6 +2449,7 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           embedding_attempts?: number
+          embedding_claimed_at?: string | null
           embedding_error?: string | null
           embedding_failed_at?: string | null
           filename?: string | null
@@ -2679,6 +2709,16 @@ export type Database = {
           title: string
         }[]
       }
+      get_team_invite_preview: {
+        Args: { p_token: string }
+        Returns: {
+          already_member: boolean
+          expires_at: string
+          invited_by: string
+          role: string
+          team_name: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2752,6 +2792,7 @@ export type Database = {
           p_idempotency_key: string
           p_metadata?: Json
           p_model: string
+          p_period_id?: string
           p_prompt_tokens: number
           p_provider: string
           p_reserved_tokens?: number
@@ -2768,12 +2809,16 @@ export type Database = {
         }[]
       }
       release_llm_credits: {
-        Args: { p_tokens: number; p_user_id: string }
+        Args: { p_period_id?: string; p_tokens: number; p_user_id: string }
         Returns: undefined
       }
       reserve_llm_credits: {
         Args: { p_tokens: number; p_user_id: string }
         Returns: boolean
+      }
+      reserve_llm_credits_in_period: {
+        Args: { p_tokens: number; p_user_id: string }
+        Returns: string
       }
       search_prompt_kits_semantic: {
         Args: {
