@@ -68,6 +68,21 @@ function estimatedTokenCost(codePoint: number): number {
   return 4;
 }
 
+/**
+ * How many tokens to hold against a caller's balance before embedding `text`:
+ * the estimate for the part of it that will actually be sent. The estimate
+ * only overstates (see estimatedTokenCost), so the settled charge can only be
+ * lower. Never zero, because a reservation of zero tokens is granted by an
+ * empty balance.
+ */
+export function estimateEmbeddingTokens(text: string): number {
+  let tokens = 0;
+  for (const ch of truncateToTokenBudget(text)) {
+    tokens += estimatedTokenCost(ch.codePointAt(0)!);
+  }
+  return Math.max(1, Math.ceil(tokens));
+}
+
 /** Cut text to what the embedding model will accept, by estimated tokens. */
 export function truncateToTokenBudget(
   text: string,
@@ -84,7 +99,15 @@ export function truncateToTokenBudget(
   return text.slice(0, end);
 }
 
-interface Provider {
+/**
+ * A provider that has not answered in this long is given up on and the next
+ * one is tried. One embedding is a single small request; until 2026-09-30
+ * there was no limit at all, so a hung provider held the caller until the
+ * platform killed it at 150 s, and the backup provider never got its turn.
+ */
+export const EMBEDDING_TIMEOUT_MS = 20_000;
+
+export interface Provider {
   /** Short name, for logs and for the response body. */
   name: string;
   url: string;
@@ -167,11 +190,22 @@ export function statusBlamesInput(status: number): boolean {
  * one said. A caller that swallows this error is how the outage above stayed
  * invisible for as long as it did, so say something.
  */
-export async function createEmbedding(input: string): Promise<EmbeddingResult> {
+export async function createEmbedding(
+  input: string,
+  opts: {
+    /** Test seam; the configured providers when absent. */
+    providers?: Provider[];
+    /** Test seam; the global fetch when absent. */
+    fetchImpl?: typeof fetch;
+    timeoutMs?: number;
+  } = {},
+): Promise<EmbeddingResult> {
   const text = truncateToTokenBudget(input);
   if (!text.trim()) throw new NoEmbeddingProviderError("empty text", true);
 
-  const providers = embeddingProviders();
+  const providers = opts.providers ?? embeddingProviders();
+  const doFetch = opts.fetchImpl ?? fetch;
+  const timeoutMs = opts.timeoutMs ?? EMBEDDING_TIMEOUT_MS;
   if (providers.length === 0) {
     throw new NoEmbeddingProviderError(
       "No embedding provider configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY.",
@@ -184,13 +218,14 @@ export async function createEmbedding(input: string): Promise<EmbeddingResult> {
 
   for (const provider of providers) {
     try {
-      const resp = await fetch(provider.url, {
+      const resp = await doFetch(provider.url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${provider.apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ model: provider.model, input: text }),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       if (!resp.ok) {
@@ -251,4 +286,121 @@ export function embeddableText(
     .filter(Boolean)
     .join("\n\n");
   return truncateToTokenBudget(joined);
+}
+
+// ── Paying for an embedding ──────────────────────────────────────────────────
+//
+// generate-embedding charges the caller, like every other AI call, and until
+// 2026-09-30 it did so the old way: assertCredits asked only for a balance
+// above zero, the provider was paid, and the charge was written afterwards.
+// One token left bought as many parallel embeddings as the caller could send.
+// callLovableAI has held an estimate against the balance before the call since
+// 2026-09-16; this is the same sequence for an embedding, through the same
+// three ledger functions: reserve, then either settle or release.
+
+/** The one thing this needs from a service-role supabase-js client. */
+export interface LedgerClient {
+  rpc(
+    fn: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+}
+
+export type ChargedEmbedding =
+  | { ok: true; result: EmbeddingResult; reserved: number }
+  | {
+      ok: false;
+      reason: "credits_exhausted" | "credit_check_failed" | "provider_failed";
+      detail: string;
+    };
+
+/**
+ * Embed `text` for `userId` and charge them for it.
+ *
+ * The reservation is granted by the database only while it still fits the
+ * balance, so parallel calls queue on the allowance row instead of all
+ * reading the same balance. A provider failure releases it; a success settles
+ * it against the real usage in record_llm_usage. A settlement that fails is
+ * logged and leaves the estimate charged, never the other way round.
+ */
+export async function embedAndCharge(
+  ledger: LedgerClient,
+  userId: string,
+  text: string,
+  opts: {
+    feature: string;
+    metadata?: Record<string, unknown>;
+    /** Test seam; createEmbedding when absent. */
+    embed?: (text: string) => Promise<EmbeddingResult>;
+  },
+): Promise<ChargedEmbedding> {
+  const reserved = estimateEmbeddingTokens(text);
+
+  const { data: granted, error: reserveErr } = await ledger.rpc(
+    "reserve_llm_credits_in_period",
+    { p_user_id: userId, p_tokens: reserved },
+  );
+  if (reserveErr) {
+    // Fail closed, as callLovableAI does: an unreadable ledger must not turn
+    // into free embeddings.
+    return {
+      ok: false,
+      reason: "credit_check_failed",
+      detail: reserveErr.message,
+    };
+  }
+  // The period the reservation was taken from; settle and release name it.
+  const periodId = typeof granted === "string" ? granted : null;
+  if (!periodId) {
+    return {
+      ok: false,
+      reason: "credits_exhausted",
+      detail: "reservation refused",
+    };
+  }
+
+  let result: EmbeddingResult;
+  try {
+    result = await (opts.embed ?? createEmbedding)(text);
+  } catch (e) {
+    const { error: releaseErr } = await ledger.rpc("release_llm_credits", {
+      p_user_id: userId,
+      p_tokens: reserved,
+      p_period_id: periodId,
+    });
+    if (releaseErr) {
+      console.error(
+        "[embeddings] release_llm_credits error:",
+        releaseErr.message,
+      );
+    }
+    return {
+      ok: false,
+      reason: "provider_failed",
+      detail: e instanceof Error ? e.message : String(e),
+    };
+  }
+
+  try {
+    const { error: logErr } = await ledger.rpc("record_llm_usage", {
+      p_user_id: userId,
+      p_idempotency_key: crypto.randomUUID(),
+      p_feature: opts.feature,
+      p_provider: result.provider,
+      p_model: result.model,
+      p_prompt_tokens: result.promptTokens,
+      p_completion_tokens: 0,
+      p_total_tokens: result.totalTokens,
+      p_metadata: opts.metadata ?? {},
+      p_reserved_tokens: reserved,
+      p_period_id: periodId,
+    });
+    if (logErr) {
+      console.error("[embeddings] record_llm_usage error:", logErr.message);
+    }
+  } catch (e) {
+    console.error("[embeddings] usage logging threw:", e);
+  }
+
+  return { ok: true, result, reserved };
 }

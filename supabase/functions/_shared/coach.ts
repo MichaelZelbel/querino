@@ -28,7 +28,7 @@ import {
 } from "./llm.ts";
 
 const MAX_HISTORY_TURNS = 20; // last 20 user+assistant pairs
-const CANVAS_TRUNCATE = 16000;
+export const CANVAS_TRUNCATE = 16000;
 // The credit gate only checks for a balance above zero, so the message is
 // capped too, not only the canvas. Since 2026-09-16.
 const MESSAGE_TRUNCATE = 4000;
@@ -84,6 +84,125 @@ const RESPOND_TOOL: ToolDefinition = {
 /** What a coach actually sends: its own text plus the block all four share. */
 export function buildSystemPrompt(cfg: CoachConfig): string {
   return cfg.systemPrompt + baseSystemSuffix(cfg.artifactName);
+}
+
+// ── A canvas longer than the coach can see (30 September 2026) ──────────────
+//
+// The canvas is cut at CANVAS_TRUNCATE characters to bound the cost of one
+// call, and in collab_edit the model answers with "the complete artifact, not
+// a diff", which the editor applies in place of everything the user had. So a
+// 70,000-character skill came back as an edit of its first 16,000 characters,
+// the other 54,000 were gone from the editor, and the next save made that
+// permanent. Eight artifacts in production were longer than the cut when this
+// was found. A cut canvas is now read, never rewritten: the model is told it
+// sees only the start, and an edit it sends anyway is dropped here.
+
+export interface PreparedCanvas {
+  /** What the model is shown. */
+  text: string;
+  /** True when `text` is only the start of the canvas. */
+  truncated: boolean;
+  /** The full length of the canvas the editor holds. */
+  length: number;
+}
+
+export function prepareCanvas(
+  raw: unknown,
+  limit: number = CANVAS_TRUNCATE,
+): PreparedCanvas {
+  const full = typeof raw === "string" ? raw : "";
+  return {
+    text: full.length > limit ? full.slice(0, limit) : full,
+    truncated: full.length > limit,
+    length: full.length,
+  };
+}
+
+/** The user turn the model reads for one message. */
+export function buildUserTurn(
+  mode: string,
+  message: string,
+  canvas: PreparedCanvas,
+  selectionBlock: string,
+): string {
+  // A cut canvas is discussed, not edited, so the model is not asked for an
+  // edit it would have to invent the end of.
+  const effectiveMode = canvas.truncated ? "chat_only" : mode;
+  const note = canvas.truncated
+    ? `\ncanvas_note: canvas_content is only the first ${canvas.text.length} of ${canvas.length} characters. Do not rewrite the canvas; answer in the chat, and say which part you could not see if it matters.`
+    : "";
+  return `mode: ${effectiveMode}${note}
+user_message: ${message}
+canvas_content: <<<
+${canvas.text}
+>>>${selectionBlock}`;
+}
+
+export interface CoachReply {
+  assistantMessage: string;
+  canvas: { updated: boolean; content?: string; changeNote?: string };
+}
+
+/**
+ * The model's tool arguments, turned into what the browser may apply.
+ * chat_only never edits, an update without content is no update, and a cut
+ * canvas is never replaced.
+ */
+export function shapeCoachReply(
+  parsed: unknown,
+  requestedMode: string,
+  canvas: PreparedCanvas,
+  artifactName: string,
+): CoachReply {
+  // Forced tool arguments are almost always an object, but "almost" has cost
+  // a 500 before: a null or a bare string parses fine and then throws on
+  // property access.
+  const args =
+    parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as {
+          assistantMessage?: unknown;
+          canvas?: unknown;
+        })
+      : {};
+  let assistantMessage = String(args.assistantMessage ?? "").trim() || "Done.";
+  const proposed =
+    args.canvas &&
+    typeof args.canvas === "object" &&
+    !Array.isArray(args.canvas)
+      ? (args.canvas as {
+          updated?: unknown;
+          content?: unknown;
+          changeNote?: unknown;
+        })
+      : {};
+
+  let updated = !!proposed.updated;
+  if (requestedMode === "chat_only") updated = false;
+  if (typeof proposed.content !== "string" || proposed.content.length === 0) {
+    updated = false;
+  }
+  if (canvas.truncated) {
+    updated = false;
+    if (requestedMode === "collab_edit") {
+      const seen = canvas.text.length.toLocaleString("en-US");
+      const total = canvas.length.toLocaleString("en-US");
+      assistantMessage +=
+        `\n\n(I could only read the first ${seen} of this ${artifactName}'s ${total} characters, ` +
+        "so I left the editor as it was: an edit from me would have replaced everything after that point.)";
+    }
+  }
+
+  if (!updated) return { assistantMessage, canvas: { updated: false } };
+  return {
+    assistantMessage,
+    canvas: {
+      updated: true,
+      content: proposed.content as string,
+      changeNote:
+        (typeof proposed.changeNote === "string" && proposed.changeNote) ||
+        "Updated",
+    },
+  };
 }
 
 // LangChain stores messages as { type: "human"|"ai"|"system", content: ... }
@@ -224,19 +343,18 @@ export function startCoachServer(cfg: CoachConfig) {
 
       const history = await loadHistory(session_id, user_id);
 
-      const truncatedCanvas = (canvas_content ?? "")
-        .toString()
-        .slice(0, CANVAS_TRUNCATE);
+      const canvas = prepareCanvas(canvas_content);
       const truncatedMessage = capText(message, MESSAGE_TRUNCATE);
       const selectionBlock = selection?.text
         ? `\nselection: ${JSON.stringify(String(selection.text).slice(0, 2000))}`
         : "";
 
-      const userTurn = `mode: ${mode}
-user_message: ${truncatedMessage}
-canvas_content: <<<
-${truncatedCanvas}
->>>${selectionBlock}`;
+      const userTurn = buildUserTurn(
+        mode,
+        truncatedMessage,
+        canvas,
+        selectionBlock,
+      );
 
       const messages: ChatMessage[] = [
         { role: "system", content: systemPrompt },
@@ -257,7 +375,8 @@ ${truncatedCanvas}
           mode,
           session_id,
           workspace_id,
-          canvas_length: (canvas_content ?? "").length,
+          canvas_length: canvas.length,
+          canvas_truncated: canvas.truncated,
           history_turns: history.length,
         },
       });
@@ -273,10 +392,7 @@ ${truncatedCanvas}
         );
       }
 
-      let parsed: {
-        assistantMessage?: string;
-        canvas?: { updated?: boolean; content?: string; changeNote?: string };
-      };
+      let parsed: unknown;
       try {
         parsed = JSON.parse(call.function.arguments);
       } catch (e) {
@@ -294,24 +410,8 @@ ${truncatedCanvas}
         );
       }
 
-      // Forced tool arguments are almost always an object, but "almost" has
-      // cost a 500 before: a null or a bare string parses fine and then
-      // throws on property access.
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        parsed = {};
-      }
-      const assistantMessage =
-        (parsed.assistantMessage ?? "").toString().trim() || "Done.";
-      const canvas =
-        parsed.canvas &&
-        typeof parsed.canvas === "object" &&
-        !Array.isArray(parsed.canvas)
-          ? parsed.canvas
-          : { updated: false };
-      // Force chat_only to never edit
-      if (mode === "chat_only") canvas.updated = false;
-      // If updated=true but no content, downgrade to no-op
-      if (canvas.updated && !canvas.content) canvas.updated = false;
+      const reply = shapeCoachReply(parsed, mode, canvas, cfg.artifactName);
+      const assistantMessage = reply.assistantMessage;
 
       // Persist history (best-effort)
       try {
@@ -328,13 +428,7 @@ ${truncatedCanvas}
       return new Response(
         JSON.stringify({
           assistantMessage,
-          canvas: {
-            updated: !!canvas.updated,
-            content: canvas.updated ? canvas.content : undefined,
-            changeNote: canvas.updated
-              ? canvas.changeNote || "Updated"
-              : undefined,
-          },
+          canvas: reply.canvas,
           session: { id: session_id },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },

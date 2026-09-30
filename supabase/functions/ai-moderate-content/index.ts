@@ -17,6 +17,11 @@ import {
   DEFAULT_MODEL,
 } from "../_shared/llm-registry.ts";
 import { SYSTEM_PROMPT as systemPrompt } from "../_shared/prompts/ai-moderate-content.ts";
+import {
+  planAttempt,
+  statusAfterFailure,
+  violationEmail,
+} from "../_shared/moderationQueue.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +38,16 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_URL = "https://api.resend.com/emails";
 const FROM_EMAIL = "Querino <support@querino.ai>";
 const BATCH_SIZE = 5;
-const MAX_RETRIES = 3;
+// The attempt limit lives in _shared/moderationQueue.ts with the reason it is
+// counted before the call rather than after.
+//
+// The platform kills a function at 150 s. One classification is a short
+// forced tool call, so a provider that has not answered in 45 s is not going
+// to, and holding on to it for the transport's 110 s let a batch of five run
+// far past the kill. After TICK_DEADLINE_MS no new row is started, and the
+// rows not yet begun go back to 'pending' untouched.
+const CLASSIFY_TIMEOUT_MS = 45_000;
+const TICK_DEADLINE_MS = 90_000;
 const CONFIDENCE_AUTO_UNPUBLISH = 0.85;
 const STRIKE_THRESHOLD = 5;
 
@@ -183,6 +197,7 @@ async function classifyContent(content: string): Promise<AIClassification> {
       },
     ],
     toolChoice: { type: "function", function: { name: "classify_content" } },
+    signal: AbortSignal.timeout(CLASSIFY_TIMEOUT_MS),
   });
 
   // Best-effort spend record, the way llm.ts does it for user calls. No user
@@ -320,28 +335,8 @@ async function sendViolationEmail(
     return;
   }
 
-  const categoryLabels: Record<string, string> = {
-    sexual: "Inappropriate content",
-    hate: "Hateful or abusive content",
-    malware: "Potentially malicious content",
-    pii: "Personal information detected",
-    injection: "Prompt injection attempt",
-  };
-
-  const categoryLabel = categoryLabels[category] || "Content policy violation";
-  const artifactTitle = title || "Untitled";
-
-  const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1a1a1a;">Your ${itemType} has been unpublished</h2>
-      <p>Hi,</p>
-      <p>Our automated content review found that your ${itemType} <strong>"${artifactTitle}"</strong> may violate our <a href="https://querino.ai/community-guidelines">Community Guidelines</a>.</p>
-      <p><strong>Category:</strong> ${categoryLabel}</p>
-      <p>Your artifact has been set to private. You can still access and edit it in your library.</p>
-      <p>If you believe this is a mistake, please contact us at <a href="mailto:support@querino.ai">support@querino.ai</a> and we'll review it manually.</p>
-      <p style="color: #666; font-size: 14px; margin-top: 30px;">The Querino Team</p>
-    </div>
-  `;
+  // The title is the author's own text; violationEmail escapes it.
+  const { subject, html } = violationEmail({ itemType, title, category });
 
   try {
     const res = await fetch(RESEND_URL, {
@@ -353,7 +348,7 @@ async function sendViolationEmail(
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: [user.email],
-        subject: `Your ${itemType} "${artifactTitle}" has been unpublished`,
+        subject,
         html,
       }),
     });
@@ -366,7 +361,7 @@ async function sendViolationEmail(
       );
       return;
     }
-    console.log("Violation email sent to", user.email);
+    console.log("Violation email sent to user", userId);
   } catch (emailErr) {
     console.error("Failed to send violation email:", emailErr);
   }
@@ -376,6 +371,9 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // The tick's clock starts with the request, before anything is claimed.
+  const startedAt = Date.now();
 
   // Each hit spends money at the AI gateway, so the caller is either the
   // pg_cron job holding the shared secret or a signed-in admin pressing
@@ -422,9 +420,57 @@ Deno.serve(async (req: Request) => {
     let processed = 0;
     let violations = 0;
     let errors = 0;
+    let released = 0;
 
-    for (const item of pendingItems) {
+    for (let i = 0; i < pendingItems.length; i++) {
+      const item = pendingItems[i];
+
+      if (Date.now() - startedAt > TICK_DEADLINE_MS) {
+        // Nothing was tried for these, so nothing is counted: they go back
+        // to 'pending' as they were. Only rows still 'processing' are
+        // touched, in case the stale window already gave one to another tick.
+        const rest = pendingItems.slice(i).map((r) => r.id);
+        const { error: releaseErr } = await serviceClient
+          .from("moderation_review_queue")
+          .update({ status: "pending", claimed_at: null })
+          .in("id", rest)
+          .eq("status", "processing");
+        if (releaseErr) {
+          console.error("Failed to release unstarted rows:", releaseErr);
+        }
+        released = rest.length;
+        console.warn(`Tick deadline reached; released ${rest.length} row(s)`);
+        break;
+      }
+
+      // A row the claim handed out again after a killed tick comes back with
+      // the attempt this worker wrote before it died (see
+      // _shared/moderationQueue.ts). One that has used them all is closed
+      // here, without another paid call.
+      const plan = planAttempt(item.retry_count);
+      if (plan.giveUp) {
+        const { error: giveUpErr } = await serviceClient
+          .from("moderation_review_queue")
+          .update({
+            status: "error",
+            ai_reason:
+              "gave up: every attempt ended without a result (the worker was stopped before it could record one)",
+          })
+          .eq("id", item.id);
+        if (giveUpErr) {
+          console.error(`Failed to close queue row ${item.id}:`, giveUpErr);
+        }
+        errors++;
+        continue;
+      }
+
       try {
+        // Counted before anything is paid for, so a tick killed during the
+        // call below still leaves the attempt on the row.
+        await updateQueueRow(serviceClient, item.id, {
+          retry_count: plan.attempt,
+        });
+
         // Classify what the artifact says NOW, not what the client said it
         // said. The queue row is filed by moderate-content with a snapshot
         // the client assembled, so until 2026-09-16 a benign snapshot filed
@@ -569,15 +615,16 @@ Deno.serve(async (req: Request) => {
         processed++;
       } catch (itemErr) {
         console.error(`Error processing item ${item.id}:`, itemErr);
-        const newRetryCount = item.retry_count + 1;
 
         // Back to 'pending' so the next claim picks it up again, or 'error'
-        // once it has failed MAX_RETRIES times.
+        // once this was the last attempt. The attempt was already counted
+        // above; writing it again here covers the case where that write is
+        // what failed.
         const { error: retryErr } = await serviceClient
           .from("moderation_review_queue")
           .update({
-            status: newRetryCount >= MAX_RETRIES ? "error" : "pending",
-            retry_count: newRetryCount,
+            status: statusAfterFailure(plan.attempt),
+            retry_count: plan.attempt,
             ai_reason:
               itemErr instanceof Error ? itemErr.message : "Unknown error",
           })
@@ -593,13 +640,16 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(
-      `AI moderation complete: ${processed} processed, ${violations} violations, ${errors} errors`,
+      `AI moderation complete: ${processed} processed, ${violations} violations, ${errors} errors, ${released} released`,
     );
 
-    return new Response(JSON.stringify({ processed, violations, errors }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ processed, violations, errors, released }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error("AI moderation error:", err);
     return new Response(JSON.stringify({ error: "Internal error" }), {

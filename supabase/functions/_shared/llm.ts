@@ -336,9 +336,13 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
   const reserved = opts.user_id
     ? estimateReservation(opts.messages, effective.max_tokens, opts.tools)
     : 0;
+  // The period the reservation was taken from. The settlement and any release
+  // name it, so a call that runs across midnight UTC on the 1st is charged to
+  // the month it started in, not half to each.
+  let periodId: string | null = null;
   if (reserved > 0) {
     const { data: granted, error: reserveErr } = await sb.rpc(
-      "reserve_llm_credits",
+      "reserve_llm_credits_in_period",
       { p_user_id: opts.user_id, p_tokens: reserved },
     );
     if (reserveErr) {
@@ -351,7 +355,8 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
         "AI features are temporarily unavailable (credit check failed). Please try again in a moment.",
       );
     }
-    if (granted !== true) {
+    periodId = typeof granted === "string" ? granted : null;
+    if (!periodId) {
       throw new CreditsExhaustedError(
         "You do not have enough AI credits left for this request. They will reset shortly, or contact support@querino.ai.",
       );
@@ -368,6 +373,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
       const { error: releaseErr } = await sb.rpc("release_llm_credits", {
         p_user_id: opts.user_id,
         p_tokens: reserved,
+        p_period_id: periodId,
       });
       if (releaseErr) {
         console.error(
@@ -421,6 +427,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
       p_total_tokens: result.usage.total_tokens,
       p_metadata: { ...(opts.metadata ?? {}), config_source: source },
       p_reserved_tokens: reserved,
+      p_period_id: periodId,
     });
     if (error)
       console.error("[llm.callLovableAI] record_llm_usage error:", error);

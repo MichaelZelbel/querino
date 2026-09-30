@@ -6,6 +6,12 @@ import {
   anyTermFilter,
   tokenizeSearchQuery,
 } from "../_shared/postgrestFilter.ts";
+import {
+  authenticateMcpRequest,
+  describeMcpBadRequest,
+  mcpMethodGate,
+  type TokenLookup,
+} from "../_shared/mcpGate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,10 +23,6 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-// Long-lived MCP token prefixes recognised by the server.
-// Anything else (e.g. Supabase session JWTs starting with "ey") is rejected.
-const MCP_TOKEN_PREFIXES = ["qrn_mcp_", "mnr_mcp_"];
 
 interface Auth {
   userId: string;
@@ -35,44 +37,28 @@ function authedClient(_auth: Auth) {
   });
 }
 
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  const bytes = new Uint8Array(digest);
-  let hex = "";
-  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
-  return hex;
-}
-
-async function authenticate(req: Request): Promise<Auth> {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new Error("Missing authorization token");
-
-  // Only long-lived MCP tokens are accepted. Reject Supabase session JWTs etc.
-  const isMcpToken = MCP_TOKEN_PREFIXES.some((p) => token.startsWith(p));
-  if (!isMcpToken) {
-    throw new Error(
-      "Invalid token. Expected a long-lived Querino MCP token (qrn_mcp_… or mnr_mcp_…). " +
-        "Generate one in Settings → MCP Server.",
-    );
-  }
-
-  const tokenHash = await sha256Hex(token);
-
+// The token check itself, and the reason a failed lookup is a 503 rather than
+// a 401, live in _shared/mcpGate.ts. This is only the database call.
+const lookupToken: TokenLookup = async (tokenHash) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
   const { data, error } = await sb.rpc("lookup_mcp_token", {
     p_token_hash: tokenHash,
   });
-  if (error) throw new Error("Token lookup failed");
+  if (error) return { userId: null, error: error.message };
+  return { userId: (data as string | null) ?? null, error: null };
+};
 
-  const userId = data as string | null;
-  if (!userId) throw new Error("Invalid, revoked, or expired token");
-
-  return { userId };
+/** The response with this server's CORS headers on it. */
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(corsHeaders)) headers.set(k, v);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 // ── Input hygiene ───────────────────────────────────────────────────
@@ -1313,36 +1299,59 @@ const mcpHandler = async (c: any) => {
     });
   }
 
-  // Two separate catches, because the two failures mean different things to
-  // a client. A bad token is the caller's problem and gets a 401 with the
-  // reason. A transport failure is ours: one catch around both used to
-  // answer 401 for it too, so an MCP client saw "Authentication failed" and
-  // threw away a perfectly good token.
-  let auth: Auth;
-  try {
-    auth = await authenticate(c.req.raw);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Authentication failed";
-    return c.json({ error: msg }, 401, corsHeaders);
+  // A GET for an event stream, or a HEAD, is answered 405 here: this server
+  // has none, and mcp-lite answers some of those GETs 400 instead (see
+  // _shared/mcpGate.ts). Before the token check, because no token helps.
+  const gated = mcpMethodGate(c.req.raw);
+  if (gated) return withCors(gated);
+
+  // Three outcomes that mean different things to a client. A token the
+  // database does not know is the caller's problem: 401, and the client may
+  // drop it. A lookup that failed is ours: 503, and the client keeps its
+  // token and tries again. A transport failure is ours too, below. Until
+  // 2026-09-30 the failed lookup was answered 401 as well. The log names the
+  // class only, never token material.
+  const outcome = await authenticateMcpRequest(c.req.raw, lookupToken);
+  if (!outcome.ok) {
+    if (outcome.reason === "lookup_error") {
+      console.error(
+        `mcp-server auth refused: ${outcome.reason}: ${outcome.detail ?? ""}`,
+      );
+    } else {
+      console.warn(`mcp-server auth refused: ${outcome.reason}`);
+    }
+    return c.json({ error: outcome.message }, outcome.status, {
+      ...corsHeaders,
+      ...(outcome.status === 503 ? { "Retry-After": "5" } : {}),
+    });
   }
+  const auth: Auth = { userId: outcome.userId };
 
   try {
     const mcpServer = buildMcpServer(auth);
     const transport = new StreamableHttpTransport();
     // mcp-lite v0.10+: bind() returns the actual fetch handler bound to the server.
     const httpHandler = transport.bind(mcpServer);
+    // A copy of the request, read only if the transport answers 400, so the
+    // log can say what that 400 was about (bodies are not otherwise logged).
+    const probe = c.req.raw.method === "POST" ? c.req.raw.clone() : null;
     const response = await httpHandler(c.req.raw);
 
-    // Add CORS headers to the response
-    const newHeaders = new Headers(response.headers);
-    for (const [k, v] of Object.entries(corsHeaders)) {
-      newHeaders.set(k, v);
+    if (response.status === 400 && probe) {
+      const described = describeMcpBadRequest(
+        await probe.text().catch(() => ""),
+        c.req.raw.headers.get("mcp-protocol-version"),
+        await response
+          .clone()
+          .text()
+          .catch(() => ""),
+      );
+      console.warn(
+        `mcp-server transport 400: method=${described.method} protocol=${described.protocol} reason=${described.reason}`,
+      );
     }
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: newHeaders,
-    });
+
+    return withCors(response);
   } catch (err) {
     console.error(
       "mcp-server transport error:",

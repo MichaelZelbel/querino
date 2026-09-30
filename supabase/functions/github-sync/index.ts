@@ -15,6 +15,7 @@ import {
   generateMarkdown,
   managedFolders,
 } from "../_shared/githubSyncFormat.ts";
+import { gitBlobSha } from "../_shared/gitBlob.ts";
 
 // A row from prompts, skills, workflows or prompt_kits. Only id and slug are
 // read here; generateMarkdown reads the rest.
@@ -88,11 +89,27 @@ interface GitHubTreeItem {
   sha: string | null;
 }
 
-interface GitHubTreeEntry {
+// Either `sha: null` (delete the file) or `content` (GitHub writes the blob).
+// GitHub refuses an entry that carries both.
+type GitHubTreeEntry = {
   path: string;
   mode: "100644";
   type: "blob";
-  sha: string | null; // null = delete file
+} & ({ sha: null } | { content: string });
+
+// A GitHub that does not answer fails the request instead of holding the
+// browser until the platform kills the function at 150 s, the same limit the
+// queue worker has used since 2026-09-23. Creating the tree carries every
+// file's contents, so it gets longer.
+const GITHUB_TIMEOUT_MS = 15_000;
+const GITHUB_TREE_TIMEOUT_MS = 60_000;
+
+function githubFetch(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs: number = GITHUB_TIMEOUT_MS,
+): Promise<Response> {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
 // GitHub API helpers
@@ -102,7 +119,7 @@ async function getRef(
   branch: string,
   token: string,
 ): Promise<string | null> {
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`,
     {
       headers: {
@@ -136,7 +153,7 @@ async function getTree(
   treeSha: string,
   token: string,
 ): Promise<GitHubTreeItem[]> {
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`,
     {
       headers: {
@@ -156,39 +173,6 @@ async function getTree(
   return data.tree || [];
 }
 
-async function createBlob(
-  owner: string,
-  repo: string,
-  content: string,
-  token: string,
-): Promise<string> {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/blobs`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content: btoa(unescape(encodeURIComponent(content))),
-        encoding: "base64",
-      }),
-    },
-  );
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("Failed to create blob:", error);
-    throw new Error(`Failed to create blob: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.sha;
-}
-
 async function createTreeWithDeletions(
   owner: string,
   repo: string,
@@ -201,7 +185,7 @@ async function createTreeWithDeletions(
     body.base_tree = baseTree;
   }
 
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees`,
     {
       method: "POST",
@@ -213,6 +197,7 @@ async function createTreeWithDeletions(
       },
       body: JSON.stringify(body),
     },
+    GITHUB_TREE_TIMEOUT_MS,
   );
 
   if (!response.ok) {
@@ -244,7 +229,7 @@ async function createCommit(
     body.parents = [];
   }
 
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/commits`,
     {
       method: "POST",
@@ -275,7 +260,7 @@ async function updateRef(
   commitSha: string,
   token: string,
 ): Promise<void> {
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`,
     {
       method: "PATCH",
@@ -305,7 +290,7 @@ async function createRef(
   commitSha: string,
   token: string,
 ): Promise<void> {
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs`,
     {
       method: "POST",
@@ -339,7 +324,7 @@ async function createFileViaContentsApi(
   branch: string,
   token: string,
 ): Promise<void> {
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
     {
       method: "PUT",
@@ -387,7 +372,7 @@ This repository is synced from [Querino](https://querino.ai).
 Each file contains YAML frontmatter with metadata and the content in Markdown format.
 `;
 
-  const response = await fetch(
+  const response = await githubFetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/README.md`,
     {
       method: "PUT",
@@ -616,7 +601,7 @@ Deno.serve(async (req) => {
     if (testConnection) {
       try {
         // Try to get repo info instead of branch ref (works for empty repos too)
-        const repoResponse = await fetch(
+        const repoResponse = await githubFetch(
           `https://api.github.com/repos/${owner}/${repo}`,
           {
             headers: {
@@ -783,32 +768,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create blobs for all new files
-    const blobPromises = files.map(async (file) => {
-      const sha = await createBlob(owner, repo, file.content, githubToken!);
-      return {
+    // Every file travels inside the one tree request and GitHub writes the
+    // blobs itself. Until 2026-09-30 each file was its own POST, all at once:
+    // 167 simultaneous requests for the one account that syncs, against
+    // GitHub's documented limits of 100 concurrent requests and 900 points a
+    // minute. The SHA each blob will get is git's hash of its bytes, computed
+    // here for github_sync_state (see _shared/gitBlob.ts).
+    const deletions = treeEntries.length;
+    const blobs = await Promise.all(
+      files.map(async (file) => ({
         artifactType: file.artifactType,
         artifactId: file.artifactId,
         path: file.path,
-        sha,
-      };
-    });
-
-    const blobs = await Promise.all(blobPromises);
-    console.log("Created blobs:", blobs.length);
-
-    // Add new file entries
-    for (const blob of blobs) {
+        sha: await gitBlobSha(file.content),
+      })),
+    );
+    for (const file of files) {
       treeEntries.push({
-        path: blob.path,
+        path: file.path,
         mode: "100644",
         type: "blob",
-        sha: blob.sha,
+        content: file.content,
       });
     }
 
     console.log(
-      `Tree entries: ${treeEntries.filter((e) => e.sha === null).length} deletions, ${blobs.length} additions`,
+      `Tree entries: ${deletions} deletions, ${files.length} additions`,
     );
 
     // Create new tree with deletions and additions

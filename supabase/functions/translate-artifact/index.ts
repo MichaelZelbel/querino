@@ -13,6 +13,10 @@ import {
 } from "../_shared/llm.ts";
 import { interpolatePrompt } from "../_shared/llm-config.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/translate-artifact.ts";
+import {
+  MAX_TRANSLATE_CHARS,
+  tooLongToTranslate,
+} from "../_shared/translate.ts";
 
 const TOOL: ToolDefinition = {
   type: "function",
@@ -110,6 +114,20 @@ serve(async (req) => {
           .filter((t) => t.length > 0)
       : [];
 
+    // Refused whole rather than cut: a translation of the first 16,000
+    // characters came back looking like the whole artifact (see
+    // _shared/translate.ts). Before the credit check, so it costs nothing.
+    const tooLong = tooLongToTranslate(content, artifactType);
+    if (tooLong) {
+      return new Response(
+        JSON.stringify({ error: tooLong, code: "content_too_long" }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     await assertCredits(user_id);
 
     // The text lives in _shared/prompts/translate-artifact.ts as a {{placeholder}}
@@ -124,8 +142,9 @@ serve(async (req) => {
     };
     const systemPrompt = interpolatePrompt(SYSTEM_PROMPT, templateVars) ?? "";
 
-    // Truncate content to keep token usage predictable.
-    const truncatedContent = capText(content, 16000);
+    // Within MAX_TRANSLATE_CHARS by the check above; capText only turns a
+    // non-string into an empty one.
+    const truncatedContent = capText(content, MAX_TRANSLATE_CHARS);
     const userPrompt = `Title: ${title}
 Description: ${description}
 Tags: ${tags.join(", ")}

@@ -13,9 +13,9 @@ import {
   getServiceClient,
 } from "../_shared/llm.ts";
 import {
-  createEmbedding,
   EMBEDDING_DIMENSIONS,
-  type EmbeddingResult,
+  embedAndCharge,
+  type LedgerClient,
 } from "../_shared/embeddings.ts";
 
 // EMBEDDING_MODEL, EMBEDDING_DIMENSIONS and MAX_INPUT_CHARS now live in
@@ -113,49 +113,66 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Turn it into a vector, whichever provider is answering today.
+    // 5. Turn it into a vector, whichever provider is answering today, and
+    //    charge for it.
     //
     //    This used to call OpenAI directly. On 23 August the OpenAI balance hit
     //    zero and every call here returned 429, which the semantic-merge caller
     //    catches and turns into an empty list on purpose, so concept search on
     //    the website silently became keyword search. _shared/embeddings.ts
     //    tries each configured provider before giving up.
-    let result: EmbeddingResult;
-    try {
-      result = await createEmbedding(text);
-    } catch (e) {
+    //
+    //    Since 2026-09-30 the charge is reserved before the provider is paid
+    //    and settled after, like every call through callLovableAI. The check
+    //    in step 3 only asks for a balance above zero, which one token left
+    //    passed for any number of parallel calls.
+    const charged = await embedAndCharge(
+      sb as unknown as LedgerClient,
+      userId,
+      text,
+      {
+        feature: "embedding",
+        metadata: { itemType: itemType ?? null, itemId: itemId ?? null },
+      },
+    );
+    if (!charged.ok) {
+      if (charged.reason === "credits_exhausted") {
+        return json(
+          {
+            error:
+              "You do not have enough AI credits left for this request. They will reset shortly, or contact support@querino.ai.",
+            code: "credits_exhausted",
+          },
+          402,
+        );
+      }
+      if (charged.reason === "credit_check_failed") {
+        console.error(
+          "[generate-embedding] reserve_llm_credits error:",
+          charged.detail,
+        );
+        return json(
+          {
+            error:
+              "AI features are temporarily unavailable (credit check failed). Please try again in a moment.",
+          },
+          503,
+        );
+      }
       // The provider's own message names models, keys and account state,
       // which a caller has no business reading. It stays in the log.
-      const detail = e instanceof Error ? e.message : String(e);
-      console.error("[generate-embedding] no provider could answer:", detail);
+      console.error(
+        "[generate-embedding] no provider could answer:",
+        charged.detail,
+      );
       return json({ error: "Embedding provider error" }, 502);
     }
 
+    const result = charged.result;
     const embedding = result.embedding;
-
-    // 6. Token logging (best-effort — never block response)
-    const promptTokens = result.promptTokens;
     const totalTokens = result.totalTokens;
 
-    try {
-      const { error: logErr } = await sb.rpc("record_llm_usage", {
-        p_user_id: userId,
-        p_idempotency_key: crypto.randomUUID(),
-        p_feature: "embedding",
-        p_provider: result.provider,
-        p_model: result.model,
-        p_prompt_tokens: promptTokens,
-        p_completion_tokens: 0,
-        p_total_tokens: totalTokens,
-        p_metadata: { itemType: itemType ?? null, itemId: itemId ?? null },
-      });
-      if (logErr)
-        console.error("[generate-embedding] record_llm_usage error:", logErr);
-    } catch (e) {
-      console.error("[generate-embedding] usage logging threw:", e);
-    }
-
-    // 7. Optional: persist into the right artefact table. Ownership was
+    // 6. Optional: persist into the right artefact table. Ownership was
     //    checked in step 4, before the paid call.
     let written = false;
     if (itemType && itemId) {

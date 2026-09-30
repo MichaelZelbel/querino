@@ -172,23 +172,27 @@ Deno.serve(async (req) => {
     //    button fires whenever it is pressed. Both used to select the same
     //    NULL rows in the same order and pay for every embedding twice.
     //
-    //    There is no lock RPC and no claim column, and a migration is out of
-    //    scope here, so the claim is a conditional UPDATE on updated_at, a
-    //    column every one of these tables already bumps on any update
-    //    (update_embedding included, through the updated_at triggers). A row
-    //    is ours only if our UPDATE ... WHERE embedding IS NULL AND
-    //    updated_at < now() - lease actually changed it. Under Postgres's
-    //    default READ COMMITTED the second runner's UPDATE waits on the row
-    //    lock, re-checks its WHERE against the committed row, sees the fresh
-    //    updated_at and matches nothing. The lease is longer than one
-    //    embedding call and shorter than the cron interval, so a row that was
-    //    just written waits at most one extra tick. Touching updated_at wakes
-    //    no sync: the Menerio and GitHub triggers only compare text and
-    //    metadata columns, and the embedding trigger only nulls on text
-    //    changes.
+    //    The claim is a conditional UPDATE on embedding_claimed_at, a lease
+    //    column that exists for nothing else. A row is ours only if our
+    //    UPDATE ... WHERE embedding IS NULL AND embedding_claimed_at <
+    //    now() - lease actually changed it. Under Postgres's default READ
+    //    COMMITTED the second runner's UPDATE waits on the row lock,
+    //    re-checks its WHERE against the committed row, sees the fresh stamp
+    //    and matches nothing. The lease is longer than one embedding call and
+    //    shorter than the cron interval, so a row that was just claimed waits
+    //    at most one extra tick.
+    //
+    //    Until 2026-09-30 the lease was updated_at itself, which every page
+    //    reads as "the author changed this": the sitemap's lastmod, a detail
+    //    page's dateModified, the "recently updated" order. Every embedding
+    //    this job made looked like an edit. Migration 20260930100300 added the
+    //    column and stopped job-only writes from moving updated_at; this
+    //    function must not be deployed before that migration is applied, or
+    //    every claim fails on the missing column (and nothing is embedded or
+    //    charged until it is).
     const CLAIM_LEASE_MS = 90_000;
     const claimCutoff = new Date(Date.now() - CLAIM_LEASE_MS).toISOString();
-    const claimable = `updated_at.is.null,updated_at.lt.${claimCutoff}`;
+    const claimable = `embedding_claimed_at.is.null,embedding_claimed_at.lt.${claimCutoff}`;
 
     const results: Record<
       string,
@@ -247,7 +251,7 @@ Deno.serve(async (req) => {
         // the row was rewritten since we selected it; either way not ours.
         const { data: claimed, error: claimErr } = await sb
           .from(cfg.table)
-          .update({ updated_at: new Date().toISOString() })
+          .update({ embedding_claimed_at: new Date().toISOString() })
           .eq("id", row.id)
           .is("embedding", null)
           .lt("embedding_attempts", MAX_EMBEDDING_ATTEMPTS)
