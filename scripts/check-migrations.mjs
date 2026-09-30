@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 //
-// Two rules about migrations, enforced before they are applied.
+// Four rules about migrations, enforced before they are applied.
 //
 // Phase 3 item 1 of the 2026-08-20 audit. That audit's one piece of genuinely
 // good news was that all 71 SECURITY DEFINER functions set search_path and all
@@ -25,6 +25,20 @@
 //      balance was readable with the public anon key. The default is the
 //      dangerous one and the mistake is invisible in a diff, so the option has
 //      to be stated either way.
+//
+//   4. A SECURITY DEFINER function says who may call it (migrations from
+//      2026-09-30 on). A new function in public is executable by three
+//      grantees at once: PUBLIC, which Postgres grants by default, and anon and
+//      authenticated by name, which Supabase's default privileges for postgres
+//      add. So a definer function is callable with the anon key from the
+//      moment it exists. That is how enqueue_github_sync was open to anyone
+//      until 2026-09-09. Revoking from one of the three leaves the others:
+//      20260909010000 revoked from anon while PUBLIC still had it, and
+//      20260427121349 revoked from PUBLIC while anon and authenticated kept
+//      lookup_mcp_token until 2026-09-30. So the file that creates one must
+//      revoke from PUBLIC and from anon, and either revoke from or grant to
+//      authenticated; or grant it to PUBLIC or anon on purpose. Older files
+//      predate the rule and are judged live by tests/security/28 instead.
 //
 // This reads the migration files rather than the database, so it fails in the
 // pull request rather than after deployment. tests/security/14 asserts the same
@@ -158,6 +172,56 @@ function lineOf(sql, index) {
   return sql.slice(0, index).split("\n").length;
 }
 
+// Rule 4 applies to migrations with this version or later; see the header.
+const CALLERS_STATED_FROM = "20260930000000";
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** "PUBLIC, anon CASCADE" -> {"public", "anon"}. */
+function roleNames(list) {
+  return list
+    .split(",")
+    .map((part) => part.trim().split(/\s+/)[0].replace(/"/g, "").toLowerCase())
+    .filter(Boolean);
+}
+
+/**
+ * Whether the file states who may execute the named function. Either it is
+ * granted to PUBLIC or anon on purpose, or it is revoked from PUBLIC and from
+ * anon and the file also says what authenticated gets (a revoke or a grant).
+ * REVOKE/GRANT ... ON ALL FUNCTIONS IN SCHEMA public count too. `name` is as
+ * written after CREATE FUNCTION, maybe schema-qualified.
+ */
+function callersAreStated(sql, name) {
+  const bare = name.replace(/"/g, "").replace(/^public\./i, "");
+  const privilege = `(?:ALL(?:\\s+PRIVILEGES)?|EXECUTE)\\s+`;
+  const onThis =
+    `ON\\s+(?:FUNCTION\\s+(?:"?public"?\\.)?"?${escapeRegExp(bare)}"?\\s*(?:\\([^;]*?\\))?` +
+    `|ALL\\s+FUNCTIONS\\s+IN\\s+SCHEMA\\s+"?public"?)\\s+`;
+
+  const revokedFrom = new Set();
+  const grantedTo = new Set();
+  for (const m of sql.matchAll(
+    new RegExp(`REVOKE\\s+${privilege}${onThis}FROM\\s+([^;]*)`, "gi"),
+  )) {
+    for (const role of roleNames(m[1])) revokedFrom.add(role);
+  }
+  for (const m of sql.matchAll(
+    new RegExp(`GRANT\\s+${privilege}${onThis}TO\\s+([^;]*)`, "gi"),
+  )) {
+    for (const role of roleNames(m[1])) grantedTo.add(role);
+  }
+
+  if (grantedTo.has("public") || grantedTo.has("anon")) return true;
+  return (
+    revokedFrom.has("public") &&
+    revokedFrom.has("anon") &&
+    (revokedFrom.has("authenticated") || grantedTo.has("authenticated"))
+  );
+}
+
 /**
  * Every CREATE VIEW header in the file, keyed by view name. Only the header
  * matters: WITH (security_invoker = ...) lives between the name and the AS.
@@ -256,6 +320,7 @@ for (const path of [
 
 const problems = [];
 let functionsChecked = 0;
+let callersChecked = 0;
 let tablesChecked = 0;
 let viewsChecked = 0;
 
@@ -280,6 +345,8 @@ for (const path of targets) {
   const raw = readFileSync(path, "utf8");
   const sql = stripComments(raw);
   const file = basename(path);
+  const version = /^(\d{14})/.exec(file)?.[1] ?? "";
+  const statesCallers = version >= CALLERS_STATED_FROM;
 
   for (const fn of functionHeaders(sql)) {
     if (!/\bSECURITY\s+DEFINER\b/i.test(fn.text)) continue;
@@ -289,6 +356,18 @@ for (const path of targets) {
         `${file}:${lineOf(sql, fn.index)}  ${fn.name} is SECURITY DEFINER with no SET search_path.\n` +
           `    It runs as its owner, so the caller decides what its unqualified names mean.\n` +
           `    Add:  SET search_path = public, pg_temp`,
+      );
+    }
+    if (!statesCallers) continue;
+    callersChecked++;
+    if (!callersAreStated(sql, fn.name)) {
+      problems.push(
+        `${file}:${lineOf(sql, fn.index)}  ${fn.name} is SECURITY DEFINER and never says who may call it.\n` +
+          `    A new function is executable by PUBLIC (Postgres) and by anon and authenticated by name\n` +
+          `    (Supabase's default privileges), so the anon key can call it. Revoking from one leaves the others.\n` +
+          `    Add:  REVOKE ALL ON FUNCTION ${fn.name}(<argument types>) FROM PUBLIC, anon, authenticated;\n` +
+          `          GRANT EXECUTE ON FUNCTION ${fn.name}(<argument types>) TO <the roles that call it>;\n` +
+          `    or, if every visitor really may call it:  GRANT EXECUTE ... TO PUBLIC;`,
       );
     }
   }
@@ -315,6 +394,7 @@ if (problems.length > 0) {
 
 console.log(
   `Migrations OK: ${functionsChecked} SECURITY DEFINER function${functionsChecked === 1 ? "" : "s"} all set search_path, ` +
+    `${callersChecked} of them from 2026-09-30 on all say who may call them, ` +
     `${tablesChecked} table${tablesChecked === 1 ? "" : "s"} all have row-level security, ` +
     `${viewsChecked} view${viewsChecked === 1 ? "" : "s"} all state security_invoker.`,
 );

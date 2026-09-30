@@ -1,6 +1,9 @@
 # Database Schema
 
-This document describes the main database tables in Querino.
+This document describes the main database tables in Querino, and the rules
+the database itself enforces on them. Production is the truth: when this page
+and `supabase/migrations/` disagree with the live catalogue, the catalogue
+wins. Last checked against production on 2026-09-30.
 
 ## Core Tables
 
@@ -17,9 +20,9 @@ User profile information.
 | website | text | Personal website |
 | twitter | text | Twitter/X handle |
 | github | text | GitHub username |
-| role | text | User role (user, admin) |
-| plan_type | text | Subscription plan (free, premium) |
-| plan_source | text | Plan source (stripe, manual) |
+| role | text | Legacy (user, admin); grants nothing, `user_roles` decides |
+| plan_type | text | Legacy (free, premium, team); `user_roles` decides |
+| plan_source | text | Legacy (internal, stripe, gifted, test) |
 | github_sync_enabled | boolean | GitHub sync enabled |
 | github_repo | text | GitHub repository (owner/repo) |
 | github_branch | text | Git branch for sync |
@@ -47,8 +50,14 @@ AI prompts created by users.
 | rating_count | integer | Number of ratings |
 | copies_count | integer | Times cloned |
 | embedding | vector(1536) | Semantic search embedding |
+| embedding_attempts, embedding_error, embedding_failed_at | | Embedding job bookkeeping |
+| embedding_claimed_at | timestamptz | The embedding job's lease on the row |
+| menerio_synced, menerio_note_id, menerio_synced_at | | Menerio sync bookkeeping |
+| fts | tsvector | Generated from title, description and content, for search |
 | created_at | timestamptz | Creation timestamp |
-| updated_at | timestamptz | Last update |
+| updated_at | timestamptz | Last change by a person (see "Rules the database enforces") |
+
+`skills`, `workflows` and `prompt_kits` carry the same bookkeeping columns.
 
 ---
 
@@ -134,7 +143,7 @@ Items within collections.
 | id | uuid | Primary key |
 | collection_id | uuid | Parent collection |
 | item_id | uuid | Referenced item ID |
-| item_type | text | Type: prompt, skill, workflow |
+| item_type | text | Type: prompt, skill, workflow, prompt_kit |
 | sort_order | integer | Display order |
 | created_at | timestamptz | Added timestamp |
 
@@ -172,6 +181,24 @@ Team membership.
 
 ---
 
+### `team_invites`
+
+Invite links. Readable only by the team's owner and admins; a person holding
+a token uses `get_team_invite_preview` to see the team and
+`redeem_team_invite` to join.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| team_id | uuid | Team (references teams) |
+| token | text | 24 random bytes, base64 |
+| role | text | Role the invite grants: member, admin |
+| created_by | uuid | Owner or admin who made it |
+| expires_at | timestamptz | Default 14 days after creation |
+| used_count | integer | Times redeemed |
+
+---
+
 ## Review & Interaction Tables
 
 ### `prompt_reviews`, `skill_reviews`, `workflow_reviews`
@@ -198,7 +225,7 @@ Discussion comments on artifacts.
 |--------|------|-------------|
 | id | uuid | Primary key |
 | item_id | uuid | Commented item |
-| item_type | text | Type: prompt, skill, workflow |
+| item_type | text | Type: prompt, skill, workflow, prompt_kit, collection |
 | user_id | uuid | Commenter |
 | content | text | Comment text |
 | parent_id | uuid | Parent comment (for replies) |
@@ -216,14 +243,15 @@ Edit suggestions for artifacts.
 |--------|------|-------------|
 | id | uuid | Primary key |
 | item_id | uuid | Target item |
-| item_type | text | Type: prompt, skill, workflow |
+| item_type | text | Type: prompt, skill, workflow, prompt_kit |
 | author_id | uuid | Suggester |
 | title | text | Suggestion title |
 | description | text | Change description |
 | content | text | Suggested new content |
-| status | text | pending, approved, rejected |
+| status | text | open, changes_requested, accepted, rejected |
 | reviewer_id | uuid | Reviewer |
 | review_comment | text | Review feedback |
+| requested_changes | jsonb | What the reviewer asked for |
 | created_at | timestamptz | Submission timestamp |
 | updated_at | timestamptz | Last update |
 
@@ -267,7 +295,8 @@ Stored credentials (GitHub tokens, etc.).
 | user_id | uuid | Credential owner |
 | team_id | uuid | Team (for shared credentials) |
 | credential_type | text | Type: github_token |
-| credential_value | text | Encrypted value |
+| credential_value | text | Always NULL at rest: the trigger moves it into Vault |
+| credential_secret_id | uuid | The Vault secret; read only through `read_user_credential` (service role) |
 | created_at | timestamptz | Creation timestamp |
 | updated_at | timestamptz | Last update |
 
@@ -287,9 +316,12 @@ Admin-configurable global settings.
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `tokens_per_credit` | 200 | LLM tokens per display credit |
-| `credits_free_per_month` | 0 | Monthly credits for free users |
+| `tokens_per_credit` | 2000 | LLM tokens per display credit |
+| `credits_free_per_month` | 500 | Monthly credits for free users |
 | `credits_premium_per_month` | 1500 | Monthly credits for premium users |
+| `max_free_accounts` | 100 | Signup cap checked by `check_signup_allowed` |
+
+Values as set in production on 2026-09-30.
 
 ---
 
@@ -372,8 +404,66 @@ Current AI allowance with dynamically calculated credits.
 | `is_premium_user(user_id)` | Check if user has premium plan |
 | `is_team_member(team_id, user_id)` | Check team membership |
 | `is_team_admin_or_owner(team_id, user_id)` | Check team admin status |
+| `get_team_invite_preview(token)` | Team name, role, inviter and "already a member" for a valid, unexpired invite; signed-in callers only, joins nobody |
+| `redeem_team_invite(token)` | Join a team with an invite (Premium); signed-in callers only |
+| `leave_team(team_id)` | Leave a team as a non-owner, with or without Premium |
+| `read_user_credential(type, user_id, team_id)` | Decrypt a stored token; service role only |
 | `get_similar_prompts(target_id)` | Find semantically similar prompts |
 | `get_similar_skills(target_id)` | Find semantically similar skills |
 | `get_similar_workflows(target_id)` | Find semantically similar workflows |
 | `search_prompts_semantic(embedding)` | Semantic search for prompts |
 | `generate_unique_slug(title, table)` | Generate URL-friendly slug |
+
+---
+
+## Rules the database enforces
+
+Written down because each of them was once missing, and a policy that looks
+right on its own is OR-ed with every other permissive policy on its table.
+
+**Who may write which columns.**
+
+- An artifact's owner (`author_id`, or `owner_id` on collections) cannot be
+  changed from the browser (`refuse_artifact_owner_change`).
+- `rating_avg`, `rating_count`, `copies_count` and `embedding` are computed.
+  A write from the browser roles is silently ignored: a new row starts at zero
+  and without an embedding, an update keeps the stored values
+  (`keep_computed_columns_computed`, 2026-09-30). The review triggers, the
+  embedding job and the service role are not affected.
+- `profiles.role`, `plan_type` and `plan_source` change only by an admin
+  (`guard_privileged_profile_columns`).
+- A comment keeps its author, artifact and parent; a suggestion keeps its
+  author and artifact, and `reviewer_id` can only be set to the caller or
+  cleared (`refuse_discussion_move`, 2026-09-30). Reviews keep their author and
+  artifact (`refuse_review_retarget`).
+- A suggestion's author may edit it while it is `open` or `changes_requested`
+  and may only leave it `open` with no reviewer; accepting and rejecting belong
+  to the artifact's owner.
+- A team credential (`user_credentials.team_id`) can only be written by
+  someone with a seat on that team, the team's GitHub sync only ever uses the
+  token of a current seat holder (owner first, then the newest), and losing a
+  seat deletes that person's tokens for the team (2026-09-30).
+
+**What `updated_at` means on prompts, skills, workflows and prompt kits.** It
+is the time a person last changed the artifact. Writes that touch only the
+bookkeeping columns (embedding, Menerio sync, ratings, copies, `fts`) keep it
+as it was (`touch_artifact_updated_at`, 2026-09-30). A machine (service role,
+cron) that sets `updated_at` itself is obeyed; the browser is not.
+
+**Deleting.**
+
+- An account: what it made or owns goes with it, what records money
+  (`llm_usage_events`) stays without the person. See CLAUDE.md.
+- An artifact: its AI insights, comments, suggestions and the entries pointing
+  at it in anybody's collections go with it; a collection takes the comments
+  written on it (`delete_artifact_attachments`, 2026-09-30). Activity events and
+  the sync queues stay, because they are history and the way the deletion
+  reaches GitHub and Menerio.
+
+**What the browser roles hold.** `anon` and `authenticated` hold SELECT,
+INSERT, UPDATE and DELETE on public tables (row-level security decides the
+rows), and no TRUNCATE, REFERENCES, TRIGGER or MAINTAIN, including on tables
+created later by `postgres` (2026-09-30). Every SECURITY DEFINER function
+created from 2026-09-30 on revokes EXECUTE from PUBLIC in its own migration or
+grants it on purpose (`scripts/check-migrations.mjs`, rule 4), and
+`tests/security/28` lists the ones the anon key may call.
