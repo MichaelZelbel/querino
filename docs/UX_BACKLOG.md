@@ -170,3 +170,37 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 2. Tick acceptance criteria.
 3. Set 🟩 with date + short note on what shipped.
 4. New findings get appended as ⬜ at the bottom and re-prioritized later.
+
+---
+
+## Found in the 2026-09-30 audit, not yet done
+
+### 21. ⬜ AI Insights tab overlaps text on phones · S · ★★
+- **Area:** Detail pages (mobile)
+- **Problem:** At 375 px the floating AI Insights tab sits over the right edge of the text.
+- **Acceptance:** At 375 px no text on a prompt, skill or workflow page is covered by the tab.
+
+### 22. ⬜ `/reset-password` opened directly says the link expired · S · ★
+- **Area:** Auth
+- **Problem:** Visiting the page without a reset token shows "this link has expired" instead of a way to request one.
+- **Acceptance:** Without a token the page offers "Send me a reset link".
+
+### 23. ⬜ Prompt pages show no date · S · ★
+- **Area:** Prompt detail
+- **Problem:** The page shows `published_at`, which is empty on every production row.
+- **Acceptance:** A date is shown for every public prompt (published, or else created).
+
+### 24. ⬜ Pages without a main heading · S · ★
+- **Area:** A11y
+- **Problem:** Profile edit, New collection and the Team-not-found state have no `h1`.
+- **Acceptance:** Every routed page renders exactly one `h1`.
+
+### 25. ⬜ Public profile ignores the server's data · M · ★
+- **Area:** `UserProfile`
+- **Problem:** It fetches again what the loader already sent, shows no kits tab, and keeps the previous profile when you move to another.
+- **Acceptance:** First paint uses the loader data; kits are listed; switching profiles resets the page.
+
+### 26. ⬜ Unauthorised Edit pages behave differently per type · S · ★
+- **Area:** Editors
+- **Problem:** A prompt's Edit page shows a message; skills and workflows redirect with a toast.
+- **Acceptance:** One behaviour for all four types.
