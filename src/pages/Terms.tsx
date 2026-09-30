@@ -383,14 +383,14 @@ const Terms = () => {
                       my/our (*) contract for the provision of the following
                       service (*):
                     </p>
-                    <p className="mt-2">— Ordered on (*) / received on (*):</p>
-                    <p>— Name of consumer(s):</p>
-                    <p>— Address of consumer(s):</p>
+                    <p className="mt-2">Ordered on (*) / received on (*):</p>
+                    <p>Name of consumer(s):</p>
+                    <p>Address of consumer(s):</p>
                     <p>
-                      — Signature of consumer(s) (only if this form is notified
-                      on paper):
+                      Signature of consumer(s) (only if this form is notified on
+                      paper):
                     </p>
-                    <p>— Date:</p>
+                    <p>Date:</p>
                     <p className="mt-2 text-sm">(*) Delete as appropriate.</p>
                   </div>
                 </section>

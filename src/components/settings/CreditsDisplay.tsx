@@ -154,7 +154,7 @@ export function CreditsDisplay() {
               </>
             ) : (
               <>
-                Running low —{" "}
+                Running low:{" "}
                 <strong>{Math.round(remainingCredits).toLocaleString()}</strong>{" "}
                 credits left
                 {resetDate ? (

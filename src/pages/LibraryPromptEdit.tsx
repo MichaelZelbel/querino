@@ -1407,7 +1407,7 @@ export default function LibraryPromptEdit() {
                             new Date(prompt.created_at),
                             "MMM d, yyyy 'at' h:mm a",
                           )
-                        : "—"}
+                        : "Unknown"}
                     </p>
                   </div>
                 </div>
@@ -1423,7 +1423,7 @@ export default function LibraryPromptEdit() {
                             new Date(prompt.updated_at),
                             "MMM d, yyyy 'at' h:mm a",
                           )
-                        : "—"}
+                        : "Unknown"}
                     </p>
                   </div>
                 </div>

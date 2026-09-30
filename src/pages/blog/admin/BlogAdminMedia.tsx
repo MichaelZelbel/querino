@@ -40,7 +40,7 @@ import type { BlogMedia } from "@/types/blog";
 import { formatDistanceToNow } from "date-fns";
 
 function formatFileSize(bytes: number | null): string {
-  if (!bytes) return "—";
+  if (!bytes) return "Unknown size";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -203,7 +203,7 @@ export default function BlogAdminMedia() {
                 <p className="text-xs text-muted-foreground">
                   {item.width && item.height
                     ? `${item.width}×${item.height}`
-                    : "—"}{" "}
+                    : "No dimensions"}{" "}
                   • {formatFileSize(item.file_size)}
                 </p>
               </div>

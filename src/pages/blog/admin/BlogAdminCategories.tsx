@@ -129,7 +129,7 @@ export default function BlogAdminCategories() {
                     {category.slug}
                   </TableCell>
                   <TableCell className="max-w-[300px] truncate text-muted-foreground">
-                    {category.description || "—"}
+                    {category.description || "No description"}
                   </TableCell>
                   <TableCell className="text-center">
                     {category.post_count}

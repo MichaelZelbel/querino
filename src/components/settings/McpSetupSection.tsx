@@ -50,19 +50,19 @@ const TOOL_LIST = [
 function buildPromptText() {
   return `Set up Querino as my permanent AI-artifacts MCP server. This has two parts: install the server, and save behavior rules so you use it correctly in every future session. Do both.
 
-**Step 1 — Get my token.** Before anything else, ask me to paste my Querino Personal MCP Token. I'll generate it in Querino → Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token" (starts with \`qrn_mcp_\`, shown only once) and send it back. Wait for it — don't try to connect without it.
+**Step 1: Get my token.** Before anything else, ask me to paste my Querino Personal MCP Token. I'll generate it in Querino → Settings → MCP Server / API Access → "Personal MCP Tokens" → "Create token" (starts with \`qrn_mcp_\`, shown only once) and send it back. Wait for it. Don't try to connect without it.
 
-**Step 2 — Install the server.** Register Querino as a **persistent, user-scoped MCP server** using your tool's normal mechanism (a CLI like \`claude mcp add\` / \`gemini mcp add\`, or your MCP config file):
+**Step 2: Install the server.** Register Querino as a **persistent, user-scoped MCP server** using your tool's normal mechanism (a CLI like \`claude mcp add\` / \`gemini mcp add\`, or your MCP config file):
 
 - Transport: HTTP (streamable, JSON-RPC 2.0; SSE responses supported)
 
-- URL: \`https://mcp.querino.ai\` *(exactly this — no \`/mcp\`, \`/sse\`, or \`/v1\` suffix; the root URL is the endpoint)*
+- URL: \`https://mcp.querino.ai\` *(exactly this, with no \`/mcp\`, \`/sse\`, or \`/v1\` suffix; the root URL is the endpoint)*
 
 - Auth header: \`Authorization: Bearer <the token I gave you>\`
 
-- The token is long-lived (no 1-hour expiry); it stays valid until I revoke it. If you get HTTP 401 (invalid/expired/revoked), stop and ask me for a new one — don't retry the old one.
+- The token is long-lived (no 1-hour expiry); it stays valid until I revoke it. If you get HTTP 401 (invalid/expired/revoked), stop and ask me for a new one. Don't retry the old one.
 
-**Step 3 — Save behavior rules.** Ask my permission, then append the following to your **global / user-level** instructions file (e.g. \`~/.claude/CLAUDE.md\`, \`GEMINI.md\`, \`AGENTS.md\`, or your tool's user-scope rules) so they apply in every future session:
+**Step 3: Save behavior rules.** Ask my permission, then append the following to your **global / user-level** instructions file (e.g. \`~/.claude/CLAUDE.md\`, \`GEMINI.md\`, \`AGENTS.md\`, or your tool's user-scope rules) so they apply in every future session:
 
 - **Tool-family routing.** A single reusable LLM instruction/template → \`prompt_*\`. Several prompts shipped together as one Markdown document → \`prompt_kit_*\`. A capability/framework for how to do something → \`skill_*\`. A multi-step process/pipeline → \`workflow_*\`. A mixed, user-curated grouping across types → \`collection_*\`. If unsure, ask one short clarifying question instead of guessing.
 
@@ -70,11 +70,11 @@ function buildPromptText() {
 
 - **Mutations.** Only create/update/delete when my intent is clear; if ambiguous, confirm first. \`delete_*\` requires explicit confirmation unless I already said "delete"/"remove" this turn. Never bulk-delete speculatively.
 
-- **Confirmation.** After any create/update/delete, end with a one-line confirmation: what changed and the id/slug it now has. Surface the real server error message on failure — don't hide it behind a generic message.
+- **Confirmation.** After any create/update/delete, end with a one-line confirmation: what changed and the id/slug it now has. Surface the real server error message on failure. Don't hide it behind a generic message.
 
 - **Output format.** Never use Markdown tables (they break in narrow chat). List each item as one short bullet: id/slug + title only. Show full details (content, tags, description) only when I explicitly ask.
 
-**Step 4 — Verify.** Confirm the MCP server is connected (list your servers and confirm Querino tools like \`list_prompts\`, \`get_my_profile\` appear), confirm the rules were written to the file, then call \`get_my_profile\` with no arguments to prove auth works end-to-end. Report all three results, with exact status codes/messages on any failure.`;
+**Step 4: Verify.** Confirm the MCP server is connected (list your servers and confirm Querino tools like \`list_prompts\`, \`get_my_profile\` appear), confirm the rules were written to the file, then call \`get_my_profile\` with no arguments to prove auth works end-to-end. Report all three results, with exact status codes/messages on any failure.`;
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {

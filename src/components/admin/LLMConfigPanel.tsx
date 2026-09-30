@@ -297,7 +297,7 @@ export default function LLMConfigPanel() {
                           auto
                         </Badge>
                       ) : (
-                        "—"
+                        "Off"
                       )}
                     </TableCell>
                     <TableCell>
@@ -480,7 +480,7 @@ function EditDialog({
                       disabled={!availability[p.provider]}
                     >
                       {p.label}
-                      {!availability[p.provider] && " — no API key"}
+                      {!availability[p.provider] && " (no API key)"}
                     </SelectItem>
                   ))}
                 </SelectContent>

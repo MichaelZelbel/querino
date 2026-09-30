@@ -147,7 +147,7 @@ export function EmbeddingsBackfillPanel() {
                 </div>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold tabular-nums">
-                    {counts?.[t] ?? "—"}
+                    {counts?.[t] ?? "…"}
                   </span>
                   <span className="text-xs text-muted-foreground">missing</span>
                 </div>

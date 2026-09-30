@@ -29,8 +29,8 @@ const SETTING_KEYS = [
 
 const SETTING_LABELS: Record<string, string> = {
   tokens_per_credit: "Tokens per AI Credit",
-  credits_free_per_month: "Free Plan – AI Credits per Month",
-  credits_premium_per_month: "Premium Plan – AI Credits per Month",
+  credits_free_per_month: "Free Plan: AI Credits per Month",
+  credits_premium_per_month: "Premium Plan: AI Credits per Month",
   max_free_accounts: "Max Free Accounts (Signup Cap)",
 };
 

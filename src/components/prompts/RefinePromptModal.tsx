@@ -283,7 +283,7 @@ export function RefinePromptModal({
           <p className="text-xs text-muted-foreground">
             {hasCredits
               ? `~${Math.floor(credits.remainingCredits)} AI credits remaining`
-              : "You're out of AI credits — they reset at the start of your next period."}
+              : "You're out of AI credits. They reset at the start of your next period."}
           </p>
         )}
 

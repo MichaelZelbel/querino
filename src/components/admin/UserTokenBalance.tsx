@@ -113,7 +113,7 @@ export function UserTokenBalance({
   };
 
   if (!allowance) {
-    return <span className="text-muted-foreground">—</span>;
+    return <span className="text-muted-foreground">None</span>;
   }
 
   return (

@@ -191,7 +191,7 @@ export default function PromptWizard() {
               </h1>
               <p className="mt-2 text-muted-foreground">
                 The Kickstart Template uses AI to craft powerful prompts
-                tailored to your needs. It's part of Querino Premium — contact
+                tailored to your needs. It's part of Querino Premium. Contact
                 support to learn more.
               </p>
             </div>
@@ -430,7 +430,7 @@ export default function PromptWizard() {
               <p className="text-center text-xs text-muted-foreground">
                 {hasCredits
                   ? `~${Math.floor(credits.remainingCredits)} AI credits remaining`
-                  : "You're out of AI credits — they reset at the start of your next period."}
+                  : "You're out of AI credits. They reset at the start of your next period."}
               </p>
             )}
           </div>

@@ -81,7 +81,7 @@ export default function Docs() {
                 Learn to use Querino
               </h1>
               <p className="text-lg text-muted-foreground">
-                A friendly guide to everything Querino can do for you — from
+                A friendly guide to everything Querino can do for you, from
                 creating your first prompt or prompt kit to building a team
                 library and connecting external AI assistants over MCP.
               </p>
@@ -146,7 +146,7 @@ export default function Docs() {
 
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino is your home for AI artifacts — prompts, prompt kits,
+                Querino is your home for AI artifacts: prompts, prompt kits,
                 skills, and workflows. Whether you want to find a great prompt
                 someone else created, build a personal library, or share
                 knowledge with your team, this is the place.
@@ -203,8 +203,8 @@ export default function Docs() {
                           className="text-primary hover:underline"
                         >
                           Kickstart Template
-                        </Link>{" "}
-                        — it generates a prompt from a short description.
+                        </Link>
+                        , which generates a prompt from a short description.
                       </p>
                     </div>
                   </div>
@@ -274,7 +274,7 @@ export default function Docs() {
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
                 Prompts are the heart of Querino. A prompt is a set of
-                instructions you give to an AI model — the clearer your prompt,
+                instructions you give to an AI model. The clearer your prompt,
                 the better the output. Querino helps you write, store, refine,
                 and share them.
               </p>
@@ -289,31 +289,31 @@ export default function Docs() {
               </p>
               <ol className="space-y-3 text-muted-foreground">
                 <li>
-                  <strong>Content</strong> — The actual prompt text. Be specific
+                  <strong>Content:</strong> The actual prompt text. Be specific
                   about what you want the AI to do, include context, and
                   describe the expected output format.
                 </li>
                 <li>
-                  <strong>Title & Description</strong> — A clear name and a
+                  <strong>Title & Description:</strong> A clear name and a
                   one-liner so you (and others) can find it later.
                 </li>
                 <li>
-                  <strong>Category</strong> — Choose from Writing, Coding,
+                  <strong>Category:</strong> Choose from Writing, Coding,
                   Business, Creative, Research, or Education.
                 </li>
                 <li>
-                  <strong>Language</strong> — Indicate the language the prompt
-                  is written in.
+                  <strong>Language:</strong> Indicate the language the prompt is
+                  written in.
                 </li>
                 <li>
-                  <strong>Tags</strong> — Add a few keywords to make searching
+                  <strong>Tags:</strong> Add a few keywords to make searching
                   easier.
                 </li>
               </ol>
 
               <Tip>
                 Not sure how to fill in the metadata? Click{" "}
-                <strong>"Suggest with AI"</strong> while editing — Querino's AI
+                <strong>"Suggest with AI"</strong> while editing. Querino's AI
                 reads your prompt content and proposes a title, description,
                 category, and tags for you.
               </Tip>
@@ -322,8 +322,8 @@ export default function Docs() {
                 Visibility: private vs. public
               </h3>
               <p className="text-muted-foreground mb-4">
-                Every new artifact starts out <strong>private</strong> — only
-                you can see it. When you're happy with it, toggle it to{" "}
+                Every new artifact starts out <strong>private</strong>: only you
+                can see it. When you're happy with it, toggle it to{" "}
                 <strong>public</strong> on the detail page. Public prompts
                 appear on the Discover page for the whole community to find,
                 rate, and clone.
@@ -397,7 +397,7 @@ export default function Docs() {
                   object with…")
                 </li>
                 <li>
-                  Provide context and constraints — who is the audience? What
+                  Provide context and constraints: who is the audience? What
                   length?
                 </li>
                 <li>Include examples of desired output when helpful</li>
@@ -418,10 +418,10 @@ export default function Docs() {
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
                 A <strong>Prompt Kit</strong> is a curated bundle of related
-                prompts — a single Markdown article with multiple prompts
-                grouped under one topic. Use kits when several prompts belong
-                together: an onboarding kit, a content production playbook, a
-                research toolkit, etc.
+                prompts: a single Markdown article with multiple prompts grouped
+                under one topic. Use kits when several prompts belong together:
+                an onboarding kit, a content production playbook, a research
+                toolkit, etc.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">
@@ -457,7 +457,7 @@ export default function Docs() {
                   in between.
                 </li>
                 <li>
-                  Fill in title, description, category, language, and tags — or
+                  Fill in title, description, category, language, and tags, or
                   use <strong>"Suggest with AI"</strong>.
                 </li>
               </ol>
@@ -472,7 +472,7 @@ export default function Docs() {
               <p className="text-muted-foreground mb-4">
                 On the detail page a kit renders as an article: your prose flows
                 naturally and each prompt block appears as a card with a
-                one-click <strong>Copy</strong> button — readers can grab any
+                one-click <strong>Copy</strong> button. Readers can grab any
                 individual prompt without losing the surrounding context.
               </p>
 
@@ -509,7 +509,7 @@ export default function Docs() {
 
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                A skill is a reusable prompt framework — think of it as a
+                A skill is a reusable prompt framework. Think of it as a
                 "personality" or "role" you can assign to an AI. Skills are
                 great for system prompts, personas, or structured templates you
                 use over and over.
@@ -520,17 +520,17 @@ export default function Docs() {
               </h3>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
-                  <strong>System prompts</strong> — Define an AI's personality,
+                  <strong>System prompts:</strong> Define an AI's personality,
                   tone, rules, and capabilities. For example: "You are a senior
                   code reviewer. Always explain your reasoning."
                 </li>
                 <li>
-                  <strong>Reusable frameworks</strong> — A structured template
+                  <strong>Reusable frameworks:</strong> A structured template
                   for recurring tasks like code reviews, blog post outlines, or
                   meeting summaries.
                 </li>
                 <li>
-                  <strong>Parameterized templates</strong> — Skills with
+                  <strong>Parameterized templates:</strong> Skills with
                   placeholder variables that get filled in for each use.
                 </li>
               </ul>
@@ -587,7 +587,7 @@ export default function Docs() {
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
                 Workflows are step-by-step processes documented in Markdown.
-                They describe how to achieve something — an automation recipe, a
+                They describe how to achieve something: an automation recipe, a
                 standard operating procedure, or a multi-step AI pipeline.
               </p>
 
@@ -632,7 +632,7 @@ export default function Docs() {
 
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Collections let you group related artifacts together — like
+                Collections let you group related artifacts together, like
                 playlists, but for prompts, skills, and workflows.
               </p>
 
@@ -718,21 +718,21 @@ export default function Docs() {
               <h3 className="text-lg font-semibold mt-8 mb-4">Team roles</h3>
               <ul className="space-y-3 text-muted-foreground">
                 <li>
-                  <strong>Owner</strong> — Full control. Can delete the team and
+                  <strong>Owner:</strong> Full control. Can delete the team and
                   manage all settings.
                   <span className="block text-sm mt-1 text-muted-foreground/80">
                     Automatically assigned to whoever creates the team.
                   </span>
                 </li>
                 <li>
-                  <strong>Admin</strong> — Can manage members (change roles,
+                  <strong>Admin:</strong> Can manage members (change roles,
                   remove people) and team settings.
                   <span className="block text-sm mt-1 text-muted-foreground/80">
                     Promoted by the Owner via Team Settings.
                   </span>
                 </li>
                 <li>
-                  <strong>Member</strong> — Can create, edit, and view team
+                  <strong>Member:</strong> Can create, edit, and view team
                   artifacts.
                   <span className="block text-sm mt-1 text-muted-foreground/80">
                     Default role when joining through an invite link.
@@ -751,8 +751,8 @@ export default function Docs() {
 
               <Tip>
                 You can copy personal artifacts to a team workspace directly
-                from the artifact detail page — handy for sharing your best work
-                with colleagues.
+                from the artifact detail page, which is handy for sharing your
+                best work with colleagues.
               </Tip>
             </div>
           </section>
@@ -782,10 +782,10 @@ export default function Docs() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Describe what you need in a few words — e.g. "a prompt
-                      that helps me write better emails" — and the Wizard
-                      generates a full, well-structured prompt for you. It's the
-                      fastest way to get started.
+                      Describe what you need in a few words (e.g. "a prompt that
+                      helps me write better emails") and the Wizard generates a
+                      full, well-structured prompt for you. It's the fastest way
+                      to get started.
                     </p>
                   </CardContent>
                 </Card>
@@ -817,10 +817,10 @@ export default function Docs() {
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
                       Already have a prompt but feel it could be better? The
-                      Refinement tool takes your existing prompt and improves it
-                      — making it clearer, more detailed, or more effective. You
-                      describe what you'd like to change, and the AI does the
-                      rest.
+                      Refinement tool takes your existing prompt and improves
+                      it, making it clearer, more detailed, or more effective.
+                      You describe what you'd like to change, and the AI does
+                      the rest.
                     </p>
                   </CardContent>
                 </Card>
@@ -853,7 +853,7 @@ export default function Docs() {
                     <p className="text-sm text-muted-foreground">
                       A deeper analysis of any artifact. Insights provides
                       quality scores, identifies strengths and weaknesses,
-                      recommends improvements, and suggests relevant tags — all
+                      recommends improvements, and suggests relevant tags, all
                       powered by AI.
                     </p>
                   </CardContent>
@@ -868,8 +868,8 @@ export default function Docs() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Translate any artifact — title, description, content, and
-                      tags — into another language. The translation preserves
+                      Translate any artifact (title, description, content, and
+                      tags) into another language. The translation preserves
                       formatting and technical terms. A translated copy is
                       created in your library so the original stays untouched.
                     </p>
@@ -939,7 +939,7 @@ export default function Docs() {
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
                 Querino uses Markdown as its universal format. You can export
-                your artifacts to <code>.md</code> files and import them back —
+                your artifacts to <code>.md</code> files and import them back,
                 making it easy to back up, share, or move between tools.
               </p>
 
@@ -991,38 +991,38 @@ export default function Docs() {
               <h3 className="text-lg font-semibold mt-8 mb-4">How it works</h3>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
                 <li>
-                  <strong>Automatic on save and delete</strong> — every time you
+                  <strong>Automatic on save and delete:</strong> every time you
                   create, update, or delete a prompt, prompt kit, skill or
                   workflow, the change is queued and pushed to GitHub within ~30
                   seconds. No button click required.
                 </li>
                 <li>
-                  <strong>One-way sync</strong> — Querino → GitHub. Edits made
+                  <strong>One-way sync:</strong> Querino → GitHub. Edits made
                   directly on GitHub are not pulled back and will be overwritten
                   on the next save.
                 </li>
                 <li>
-                  <strong>Markdown with YAML frontmatter</strong> — same format
+                  <strong>Markdown with YAML frontmatter:</strong> same format
                   as Import &amp; Export, so files stay readable in any editor.
                 </li>
                 <li>
-                  <strong>Organized by type</strong> — prompts, prompt kits,
+                  <strong>Organized by type:</strong> prompts, prompt kits,
                   skills and workflows are written to subfolders inside your
                   chosen folder.
                 </li>
                 <li>
-                  <strong>Deduplicated &amp; rename-safe</strong> — each
-                  artifact has a stable filename derived from its slug. If you
-                  rename an artifact, the old file is removed and the new one is
-                  created in the same commit cycle.
+                  <strong>Deduplicated &amp; rename-safe:</strong> each artifact
+                  has a stable filename derived from its slug. If you rename an
+                  artifact, the old file is removed and the new one is created
+                  in the same commit cycle.
                 </li>
                 <li>
-                  <strong>Workspace-aware</strong> — your personal workspace and
+                  <strong>Workspace-aware:</strong> your personal workspace and
                   each team workspace have independent configurations and push
                   to their own repositories.
                 </li>
                 <li>
-                  <strong>Stats updates are ignored</strong> — purely cosmetic
+                  <strong>Stats updates are ignored:</strong> purely cosmetic
                   changes like rating averages or copy counts do not trigger a
                   sync, so your repo stays free of noise commits.
                 </li>
@@ -1037,14 +1037,14 @@ export default function Docs() {
                 seconds, picks up pending entries, and applies them to GitHub.
                 In practice this means a commit usually appears in your repo
                 within a minute of your save. If multiple quick saves happen in
-                the same window, only the latest version is pushed — older queue
+                the same window, only the latest version is pushed. Older queue
                 entries are collapsed.
               </p>
               <p className="text-muted-foreground mb-4">
                 If GitHub Sync is not configured (no token, sync disabled, or no
                 repository set), the queue entry is silently marked as{" "}
                 <em>skipped</em>. Once you configure GitHub later, only changes
-                from that point on will be pushed automatically — use the manual{" "}
+                from that point on will be pushed automatically. Use the manual{" "}
                 <strong>Sync now</strong> button in Settings to push everything
                 that already exists as a one-time backfill.
               </p>
@@ -1063,7 +1063,7 @@ export default function Docs() {
                     github.com/settings/tokens
                   </a>
                   . The only scope you need is <code>repo</code>. Copy the token
-                  immediately — GitHub only shows it once.
+                  immediately. GitHub only shows it once.
                 </li>
                 <li>
                   <strong>Create or pick a target repository.</strong> It can be
@@ -1094,7 +1094,7 @@ export default function Docs() {
 
               <Tip>
                 Use a token <strong>fine-grained</strong> only to the target
-                repository if you prefer least-privilege access — make sure to
+                repository if you prefer least-privilege access. Make sure to
                 grant <em>Contents: Read &amp; Write</em>.
               </Tip>
 
@@ -1106,11 +1106,11 @@ export default function Docs() {
               </p>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
                 <li>
-                  <strong>Personal workspace</strong> — only you push, using
-                  your own token.
+                  <strong>Personal workspace:</strong> only you push, using your
+                  own token.
                 </li>
                 <li>
-                  <strong>Team workspace</strong> — the team's owner or an admin
+                  <strong>Team workspace:</strong> the team's owner or an admin
                   configures the shared repository. Members with editor access
                   (or higher) can trigger syncs using a token they store on
                   their own profile, scoped to that team.
@@ -1118,7 +1118,7 @@ export default function Docs() {
               </ul>
               <p className="text-muted-foreground mb-4">
                 Switch workspaces with the workspace picker in the header before
-                opening Settings — the GitHub Sync card always reflects the
+                opening Settings. The GitHub Sync card always reflects the
                 active workspace.
               </p>
 
@@ -1146,27 +1146,27 @@ export default function Docs() {
               </h3>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
                 <li>
-                  <strong>"Repository not found"</strong> — double-check the{" "}
+                  <strong>"Repository not found":</strong> double-check the{" "}
                   <code>owner/name</code> format and that your token has access
                   to that repo.
                 </li>
                 <li>
-                  <strong>"Bad credentials"</strong> — the token expired or was
+                  <strong>"Bad credentials":</strong> the token expired or was
                   revoked. Generate a new one and paste it again.
                 </li>
                 <li>
-                  <strong>Push fails on a protected branch</strong> — either
+                  <strong>Push fails on a protected branch:</strong> either
                   point Querino at an unprotected branch or relax your branch
                   protection rules for the token's user.
                 </li>
                 <li>
-                  <strong>Nothing happens after saving</strong> — make sure the{" "}
+                  <strong>Nothing happens after saving:</strong> make sure the{" "}
                   <em>Enable GitHub Sync</em> switch is on and a valid token +
                   repository are saved. Without it, queue entries are marked{" "}
                   <em>skipped</em> and never reach GitHub.
                 </li>
                 <li>
-                  <strong>My change isn't on GitHub yet</strong> — sync runs
+                  <strong>My change isn't on GitHub yet:</strong> sync runs
                   every ~30 seconds in the background, so allow up to a minute.
                   If it still doesn't appear, check Settings → GitHub Sync for
                   any error message on the most recent attempt.
@@ -1185,7 +1185,7 @@ export default function Docs() {
 
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
-                Querino is more than a personal tool — it's a community. Here's
+                Querino is more than a personal tool. It's a community. Here's
                 how you can interact with other users' work.
               </p>
 
@@ -1193,9 +1193,9 @@ export default function Docs() {
                 Ratings & Reviews
               </h3>
               <p className="text-muted-foreground mb-4">
-                Found a great prompt? Give it a star rating (1–5) and optionally
-                leave a short review. Ratings help surface the best content in
-                search results and on the Discover page.
+                Found a great prompt? Give it a star rating (1 to 5) and
+                optionally leave a short review. Ratings help surface the best
+                content in search results and on the Discover page.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">Comments</h3>
@@ -1208,7 +1208,7 @@ export default function Docs() {
               <h3 className="text-lg font-semibold mt-8 mb-4">Suggestions</h3>
               <p className="text-muted-foreground mb-4">
                 Think a public artifact could be improved? Submit a{" "}
-                <strong>suggestion</strong> — you write your proposed content
+                <strong>suggestion</strong>: you write your proposed content
                 change and the author can review and accept it, similar to a
                 pull request. It's a respectful way to contribute to someone
                 else's work.
@@ -1224,8 +1224,8 @@ export default function Docs() {
               <p className="text-muted-foreground text-lg mb-6">
                 Querino exposes its full library over the{" "}
                 <strong>Model Context Protocol (MCP)</strong>. Connect an
-                external AI assistant — Claude Desktop, Claude Code, Cursor, or
-                any MCP-aware client — and it can read, search, create, update
+                external AI assistant (Claude Desktop, Claude Code, Cursor, or
+                any MCP-aware client) and it can read, search, create, update
                 and delete your prompts, prompt kits, skills, workflows and
                 collections directly.
               </p>
@@ -1257,7 +1257,7 @@ export default function Docs() {
                 <Link to="/settings" className="text-primary hover:underline">
                   Settings → MCP Tokens
                 </Link>
-                . Tokens don't expire after an hour like a session — they remain
+                . Tokens don't expire after an hour like a session. They remain
                 valid until you revoke them (or until an optional expiry date
                 you set).
               </p>
@@ -1277,15 +1277,15 @@ export default function Docs() {
               </p>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
-                  <strong>Prompts, Prompt Kits, Skills, Workflows</strong> —
+                  <strong>Prompts, Prompt Kits, Skills, Workflows:</strong>
                   list, search, get, create, update, delete.
                 </li>
                 <li>
-                  <strong>Collections</strong> — list, get with items, create,
+                  <strong>Collections:</strong> list, get with items, create,
                   delete.
                 </li>
                 <li>
-                  <strong>Profile</strong> — read and update your own profile.
+                  <strong>Profile:</strong> read and update your own profile.
                 </li>
               </ul>
 
@@ -1296,7 +1296,7 @@ export default function Docs() {
                   Settings → MCP Setup
                 </Link>{" "}
                 for ready-to-paste configuration snippets and a generated
-                onboarding prompt you can hand to your assistant — it includes
+                onboarding prompt you can hand to your assistant. It includes
                 the endpoint, headers, your token placeholder, and a description
                 of every tool.
               </p>
@@ -1320,8 +1320,8 @@ export default function Docs() {
                 >
                   Menerio
                 </a>{" "}
-                is a personal knowledge management app — your "second brain."
-                The Querino–Menerio integration mirrors your artifacts as
+                is a personal knowledge management app: your "second brain." The
+                Querino and Menerio integration mirrors your artifacts as
                 searchable notes in Menerio, so you can find them alongside your
                 other knowledge.
               </p>
@@ -1359,18 +1359,18 @@ export default function Docs() {
               </p>
               <ul className="space-y-3 text-muted-foreground">
                 <li>
-                  <strong>Manual sync</strong> — On any artifact detail page,
+                  <strong>Manual sync:</strong> On any artifact detail page,
                   click the <strong>"Sync to Menerio"</strong> button. A small
                   cloud icon indicates the current sync status.
                 </li>
                 <li>
-                  <strong>Automatic sync</strong> — Enable{" "}
+                  <strong>Automatic sync:</strong> Enable{" "}
                   <strong>Auto-Sync</strong> in the Menerio settings. Whenever
                   you update an already-synced artifact, the changes are pushed
                   to Menerio automatically within about a minute.
                 </li>
                 <li>
-                  <strong>Bulk sync</strong> — In the Menerio settings section,
+                  <strong>Bulk sync:</strong> In the Menerio settings section,
                   click <strong>"Sync all"</strong> to sync every artifact in
                   your library at once. A progress bar shows how it's going.
                 </li>
@@ -1389,7 +1389,7 @@ export default function Docs() {
               <h3 className="text-lg font-semibold mt-8 mb-4">Disconnecting</h3>
               <p className="text-muted-foreground">
                 You can disconnect at any time in Settings. Your notes in
-                Menerio will remain — they just won't receive updates from
+                Menerio will remain. They just won't receive updates from
                 Querino anymore. You can also click "Remove all syncs" to clear
                 the sync metadata from all artifacts without deleting the
                 Menerio notes.
@@ -1432,7 +1432,7 @@ export default function Docs() {
                     <p>2. Use "Suggest with AI" to quickly fill in metadata.</p>
                     <p>3. Organize with tags and collections.</p>
                     <p>
-                      4. Refine your best prompts over time — version history
+                      4. Refine your best prompts over time. Version history
                       keeps track of changes.
                     </p>
                     <p>5. Export to Markdown or sync to GitHub for backup.</p>
@@ -1542,23 +1542,23 @@ export default function Docs() {
               </h3>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
-                  <strong>Profile</strong> — Display name, avatar, bio, and
+                  <strong>Profile:</strong> Display name, avatar, bio, and
                   social links.
                 </li>
                 <li>
-                  <strong>AI Credits</strong> — See your current balance and
+                  <strong>AI Credits:</strong> See your current balance and
                   usage history.
                 </li>
                 <li>
-                  <strong>GitHub Sync</strong> — Configure automatic backup to a
+                  <strong>GitHub Sync:</strong> Configure automatic backup to a
                   GitHub repository.
                 </li>
                 <li>
-                  <strong>Menerio</strong> — Connect or disconnect your Menerio
+                  <strong>Menerio:</strong> Connect or disconnect your Menerio
                   account.
                 </li>
                 <li>
-                  <strong>MCP Setup & Tokens</strong> — Generate long-lived{" "}
+                  <strong>MCP Setup & Tokens:</strong> Generate long-lived{" "}
                   <code>qrn_mcp_</code> tokens and copy ready-made configuration
                   for connecting Querino to AI assistants via the{" "}
                   <Link to="/docs#mcp" className="text-primary hover:underline">
@@ -1567,12 +1567,12 @@ export default function Docs() {
                   .
                 </li>
                 <li>
-                  <strong>Team membership</strong> — Join a team by entering the
+                  <strong>Team membership:</strong> Join a team by entering the
                   Team ID.
                 </li>
                 <li>
-                  <strong>Account</strong> — Manage your subscription and
-                  account deletion.
+                  <strong>Account:</strong> Manage your subscription and account
+                  deletion.
                 </li>
               </ul>
             </div>

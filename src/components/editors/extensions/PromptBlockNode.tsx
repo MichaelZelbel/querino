@@ -62,7 +62,7 @@ function PromptBlockView(props: NodeViewProps) {
       <Textarea
         value={body}
         onChange={(e) => updateAttributes({ body: e.target.value })}
-        placeholder="Write the prompt body here. Plain text or Markdown — this is what users will copy."
+        placeholder="Write the prompt body here. Plain text or Markdown. This is what users will copy."
         disabled={!editable}
         className="min-h-[160px] rounded-none border-0 font-mono text-sm leading-relaxed focus-visible:ring-0 resize-y"
       />

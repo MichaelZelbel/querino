@@ -431,7 +431,7 @@ export function UsersPanel() {
                       <TableCell className="text-sm text-muted-foreground">
                         {u.created_at
                           ? format(new Date(u.created_at), "MMM d, yyyy")
-                          : "—"}
+                          : "Unknown"}
                       </TableCell>
                       <TableCell>
                         <Button

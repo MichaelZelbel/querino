@@ -87,7 +87,7 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "Never";
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -222,7 +222,7 @@ export function McpTokensSection() {
       await navigator.clipboard.writeText(revealedToken);
       setCopyFailed(false);
       setCopied(true);
-      toast.success("Token copied — store it now, it won't be shown again");
+      toast.success("Token copied. Store it now, it won't be shown again");
       setTimeout(() => setCopied(false), 2500);
     } catch {
       // The token is shown only once, so a refused clipboard must not lose
@@ -387,7 +387,7 @@ export function McpTokensSection() {
             <DialogTitle>Copy your new token</DialogTitle>
             <DialogDescription>
               This is the only time the full token will be shown. Store it
-              somewhere safe now — if you lose it, you'll need to revoke it and
+              somewhere safe now. If you lose it, you'll need to revoke it and
               create a new one.
             </DialogDescription>
           </DialogHeader>

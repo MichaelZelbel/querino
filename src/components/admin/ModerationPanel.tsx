@@ -539,7 +539,7 @@ function ModerationLogTab() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs max-w-[200px] truncate">
-                  {ev.matched_words?.join(", ") || "—"}
+                  {ev.matched_words?.join(", ") || "None"}
                 </TableCell>
               </TableRow>
             ))}
@@ -701,18 +701,18 @@ function AIReviewQueueTab() {
                   <QueueStatusBadge status={item.status} />
                 </TableCell>
                 <TableCell className="text-xs">
-                  {item.ai_category || "—"}
+                  {item.ai_category || "None"}
                 </TableCell>
                 <TableCell className="text-xs">
                   {item.ai_confidence != null
                     ? `${Math.round(item.ai_confidence * 100)}%`
-                    : "—"}
+                    : "None"}
                 </TableCell>
                 <TableCell
                   className="text-xs max-w-[200px] truncate"
                   title={item.ai_reason || undefined}
                 >
-                  {item.ai_reason || "—"}
+                  {item.ai_reason || "None"}
                 </TableCell>
                 <TableCell>
                   {(item.status === "reviewed" ||
@@ -897,7 +897,7 @@ function SuspensionsTab() {
                   )}
                 </TableCell>
                 <TableCell className="text-xs max-w-[200px] truncate">
-                  {s.suspension_reason || "—"}
+                  {s.suspension_reason || "None"}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">

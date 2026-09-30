@@ -40,7 +40,7 @@ export function CreditsPill({ className }: { className?: string }) {
       </TooltipTrigger>
       <TooltipContent>
         {isEmpty
-          ? "Out of AI credits — they reset next period. Manage in Settings."
+          ? "Out of AI credits. They reset next period. Manage in Settings."
           : `${remaining} AI credits remaining. Manage in Settings.`}
       </TooltipContent>
     </Tooltip>

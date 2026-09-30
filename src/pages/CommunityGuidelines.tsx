@@ -112,9 +112,10 @@ export default function CommunityGuidelines() {
 
               <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground">
                 <p>
-                  Querino is a platform for discovering and sharing AI artifacts
-                  — prompts, skills, and workflows. These guidelines help keep
-                  our community safe, respectful, and useful for everyone.
+                  Querino is a platform for discovering and sharing AI
+                  artifacts: prompts, skills, and workflows. These guidelines
+                  help keep our community safe, respectful, and useful for
+                  everyone.
                 </p>
 
                 <section id="respect">
@@ -168,7 +169,7 @@ export default function CommunityGuidelines() {
                     4. Privacy
                   </h2>
                   <p>
-                    Do not share Personal Identifiable Information (PII) — yours
+                    Do not share Personal Identifiable Information (PII), yours
                     or anyone else's. This includes email addresses, phone
                     numbers, physical addresses, social security numbers, or
                     other sensitive personal data. Our system automatically

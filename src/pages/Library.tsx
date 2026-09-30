@@ -927,8 +927,8 @@ export default function Library() {
                 <SelectContent>
                   <SelectItem value="recent">Most recent</SelectItem>
                   <SelectItem value="oldest">Oldest first</SelectItem>
-                  <SelectItem value="az">Title A–Z</SelectItem>
-                  <SelectItem value="za">Title Z–A</SelectItem>
+                  <SelectItem value="az">Title A to Z</SelectItem>
+                  <SelectItem value="za">Title Z to A</SelectItem>
                   <SelectItem value="rating">Top rated</SelectItem>
                 </SelectContent>
               </Select>
