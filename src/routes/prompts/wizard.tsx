@@ -3,6 +3,6 @@ import { privateHead } from "@/lib/seo";
 import PromptWizard from "@/pages/PromptWizard";
 
 export const Route = createFileRoute("/prompts/wizard")({
-  head: () => privateHead("Prompt Wizard"),
+  head: () => privateHead("Kickstart Template"),
   component: PromptWizard,
 });

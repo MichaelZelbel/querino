@@ -95,13 +95,13 @@ export function HomeStats() {
 
   return (
     <div
-      className="mt-12 grid grid-cols-3 gap-6 animate-fade-in-up"
+      className="mt-12 grid grid-cols-3 gap-3 sm:gap-6 animate-fade-in-up"
       style={{ animationDelay: "0.4s" }}
     >
       {/* Public Prompts */}
       <div className="text-center lg:text-left">
-        <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-          <Copy className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-center gap-1.5 text-base font-bold sm:text-xl text-foreground md:text-2xl lg:justify-start">
+          <Copy className="h-4 w-4 shrink-0 sm:h-5 sm:w-5 text-primary" />
           {loading ? (
             <Skeleton className="h-7 w-12" />
           ) : (
@@ -113,8 +113,8 @@ export function HomeStats() {
 
       {/* Total Artifacts */}
       <div className="text-center lg:text-left">
-        <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-          <Layers className="h-5 w-5 text-warning" />
+        <div className="flex items-center justify-center gap-1.5 text-base font-bold sm:text-xl text-foreground md:text-2xl lg:justify-start">
+          <Layers className="h-4 w-4 shrink-0 sm:h-5 sm:w-5 text-warning" />
           {loading ? (
             <Skeleton className="h-7 w-16" />
           ) : (
@@ -126,8 +126,8 @@ export function HomeStats() {
 
       {/* Open Source */}
       <div className="text-center lg:text-left">
-        <div className="flex items-center justify-center gap-1.5 text-xl font-bold text-foreground md:text-2xl lg:justify-start">
-          <Code className="h-5 w-5 text-success" />
+        <div className="flex items-center justify-center gap-1.5 text-base font-bold sm:text-xl text-foreground md:text-2xl lg:justify-start">
+          <Code className="h-4 w-4 shrink-0 sm:h-5 sm:w-5 text-success" />
           <a
             href="https://github.com/MichaelZelbel/querino"
             target="_blank"

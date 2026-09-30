@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,10 @@ interface PublishPromptModalProps {
     exampleOutput: string;
   }) => Promise<void>;
   isPublishing: boolean;
+  /** What the prompt already has. Publishing again with an empty box used to
+   *  erase a stored example output. */
+  initialSummary?: string;
+  initialExampleOutput?: string;
 }
 
 export function PublishPromptModal({
@@ -27,9 +31,21 @@ export function PublishPromptModal({
   onOpenChange,
   onPublish,
   isPublishing,
+  initialSummary = "",
+  initialExampleOutput = "",
 }: PublishPromptModalProps) {
-  const [summary, setSummary] = useState("");
-  const [exampleOutput, setExampleOutput] = useState("");
+  const [summary, setSummary] = useState(initialSummary);
+  const [exampleOutput, setExampleOutput] = useState(initialExampleOutput);
+
+  // Start from the stored values each time the dialog opens.
+  useEffect(() => {
+    if (open) {
+      setSummary(initialSummary);
+      setExampleOutput(initialExampleOutput);
+    }
+    // Only on opening: the values must not reset while someone types.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {

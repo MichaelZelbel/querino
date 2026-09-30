@@ -79,6 +79,7 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { writeOutcome } from "@/components/editors/writeOutcome";
 
 interface SkillFormData {
   title: string;
@@ -324,7 +325,7 @@ export default function SkillEdit() {
         }
       }
 
-      const { error } = await (supabase.from("skills") as any)
+      const { data: savedRows, error } = await (supabase.from("skills") as any)
         .update({
           title: formData.title.trim(),
           description: formData.description.trim() || null,
@@ -334,9 +335,17 @@ export default function SkillEdit() {
           published: formData.isPublic,
           language: formData.language,
         })
-        .eq("id", skillId);
-      if (error) {
+        .eq("id", skillId)
+        .select("id");
+      const outcome = writeOutcome({ error, data: savedRows });
+      if (outcome === "failed") {
         toast.error("Failed to update skill");
+        return;
+      }
+      if (outcome === "nothing") {
+        toast.error(
+          "Nothing was saved. You may no longer have access to this skill.",
+        );
         return;
       }
       markSaved(submitted);
@@ -465,10 +474,15 @@ export default function SkillEdit() {
     if (!skillId) return;
     setIsDeleting(true);
     try {
-      const { error } = await (supabase.from("skills") as any)
+      const { data: deletedRows, error } = await (
+        supabase.from("skills") as any
+      )
         .delete()
-        .eq("id", skillId);
-      if (error) throw error;
+        .eq("id", skillId)
+        .select("id");
+      if (writeOutcome({ error, data: deletedRows }) !== "written") {
+        throw error ?? new Error("Nothing was deleted");
+      }
       // The row is gone: nothing left to warn about on the way out.
       markSaved();
       void invalidateArtifactQueries(queryClient, "skill");
@@ -505,6 +519,7 @@ export default function SkillEdit() {
 
   const coachPanel = (
     <ArtifactCoachPanel
+      key={coachSessionId}
       artifactType="skill"
       artifactId={skillId!}
       canvasContent={formData.content}

@@ -542,16 +542,56 @@ export default function Library() {
     [filteredMyWorkflows, sort, menerioFilter],
   );
   const displayMyKits = useMemo(
-    // Kits don't carry menerio_synced — sort only
-    () => sortItems(filteredMyKits),
+    // Kits carry menerio_synced too (and bulk sync queues them), so the
+    // Menerio filter applies to them like to every other type.
+    () => sortItems(applyMenerio(filteredMyKits)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filteredMyKits, sort],
+    [filteredMyKits, sort, menerioFilter],
   );
   const displaySavedPrompts = useMemo(
     () => sortItems(applyMenerio(filteredSavedPrompts)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filteredSavedPrompts, sort, menerioFilter],
   );
+
+  // A selection belongs to the workspace it was made in: after a switch its
+  // items are not on screen, and Delete answered "You can only delete items
+  // you own" for them.
+  useEffect(() => {
+    exitSelectMode();
+  }, [currentWorkspace, exitSelectMode]);
+
+  // Only what is on screen stays selected. An item hidden by the search, a
+  // type filter or the Menerio filter used to stay selected and was deleted
+  // with the rest.
+  const visibleKeys = useMemo(() => {
+    const keys = new Set<string>();
+    if (isTypeVisible("prompts")) {
+      for (const p of displayPinnedPrompts) keys.add(selKey("prompt", p.id));
+      for (const p of displayMyPrompts) keys.add(selKey("prompt", p.id));
+    }
+    if (isTypeVisible("skills"))
+      for (const x of displayMySkills) keys.add(selKey("skill", x.id));
+    if (isTypeVisible("workflows"))
+      for (const x of displayMyWorkflows) keys.add(selKey("workflow", x.id));
+    if (isTypeVisible("kits"))
+      for (const x of displayMyKits) keys.add(selKey("prompt_kit", x.id));
+    return keys;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    displayPinnedPrompts,
+    displayMyPrompts,
+    displayMySkills,
+    displayMyWorkflows,
+    displayMyKits,
+    typesParam,
+  ]);
+  useEffect(() => {
+    setSelected((prev) => {
+      const next = new Set([...prev].filter((k) => visibleKeys.has(k)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [visibleKeys]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -647,10 +687,12 @@ export default function Library() {
   const canSyncToGithub =
     githubSettings?.github_sync_enabled && githubSettings?.github_repo;
 
+  // github-sync exports kits too, so a library of kits alone can be synced.
   const hasContent =
     myPrompts.length > 0 ||
     (mySkills?.length || 0) > 0 ||
-    (myWorkflows?.length || 0) > 0;
+    (myWorkflows?.length || 0) > 0 ||
+    (myKits?.length || 0) > 0;
 
   const libraryIsEmpty =
     myPrompts.length === 0 &&

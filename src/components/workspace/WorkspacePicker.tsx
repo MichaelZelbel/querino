@@ -132,10 +132,10 @@ export function WorkspacePicker() {
             )}
           </DropdownMenuItem>
 
-          {/* Any signed-in user can be a member of a team, because an invite can be
-              redeemed without Premium. Listing the teams here regardless of plan is
-              what lets a free member switch back after picking Personal. Only
-              creating a team stays behind the Premium gate. */}
+          {/* Teams are listed regardless of plan, so a member whose Premium
+              lapsed can still switch back after picking Personal. Joining a
+              team through an invite needs Premium (redeem_team_invite), and
+              creating one stays behind the Premium gate too. */}
           {teams.length > 0 && (
             <>
               <DropdownMenuSeparator />
@@ -166,13 +166,16 @@ export function WorkspacePicker() {
 
           <DropdownMenuSeparator />
 
-          {currentWorkspace !== "personal" && canManageTeam && (
+          {/* Every member gets the way in: the settings page is where a plain
+              member finds "Leave team", and it was reachable only by typing
+              its address when this item was shown to owners and admins alone. */}
+          {currentWorkspace !== "personal" && (
             <DropdownMenuItem
               onClick={() => navigate(`/team/${currentWorkspace}/settings`)}
               className="gap-2"
             >
               <Settings className="h-4 w-4" />
-              Team Settings
+              {canManageTeam ? "Team Settings" : "Team membership"}
             </DropdownMenuItem>
           )}
 

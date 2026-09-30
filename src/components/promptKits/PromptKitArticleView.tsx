@@ -62,7 +62,7 @@ function PromptCard({
           )}
         </Button>
       </div>
-      <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed px-4 py-4 m-0 bg-background">
+      <pre className="whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm text-foreground leading-relaxed px-4 py-4 m-0 bg-background">
         {shown}
       </pre>
       {canCollapse && (
@@ -115,7 +115,7 @@ export function PromptKitArticleView({
           This kit doesn't contain any prompts yet (no{" "}
           <code className="font-mono">## Prompt:</code> headings found).
         </p>
-        <pre className="mt-4 whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+        <pre className="mt-4 whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm text-foreground leading-relaxed">
           {content}
         </pre>
       </div>

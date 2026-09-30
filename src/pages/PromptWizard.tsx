@@ -37,6 +37,7 @@ import {
 } from "@/lib/promptGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/functionError";
+import { draftUrl } from "@/lib/draftHandoff";
 
 const llmOptions = [
   { value: "ChatGPT", label: "ChatGPT" },
@@ -154,9 +155,10 @@ export default function PromptWizard() {
   };
 
   const handleCreatePrompt = () => {
-    // Navigate to /prompts/new with draft in query param
-    const encodedDraft = encodeURIComponent(generatedPrompt);
-    navigate(`/prompts/new?draft=${encodedDraft}`);
+    // Hand the prompt over in sessionStorage (lib/draftHandoff), like imports
+    // and translations do. In ?draft= a long prompt made the address longer
+    // than the server accepts on a reload.
+    navigate(draftUrl("/prompts/new", { content: generatedPrompt }));
   };
 
   if (authLoading) {

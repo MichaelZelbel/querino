@@ -28,6 +28,7 @@ import { Loader2, Save, Eye, ArrowLeft } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { format } from "date-fns";
 import type { BlogPostFormData, BlogPostStatus } from "@/types/blog";
+import { canAutosavePost } from "@/components/blog/admin/blogAutosave";
 
 /** An ISO timestamp as the local time a datetime-local input expects. */
 function toLocalInputValue(iso: string | null): string {
@@ -92,7 +93,14 @@ export default function BlogAdminPostEditor() {
   } = useAutosave({
     data: autosaveData,
     onSave: async (data) => {
-      if (!isNew && post && data.status === "draft") {
+      if (
+        post &&
+        canAutosavePost({
+          isNew,
+          savedStatus: post.status,
+          formStatus: data.status,
+        })
+      ) {
         // Status stays out of the autosave payload. A save already in flight
         // when the post was published used to land afterwards and flip it
         // back to draft.
@@ -105,7 +113,11 @@ export default function BlogAdminPostEditor() {
       }
     },
     delay: 3000,
-    enabled: !isNew && formData.status === "draft",
+    enabled: canAutosavePost({
+      isNew,
+      savedStatus: post?.status,
+      formStatus: formData.status,
+    }),
   });
 
   // Hydrate the form once per post id. `post` changes on every refetch, and

@@ -9,6 +9,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { redeemTeamInvite } from "@/hooks/useTeamInvites";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  invitePreviewView,
+  type InvitePreviewRow,
+} from "@/components/teams/invitePreview";
 
 type JoinState =
   | { kind: "confirm" }
@@ -29,9 +34,10 @@ function friendlyError(err: unknown): string {
 
 /**
  * An invite link never joins on its own: opening a link someone sent you
- * must not silently add you to their team. The team's name is not readable
- * before joining (teams are only visible to their members), so the prompt
- * names it once the invite has been redeemed.
+ * must not silently add you to their team. Before joining, the page asks
+ * get_team_invite_preview for the team's name and who sent the link (a team
+ * is otherwise readable only by its members), and says so when the link is
+ * dead or the person is already in the team.
  */
 export default function TeamJoin() {
   const navigate = useNavigate();
@@ -42,6 +48,37 @@ export default function TeamJoin() {
   const queryClient = useQueryClient();
 
   const [state, setState] = useState<JoinState>({ kind: "confirm" });
+  const [preview, setPreview] = useState<
+    | { status: "loading" }
+    | { status: "error" }
+    | { status: "ok"; rows: InvitePreviewRow[] | null }
+  >({ status: "loading" });
+
+  useEffect(() => {
+    if (!user || !token) return;
+    let cancelled = false;
+    const previewRpc = supabase.rpc.bind(supabase) as unknown as (
+      fn: string,
+      args: Record<string, string>,
+    ) => PromiseLike<{ data: InvitePreviewRow[] | null; error: unknown }>;
+    setPreview({ status: "loading" });
+    // Not in the generated types yet (migration 20260930100600), hence the
+    // cast. Any failure falls back to the nameless question: the preview is a
+    // courtesy and must never stand between someone and a working invite.
+    previewRpc("get_team_invite_preview", { p_token: token }).then(
+      ({ data, error }) => {
+        if (cancelled) return;
+        setPreview(error ? { status: "error" } : { status: "ok", rows: data });
+      },
+      () => {
+        if (!cancelled) setPreview({ status: "error" });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [user, token]);
+  const view = invitePreviewView(preview);
 
   useEffect(() => {
     if (authLoading || !token || user) return;
@@ -103,8 +140,38 @@ export default function TeamJoin() {
         </div>
       </>
     );
-  } else if (waiting) {
+  } else if (waiting || (state.kind === "confirm" && view.kind === "loading")) {
     body = <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />;
+  } else if (state.kind === "confirm" && view.kind === "invalid") {
+    body = (
+      <>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <XCircle className="h-8 w-8 text-destructive" />
+        </div>
+        <h1 className="mb-2 text-2xl font-bold text-foreground">
+          This invite link is invalid or has expired
+        </h1>
+        <p className="mb-6 max-w-md text-muted-foreground">
+          Ask a team admin to send you a new one.
+        </p>
+        <Button onClick={() => navigate("/library")}>Go to My Library</Button>
+      </>
+    );
+  } else if (state.kind === "confirm" && view.kind === "member") {
+    body = (
+      <>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle2 className="h-8 w-8 text-primary" />
+        </div>
+        <h1 className="mb-2 text-2xl font-bold text-foreground">
+          You are already a member of {view.teamName}
+        </h1>
+        <p className="mb-6 max-w-md text-muted-foreground">
+          Switch to the team with the workspace menu at the top of the page.
+        </p>
+        <Button onClick={() => navigate("/library")}>Go to My Library</Button>
+      </>
+    );
   } else if (state.kind === "joined") {
     body = (
       <>
@@ -135,12 +202,14 @@ export default function TeamJoin() {
           <Users className="h-8 w-8 text-primary" />
         </div>
         <h1 className="mb-2 text-2xl font-bold text-foreground">
-          Join this team?
+          {view.kind === "named" ? `Join ${view.teamName}?` : "Join this team?"}
         </h1>
         <p className="mb-6 max-w-md text-muted-foreground">
-          Someone sent you an invite to a team on Querino. Joining makes you a
-          member who can see and work on the team's shared artifacts. Only join
-          if you trust the person who sent you this link.
+          {view.kind === "named"
+            ? `${view.invitedBy ?? "Someone"} invited you to join ${view.teamName} on Querino as ${view.role === "admin" ? "an admin" : "a member"}.`
+            : "Someone sent you an invite to a team on Querino."}{" "}
+          Joining lets you see and work on the team's shared artifacts. Only
+          join if you trust the person who sent you this link.
         </p>
         <div className="flex justify-center gap-2">
           <Button

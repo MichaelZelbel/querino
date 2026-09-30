@@ -7,6 +7,8 @@ interface PromptKitReviewSectionProps {
   userId?: string;
   ratingAvg: number;
   ratingCount: number;
+  /** Private items take no reviews; see reviewSummary.ratingMode. */
+  isPublic?: boolean | null;
 }
 
 export function PromptKitReviewSection({
@@ -15,6 +17,7 @@ export function PromptKitReviewSection({
   userId,
   ratingAvg,
   ratingCount,
+  isPublic,
 }: PromptKitReviewSectionProps) {
   const {
     reviews,
@@ -33,6 +36,7 @@ export function PromptKitReviewSection({
       userId={userId}
       ratingAvg={ratingAvg}
       ratingCount={ratingCount}
+      isPublic={isPublic}
       reviews={reviews}
       userReview={userReview}
       loading={loading}

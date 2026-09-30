@@ -25,10 +25,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
+import {
+  newPasswordProblem,
+  PASSWORD_HINT,
+} from "@/components/auth/passwordRules";
 
 const resetSchema = z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().superRefine((value, ctx) => {
+      const problem = newPasswordProblem(value);
+      if (problem)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem });
+    }),
     confirmPassword: z.string(),
   })
   .refine((values) => values.password === values.confirmPassword, {
@@ -144,8 +152,7 @@ export default function ResetPassword() {
                   <CardTitle>Choose a new password</CardTitle>
                 </div>
                 <CardDescription>
-                  Pick a password of at least 8 characters. It replaces the old
-                  one as soon as you save.
+                  {PASSWORD_HINT} It replaces the old one as soon as you save.
                 </CardDescription>
               </CardHeader>
               <CardContent>

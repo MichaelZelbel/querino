@@ -309,6 +309,7 @@ export default function WorkflowNew() {
 
   const coachPanel = (
     <ArtifactCoachPanel
+      key={draftSessionId}
       artifactType="workflow"
       artifactId="draft"
       canvasContent={content}

@@ -42,12 +42,16 @@ import { CreditsPill } from "@/components/settings/CreditsPill";
 import { useMarkdownImport } from "@/hooks/useMarkdownImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { authHref } from "@/components/auth/authRedirectLogic";
 
 export function Header() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  // Signing in from a prompt page should come back to that prompt.
+  const signInHref = authHref("signin", location.pathname, location.search);
+  const signUpHref = authHref("signup", location.pathname, location.search);
   const { user, profile, loading, signOut } = useAuthContext();
   const { isAdmin } = useUserRole();
   const { triggerFileSelect: triggerPromptImport } =
@@ -346,10 +350,10 @@ export function Header() {
           ) : (
             <>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/auth">Sign In</Link>
+                <Link to={signInHref}>Sign In</Link>
               </Button>
               <Button asChild variant="default" size="sm">
-                <Link to="/auth?tab=signup">Get Started</Link>
+                <Link to={signUpHref}>Get Started</Link>
               </Button>
             </>
           )}
@@ -652,13 +656,16 @@ export function Header() {
               ) : (
                 <>
                   <Button asChild variant="outline" className="w-full">
-                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                    <Link
+                      to={signInHref}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
                       Sign In
                     </Link>
                   </Button>
                   <Button asChild variant="default" className="w-full">
                     <Link
-                      to="/auth?tab=signup"
+                      to={signUpHref}
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Get Started

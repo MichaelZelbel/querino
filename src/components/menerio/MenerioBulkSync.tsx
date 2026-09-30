@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RefreshCw, Loader2, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { summariseSyncRun, syncRunMessage } from "./menerioSyncSummary";
 
 interface ArtifactStats {
   total: number;
@@ -129,6 +130,7 @@ export function MenerioBulkSync() {
       let completed = 0;
       const maxPolls = 120;
       let polls = 0;
+      let lastStatuses: string[] = [];
 
       while (completed < toSync.length && polls < maxPolls) {
         await new Promise((r) => setTimeout(r, 5000));
@@ -141,6 +143,7 @@ export function MenerioBulkSync() {
           .in("id", queueIds);
 
         if (queueData) {
+          lastStatuses = queueData.map((q) => String(q.status));
           const done = queueData.filter(
             (q: any) => q.status === "completed" || q.status === "failed",
           ).length;
@@ -165,7 +168,11 @@ export function MenerioBulkSync() {
       }
 
       await fetchStats();
-      toast.success(`Sync complete. ${completed} artifacts synchronized.`);
+      const result = syncRunMessage(
+        summariseSyncRun(lastStatuses, toSync.length),
+      );
+      if (result.ok) toast.success(result.text);
+      else toast.error(result.text);
     } catch (error) {
       console.error("Bulk sync error:", error);
       toast.error("Bulk sync failed");
@@ -186,16 +193,30 @@ export function MenerioBulkSync() {
         menerio_synced_at: null,
       };
 
-      await Promise.all(
+      const results = await Promise.all(
         TABLES.map((table) =>
           (supabase.from(table) as any)
             .update(resetPayload)
             .eq("author_id", user.id),
         ),
       );
+      // A refused update comes back as { error }, not as a thrown error, so
+      // each table's answer is checked before saying the links are gone.
+      const failedTables = TABLES.filter((_, i) => results[i]?.error);
 
       await fetchStats();
-      toast.success("All Menerio links have been removed.");
+      if (failedTables.length > 0) {
+        console.error(
+          "Menerio reset failed for:",
+          failedTables,
+          results.map((r) => (r as { error?: unknown })?.error).filter(Boolean),
+        );
+        toast.error(
+          "Some Menerio links could not be removed. Please try again.",
+        );
+      } else {
+        toast.success("All Menerio links have been removed.");
+      }
     } catch (error) {
       console.error("Reset error:", error);
       toast.error("Failed to reset");

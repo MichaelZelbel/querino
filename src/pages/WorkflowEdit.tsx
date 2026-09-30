@@ -81,6 +81,8 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { writeOutcome } from "@/components/editors/writeOutcome";
+import { workflowText } from "@/components/workflows/workflowText";
 
 interface WorkflowFormData {
   title: string;
@@ -183,13 +185,7 @@ export default function WorkflowEdit() {
         }
         setWorkflow(data);
 
-        let workflowContent = data.content || "";
-        if (!workflowContent && data.json) {
-          workflowContent =
-            typeof data.json === "string"
-              ? data.json
-              : JSON.stringify(data.json, null, 2);
-        }
+        const workflowContent = workflowText(data.content, data.json);
 
         // The baseline is passed explicitly: markSaved() with no argument reads
         // the form of this render, which is still empty, and that counted every
@@ -338,7 +334,9 @@ export default function WorkflowEdit() {
         }
       }
 
-      const { error } = await (supabase.from("workflows") as any)
+      const { data: savedRows, error } = await (
+        supabase.from("workflows") as any
+      )
         .update({
           title: formData.title.trim(),
           description: formData.description.trim() || null,
@@ -348,9 +346,17 @@ export default function WorkflowEdit() {
           published: formData.isPublic,
           language: formData.language,
         })
-        .eq("id", workflowId);
-      if (error) {
+        .eq("id", workflowId)
+        .select("id");
+      const outcome = writeOutcome({ error, data: savedRows });
+      if (outcome === "failed") {
         toast.error("Failed to update workflow");
+        return;
+      }
+      if (outcome === "nothing") {
+        toast.error(
+          "Nothing was saved. You may no longer have access to this workflow.",
+        );
         return;
       }
       markSaved(submitted);
@@ -461,13 +467,7 @@ export default function WorkflowEdit() {
       .maybeSingle();
     if (data) {
       setWorkflow(data);
-      let workflowContent = data.content || "";
-      if (!workflowContent && data.json) {
-        workflowContent =
-          typeof data.json === "string"
-            ? data.json
-            : JSON.stringify(data.json, null, 2);
-      }
+      const workflowContent = workflowText(data.content, data.json);
       const restored: WorkflowFormData = {
         title: data.title,
         description: data.description || "",
@@ -486,10 +486,15 @@ export default function WorkflowEdit() {
     if (!workflowId) return;
     setIsDeleting(true);
     try {
-      const { error } = await (supabase.from("workflows") as any)
+      const { data: deletedRows, error } = await (
+        supabase.from("workflows") as any
+      )
         .delete()
-        .eq("id", workflowId);
-      if (error) throw error;
+        .eq("id", workflowId)
+        .select("id");
+      if (writeOutcome({ error, data: deletedRows }) !== "written") {
+        throw error ?? new Error("Nothing was deleted");
+      }
       // The row is gone: nothing left to warn about on the way out.
       markSaved();
       void invalidateArtifactQueries(queryClient, "workflow");
@@ -526,6 +531,7 @@ export default function WorkflowEdit() {
 
   const coachPanel = (
     <ArtifactCoachPanel
+      key={coachSessionId}
       artifactType="workflow"
       artifactId={workflowId!}
       canvasContent={formData.content}

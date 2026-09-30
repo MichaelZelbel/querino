@@ -33,7 +33,6 @@ import { toast } from "sonner";
 import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
-import { format } from "date-fns";
 import { parsePromptKitItems } from "@/lib/promptKitParser";
 import { useClonePromptKit } from "@/hooks/useClonePromptKit";
 import { CopyPromptKitToTeamModal } from "@/components/promptKits/CopyPromptKitToTeamModal";
@@ -54,6 +53,8 @@ import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { Languages, CopyPlus } from "lucide-react";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
+import { formatUtcDate } from "@/components/shared/formatDate";
+import { useGoBack } from "@/components/shared/useGoBack";
 
 interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
@@ -67,6 +68,7 @@ export default function PromptKitDetail({
 }: { initialKit?: KitWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const goBack = useGoBack("/discover?type=kits");
   const { user } = useAuthContext();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { teams } = useWorkspace();
@@ -330,7 +332,7 @@ export default function PromptKitDetail({
         <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -390,9 +392,7 @@ export default function PromptKitDetail({
                 )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>
-                    Created {format(new Date(kit.created_at), "MMM d, yyyy")}
-                  </span>
+                  <span>Created {formatUtcDate(kit.created_at)}</span>
                 </div>
               </div>
             </div>
@@ -551,6 +551,10 @@ export default function PromptKitDetail({
                   menerioSynced={!!kit.menerio_synced}
                   menerioSyncedAt={kit.menerio_synced_at || null}
                   menerioNoteId={kit.menerio_note_id || null}
+                  // Reload the kit, or the button kept saying "Sync to
+                  // Menerio" after a sync (skills pass their refetch the
+                  // same way).
+                  onSyncComplete={() => setReloadKey((k) => k + 1)}
                 />
               )}
             </div>
@@ -568,6 +572,7 @@ export default function PromptKitDetail({
               userId={user?.id}
               ratingAvg={kit.rating_avg || 0}
               ratingCount={kit.rating_count || 0}
+              isPublic={kit.published}
             />
 
             {/* Tabbed Content Section */}
@@ -589,10 +594,14 @@ export default function PromptKitDetail({
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="activity" className="gap-2">
-                  <ActivityIcon className="h-4 w-4" />
-                  Activity
-                </TabsTrigger>
+                {/* Events are readable only by whoever caused them and by team
+                    members, so a signed-out visitor always saw "No activity yet". */}
+                {user && (
+                  <TabsTrigger value="activity" className="gap-2">
+                    <ActivityIcon className="h-4 w-4" />
+                    Activity
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="comments" className="mt-6">
@@ -600,6 +609,7 @@ export default function PromptKitDetail({
                   itemType="prompt_kit"
                   itemId={kit.id}
                   teamId={(kit as any).team_id}
+                  isPublic={kit.published}
                 />
               </TabsContent>
 
@@ -620,9 +630,11 @@ export default function PromptKitDetail({
                 />
               </TabsContent>
 
-              <TabsContent value="activity" className="mt-6">
-                <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
-              </TabsContent>
+              {user && (
+                <TabsContent value="activity" className="mt-6">
+                  <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </main>

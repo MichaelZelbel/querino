@@ -62,6 +62,32 @@ import {
   useLeaveTeam,
 } from "@/hooks/useTeams";
 import { toast } from "sonner";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { useGoBack } from "@/components/shared/useGoBack";
+
+// Every state of this page sits in the site's header and footer. It used to
+// be the one page without them, so "Team not found" was a bare line of text
+// with no way anywhere else but the browser's own Back button (2026-09-30).
+function TeamPageShell({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1">
+        <div className={`container max-w-4xl px-4 py-8 ${className}`}>
+          {children}
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 function LeaveTeamButton({
   teamName,
@@ -110,6 +136,7 @@ function LeaveTeamButton({
 export default function TeamSettings() {
   const { id: teamId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const goBack = useGoBack("/library");
   const { user, loading: authLoading } = useAuthContext();
   const { data: team, isLoading: teamLoading } = useTeam(teamId);
   const { data: members = [], isLoading: membersLoading } =
@@ -166,39 +193,45 @@ export default function TeamSettings() {
 
   if (authLoading || !user) {
     return (
-      <main className="container max-w-4xl py-8">
+      <TeamPageShell>
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-48 bg-muted rounded" />
           <div className="h-64 bg-muted rounded" />
         </div>
-      </main>
+      </TeamPageShell>
     );
   }
 
   if (teamLoading || membersLoading || roleLoading) {
     return (
-      <main className="container max-w-4xl py-8">
+      <TeamPageShell>
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-48 bg-muted rounded" />
           <div className="h-64 bg-muted rounded" />
         </div>
-      </main>
+      </TeamPageShell>
     );
   }
 
   if (!team) {
     return (
-      <main className="container max-w-4xl py-8">
+      <TeamPageShell className="space-y-4">
         <p className="text-muted-foreground">
           Team not found or you don't have access.
         </p>
-      </main>
+        <Button asChild variant="outline" className="gap-2">
+          <Link to="/library">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Library
+          </Link>
+        </Button>
+      </TeamPageShell>
     );
   }
 
   if (!canManage) {
     return (
-      <main className="container max-w-4xl py-8 space-y-4">
+      <TeamPageShell className="space-y-4">
         <p className="text-muted-foreground">
           You don't have permission to manage this team.
         </p>
@@ -209,7 +242,7 @@ export default function TeamSettings() {
             onConfirm={handleLeaveTeam}
           />
         )}
-      </main>
+      </TeamPageShell>
     );
   }
 
@@ -324,12 +357,8 @@ export default function TeamSettings() {
   };
 
   return (
-    <main className="container max-w-4xl py-8">
-      <Button
-        variant="ghost"
-        onClick={() => navigate(-1)}
-        className="mb-6 gap-2"
-      >
+    <TeamPageShell>
+      <Button variant="ghost" onClick={goBack} className="mb-6 gap-2">
         <ArrowLeft className="h-4 w-4" />
         Back
       </Button>
@@ -551,8 +580,8 @@ export default function TeamSettings() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Anyone with a link can join as a member until it expires (14
-                days) or is revoked.
+                Anyone with a Premium account and the link can join as a member
+                until it expires (14 days) or is revoked.
               </p>
             </div>
           </CardContent>
@@ -670,6 +699,6 @@ export default function TeamSettings() {
           </Card>
         )}
       </div>
-    </main>
+    </TeamPageShell>
   );
 }

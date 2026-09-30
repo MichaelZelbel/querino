@@ -6,6 +6,8 @@ interface ReviewSectionProps {
   userId?: string;
   ratingAvg: number;
   ratingCount: number;
+  /** Private items take no reviews; see reviewSummary.ratingMode. */
+  isPublic?: boolean | null;
 }
 
 /**
@@ -16,6 +18,7 @@ export function ReviewSection({
   userId,
   ratingAvg,
   ratingCount,
+  isPublic,
 }: ReviewSectionProps) {
   const {
     reviews,
@@ -33,6 +36,7 @@ export function ReviewSection({
       userId={userId}
       ratingAvg={ratingAvg}
       ratingCount={ratingCount}
+      isPublic={isPublic}
       reviews={reviews}
       userReview={userReview}
       loading={loading}

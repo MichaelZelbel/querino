@@ -19,6 +19,7 @@ import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import type { ReviewWithUser } from "@/types/review";
+import { ratingMode, reviewSummary } from "./reviewSummary";
 
 interface ReviewSectionProps {
   itemId: string;
@@ -27,6 +28,8 @@ interface ReviewSectionProps {
   userId?: string;
   ratingAvg: number;
   ratingCount: number;
+  /** Whether the item is public (published); private items take no reviews. */
+  isPublic?: boolean | null;
   reviews: ReviewWithUser[];
   userReview: ReviewWithUser | null;
   loading: boolean;
@@ -45,6 +48,7 @@ export function ReviewSection({
   userId,
   ratingAvg,
   ratingCount,
+  isPublic,
   reviews,
   userReview,
   loading,
@@ -139,6 +143,11 @@ export function ReviewSection({
   // visible five and the "more reviews" remainder count only the others.
   const otherReviews = reviews.filter((r) => r.user_id !== userId);
   const displayReviews = otherReviews.slice(0, 5);
+  const summary = reviewSummary(reviews, loading, {
+    avg: ratingAvg,
+    count: ratingCount,
+  });
+  const mode = ratingMode({ signedIn: !!userId, isPublic });
 
   return (
     <div className="space-y-4">
@@ -146,18 +155,18 @@ export function ReviewSection({
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {/* Overall Rating - Left side. Unrated shows words, not "0.0 /5". */}
-          {ratingCount ? (
+          {summary.count ? (
             <div className="flex items-center gap-3">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-bold text-foreground">
-                  {Number(ratingAvg || 0).toFixed(1)}
+                  {summary.avg.toFixed(1)}
                 </span>
                 <span className="text-muted-foreground text-sm">/5</span>
               </div>
               <div className="flex flex-col">
-                <StarRating rating={ratingAvg || 0} readonly size="sm" />
+                <StarRating rating={summary.avg} readonly size="sm" />
                 <span className="text-xs text-muted-foreground mt-0.5">
-                  {ratingCount} {ratingCount === 1 ? "review" : "reviews"}
+                  {summary.count} {summary.count === 1 ? "review" : "reviews"}
                 </span>
               </div>
             </div>
@@ -172,7 +181,11 @@ export function ReviewSection({
 
           {/* User Rating - Right side */}
           <div className="flex-1">
-            {!userId ? (
+            {mode === "closed" ? (
+              <p className="text-xs text-muted-foreground">
+                Ratings open once this is published.
+              </p>
+            ) : mode === "sign-in" ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -197,7 +210,7 @@ export function ReviewSection({
         </div>
 
         {/* Expandable review form */}
-        {userId && (showForm || userReview) && (
+        {mode === "rate" && (showForm || userReview) && (
           <div className="mt-4 pt-4 border-t border-border space-y-3">
             <Textarea
               placeholder="Share your thoughts (optional)..."

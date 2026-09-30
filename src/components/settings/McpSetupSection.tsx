@@ -149,11 +149,11 @@ export function McpSetupSection() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2">
             <span className="text-sm text-muted-foreground shrink-0">
               MCP Endpoint (for manual setup):
             </span>
-            <code className="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs font-mono text-muted-foreground truncate">
+            <code className="min-w-0 flex-1 basis-40 rounded-md bg-muted px-3 py-1.5 text-xs font-mono text-muted-foreground truncate">
               {MCP_ENDPOINT}
             </code>
             <CopyButton text={MCP_ENDPOINT} label="MCP endpoint" />

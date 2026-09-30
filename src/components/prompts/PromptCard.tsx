@@ -17,6 +17,7 @@ import { useClonePrompt } from "@/hooks/useClonePrompt";
 import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
+import { formatCount } from "@/components/shared/formatDate";
 
 interface PromptCardProps {
   prompt: Prompt & { author?: PromptAuthor | null };
@@ -210,7 +211,7 @@ export function PromptCard({
             {!showAuthorInfo && prompt.rating_count > 0 && (
               <>
                 <span className="text-border">•</span>
-                <span>{prompt.copies_count.toLocaleString()} copies</span>
+                <span>{formatCount(prompt.copies_count)} copies</span>
               </>
             )}
           </div>

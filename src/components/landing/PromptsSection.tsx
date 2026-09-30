@@ -28,6 +28,17 @@ interface PromptsSectionProps {
    * header (the home page) and to no limit otherwise (Discover).
    */
   previewCount?: number;
+  /**
+   * Discover owns search, sort and category (in the address) and draws the
+   * toolbar all four tabs share. Given these, the section renders only the
+   * results, without its own band, container or toolbar.
+   */
+  controlled?: {
+    searchQuery: string;
+    sortBy: SortOption;
+    category: string;
+    onClearFilters: () => void;
+  };
 }
 
 export function PromptsSection({
@@ -36,11 +47,15 @@ export function PromptsSection({
   initialSearch = "",
   onClearTag,
   previewCount = showHeader ? 6 : undefined,
+  controlled,
 }: PromptsSectionProps) {
   const isPreview = previewCount !== undefined;
-  const [category, setCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [sortBy, setSortBy] = useState<SortOption>("trending");
+  const [ownCategory, setCategory] = useState("all");
+  const [ownSearchQuery, setSearchQuery] = useState(initialSearch);
+  const [ownSortBy, setSortBy] = useState<SortOption>("trending");
+  const category = controlled ? controlled.category : ownCategory;
+  const searchQuery = controlled ? controlled.searchQuery : ownSearchQuery;
+  const sortBy = controlled ? controlled.sortBy : ownSortBy;
 
   // /discover?q=... can change while this section stays mounted, so the box has
   // to follow the prop rather than only seeding itself on the first render.
@@ -49,7 +64,8 @@ export function PromptsSection({
   }, [initialSearch]);
 
   const queryClient = useQueryClient();
-  const debouncedSearch = useDebounce(searchQuery, 300);
+  // Discover hands over a search it has already debounced.
+  const debouncedSearch = useDebounce(searchQuery, controlled ? 0 : 300);
   const isSearching = debouncedSearch.trim().length > 0;
 
   // Server-side filtered + paginated (search results are relevance-ranked
@@ -95,6 +111,124 @@ export function PromptsSection({
     { value: "newest", label: "Newest", icon: Clock },
     { value: "rating", label: "Top Rated", icon: Star },
   ];
+
+  const clearFilters = () => {
+    if (controlled) {
+      controlled.onClearFilters();
+      return;
+    }
+    setCategory("all");
+    setSearchQuery("");
+    onClearTag?.();
+  };
+
+  const results = (
+    <>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="space-y-4 rounded-xl border border-border bg-card p-6"
+            >
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="py-12 text-center">
+          <p className="text-lg text-destructive">Failed to load prompts.</p>
+          <Button variant="outline" className="mt-4" onClick={retry}>
+            Try again
+          </Button>
+        </div>
+      )}
+
+      {/* Prompts Grid */}
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredAndSortedPrompts.map((prompt, index) => (
+            <div
+              key={prompt.id}
+              className="min-w-0 animate-fade-in-up"
+              style={{ animationDelay: `${(index % 24) * 0.04}s` }}
+            >
+              <PromptCard prompt={prompt} showAuthorInfo />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!isLoading &&
+        !error &&
+        isPreview &&
+        filteredAndSortedPrompts.length > 0 && (
+          <div className="mt-8 flex justify-center">
+            <Button asChild variant="outline" className="gap-2">
+              <Link to={discoverHref}>
+                See all in Discover
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        )}
+
+      {!isLoading && !error && !isPreview && hasNextPage && (
+        <div className="mt-8 flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="gap-2"
+          >
+            {isFetchingNextPage ? "Loading…" : "Load more prompts"}
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && !error && filteredAndSortedPrompts.length === 0 && (
+        <EmptyState
+          variant="compact"
+          icon={Search}
+          title="No prompts match your filters"
+          description={
+            tagFilter
+              ? "Try a broader search term, or clear the category and tag filters."
+              : "Try a broader search term, or clear the category filter."
+          }
+          primaryAction={{
+            label: "Clear filters",
+            onClick: clearFilters,
+          }}
+        />
+      )}
+    </>
+  );
+
+  if (controlled) {
+    return (
+      <div className="space-y-6">
+        {isSearching && !isLoading && (
+          <p className="text-center text-sm text-muted-foreground">
+            {isSemantic
+              ? "Showing results by relevance"
+              : "Showing prompts that contain your search words"}
+          </p>
+        )}
+        {results}
+      </div>
+    );
+  }
 
   return (
     <section
@@ -178,98 +312,7 @@ export function PromptsSection({
           )}
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="space-y-4 rounded-xl border border-border bg-card p-6"
-              >
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16" />
-                  <Skeleton className="h-5 w-16" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="py-12 text-center">
-            <p className="text-lg text-destructive">Failed to load prompts.</p>
-            <Button variant="outline" className="mt-4" onClick={retry}>
-              Try again
-            </Button>
-          </div>
-        )}
-
-        {/* Prompts Grid */}
-        {!isLoading && !error && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredAndSortedPrompts.map((prompt, index) => (
-              <div
-                key={prompt.id}
-                className="min-w-0 animate-fade-in-up"
-                style={{ animationDelay: `${(index % 24) * 0.04}s` }}
-              >
-                <PromptCard prompt={prompt} showAuthorInfo />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!isLoading &&
-          !error &&
-          isPreview &&
-          filteredAndSortedPrompts.length > 0 && (
-            <div className="mt-8 flex justify-center">
-              <Button asChild variant="outline" className="gap-2">
-                <Link to={discoverHref}>
-                  See all in Discover
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          )}
-
-        {!isLoading && !error && !isPreview && hasNextPage && (
-          <div className="mt-8 flex justify-center">
-            <Button
-              variant="outline"
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-              className="gap-2"
-            >
-              {isFetchingNextPage ? "Loading…" : "Load more prompts"}
-            </Button>
-          </div>
-        )}
-
-        {!isLoading && !error && filteredAndSortedPrompts.length === 0 && (
-          <EmptyState
-            variant="compact"
-            icon={Search}
-            title="No prompts match your filters"
-            description={
-              tagFilter
-                ? "Try a broader search term, or clear the category and tag filters."
-                : "Try a broader search term, or clear the category filter."
-            }
-            primaryAction={{
-              label: "Clear filters",
-              onClick: () => {
-                setCategory("all");
-                setSearchQuery("");
-                onClearTag?.();
-              },
-            }}
-          />
-        )}
+        {results}
       </div>
     </section>
   );

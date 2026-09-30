@@ -1,8 +1,8 @@
 import { Link } from "@/lib/router-compat";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDistanceToNow } from "date-fns";
 import type { BlogPost } from "@/types/blog";
+import { formatUtcDate } from "@/components/shared/formatDate";
 
 interface BlogPostCardProps {
   post: BlogPost;
@@ -12,7 +12,7 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
   const authorName = post.author?.display_name || "Anonymous";
   const authorInitial = authorName.charAt(0).toUpperCase();
   const publishedDate = post.published_at
-    ? formatDistanceToNow(new Date(post.published_at), { addSuffix: true })
+    ? formatUtcDate(post.published_at)
     : null;
 
   return (

@@ -7,6 +7,8 @@ interface WorkflowReviewSectionProps {
   userId?: string;
   ratingAvg: number;
   ratingCount: number;
+  /** Private items take no reviews; see reviewSummary.ratingMode. */
+  isPublic?: boolean | null;
 }
 
 /**
@@ -18,6 +20,7 @@ export function WorkflowReviewSection({
   userId,
   ratingAvg,
   ratingCount,
+  isPublic,
 }: WorkflowReviewSectionProps) {
   const {
     reviews,
@@ -36,6 +39,7 @@ export function WorkflowReviewSection({
       userId={userId}
       ratingAvg={ratingAvg}
       ratingCount={ratingCount}
+      isPublic={isPublic}
       reviews={reviews}
       userReview={userReview}
       loading={loading}

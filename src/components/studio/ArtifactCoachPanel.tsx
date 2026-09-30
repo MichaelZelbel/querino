@@ -233,6 +233,11 @@ export function ArtifactCoachPanel({
     }
   }, [messages, storageKey]);
 
+  // Callers key this panel by its session id (key={sessionId}), so a new
+  // session remounts it with that session's own history. Without the key the
+  // persist effect above wrote the old chat under the new key first, wiping
+  // the new session's history (a workspace switch on an open editor).
+  // promoteDraftSession moves a draft chat to its new key itself.
   // When sessionId changes, migrate messages to new key
   useEffect(() => {
     try {

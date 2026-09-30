@@ -18,6 +18,7 @@ import { useAIInsights } from "@/hooks/useAIInsights";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { usePremiumCheck } from "@/components/premium/usePremiumCheck";
+import { canWriteInsights } from "./insightsAccess";
 
 type ItemType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -66,6 +67,9 @@ export function AIInsightsPanel({
     if (!checkCredits()) return;
     refreshInsights();
   };
+
+  const canWrite = canWriteInsights(isOwner);
+  const itemLabel = itemType === "prompt_kit" ? "prompt kit" : itemType;
 
   // Don't render anything for anonymous users
   if (!user) {
@@ -172,7 +176,7 @@ export function AIInsightsPanel({
             <h3 className="font-semibold text-sm">AI Insights</h3>
           </div>
           <div className="flex items-center gap-1">
-            {isOwner !== false && (
+            {canWrite && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -211,22 +215,35 @@ export function AIInsightsPanel({
           ) : !hasInsights ? (
             <div className="p-6 text-center">
               <Sparkles className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Generate AI-powered insights for this {itemType}
-              </p>
-              <Button onClick={handleGenerate} disabled={generating} size="sm">
-                {generating ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Insights
-                  </>
-                )}
-              </Button>
+              {canWrite ? (
+                <>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate AI-powered insights for this {itemLabel}
+                  </p>
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    size="sm"
+                  >
+                    {generating ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Insights
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No insights yet for this {itemLabel}. Its author can generate
+                  them.
+                </p>
+              )}
               {error && (
                 <p className="text-xs text-destructive mt-3">{error}</p>
               )}

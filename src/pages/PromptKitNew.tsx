@@ -329,6 +329,7 @@ export default function PromptKitNew() {
 
   const coachPanel = (
     <ArtifactCoachPanel
+      key={coachSessionId}
       artifactType="prompt_kit"
       artifactId="draft"
       canvasContent={content}

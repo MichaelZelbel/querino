@@ -105,7 +105,7 @@ export default function LibraryPromptEdit() {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspace();
   const isMobile = useIsMobile();
-  const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const { isLoading: roleLoading } = useUserRole();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,7 +255,10 @@ export default function LibraryPromptEdit() {
           return;
         }
 
-        if (!isAdmin && !(await userCanEditArtifact(promptData, userId))) {
+        // No admin shortcut: prompts have no admin update or delete rule, so
+        // an admin on someone else's prompt got an editor whose every button
+        // answered "Nothing was saved".
+        if (!(await userCanEditArtifact(promptData, userId))) {
           setNotAuthorized(true);
           return;
         }
@@ -288,7 +291,7 @@ export default function LibraryPromptEdit() {
     // Keyed on the user's id, not the user object: a token refresh hands out
     // a new object and reloading then wiped every unsaved edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, userId, isAdmin, roleLoading]);
+  }, [slug, userId, roleLoading]);
 
   // Reload the prompt + versions after a restore from the version panel.
   const handleRestoreComplete = async () => {
@@ -461,8 +464,8 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      // No author_id filter: an admin is allowed in here too, and row-level security is
-      // what decides. The returned rows are checked because PostgREST reports no error
+      // No author_id filter: a premium team editor is allowed in here too, and
+      // row-level security is what decides. The returned rows are checked because PostgREST reports no error
       // when a write matches nothing, which used to show "saved" after saving nothing.
       const { data, error } = await supabase
         .from("prompts")
@@ -492,6 +495,11 @@ export default function LibraryPromptEdit() {
       }
 
       markFormSaved(submitted);
+      // The header's Publish / Unpublish / View Public Page read the loaded
+      // prompt, which the visibility switch just changed.
+      setPrompt((prev) =>
+        prev ? { ...prev, is_public: submitted.isPublic } : prev,
+      );
       void invalidateArtifactQueries(queryClient, "prompt");
       toast.success("Changes saved successfully!");
     } catch (err) {
@@ -526,8 +534,17 @@ export default function LibraryPromptEdit() {
         return;
       }
 
-      const nextVersionNumber =
-        versions.length > 0 ? versions[0].version_number + 1 : 1;
+      // Read the latest number now, not from the list loaded with the page: a
+      // version saved or restored elsewhere since then made this insert hit
+      // the unique (prompt_id, version_number) rule on every retry.
+      const { data: latest } = await supabase
+        .from("prompt_versions")
+        .select("version_number")
+        .eq("prompt_id", promptId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextVersionNumber = (latest?.version_number ?? 0) + 1;
 
       const { error: versionError } = await supabase
         .from("prompt_versions")
@@ -798,6 +815,7 @@ export default function LibraryPromptEdit() {
 
   const coachPanel = promptId ? (
     <PromptCoachPanel
+      key={coachSessionId}
       artifactId={promptId}
       canvasContent={content}
       onApplyContent={handleApplyAIContent}
@@ -1252,34 +1270,32 @@ export default function LibraryPromptEdit() {
                       </div>
 
                       {/* Slug Editor */}
-                      {prompt &&
-                        user &&
-                        (prompt.author_id === user.id || isAdmin) && (
-                          <SlugEditor
-                            promptId={prompt.id}
-                            currentSlug={prompt.slug}
-                            onSlugChanged={(newSlug) => {
-                              assignedSlugRef.current = newSlug;
-                              setPrompt((prev) =>
-                                prev ? { ...prev, slug: newSlug } : null,
-                              );
-                              // Router navigation, not history.replaceState: the raw
-                              // history call left the router's slug param on the old
-                              // value, so "View Public Page" kept opening the old slug.
-                              // Same prompt, same editor, new URL: the unsaved
-                              // edits come along, so the leave-page confirm
-                              // must not fire.
-                              void invalidateArtifactQueries(
-                                queryClient,
-                                "prompt",
-                              );
-                              allowNavigationTo(`/library/${newSlug}/edit`);
-                              navigate(`/library/${newSlug}/edit`, {
-                                replace: true,
-                              });
-                            }}
-                          />
-                        )}
+                      {prompt && user && prompt.author_id === user.id && (
+                        <SlugEditor
+                          promptId={prompt.id}
+                          currentSlug={prompt.slug}
+                          onSlugChanged={(newSlug) => {
+                            assignedSlugRef.current = newSlug;
+                            setPrompt((prev) =>
+                              prev ? { ...prev, slug: newSlug } : null,
+                            );
+                            // Router navigation, not history.replaceState: the raw
+                            // history call left the router's slug param on the old
+                            // value, so "View Public Page" kept opening the old slug.
+                            // Same prompt, same editor, new URL: the unsaved
+                            // edits come along, so the leave-page confirm
+                            // must not fire.
+                            void invalidateArtifactQueries(
+                              queryClient,
+                              "prompt",
+                            );
+                            allowNavigationTo(`/library/${newSlug}/edit`);
+                            navigate(`/library/${newSlug}/edit`, {
+                              replace: true,
+                            });
+                          }}
+                        />
+                      )}
 
                       {/* Visibility Toggle */}
                       <div className="flex items-center justify-between rounded-lg border border-border p-4">
@@ -1346,6 +1362,8 @@ export default function LibraryPromptEdit() {
         onOpenChange={setShowPublishModal}
         onPublish={handlePublish}
         isPublishing={isPublishing}
+        initialSummary={prompt?.summary ?? ""}
+        initialExampleOutput={prompt?.example_output ?? ""}
       />
 
       {/* Full version manager (view / compare / restore) */}

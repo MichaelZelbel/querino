@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { openConsentSettings } from "@/lib/consent";
 import { useNavigate, Link } from "@/lib/router-compat";
 import { useTheme } from "next-themes";
@@ -132,9 +132,13 @@ export default function Settings() {
   // Password reset state
   const [sendingReset, setSendingReset] = useState(false);
 
+  // Signing out here goes home. Without this flag the redirect below saw the
+  // user disappear first and sent them to the sign-in page for /settings.
+  const signingOut = useRef(false);
+
   // Redirect if not logged in
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !signingOut.current) {
       navigate("/auth?redirect=/settings", { replace: true });
     }
   }, [user, authLoading, navigate]);
@@ -214,8 +218,11 @@ export default function Settings() {
     }
   }, [teamData, user]);
 
-  // Active section observer
+  // Active section observer. It has to wait for the sections to exist: on a
+  // reload the page shows a spinner until the profile has loaded, and an
+  // observer set up then found nothing and never ran again.
   useEffect(() => {
+    if (authLoading || !user) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -230,7 +237,7 @@ export default function Settings() {
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleSavePersonalGithubSettings = async () => {
     if (!user) return;
@@ -393,8 +400,10 @@ export default function Settings() {
   };
 
   const handleSignOut = async () => {
+    signingOut.current = true;
     const { error } = await signOut();
     if (error) {
+      signingOut.current = false;
       toast.error("Failed to sign out");
       return;
     }
@@ -511,7 +520,7 @@ export default function Settings() {
           </div>
         </Alert>
 
-        <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
           {/* Sidebar Navigation */}
           <nav className="space-y-2 lg:sticky lg:top-24 lg:self-start">
             {SECTIONS.map((s) => {
@@ -835,7 +844,7 @@ export default function Settings() {
                         </p>
                       )}
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3">
                         <Button
                           onClick={handleSaveTeamGithubSettings}
                           disabled={savingTeamGithub}
@@ -983,7 +992,7 @@ export default function Settings() {
                         </p>
                       )}
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3">
                         <Button
                           onClick={handleSavePersonalGithubSettings}
                           disabled={savingPersonalGithub}

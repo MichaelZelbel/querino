@@ -294,6 +294,7 @@ export default function SkillNew() {
 
   const coachPanel = (
     <ArtifactCoachPanel
+      key={draftSessionId}
       artifactType="skill"
       artifactId="draft"
       canvasContent={content}

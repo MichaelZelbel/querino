@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { useSearchParams } from "@/lib/router-compat";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -7,95 +8,112 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
+import { DiscoverToolbar } from "@/components/discover/DiscoverToolbar";
+import {
+  readDiscoverParams,
+  writeDiscoverParams,
+  type DiscoverTab,
+} from "@/components/discover/discoverParams";
 import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Search,
-  FileText,
-  Workflow,
-  Sparkles,
-  Package,
-  Clock,
-  Star,
-} from "lucide-react";
+import { FileText, Workflow, Sparkles, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { categoryOptions } from "@/types/prompt";
 import { useAuthContext } from "@/contexts/AuthContext";
 import type { ArtifactSortOption } from "@/hooks/useArtifactList";
 
-const VALID_TABS = ["prompts", "skills", "workflows", "kits"];
-
 const Discover = () => {
-  // Deep-linkable state: /discover?type=skills&tag=planning&q=meeting
-  const [searchParams, setSearchParams] = useSearchParams();
+  // Deep-linkable state: /discover?type=skills&tag=planning&q=meeting&sort=rating&category=coding
+  // (see discoverParams.ts). Back from a card returns to the same list.
+  const [searchParams] = useSearchParams();
+  const router = useRouter();
   const { user } = useAuthContext();
-  const tagFilter = searchParams.get("tag") || "";
-  const initialQuery = searchParams.get("q") || "";
-  const typeParam = searchParams.get("type") || "prompts";
+  const state = readDiscoverParams(searchParams);
+  const { tab: activeTab, tag: tagFilter } = state;
 
-  const [activeTab, setActiveTab] = useState(
-    VALID_TABS.includes(typeParam) ? typeParam : "prompts",
+  // Writes go through the router directly so a search or filter change can
+  // keep the scroll position; router-compat's setter always scrolls to the top.
+  const replaceParams = useCallback(
+    (
+      change: Parameters<typeof writeDiscoverParams>[1],
+      resetScroll = false,
+    ) => {
+      const live = router.state.location;
+      const next = writeDiscoverParams(
+        new URLSearchParams(live.searchStr ?? ""),
+        change,
+      );
+      const search: Record<string, string> = {};
+      next.forEach((v, k) => {
+        search[k] = v;
+      });
+      router.navigate({
+        to: live.pathname,
+        search: search as never,
+        replace: true,
+        resetScroll,
+      });
+    },
+    [router],
   );
-  const [skillSearch, setSkillSearch] = useState(initialQuery);
-  const [workflowSearch, setWorkflowSearch] = useState(initialQuery);
-  const [kitSearch, setKitSearch] = useState(initialQuery);
 
-  // The site's own search action navigates to /discover?q=... and the tab links
-  // change ?type=... while this page stays mounted, so both have to follow the
-  // URL instead of only seeding themselves on the first render.
+  // The box updates on every keystroke; the address (and the queries that
+  // read it) follow once typing pauses. `written` is the last value this page
+  // put in the address, so a keystroke typed while that write lands is not
+  // overwritten by it; any other change of ?q= (the site search, Back) is.
+  const [searchInput, setSearchInput] = useState(state.q);
+  const written = useRef(state.q);
   useEffect(() => {
-    setActiveTab(VALID_TABS.includes(typeParam) ? typeParam : "prompts");
-  }, [typeParam]);
-
+    if (state.q !== written.current) {
+      written.current = state.q;
+      setSearchInput(state.q);
+    }
+  }, [state.q]);
+  const debouncedSearch = useDebounce(searchInput, 300);
   useEffect(() => {
-    setSkillSearch(initialQuery);
-    setWorkflowSearch(initialQuery);
-    setKitSearch(initialQuery);
-  }, [initialQuery]);
+    const q = debouncedSearch.trim();
+    if (q === written.current) return;
+    written.current = q;
+    replaceParams({ q });
+  }, [debouncedSearch, replaceParams]);
 
-  const debouncedSkillSearch = useDebounce(skillSearch, 300);
-  const debouncedWorkflowSearch = useDebounce(workflowSearch, 300);
-  const debouncedKitSearch = useDebounce(kitSearch, 300);
-
-  // Shared sort + category for the skills/workflows/kits tabs (prompts tab
-  // has its own richer toolbar inside PromptsSection).
-  const [tabSort, setTabSort] = useState<ArtifactSortOption>("newest");
-  const [tabCategory, setTabCategory] = useState("all");
+  const isSearching = state.q.trim().length > 0;
+  // Skills, workflows and kits have no "trending"; their hooks get newest.
+  const artifactSort: ArtifactSortOption =
+    state.sort === "rating" ? "rating" : "newest";
 
   // Cap public discovery fetches — without a limit these downloaded the
   // entire table (full content bodies included) on every visit.
   const DISCOVER_LIMIT = 60;
   const listOptions = {
     published: true,
-    sortBy: tabSort,
-    category: tabCategory,
+    sortBy: artifactSort,
+    category: state.category,
     tag: tagFilter || undefined,
     limit: DISCOVER_LIMIT,
+    searchQuery: state.q,
   };
-  const { data: skills, isLoading: skillsLoading } = useSkills({
-    ...listOptions,
-    searchQuery: debouncedSkillSearch,
-  });
-  const { data: workflows, isLoading: workflowsLoading } = useWorkflows({
-    ...listOptions,
-    searchQuery: debouncedWorkflowSearch,
-  });
-  const { data: kits, isLoading: kitsLoading } = usePromptKits({
-    ...listOptions,
-    searchQuery: debouncedKitSearch,
-  });
+  const {
+    data: skills,
+    isLoading: skillsLoading,
+    isError: skillsError,
+    refetch: refetchSkills,
+  } = useSkills(listOptions);
+  const {
+    data: workflows,
+    isLoading: workflowsLoading,
+    isError: workflowsError,
+    refetch: refetchWorkflows,
+  } = useWorkflows(listOptions);
+  const {
+    data: kits,
+    isLoading: kitsLoading,
+    isError: kitsError,
+    refetch: refetchKits,
+  } = usePromptKits(listOptions);
 
   // The tag is filtered on the server (see useArtifactList), so the 60-row cap
   // applies to tagged rows rather than hiding matches past the first 60.
@@ -104,68 +122,41 @@ const Discover = () => {
   const visibleKits = kits || [];
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("type", tab);
-        return next;
-      },
-      { replace: true },
-    );
+    replaceParams({ tab: tab as DiscoverTab }, true);
+  };
+  const clearTag = () => replaceParams({ tag: "" });
+  const clearSearch = () => {
+    setSearchInput("");
+    written.current = "";
+    replaceParams({ q: "" });
+  };
+  const clearFilters = () => {
+    setSearchInput("");
+    written.current = "";
+    replaceParams({ q: "", category: "all", tag: "" });
   };
 
-  const clearTag = () => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete("tag");
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  const toolbar = (
+    <DiscoverToolbar
+      tab={activeTab}
+      search={searchInput}
+      onSearchChange={setSearchInput}
+      sort={state.sort}
+      onSortChange={(sort) => replaceParams({ sort })}
+      isSearching={isSearching}
+      category={state.category}
+      onCategoryChange={(category) => replaceParams({ category })}
+      tag={tagFilter}
+      onClearTag={clearTag}
+    />
+  );
 
-  // Sort + category toolbar shared by the non-prompt tabs
-  const tabToolbar = (isSearchingTab: boolean) => (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      <Button
-        variant={
-          tabSort === "newest" && !isSearchingTab ? "secondary" : "ghost"
-        }
-        size="sm"
-        onClick={() => setTabSort("newest")}
-        disabled={isSearchingTab}
-        className="gap-1.5"
-      >
-        <Clock className="h-4 w-4" />
-        Newest
+  const loadError = (what: string, retry: () => void) => (
+    <div className="py-12 text-center">
+      <p className="text-lg text-destructive">Failed to load {what}.</p>
+      <Button variant="outline" className="mt-4" onClick={retry}>
+        Try again
       </Button>
-      <Button
-        variant={
-          tabSort === "rating" && !isSearchingTab ? "secondary" : "ghost"
-        }
-        size="sm"
-        onClick={() => setTabSort("rating")}
-        disabled={isSearchingTab}
-        className="gap-1.5"
-      >
-        <Star className="h-4 w-4" />
-        Top Rated
-      </Button>
-      <Select value={tabCategory} onValueChange={setTabCategory}>
-        <SelectTrigger className="h-9 w-[160px]" aria-label="Category">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All categories</SelectItem>
-          {categoryOptions.map((cat) => (
-            <SelectItem key={cat.id} value={cat.id}>
-              {cat.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
     </div>
   );
 
@@ -214,46 +205,26 @@ const Discover = () => {
               </div>
             </div>
 
-            {tagFilter && activeTab !== "prompts" && (
-              <div className="mb-6 flex items-center justify-center gap-2 text-sm">
-                <span className="text-muted-foreground">Filtered by tag:</span>
-                <span className="rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
-                  #{tagFilter}
-                </span>
-                <button
-                  type="button"
-                  onClick={clearTag}
-                  className="text-muted-foreground underline-offset-2 hover:underline"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
+            <div className="mb-6">{toolbar}</div>
 
             <TabsContent value="prompts" className="mt-0">
               <PromptsSection
                 showHeader={false}
                 tagFilter={tagFilter}
-                initialSearch={initialQuery}
-                onClearTag={clearTag}
+                controlled={{
+                  searchQuery: state.q,
+                  sortBy: state.sort,
+                  category: state.category,
+                  onClearFilters: clearFilters,
+                }}
               />
             </TabsContent>
 
             <TabsContent value="kits" className="mt-0">
               <div className="space-y-6">
-                <div className="relative mx-auto max-w-md">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search prompt kits..."
-                    aria-label="Search prompt kits"
-                    value={kitSearch}
-                    onChange={(e) => setKitSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                {tabToolbar(!!debouncedKitSearch.trim())}
-                {kitsLoading ? (
+                {kitsError ? (
+                  loadError("prompt kits", () => void refetchKits())
+                ) : kitsLoading ? (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                       <div
@@ -277,24 +248,24 @@ const Discover = () => {
                     variant="compact"
                     icon={Package}
                     title={
-                      debouncedKitSearch
+                      isSearching
                         ? "No prompt kits match your search"
                         : tagFilter
                           ? `No prompt kits tagged #${tagFilter}`
                           : "No prompt kits published yet"
                     }
                     description={
-                      debouncedKitSearch
+                      isSearching
                         ? "Try a different keyword or clear the search."
                         : tagFilter
                           ? "Clear the tag to see everything that is published."
                           : "Be the first to publish a Prompt Kit for the community."
                     }
                     primaryAction={
-                      debouncedKitSearch
+                      isSearching
                         ? {
                             label: "Clear search",
-                            onClick: () => setKitSearch(""),
+                            onClick: clearSearch,
                           }
                         : tagFilter
                           ? { label: "Clear tag", onClick: clearTag }
@@ -317,19 +288,9 @@ const Discover = () => {
 
             <TabsContent value="skills" className="mt-0">
               <div className="space-y-6">
-                <div className="relative mx-auto max-w-md">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search skills..."
-                    aria-label="Search skills"
-                    value={skillSearch}
-                    onChange={(e) => setSkillSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                {tabToolbar(!!debouncedSkillSearch.trim())}
-                {skillsLoading ? (
+                {skillsError ? (
+                  loadError("skills", () => void refetchSkills())
+                ) : skillsLoading ? (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                       <div
@@ -353,24 +314,24 @@ const Discover = () => {
                     variant="compact"
                     icon={FileText}
                     title={
-                      debouncedSkillSearch
+                      isSearching
                         ? "No skills match your search"
                         : tagFilter
                           ? `No skills tagged #${tagFilter}`
                           : "No skills published yet"
                     }
                     description={
-                      debouncedSkillSearch
+                      isSearching
                         ? "Try a different keyword or clear the search."
                         : tagFilter
                           ? "Clear the tag to see everything that is published."
                           : "Be the first to publish a Skill for the community."
                     }
                     primaryAction={
-                      debouncedSkillSearch
+                      isSearching
                         ? {
                             label: "Clear search",
-                            onClick: () => setSkillSearch(""),
+                            onClick: clearSearch,
                           }
                         : tagFilter
                           ? { label: "Clear tag", onClick: clearTag }
@@ -393,19 +354,9 @@ const Discover = () => {
 
             <TabsContent value="workflows" className="mt-0">
               <div className="space-y-6">
-                <div className="relative mx-auto max-w-md">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search workflows..."
-                    aria-label="Search workflows"
-                    value={workflowSearch}
-                    onChange={(e) => setWorkflowSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                {tabToolbar(!!debouncedWorkflowSearch.trim())}
-                {workflowsLoading ? (
+                {workflowsError ? (
+                  loadError("workflows", () => void refetchWorkflows())
+                ) : workflowsLoading ? (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                       <div
@@ -433,24 +384,24 @@ const Discover = () => {
                     variant="compact"
                     icon={Workflow}
                     title={
-                      debouncedWorkflowSearch
+                      isSearching
                         ? "No workflows match your search"
                         : tagFilter
                           ? `No workflows tagged #${tagFilter}`
                           : "No workflows published yet"
                     }
                     description={
-                      debouncedWorkflowSearch
+                      isSearching
                         ? "Try a different keyword or clear the search."
                         : tagFilter
                           ? "Clear the tag to see everything that is published."
                           : "Be the first to publish a Workflow for the community."
                     }
                     primaryAction={
-                      debouncedWorkflowSearch
+                      isSearching
                         ? {
                             label: "Clear search",
-                            onClick: () => setWorkflowSearch(""),
+                            onClick: clearSearch,
                           }
                         : tagFilter
                           ? { label: "Clear tag", onClick: clearTag }

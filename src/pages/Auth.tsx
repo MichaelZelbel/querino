@@ -26,6 +26,14 @@ import {
   clearRedirectPath,
 } from "@/lib/authRedirect";
 import { siteOrigin } from "@/config/site";
+import {
+  newPasswordProblem,
+  PASSWORD_HINT,
+} from "@/components/auth/passwordRules";
+import {
+  DEFAULT_REDIRECT,
+  safeRedirect,
+} from "@/components/auth/authRedirectLogic";
 
 const REDIRECT_LABELS: Record<string, string> = {
   "/library": "your library",
@@ -58,27 +66,7 @@ function getRedirectLabel(path: string): string | null {
   return "this page";
 }
 
-// Only an in-app path may be a redirect target. Anything else ("//evil.example",
-// "https://...", or /auth itself, which would loop) falls back to the default.
-const DEFAULT_REDIRECT = "/library";
-function safeRedirect(path: string | null | undefined): string {
-  if (!path || !path.startsWith("/") || path.startsWith("//")) {
-    return DEFAULT_REDIRECT;
-  }
-  if (
-    path === "/auth" ||
-    path.startsWith("/auth?") ||
-    path.startsWith("/auth/")
-  ) {
-    return DEFAULT_REDIRECT;
-  }
-  return path;
-}
-
 const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z
-  .string()
-  .min(6, "Password must be at least 6 characters");
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -95,8 +83,16 @@ export default function Auth() {
   } = useAuthContext();
 
   // Initialize tab from URL param
-  const initialTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
-  const [activeTab, setActiveTab] = useState<"signin" | "signup">(initialTab);
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"signin" | "signup">(
+    tabParam === "signup" ? "signup" : "signin",
+  );
+  // The header's "Get Started" links to /auth?tab=signup, and this page stays
+  // mounted when it is clicked here, so the tab follows the address rather
+  // than only seeding itself on the first render.
+  useEffect(() => {
+    setActiveTab(tabParam === "signup" ? "signup" : "signin");
+  }, [tabParam]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -153,9 +149,12 @@ export default function Auth() {
       newErrors.email = emailResult.error.errors[0].message;
     }
 
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      newErrors.password = passwordResult.error.errors[0].message;
+    // A new password must meet the server's rule; signing in only needs one.
+    if (activeTab === "signup") {
+      const problem = newPasswordProblem(password);
+      if (problem) newErrors.password = problem;
+    } else if (!password) {
+      newErrors.password = "Enter your password";
     }
 
     setErrors(newErrors);
@@ -615,9 +614,17 @@ export default function Auth() {
                             aria-describedby={
                               errors.password
                                 ? "signup-password-error"
-                                : undefined
+                                : "signup-password-hint"
                             }
                           />
+                          {!errors.password && (
+                            <p
+                              id="signup-password-hint"
+                              className="text-xs text-muted-foreground"
+                            >
+                              {PASSWORD_HINT}
+                            </p>
+                          )}
                           {errors.password && (
                             <p
                               id="signup-password-error"

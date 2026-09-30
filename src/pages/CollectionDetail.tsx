@@ -42,6 +42,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { CommentsSection } from "@/components/comments";
+import { itemTypeLabel } from "@/components/activity/activityLabels";
 
 // A collection holds prompts, skills, workflows and prompt kits. They are different
 // types, but this view reads only the fields all four share. Naming that shape stops
@@ -166,7 +167,9 @@ export default function CollectionDetail() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-bold">Collection not found</h1>
-          <Button onClick={() => navigate("/library")}>Back to Library</Button>
+          <Button onClick={() => navigate("/collections")}>
+            Back to Collections
+          </Button>
         </main>
         <Footer />
       </div>
@@ -225,10 +228,10 @@ export default function CollectionDetail() {
         <Button
           variant="ghost"
           className="mb-6"
-          onClick={() => navigate("/library")}
+          onClick={() => navigate("/collections")}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Library
+          Back to Collections
         </Button>
 
         {/* Header */}
@@ -295,7 +298,8 @@ export default function CollectionDetail() {
           onValueChange={setActiveFilter}
           className="mb-6"
         >
-          <TabsList>
+          {/* Five filters with icons are wider than a phone; they wrap. */}
+          <TabsList className="h-auto flex-wrap justify-start">
             <TabsTrigger value="all" className="gap-2">
               All
               <Badge variant="secondary" className="h-5 px-1.5">
@@ -346,7 +350,10 @@ export default function CollectionDetail() {
           <h2 className="text-lg font-semibold">
             {activeFilter === "all"
               ? "All Items"
-              : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`}{" "}
+              : (() => {
+                  const label = itemTypeLabel(activeFilter);
+                  return `${label.charAt(0).toUpperCase() + label.slice(1)}s`;
+                })()}{" "}
             ({filteredItems.length})
           </h2>
 
@@ -375,7 +382,7 @@ export default function CollectionDetail() {
                               variant="outline"
                               className="text-xs capitalize"
                             >
-                              {item.item_type}
+                              {itemTypeLabel(item.item_type)}
                             </Badge>
                           </div>
                           {item.data?.description && (
@@ -432,7 +439,7 @@ export default function CollectionDetail() {
                 <p className="text-muted-foreground">
                   {activeFilter === "all"
                     ? "This collection is empty"
-                    : `No ${activeFilter}s in this collection`}
+                    : `No ${itemTypeLabel(activeFilter)}s in this collection`}
                 </p>
               </CardContent>
             </Card>
@@ -445,6 +452,7 @@ export default function CollectionDetail() {
             itemType="collection"
             itemId={collection.id}
             teamId={(collection as any).team_id}
+            isPublic={collection.is_public}
           />
         </div>
       </main>

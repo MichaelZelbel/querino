@@ -77,32 +77,8 @@ export function ItemTypeIcon({
   return <Icon className={className} />;
 }
 
-export function getActionLabel(
-  action: string,
-  itemType?: string | null,
-): string {
-  const itemLabel = itemType || "item";
-
-  const labels: Record<string, string> = {
-    create: `created a ${itemLabel}`,
-    update: `updated a ${itemLabel}`,
-    autosave: `autosaved a ${itemLabel}`,
-    publish: `published a ${itemLabel}`,
-    unpublish: `unpublished a ${itemLabel}`,
-    clone: `cloned a ${itemLabel}`,
-    delete: `deleted a ${itemLabel}`,
-    restore: `restored a ${itemLabel}`,
-    review: `reviewed a ${itemLabel}`,
-    version: `created a new version of a ${itemLabel}`,
-    team_create: "created a team",
-    team_add_member: "added a team member",
-    team_remove_member: "removed a team member",
-    team_promote_member: "promoted a team member",
-    github_sync_triggered: "triggered GitHub sync",
-  };
-
-  return labels[action] || `performed ${action} on a ${itemLabel}`;
-}
+// The sentence for each action lives in activityLabels.ts.
+export { getActionLabel } from "./activityLabels";
 
 export function getActionColor(action: string): string {
   const colors: Record<string, string> = {

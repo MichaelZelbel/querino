@@ -55,8 +55,10 @@ import { toast } from "sonner";
 import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
-import { format } from "date-fns";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { formatUtcDate } from "@/components/shared/formatDate";
+import { useGoBack } from "@/components/shared/useGoBack";
+import { workflowText } from "@/components/workflows/workflowText";
 
 interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
@@ -70,6 +72,7 @@ export default function WorkflowDetail({
 }: { initialWorkflow?: WorkflowWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const goBack = useGoBack("/discover?type=workflows");
   const { user } = useAuthContext();
   const { cloneWorkflow, cloning } = useCloneWorkflow();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
@@ -183,14 +186,7 @@ export default function WorkflowDetail({
   // Get workflow content - use new content field, or fall back to json for legacy
   const getWorkflowContent = (): string => {
     if (!workflow) return "";
-    if (workflow.content) return workflow.content;
-    // Legacy fallback: stringify JSON
-    if (workflow.json) {
-      return typeof workflow.json === "string"
-        ? workflow.json
-        : JSON.stringify(workflow.json, null, 2);
-    }
-    return "";
+    return workflowText(workflow.content, workflow.json);
   };
 
   const workflowContent = getWorkflowContent();
@@ -331,7 +327,7 @@ export default function WorkflowDetail({
         <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -379,7 +375,7 @@ export default function WorkflowDetail({
               {workflow.filename && (
                 <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                   <FileText className="h-4 w-4" />
-                  <code className="font-mono bg-muted px-2 py-0.5 rounded">
+                  <code className="font-mono bg-muted px-2 py-0.5 rounded break-all">
                     {workflow.filename}
                   </code>
                 </div>
@@ -411,10 +407,7 @@ export default function WorkflowDetail({
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>
-                    Created{" "}
-                    {format(new Date(workflow.created_at), "MMM d, yyyy")}
-                  </span>
+                  <span>Created {formatUtcDate(workflow.created_at)}</span>
                 </div>
               </div>
             </div>
@@ -579,7 +572,7 @@ export default function WorkflowDetail({
                         <Copy className="h-4 w-4" />
                       )}
                     </button>
-                    <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                    <pre className="whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm text-foreground leading-relaxed">
                       {workflowContent}
                     </pre>
                   </div>
@@ -632,6 +625,7 @@ export default function WorkflowDetail({
               userId={user?.id}
               ratingAvg={workflow.rating_avg || 0}
               ratingCount={workflow.rating_count || 0}
+              isPublic={workflow.published}
             />
 
             {/* Tabbed Content Section */}
@@ -657,9 +651,13 @@ export default function WorkflowDetail({
                   items={similarWorkflows}
                   loading={loadingSimilar}
                 />
-                <div className="mt-8">
-                  <ActivitySidebar itemId={workflow.id} itemType="workflow" />
-                </div>
+                {/* Events are readable only by whoever caused them and by team
+                    members, so a signed-out visitor always saw "No activity yet". */}
+                {user && (
+                  <div className="mt-8">
+                    <ActivitySidebar itemId={workflow.id} itemType="workflow" />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="comments" className="mt-6">
@@ -667,6 +665,7 @@ export default function WorkflowDetail({
                   itemType="workflow"
                   itemId={workflow.id}
                   teamId={(workflow as any).team_id}
+                  isPublic={workflow.published}
                 />
               </TabsContent>
 

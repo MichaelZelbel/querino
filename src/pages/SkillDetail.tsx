@@ -49,8 +49,9 @@ import { toast } from "sonner";
 import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Skill, SkillAuthor } from "@/types/skill";
-import { format } from "date-fns";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { formatUtcDate } from "@/components/shared/formatDate";
+import { useGoBack } from "@/components/shared/useGoBack";
 
 interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
@@ -64,6 +65,7 @@ export default function SkillDetail({
 }: { initialSkill?: SkillWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const goBack = useGoBack("/discover?type=skills");
   const { user } = useAuthContext();
   const { cloneSkill, cloning } = useCloneSkill();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
@@ -304,7 +306,7 @@ export default function SkillDetail({
         <main className="min-w-0 flex-1 py-12">
           <div className="container mx-auto max-w-4xl px-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -372,9 +374,7 @@ export default function SkillDetail({
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>
-                    Created {format(new Date(skill.created_at), "MMM d, yyyy")}
-                  </span>
+                  <span>Created {formatUtcDate(skill.created_at)}</span>
                 </div>
               </div>
             </div>
@@ -522,7 +522,7 @@ export default function SkillDetail({
                     <Copy className="h-4 w-4" />
                   )}
                 </button>
-                <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                <pre className="whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm text-foreground leading-relaxed">
                   {skill.content}
                 </pre>
               </div>
@@ -573,6 +573,7 @@ export default function SkillDetail({
               userId={user?.id}
               ratingAvg={skill.rating_avg || 0}
               ratingCount={skill.rating_count || 0}
+              isPublic={skill.published}
             />
 
             {/* Tabbed Content Section */}
@@ -598,9 +599,13 @@ export default function SkillDetail({
                   items={similarSkills}
                   loading={loadingSimilar}
                 />
-                <div className="mt-8">
-                  <ActivitySidebar itemId={skill.id} itemType="skill" />
-                </div>
+                {/* Events are readable only by whoever caused them and by team
+                    members, so a signed-out visitor always saw "No activity yet". */}
+                {user && (
+                  <div className="mt-8">
+                    <ActivitySidebar itemId={skill.id} itemType="skill" />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="comments" className="mt-6">
@@ -608,6 +613,7 @@ export default function SkillDetail({
                   itemType="skill"
                   itemId={skill.id}
                   teamId={(skill as any).team_id}
+                  isPublic={skill.published}
                 />
               </TabsContent>
 

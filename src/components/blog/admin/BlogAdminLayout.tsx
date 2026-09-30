@@ -105,7 +105,14 @@ export function BlogAdminLayout({
   }
 
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // The sign-in page reads ?redirect=, not router state, so this is what
+    // brings an admin back here after signing in.
+    return (
+      <Navigate
+        to={`/auth?redirect=${encodeURIComponent(location.pathname)}`}
+        replace
+      />
+    );
   }
 
   if (role !== "admin") {

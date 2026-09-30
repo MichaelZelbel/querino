@@ -546,9 +546,8 @@ export default function VersionHistory() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               This will update your prompt with the content from version v
-              {restoringVersion?.version_number}
-              and create a new version entry. Your current changes will be
-              preserved in the version history.
+              {restoringVersion?.version_number} and create a new version entry.
+              Your current changes will be preserved in the version history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

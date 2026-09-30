@@ -40,6 +40,10 @@ export function AddToCollectionModal({
   const [showNewForm, setShowNewForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [addingTo, setAddingTo] = useState<string | null>(null);
+  // Busy for both steps of "Create & Add". The button used to wake up again
+  // between creating the collection and adding the item, and a second click
+  // there created a second collection.
+  const [creating, setCreating] = useState(false);
 
   const handleAddToCollection = async (collectionId: string) => {
     setAddingTo(collectionId);
@@ -60,7 +64,8 @@ export function AddToCollectionModal({
   };
 
   const handleCreateAndAdd = async () => {
-    if (!newTitle.trim() || !user) return;
+    if (!newTitle.trim() || !user || creating) return;
+    setCreating(true);
 
     try {
       const collection = await createCollection.mutateAsync({
@@ -80,6 +85,8 @@ export function AddToCollectionModal({
       setShowNewForm(false);
     } catch (error) {
       console.error("Error creating collection:", error);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -144,9 +151,9 @@ export function AddToCollectionModal({
                   <Button
                     className="flex-1"
                     onClick={handleCreateAndAdd}
-                    disabled={!newTitle.trim() || createCollection.isPending}
+                    disabled={!newTitle.trim() || creating}
                   >
-                    {createCollection.isPending ? (
+                    {creating ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       "Create & Add"

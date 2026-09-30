@@ -9,6 +9,7 @@ import {
   getActionColor,
 } from "./ActivityIcon";
 import type { ActivityEventWithActor } from "@/types/activity";
+import { itemDisplayTitle } from "./activityLabels";
 
 interface ActivityEventCardProps {
   event: ActivityEventWithActor;
@@ -48,7 +49,7 @@ export function ActivityEventCard({
   };
 
   const itemLink = getItemLink();
-  const itemTitle = event.metadata?.title || event.metadata?.name || "Untitled";
+  const itemTitle = itemDisplayTitle(event.metadata, event.item_type);
   const changedFields = event.metadata?.changedFields as string[] | undefined;
 
   // The profile route keys off the display name, so an actor without one has no

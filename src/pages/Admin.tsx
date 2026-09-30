@@ -24,9 +24,9 @@ export default function Admin() {
   // Access control check. Unchanged: it still runs before any tab renders.
   useEffect(() => {
     if (!authLoading && !roleLoading) {
+      // Signed out is not the same as not allowed: sign in, then come back.
       if (!user) {
-        toast.error("You don't have permission to view the admin panel.");
-        navigate("/");
+        navigate("/auth?redirect=/admin", { replace: true });
         return;
       }
       if (!isAdmin) {

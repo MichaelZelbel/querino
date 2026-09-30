@@ -10,17 +10,22 @@ import { ItemType } from "@/types/comment";
 import { toast } from "sonner";
 import { Link, useLocation } from "@/lib/router-compat";
 import { moderateContent } from "@/lib/moderateContent";
+import { commentAccess } from "./commentAccess";
 
 interface CommentsSectionProps {
   itemType: ItemType;
   itemId: string;
   teamId?: string | null;
+  /** Whether the item is public (published). A private item outside a team
+   *  takes no comments; see commentAccess. */
+  isPublic?: boolean | null;
 }
 
 export const CommentsSection = ({
   itemType,
   itemId,
   teamId,
+  isPublic,
 }: CommentsSectionProps) => {
   // The router knows the path without a browser, so the sign-in redirect keeps
   // working when this component renders on a server.
@@ -38,8 +43,8 @@ export const CommentsSection = ({
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // If team item and user not logged in, hide entirely
-  if (teamId && !user) {
+  const access = commentAccess({ isPublic, teamId, signedIn: !!user });
+  if (access === "hidden") {
     return null;
   }
 
@@ -140,7 +145,13 @@ export const CommentsSection = ({
       </div>
 
       {/* Comment editor */}
-      {user ? (
+      {access === "private" ? (
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg text-center">
+          <p className="text-muted-foreground">
+            Comments open once this is published.
+          </p>
+        </div>
+      ) : access === "open" ? (
         <div className="mb-6 space-y-3">
           <Textarea
             placeholder="Share your thoughts..."
@@ -170,7 +181,7 @@ export const CommentsSection = ({
       )}
 
       {/* Loading state */}
-      {loading && (
+      {access !== "private" && loading && (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
@@ -185,13 +196,13 @@ export const CommentsSection = ({
       )}
 
       {/* Comments list */}
-      {!loading && comments.length === 0 && (
+      {access !== "private" && !loading && comments.length === 0 && (
         <p className="text-muted-foreground text-center py-8">
-          No comments yet — be the first to start a discussion!
+          No comments yet. Be the first to start a discussion!
         </p>
       )}
 
-      {!loading && comments.length > 0 && (
+      {access !== "private" && !loading && comments.length > 0 && (
         <div className="divide-y">
           {comments.map((comment) => (
             <CommentItem

@@ -142,7 +142,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     {
       label: "GitHub Sync Settings",
       icon: Github,
-      action: () => navigate("/settings"),
+      action: () => navigate("/settings#integrations"),
       requiresAuth: true,
     },
   ];
@@ -172,13 +172,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       icon: Newspaper,
       action: () => navigate("/blog"),
       requiresAuth: false,
-    },
-
-    {
-      label: "Open Settings",
-      icon: Settings,
-      action: () => navigate("/settings"),
-      requiresAuth: true,
     },
     {
       label: "MCP Tokens",

@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, User } from "lucide-react";
-import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import type { BlogPost as BlogPostRecord } from "@/types/blog";
+import { formatUtcDate } from "@/components/shared/formatDate";
 
 export default function BlogPost({
   initialPost = null,
@@ -67,7 +67,7 @@ export default function BlogPost({
   const authorName = post.author?.display_name || "Anonymous";
   const authorInitial = authorName.charAt(0).toUpperCase();
   const publishedDate = post.published_at
-    ? format(new Date(post.published_at), "MMMM d, yyyy")
+    ? formatUtcDate(post.published_at, "long")
     : null;
 
   return (

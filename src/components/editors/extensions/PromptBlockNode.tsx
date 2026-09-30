@@ -8,6 +8,10 @@ import { Trash2, Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  promptBlockAttributes,
+  promptBlockMarkdown,
+} from "../promptKitMarkdown";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -74,9 +78,31 @@ export const PromptBlock = Node.create({
   draggable: false,
 
   addAttributes() {
+    return promptBlockAttributes;
+  },
+
+  // tiptap-markdown asks each node for its own serializer; this one writes the
+  // canonical "## Prompt:" section directly (see promptBlockMarkdown).
+  addStorage() {
     return {
-      title: { default: "" },
-      body: { default: "" },
+      markdown: {
+        serialize(
+          state: {
+            write: (s: string) => void;
+            closeBlock: (n: unknown) => void;
+          },
+          node: { attrs: { title?: string; body?: string } },
+        ) {
+          state.write(
+            promptBlockMarkdown(node.attrs.title, node.attrs.body).replace(
+              /\n$/,
+              "",
+            ),
+          );
+          state.closeBlock(node);
+        },
+        parse: {},
+      },
     };
   },
 

@@ -44,7 +44,7 @@ function SectionHeader({
   iconClassName?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 mb-6" id={id}>
+    <div className="flex items-center gap-3 mb-6 scroll-mt-24" id={id}>
       <div className="p-2 rounded-lg bg-primary/10">
         <Icon className={iconClassName || "h-6 w-6 text-primary"} />
       </div>
@@ -683,9 +683,9 @@ export default function Docs() {
             <div className="prose prose-neutral dark:prose-invert max-w-none">
               <p className="text-muted-foreground text-lg mb-6">
                 Teams let multiple people work in a shared library. Everyone on
-                the team can create, edit, and browse the same set of artifacts
-                — perfect for organizations that want to standardize how they
-                use AI.
+                the team can create, edit, and browse the same set of artifacts,
+                which suits organizations that want to standardize how they use
+                AI.
               </p>
 
               <h3 className="text-lg font-semibold mt-8 mb-4">
@@ -700,15 +700,18 @@ export default function Docs() {
                   Select <strong>"Create Team"</strong> and give it a name.
                 </li>
                 <li>
-                  Open <strong>Team Settings</strong> to find the Team ID.
+                  Open <strong>Team Settings</strong> and create an{" "}
+                  <strong>invite link</strong>. It works for 14 days, or until
+                  you revoke it.
                 </li>
                 <li>
-                  Share the Team ID with your colleagues — they enter it in
-                  their{" "}
+                  Send the link to your colleagues. They open it (or paste it
+                  under Teams in their{" "}
                   <Link to="/settings" className="text-primary hover:underline">
                     Settings
-                  </Link>{" "}
-                  to join.
+                  </Link>
+                  ), see which team it is, and choose whether to join. Joining a
+                  team needs a Premium account.
                 </li>
               </ol>
 
@@ -732,7 +735,7 @@ export default function Docs() {
                   <strong>Member</strong> — Can create, edit, and view team
                   artifacts.
                   <span className="block text-sm mt-1 text-muted-foreground/80">
-                    Default role when joining via Team ID.
+                    Default role when joining through an invite link.
                   </span>
                 </li>
               </ul>

@@ -68,6 +68,7 @@ import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { writeOutcome } from "@/components/editors/writeOutcome";
 
 interface KitFormData {
   title: string;
@@ -334,7 +335,9 @@ export default function PromptKitEdit() {
         (kit.content || "") !== formData.content.trim() ||
         JSON.stringify(kit.tags || []) !== JSON.stringify(formData.tags);
 
-      const { error } = await (supabase.from("prompt_kits") as any)
+      const { data: savedRows, error } = await (
+        supabase.from("prompt_kits") as any
+      )
         .update({
           title: formData.title.trim(),
           description: formData.description.trim() || null,
@@ -344,9 +347,17 @@ export default function PromptKitEdit() {
           published: formData.isPublic,
           language: formData.language,
         })
-        .eq("id", kitId);
-      if (error) {
+        .eq("id", kitId)
+        .select("id");
+      const outcome = writeOutcome({ error, data: savedRows });
+      if (outcome === "failed") {
         toast.error("Failed to save prompt kit");
+        return;
+      }
+      if (outcome === "nothing") {
+        toast.error(
+          "Nothing was saved. You may no longer have access to this prompt kit.",
+        );
         return;
       }
 
@@ -409,10 +420,15 @@ export default function PromptKitEdit() {
     if (!kitId) return;
     setIsDeleting(true);
     try {
-      const { error } = await (supabase.from("prompt_kits") as any)
+      const { data: deletedRows, error } = await (
+        supabase.from("prompt_kits") as any
+      )
         .delete()
-        .eq("id", kitId);
-      if (error) throw error;
+        .eq("id", kitId)
+        .select("id");
+      if (writeOutcome({ error, data: deletedRows }) !== "written") {
+        throw error ?? new Error("Nothing was deleted");
+      }
       // The row is gone: nothing left to warn about on the way out.
       markSaved();
       void invalidateArtifactQueries(queryClient, "prompt_kit");
@@ -436,6 +452,7 @@ export default function PromptKitEdit() {
 
   const coachPanel = (
     <ArtifactCoachPanel
+      key={coachSessionId}
       artifactType="prompt_kit"
       artifactId={kitId!}
       canvasContent={formData.content}

@@ -61,8 +61,9 @@ import { moderateContent } from "@/lib/moderateContent";
 import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
-import { format } from "date-fns";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { formatCount, formatUtcDate } from "@/components/shared/formatDate";
+import { useGoBack } from "@/components/shared/useGoBack";
 
 interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -76,6 +77,7 @@ export default function PromptDetail({
 }: { initialPrompt?: PromptWithAuthor | null } = {}) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const goBack = useGoBack("/discover");
   const { user } = useAuthContext();
   const { isPromptSaved, toggleSave } = useSavedPrompts();
   const { clonePrompt, cloning } = useClonePrompt();
@@ -415,7 +417,7 @@ export default function PromptDetail({
           <div className="container mx-auto max-w-4xl px-4">
             {/* Back Link */}
             <button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -491,19 +493,14 @@ export default function PromptDetail({
                 {prompt.published_at && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>
-                      Published{" "}
-                      {format(new Date(prompt.published_at), "MMM d, yyyy")}
-                    </span>
+                    <span>Published {formatUtcDate(prompt.published_at)}</span>
                   </div>
                 )}
 
                 {(prompt.copies_count ?? 0) > 0 && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>
-                      {(prompt.copies_count ?? 0).toLocaleString()} copies
-                    </span>
+                    <span>{formatCount(prompt.copies_count)} copies</span>
                   </div>
                 )}
               </div>
@@ -742,7 +739,7 @@ export default function PromptDetail({
                     <Copy className="h-4 w-4" />
                   )}
                 </button>
-                <pre className="whitespace-pre-wrap font-mono text-sm text-foreground leading-relaxed">
+                <pre className="whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm text-foreground leading-relaxed">
                   {prompt.content}
                 </pre>
               </div>
@@ -755,7 +752,7 @@ export default function PromptDetail({
                   Example Output
                 </h2>
                 <div className="rounded-xl border border-border bg-card p-6">
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground leading-relaxed">
+                  <pre className="whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-sm text-muted-foreground leading-relaxed">
                     {prompt.example_output}
                   </pre>
                 </div>
@@ -840,12 +837,15 @@ export default function PromptDetail({
               userId={user?.id}
               ratingAvg={prompt.rating_avg}
               ratingCount={prompt.rating_count}
+              isPublic={prompt.is_public}
             />
 
             {/* Tabbed Content Section */}
             <Tabs defaultValue="comments" className="mt-8">
               <TabsList>
-                <TabsTrigger value="details">Activity</TabsTrigger>
+                {/* Events are readable only by whoever caused them and by team
+                    members, so a signed-out visitor always saw "No activity yet". */}
+                {user && <TabsTrigger value="details">Activity</TabsTrigger>}
                 <TabsTrigger value="comments">Comments</TabsTrigger>
                 <TabsTrigger value="suggestions" className="gap-2">
                   Suggestions
@@ -860,18 +860,21 @@ export default function PromptDetail({
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="details" className="mt-6">
-                {/* Activity Sidebar */}
-                <div className="mt-8">
-                  <ActivitySidebar itemId={prompt.id} itemType="prompt" />
-                </div>
-              </TabsContent>
+              {user && (
+                <TabsContent value="details" className="mt-6">
+                  {/* Activity Sidebar */}
+                  <div className="mt-8">
+                    <ActivitySidebar itemId={prompt.id} itemType="prompt" />
+                  </div>
+                </TabsContent>
+              )}
 
               <TabsContent value="comments" className="mt-6">
                 <CommentsSection
                   itemType="prompt"
                   itemId={prompt.id}
                   teamId={(prompt as any).team_id}
+                  isPublic={prompt.is_public}
                 />
               </TabsContent>
 
