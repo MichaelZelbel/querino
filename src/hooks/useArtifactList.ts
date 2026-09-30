@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeWithSemantic } from "./useSemanticMerge";
+import { hasArtifactListScope } from "@/lib/artifactListScope";
+import {
+  artifactListSelect,
+  type ArtifactListTable,
+} from "@/lib/artifactListColumns";
 
 export type ArtifactSortOption = "newest" | "rating";
 
@@ -22,7 +27,7 @@ export interface ArtifactListOptions {
 
 interface ArtifactListConfig {
   /** Supabase table, e.g. "skills" */
-  table: string;
+  table: ArtifactListTable;
   /** TanStack query-key namespace, usually same as table */
   queryKey: string;
   /** Semantic-search RPC family (see useSemanticMerge) */
@@ -41,7 +46,7 @@ export function createArtifactListHook<T extends { id: string }>(
   const fetchByIds = async (ids: string[]): Promise<T[]> => {
     if (ids.length === 0) return [];
     const { data, error } = await (supabase.from(config.table as any) as any)
-      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
+      .select(artifactListSelect(config.table))
       .in("id", ids);
     if (error || !data) return [];
     return (data as any[]).map((item) => ({
@@ -74,15 +79,11 @@ export function createArtifactListHook<T extends { id: string }>(
         sortBy,
         limit,
       ],
+      enabled: hasArtifactListScope({ published, authorId, teamId }),
       queryFn: async () => {
-        let query = (supabase.from(config.table as any) as any).select(`
-            *,
-            profiles:author_id (
-              id,
-              display_name,
-              avatar_url
-            )
-          `);
+        let query = (supabase.from(config.table as any) as any).select(
+          artifactListSelect(config.table),
+        );
 
         if (sortBy === "rating") {
           query = query

@@ -137,6 +137,10 @@ async function fetchAllRows(
       .select("slug, updated_at")
       .eq(column, value as never)
       .order("updated_at", { ascending: false })
+      // A background job gives many rows the same updated_at in one
+      // transaction. Without a unique last key those tied rows could land on
+      // two pages or on none once there is more than one page (listOrder.ts).
+      .order("id", { ascending: true })
       .range(from, from + SITEMAP_PAGE - 1);
 
     if (error) return { data: null, error };

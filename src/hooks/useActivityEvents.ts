@@ -34,6 +34,8 @@ export function useActivityEvents(options: UseActivityEventsOptions = {}) {
         `,
         )
         .order("created_at", { ascending: false })
+        // The key breaks ties, so no event lands on two pages (listOrder.ts).
+        .order("id", { ascending: true })
         .range(pageParam, pageParam + limit - 1);
 
       if (teamId) {
@@ -96,6 +98,7 @@ export function useOwnActivityFeed(userId: string | undefined, limit = 20) {
         )
         .eq("actor_id", userId!)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(pageParam, pageParam + limit - 1);
 
       if (error) throw error;
@@ -140,6 +143,7 @@ export function useUserActivityFeed(
         )
         .eq("actor_id", userId)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(pageParam, pageParam + limit - 1);
 
       if (error) throw error;

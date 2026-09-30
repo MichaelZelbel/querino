@@ -48,7 +48,7 @@ export function buildMarkdownContent(data: {
   content: string;
 }): string {
   const frontmatterLines: string[] = ["---"];
-  frontmatterLines.push(`title: ${data.title}`);
+  frontmatterLines.push(`title: ${quoteBareIfNeeded(data.title)}`);
   frontmatterLines.push(`type: ${data.type}`);
   if (data.description) {
     frontmatterLines.push(`description: ${quoteScalar(data.description)}`);
@@ -57,7 +57,7 @@ export function buildMarkdownContent(data: {
     frontmatterLines.push(`tags: [${data.tags.map(quoteTag).join(", ")}]`);
   }
   if (data.framework) {
-    frontmatterLines.push(`framework: ${data.framework}`);
+    frontmatterLines.push(`framework: ${quoteBareIfNeeded(data.framework)}`);
   }
   frontmatterLines.push("---");
   frontmatterLines.push("");
@@ -65,28 +65,34 @@ export function buildMarkdownContent(data: {
   return frontmatterLines.join("\n");
 }
 
+/**
+ * The frontmatter block: a line that is only `---`, the fields, and the next
+ * line that is only `---`. The closing fence used to be the first "---"
+ * anywhere after the opening one, so a title or description containing
+ * "---" cut the block in two and spilled the rest into the body.
+ */
+const FRONTMATTER_RE =
+  /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
+
 export function parseMarkdownContent(
   markdown: string,
   filename?: string,
 ): ParsedMarkdown {
   const trimmed = markdown.trim();
-  if (trimmed.startsWith("---")) {
-    const secondDashIndex = trimmed.indexOf("---", 3);
-    if (secondDashIndex !== -1) {
-      const frontmatterStr = trimmed.slice(3, secondDashIndex).trim();
-      const content = trimmed.slice(secondDashIndex + 3).trim();
-      const frontmatter = parseFrontmatter(frontmatterStr);
-      return {
-        frontmatter: {
-          title: frontmatter.title || deriveTitle(content, filename),
-          type: (frontmatter.type as ArtefactType) || "prompt",
-          description: frontmatter.description,
-          tags: frontmatter.tags,
-          framework: frontmatter.framework,
-        },
-        content,
-      };
-    }
+  const block = trimmed.match(FRONTMATTER_RE);
+  if (block) {
+    const content = trimmed.slice(block[0].length).trim();
+    const frontmatter = parseFrontmatter(block[1] ?? "");
+    return {
+      frontmatter: {
+        title: frontmatter.title || deriveTitle(content, filename),
+        type: (frontmatter.type as ArtefactType) || "prompt",
+        description: frontmatter.description,
+        tags: frontmatter.tags,
+        framework: frontmatter.framework,
+      },
+      content,
+    };
   }
   return {
     frontmatter: {
@@ -101,25 +107,51 @@ export function parseMarkdownContent(
  * Export and import have to agree on quoting, or a round trip changes the
  * data. The rules, kept deliberately small:
  *   - a double-quoted scalar escapes `\` as `\\` and `"` as `\"`
- *   - a tag is written bare unless it contains a comma, a quote, a bracket
- *     or leading/trailing whitespace, in which case it is double-quoted the
- *     same way
+ *   - a double-quoted scalar also escapes a line break as `\n` (and `\r`):
+ *     the frontmatter is read one line per field, and a description written
+ *     with its line breaks in raw lost everything after the first one
+ *   - a tag is written bare unless it contains a comma, a quote, a bracket,
+ *     a line break or leading/trailing whitespace, in which case it is
+ *     double-quoted the same way
+ *   - a title or framework is written bare unless reading it back bare would
+ *     change it (a leading quote or bracket, a line break, outer whitespace)
  *   - on import a double-quoted value is unescaped, a single-quoted value is
  *     taken literally, and a bare value is trimmed (unchanged behaviour for
  *     files written before this)
  */
 function quoteScalar(value: string): string {
-  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  return `"${value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")}"`;
 }
 
 function quoteTag(tag: string): string {
-  return /[,"'[\]\\]/.test(tag) || tag !== tag.trim() ? quoteScalar(tag) : tag;
+  return /[,"'[\]\\\r\n]/.test(tag) || tag !== tag.trim()
+    ? quoteScalar(tag)
+    : tag;
 }
+
+function quoteBareIfNeeded(value: string): string {
+  return /^["'[]/.test(value) || /[\r\n]/.test(value) || value !== value.trim()
+    ? quoteScalar(value)
+    : value;
+}
+
+const UNESCAPE: Record<string, string> = {
+  '"': '"',
+  "\\": "\\",
+  n: "\n",
+  r: "\r",
+};
 
 function unquoteScalar(raw: string): string {
   const value = raw.trim();
   if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
-    return value.slice(1, -1).replace(/\\(["\\])/g, "$1");
+    // One pass, left to right, so "\\n" (an escaped backslash, then n) stays
+    // a backslash and an n, exactly as the export wrote it.
+    return value.slice(1, -1).replace(/\\(["\\nr])/g, (_, c) => UNESCAPE[c]);
   }
   if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
     return value.slice(1, -1);
@@ -159,21 +191,88 @@ function splitArrayItems(content: string): string[] {
   return items.map(unquoteScalar).filter(Boolean);
 }
 
-function parseFrontmatter(str: string): Record<string, any> {
-  const result: Record<string, any> = {};
-  const lines = str.split("\n");
-  for (const line of lines) {
+/** True when `text` ends in a double quote that no backslash escapes. */
+function endsWithClosingQuote(text: string): boolean {
+  if (!text.endsWith('"')) return false;
+  let backslashes = 0;
+  for (let i = text.length - 2; i >= 0 && text[i] === "\\"; i--) {
+    backslashes++;
+  }
+  return backslashes % 2 === 0;
+}
+
+interface Frontmatter {
+  title?: string;
+  type?: string;
+  description?: string;
+  tags?: string[];
+  framework?: string;
+}
+
+function parseFrontmatter(str: string): Frontmatter {
+  const fields: Record<string, string> = {};
+  let tags: string[] | undefined;
+  const lines = str.split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const colonIndex = line.indexOf(":");
     if (colonIndex === -1) continue;
     const key = line.slice(0, colonIndex).trim();
-    const value = line.slice(colonIndex + 1).trim();
-    if (value.startsWith("[") && value.endsWith("]")) {
-      result[key] = splitArrayItems(value.slice(1, -1));
-    } else {
-      result[key] = unquoteScalar(value);
+    const rawValue = line.slice(colonIndex + 1);
+    let value = rawValue.trim();
+
+    // Exports before 2026-09-30 wrote a description's line breaks in raw, so
+    // its quoted value runs over several lines. Read on to the closing quote
+    // instead of keeping only the first line (with a stray quote in front).
+    // The first line keeps its trailing spaces: they are inside the quotes.
+    if (
+      value.startsWith('"') &&
+      (value.length < 2 || !endsWithClosingQuote(value))
+    ) {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (endsWithClosingQuote(lines[j].trimEnd())) {
+          value = [rawValue.trimStart(), ...lines.slice(i + 1, j + 1)]
+            .join("\n")
+            .trimEnd();
+          i = j;
+          break;
+        }
+      }
     }
+
+    if (key === "tags") {
+      if (value.startsWith("[") && value.endsWith("]")) {
+        tags = splitArrayItems(value.slice(1, -1));
+      } else if (value) {
+        // `tags: a, b` in a hand-written file. Kept as a string, it reached
+        // `tags.join` on the import path and failed the whole import.
+        tags = splitArrayItems(value);
+      } else {
+        // A YAML block list, the usual form elsewhere:
+        //   tags:
+        //     - a
+        const items: string[] = [];
+        while (i + 1 < lines.length && /^\s*-\s+/.test(lines[i + 1])) {
+          items.push(unquoteScalar(lines[++i].replace(/^\s*-\s+/, "")));
+        }
+        tags = items.filter(Boolean);
+      }
+      continue;
+    }
+
+    // Only tags is a list. A title such as "[Draft] Notes" is text, and read
+    // as a list it became an array where the pages expect a string.
+    fields[key] = unquoteScalar(value);
   }
-  return result;
+
+  return {
+    title: fields.title,
+    type: fields.type,
+    description: fields.description,
+    tags,
+    framework: fields.framework,
+  };
 }
 
 function deriveTitle(content: string, filename?: string): string {

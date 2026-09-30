@@ -40,7 +40,9 @@ export function usePublicPosts({
           { count: "exact" },
         )
         .eq("status", "published")
-        .order("published_at", { ascending: false });
+        .order("published_at", { ascending: false })
+        // Paged below; the key breaks ties so no post lands on two pages.
+        .order("id", { ascending: true });
 
       // Filter by category if provided
       if (categorySlug) {
@@ -90,6 +92,21 @@ export function usePublicPosts({
 
       const { data, error, count } = await query.range(from, to);
 
+      // A page number past the last page (an old link, a hand-edited ?page=)
+      // is an empty page, not a failure. With an exact count PostgREST answers
+      // 416 (PGRST103) when the range starts after the last row, and the blog
+      // showed its error state. The count then has to be asked for on its own,
+      // so the pager still offers the way back.
+      if (error?.code === "PGRST103") {
+        const { count: total, error: countError } = await query.range(0, 0);
+        if (countError) throw countError;
+        return {
+          posts: [] as BlogPost[],
+          totalPages: Math.ceil((total || 0) / POSTS_PER_PAGE),
+          currentPage: page,
+          totalCount: total || 0,
+        };
+      }
       if (error) throw error;
 
       return {

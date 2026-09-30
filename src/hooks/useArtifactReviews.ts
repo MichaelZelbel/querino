@@ -77,10 +77,12 @@ export function createReviewsHook(config: ReviewsConfig) {
 
         setReviews(transformedReviews);
 
-        if (userId) {
-          const found = transformedReviews.find((r) => r.user_id === userId);
-          setUserReview(found || null);
-        }
+        // Signed out, there is no own review. Skipping this left the previous
+        // account's review in place, still shown as "your" review.
+        const found = userId
+          ? transformedReviews.find((r) => r.user_id === userId)
+          : undefined;
+        setUserReview(found || null);
       } catch (err) {
         console.error(`Error fetching ${config.table}:`, err);
       } finally {

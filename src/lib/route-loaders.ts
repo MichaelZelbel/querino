@@ -114,6 +114,9 @@ async function loadPublicIndex(
       .select("slug, title, description")
       .eq(publicColumn, true as never)
       .order("title", { ascending: true })
+      // Titles repeat. The key keeps a list longer than one page from showing
+      // a tied row twice and another not at all (listOrder.ts).
+      .order("id", { ascending: true })
       .range(from, from + INDEX_PAGE - 1);
     // A thrown error reaches the router's error boundary and answers 500, which a
     // crawler retries. A short list would be taken at its word.

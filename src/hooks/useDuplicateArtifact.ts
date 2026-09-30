@@ -135,6 +135,8 @@ export function useDuplicateArtifact() {
             language: artifact.language || "en",
             team_id: artifact.team_id || null,
             filename: artifact.filename || null,
+            // Copied like filename; left out it fell back to the default.
+            ...(artifact.scope ? { scope: artifact.scope } : {}),
           };
           break;
 

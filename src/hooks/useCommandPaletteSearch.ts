@@ -52,23 +52,29 @@ export function useCommandPaletteSearch(query: string) {
   const { user } = useAuthContext();
   const { currentWorkspace, currentTeam, teams } = useWorkspace();
 
-  // Search local/team artefacts
+  // Search local/team artefacts.
+  //
+  // Each run can be overtaken: the next keystroke (after the debounce), a
+  // workspace switch, or closing the palette. `cancelled` keeps an overtaken
+  // run from writing its older results over the newer ones (an older search
+  // that finished last used to win) and from putting results back into a
+  // palette that had already been cleared. An overtaken run leaves the
+  // spinner alone too, so the branch below that clears the box clears it.
   useEffect(() => {
     if (!user || !debouncedQuery.trim()) {
       setArtefacts([]);
       setError(null);
+      setIsLoading(false);
       return;
     }
+
+    let cancelled = false;
 
     const searchArtefacts = async () => {
       setIsLoading(true);
       setError(null);
-      const results: SearchResult[] = [];
 
       try {
-        // Build team IDs to search
-        const teamIds = teams.map((t) => t.id);
-
         // "Mine, or one of my teams'". With no teams this drops the team
         // clause rather than emitting team_id.in.(), which is a syntax error
         // that used to fail the whole query silently (finding M3).
@@ -76,137 +82,121 @@ export function useCommandPaletteSearch(query: string) {
           "author_id",
           user.id,
           "team_id",
-          teamIds,
+          teams.map((t) => t.id),
         );
 
-        // Search prompts
-        let promptQuery = supabase
-          .from("prompts")
-          .select("id, title, description, is_public, team_id")
-          .limit(10);
-        promptQuery = withAllTerms(promptQuery, SEARCH_COLUMNS, debouncedQuery);
+        const scoped = <
+          T extends {
+            or(filters: string): T;
+            eq(column: string, value: string): T;
+            is(column: string, value: null): T;
+          },
+        >(
+          builder: T,
+        ): T => {
+          const matching = withAllTerms(
+            builder,
+            SEARCH_COLUMNS,
+            debouncedQuery,
+          );
+          return currentWorkspace === "personal"
+            ? matching.eq("author_id", user.id).is("team_id", null)
+            : matching.or(scope);
+        };
 
-        if (currentWorkspace === "personal") {
-          promptQuery = promptQuery
-            .eq("author_id", user.id)
-            .is("team_id", null);
-        } else {
-          promptQuery = promptQuery.or(scope);
-        }
+        // The four tables are independent, so they are asked at once rather
+        // than one after another: four round trips in a row outlasted the
+        // 200 ms debounce on every search.
+        const [prompts, skills, workflows, kits] = await Promise.all([
+          scoped(
+            supabase
+              .from("prompts")
+              .select("id, title, description, is_public, team_id")
+              .limit(10),
+          ),
+          scoped(
+            supabase
+              .from("skills")
+              .select("id, title, description, published, team_id")
+              .limit(10),
+          ),
+          scoped(
+            supabase
+              .from("workflows")
+              .select("id, title, description, published, team_id")
+              .limit(10),
+          ),
+          scoped(
+            // Prompt kit routes use the slug, so it is exposed as the id.
+            supabase
+              .from("prompt_kits")
+              .select("id, slug, title, description, published, team_id")
+              .limit(10),
+          ),
+        ]);
+        if (cancelled) return;
 
-        const { data: prompts, error: promptError } = await promptQuery;
-        if (promptError) throw promptError;
-        prompts?.forEach((p) => {
-          results.push({
+        const failed = [prompts, skills, workflows, kits].find((r) => r.error);
+        if (failed?.error) throw failed.error;
+
+        const teamName = (teamId: string | null) =>
+          teams.find((t) => t.id === teamId)?.name;
+        const results: SearchResult[] = [
+          ...(prompts.data ?? []).map((p) => ({
             id: p.id,
             title: p.title,
-            type: "prompt",
+            type: "prompt" as const,
             description: p.description,
             isPublic: p.is_public,
             teamId: p.team_id,
-            teamName: teams.find((t) => t.id === p.team_id)?.name,
-          });
-        });
-
-        // Search skills
-        let skillQuery = supabase
-          .from("skills")
-          .select("id, title, description, published, team_id")
-          .limit(10);
-        skillQuery = withAllTerms(skillQuery, SEARCH_COLUMNS, debouncedQuery);
-
-        if (currentWorkspace === "personal") {
-          skillQuery = skillQuery.eq("author_id", user.id).is("team_id", null);
-        } else {
-          skillQuery = skillQuery.or(scope);
-        }
-
-        const { data: skills, error: skillError } = await skillQuery;
-        if (skillError) throw skillError;
-        skills?.forEach((s) => {
-          results.push({
+            teamName: teamName(p.team_id),
+          })),
+          ...(skills.data ?? []).map((s) => ({
             id: s.id,
             title: s.title,
-            type: "skill",
+            type: "skill" as const,
             description: s.description,
             isPublic: s.published,
             teamId: s.team_id,
-            teamName: teams.find((t) => t.id === s.team_id)?.name,
-          });
-        });
-
-        // Search workflows
-        let workflowQuery = supabase
-          .from("workflows")
-          .select("id, title, description, published, team_id")
-          .limit(10);
-        workflowQuery = withAllTerms(
-          workflowQuery,
-          SEARCH_COLUMNS,
-          debouncedQuery,
-        );
-
-        if (currentWorkspace === "personal") {
-          workflowQuery = workflowQuery
-            .eq("author_id", user.id)
-            .is("team_id", null);
-        } else {
-          workflowQuery = workflowQuery.or(scope);
-        }
-
-        const { data: workflows, error: workflowError } = await workflowQuery;
-        if (workflowError) throw workflowError;
-        workflows?.forEach((w) => {
-          results.push({
+            teamName: teamName(s.team_id),
+          })),
+          ...(workflows.data ?? []).map((w) => ({
             id: w.id,
             title: w.title,
-            type: "workflow",
+            type: "workflow" as const,
             description: w.description,
             isPublic: w.published,
             teamId: w.team_id,
-            teamName: teams.find((t) => t.id === w.team_id)?.name,
-          });
-        });
-
-        // Search prompt kits (route uses slug, so we expose slug as id)
-        let kitQuery = (supabase.from("prompt_kits") as any)
-          .select("id, slug, title, description, published, team_id")
-          .limit(10);
-        kitQuery = withAllTerms(kitQuery, SEARCH_COLUMNS, debouncedQuery);
-
-        if (currentWorkspace === "personal") {
-          kitQuery = kitQuery.eq("author_id", user.id).is("team_id", null);
-        } else {
-          kitQuery = kitQuery.or(scope);
-        }
-
-        const { data: kits, error: kitError } = await kitQuery;
-        if (kitError) throw kitError;
-        (kits as any[] | null)?.forEach((k) => {
-          results.push({
+            teamName: teamName(w.team_id),
+          })),
+          ...(kits.data ?? []).map((k) => ({
             id: k.slug || k.id,
             title: k.title,
-            type: "prompt_kit",
+            type: "prompt_kit" as const,
             description: k.description,
             isPublic: k.published,
             teamId: k.team_id,
-            teamName: teams.find((t) => t.id === k.team_id)?.name,
-          });
-        });
+            teamName: teamName(k.team_id),
+          })),
+        ];
 
         setArtefacts(results.slice(0, 12));
       } catch (err) {
+        if (cancelled) return;
         // Never swallow this. An empty list and a failed query look identical
         // to the user, and telling them apart is the whole of finding M2.
         console.error("Command palette search error:", err);
         setArtefacts([]);
         setError(err instanceof Error ? err.message : "Search failed");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     searchArtefacts();
+    return () => {
+      cancelled = true;
+    };
   }, [debouncedQuery, user, currentWorkspace, teams]);
 
   // Search public prompts (fallback when no local results)
@@ -215,6 +205,8 @@ export function useCommandPaletteSearch(query: string) {
       setPublicPrompts([]);
       return;
     }
+
+    let cancelled = false;
 
     const searchPublic = async () => {
       try {
@@ -229,6 +221,7 @@ export function useCommandPaletteSearch(query: string) {
         const { data, error: publicError } = await publicQuery
           .order("rating_avg", { ascending: false })
           .limit(8);
+        if (cancelled) return;
         if (publicError) throw publicError;
 
         setPublicPrompts(
@@ -241,12 +234,16 @@ export function useCommandPaletteSearch(query: string) {
           })),
         );
       } catch (err) {
+        if (cancelled) return;
         console.error("Public search error:", err);
         setPublicPrompts([]);
       }
     };
 
     searchPublic();
+    return () => {
+      cancelled = true;
+    };
   }, [debouncedQuery]);
 
   return {

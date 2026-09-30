@@ -1,4 +1,6 @@
-import { safeStorage } from "@/lib/safeStorage";
+// With its extension so the Deno unit tests (tests/web) can load this module;
+// Vite and tsc accept both forms (allowImportingTsExtensions).
+import { safeStorage } from "@/lib/safeStorage.ts";
 
 const REDIRECT_KEY = "querino_redirect_path";
 export const DEFAULT_REDIRECT = "/library";
@@ -16,12 +18,50 @@ interface StoredRedirect {
   at: number;
 }
 
+const PROBE_ORIGIN = "https://querino.invalid";
+
+/**
+ * A path on this site, or DEFAULT_REDIRECT.
+ *
+ * The redirect comes from the query string, so anyone can write one into a
+ * link. Only a path that starts with a single "/" stays on this origin:
+ * "//evil.example" and "/\evil.example" (browsers read a backslash as a slash
+ * here) are other hosts, and "https:..." or "javascript:..." are not paths at
+ * all. Tabs and line breaks are refused too, because the URL parser deletes
+ * them, which is how "/\t/evil.example" becomes "//evil.example". /auth itself
+ * is refused so a sign-in never lands back on the sign-in page.
+ *
+ * Checked here, where every redirect is read and stored, so a caller that
+ * forgets to check cannot turn this into an open redirect.
+ */
+export function safeRedirectPath(path: string | null | undefined): string {
+  if (!path || !path.startsWith("/") || path.startsWith("//")) {
+    return DEFAULT_REDIRECT;
+  }
+  // Backslashes and control characters have no place in an in-app path.
+  for (const c of path) {
+    const code = c.charCodeAt(0);
+    if (code < 0x20 || code === 0x7f || c === "\\") return DEFAULT_REDIRECT;
+  }
+  // What the browser will make of it, resolved against a placeholder origin:
+  // anything that leaves that origin is not a path on this site.
+  try {
+    if (new URL(path, PROBE_ORIGIN).origin !== PROBE_ORIGIN) {
+      return DEFAULT_REDIRECT;
+    }
+  } catch {
+    return DEFAULT_REDIRECT;
+  }
+  if (path === "/auth" || /^\/auth[/?#]/.test(path)) return DEFAULT_REDIRECT;
+  return path;
+}
+
 /**
  * Store the intended redirect path before OAuth redirect
  */
 export function storeRedirectPath(path?: string | null): void {
   const value: StoredRedirect = {
-    path: path || DEFAULT_REDIRECT,
+    path: safeRedirectPath(path),
     at: Date.now(),
   };
   safeStorage.setItem(REDIRECT_KEY, JSON.stringify(value));
@@ -48,7 +88,7 @@ export function getAndClearRedirectPath(): string {
       typeof parsed.at === "number" &&
       Date.now() - parsed.at <= REDIRECT_MAX_AGE_MS
     ) {
-      return parsed.path || DEFAULT_REDIRECT;
+      return safeRedirectPath(parsed.path);
     }
   } catch {
     // Not JSON: a value from before the timestamp existed, age unknown.
@@ -57,8 +97,9 @@ export function getAndClearRedirectPath(): string {
 }
 
 /**
- * Get the redirect path from URL params or default
+ * The redirect named in the URL, if it is a path on this site; otherwise
+ * DEFAULT_REDIRECT.
  */
 export function getRedirectFromParams(searchParams: URLSearchParams): string {
-  return searchParams.get("redirect") || DEFAULT_REDIRECT;
+  return safeRedirectPath(searchParams.get("redirect"));
 }

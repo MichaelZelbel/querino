@@ -146,6 +146,9 @@ export function useAuth() {
         queryClient.clear();
         router.clearCache();
         void router.invalidate();
+        // The profile on screen is the previous account's until the new one
+        // arrives; showing nobody's is better than showing the wrong name.
+        setProfile(null);
       }
 
       if (nextUser) {

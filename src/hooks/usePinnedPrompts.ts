@@ -151,16 +151,12 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
           .from("prompt_pins")
           .insert({ user_id: user.id, prompt_id: promptId });
 
-        if (error) {
-          if (error.code === "23505") {
-            // Already pinned (unique constraint violation)
-            return { error: null };
-          }
-          return { error };
-        }
+        // 23505: already pinned (for example from another tab). Mark it pinned
+        // here too, or the button keeps offering "Pin" for a pinned prompt;
+        // useSavedPrompts had the same bug and the same fix.
+        if (error && error.code !== "23505") return { error };
 
         setPinnedPromptIds((prev) => new Set([...prev, promptId]));
-        console.log("Prompt pinned", { promptId });
         return { error: null };
       } catch (err) {
         return { error: err as Error };
@@ -190,7 +186,6 @@ export function usePinnedPrompts(options: UsePinnedPromptsOptions = {}) {
           newSet.delete(promptId);
           return newSet;
         });
-        console.log("Prompt unpinned", { promptId });
         return { error: null };
       } catch (err) {
         return { error: err as Error };

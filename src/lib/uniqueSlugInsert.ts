@@ -9,8 +9,10 @@ type SlugError = { code?: string; message?: string } | null;
 export function isSlugCollision(error: SlugError): boolean {
   if (!error) return false;
   const message = error.message ?? "";
-  // 23505: unique_violation on the slug index.
-  // P0001: refuse_redirect_slug_takeover, the slug is another artifact's old address.
+  // 23505: unique_violation on the slug index, and also what the trigger
+  // refuse_redirect_slug_takeover raises ('The slug "x" still redirects to
+  // another prompt') when the slug is another artifact's old address.
+  // P0001 is the plain RAISE code, kept in case the trigger loses its ERRCODE.
   return (
     (error.code === "23505" && message.includes("slug")) ||
     (error.code === "P0001" && message.includes("still redirects"))

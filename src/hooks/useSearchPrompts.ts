@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { mergeWithSemanticDetailed } from "./useSemanticMerge";
+import { applyOrder, promptBrowseOrder } from "@/lib/listOrder";
 
 export interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
@@ -112,23 +113,9 @@ export function useSearchPrompts({
           })
           .limit(SEARCH_RESULT_CAP);
       } else {
-        switch (sortBy) {
-          case "newest":
-            query = query.order("created_at", { ascending: false });
-            break;
-          case "rating":
-            query = query
-              .order("rating_avg", { ascending: false })
-              .order("rating_count", { ascending: false });
-            break;
-          case "trending":
-          default:
-            query = query
-              .order("copies_count", { ascending: false, nullsFirst: false })
-              .order("rating_avg", { ascending: false })
-              .order("created_at", { ascending: false });
-            break;
-        }
+        // Every browse order ends in the primary key: with ties left in it,
+        // Load more repeated prompts and skipped others (see listOrder.ts).
+        query = applyOrder(query, promptBrowseOrder(sortBy));
         const from = (pageParam as number) * pageSize;
         query = query.range(from, from + pageSize - 1);
       }

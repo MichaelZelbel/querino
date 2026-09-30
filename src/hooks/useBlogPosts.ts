@@ -42,7 +42,9 @@ export function useBlogPosts(options: FetchPostsOptions = {}) {
           featured_image:blog_media!blog_posts_featured_image_id_fkey(id, url, alt_text)
         `,
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        // Paged below; the key breaks ties so no post lands on two pages.
+        .order("id", { ascending: true });
 
       if (status !== "all") {
         query = query.eq("status", status);

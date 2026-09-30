@@ -12,6 +12,8 @@ interface ArtefactData {
   description: string | null;
   content: string;
   tags: string[] | null;
+  /** The team the item belongs to, or null for a personal item. */
+  teamId: string | null;
 }
 
 export function useAIInsights(itemType: ItemType, itemId: string) {
@@ -53,7 +55,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
       if (itemType === "prompt") {
         const { data, error } = await supabase
           .from("prompts")
-          .select("title, description, content, tags")
+          .select("title, description, content, tags, team_id")
           .eq("id", itemId)
           .single();
         if (error || !data) return null;
@@ -62,11 +64,12 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           description: data.description,
           content: data.content,
           tags: data.tags,
+          teamId: data.team_id ?? null,
         };
       } else if (itemType === "skill") {
         const { data, error } = await supabase
           .from("skills")
-          .select("title, description, content, tags")
+          .select("title, description, content, tags, team_id")
           .eq("id", itemId)
           .single();
         if (error || !data) return null;
@@ -75,11 +78,12 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           description: data.description,
           content: data.content,
           tags: data.tags,
+          teamId: data.team_id ?? null,
         };
       } else if (itemType === "workflow") {
         const { data, error } = await supabase
           .from("workflows")
-          .select("title, description, content, tags")
+          .select("title, description, content, tags, team_id")
           .eq("id", itemId)
           .single();
         if (error || !data) return null;
@@ -88,10 +92,11 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           description: data.description,
           content: data.content || "",
           tags: data.tags,
+          teamId: data.team_id ?? null,
         };
       } else if (itemType === "prompt_kit") {
         const { data, error } = await (supabase.from("prompt_kits") as any)
-          .select("title, description, content, tags")
+          .select("title, description, content, tags, team_id")
           .eq("id", itemId)
           .single();
         if (error || !data) return null;
@@ -100,6 +105,7 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           description: data.description,
           content: data.content || "",
           tags: data.tags,
+          teamId: data.team_id ?? null,
         };
       }
       return null;
@@ -177,10 +183,14 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           quality: (upserted.quality as unknown as AIQuality) || null,
         });
 
+        // The item's own team, not the workspace that happens to be open: a
+        // personal prompt analysed while a team workspace was selected used
+        // to show up in that team's activity feed.
         await logActivity({
           action: isRefresh ? "ai_insights_refreshed" : "ai_insights_generated",
           itemType: itemType as any,
           itemId,
+          teamId: artefact.teamId,
         });
       } catch (err) {
         console.error("Error generating insights:", err);
