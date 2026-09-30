@@ -1,0 +1,10 @@
+{
+  "//": "Unit tests for the frontend's pure logic (src/lib and the pure parts of hooks), run by `npm run test:web`. Deno is already a pinned devDependency, so this needs no new package and cannot break `npm ci` on Linux the way a platform-specific test runner could (2026-09-09 audit). A module under test must not import the Supabase client or React: pull the logic into a plain function and test that.",
+  "imports": {
+    "@/": "../../src/",
+    "@std/assert": "https://deno.land/std@0.224.0/assert/mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
+  }
+}

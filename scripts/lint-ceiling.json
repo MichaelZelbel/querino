@@ -3,7 +3,7 @@
     "@typescript-eslint/no-explicit-any"
   ],
   "note": "The ceiling on `any`. It may be lowered, never raised. See scripts/lint-ratchet.mjs.",
-  "total": 183,
+  "total": 179,
   "perFile": {
     "./src/components/admin/EmbeddingsBackfillPanel.tsx": 2,
     "./src/components/admin/ModerationPanel.tsx": 10,
@@ -21,7 +21,6 @@
     "./src/hooks/useArtifactReviews.ts": 9,
     "./src/hooks/useCloneArtifact.ts": 2,
     "./src/hooks/useCollections.ts": 1,
-    "./src/hooks/useCommandPaletteSearch.ts": 2,
     "./src/hooks/useComments.ts": 2,
     "./src/hooks/useCopyArtifactToTeam.ts": 2,
     "./src/hooks/useDuplicateArtifact.ts": 4,
@@ -32,7 +31,6 @@
     "./src/hooks/useSearchPrompts.ts": 2,
     "./src/hooks/useSemanticMerge.ts": 4,
     "./src/hooks/useSuggestions.ts": 1,
-    "./src/lib/markdown.ts": 2,
     "./src/pages/CollectionDetail.tsx": 2,
     "./src/pages/CollectionEdit.tsx": 1,
     "./src/pages/Docs.tsx": 1,

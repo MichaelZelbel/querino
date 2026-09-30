@@ -5,7 +5,8 @@ name: CI
 #
 # Four gates, cheapest first:
 #
-#   checks    the three migration rules, the linter, and the edge-function types
+#   checks    the three migration rules, the linter, the edge-function types,
+#             and the two unit suites (edge-function shared code, frontend logic)
 #   build     the app compiles
 #   security  the suite in tests/security, against the deployed project
 #
@@ -66,6 +67,14 @@ jobs:
       # already provided it. One less action, one less version to drift.
       - name: Edge function types have not got worse
         run: node scripts/deno-check.mjs
+
+      # Written on every audit and never run here until 2026-09-30: the unit tests
+      # of the edge functions' shared code, and of the frontend's pure logic.
+      - name: Unit tests, edge functions
+        run: npm run test:unit
+
+      - name: Unit tests, frontend logic
+        run: npm run test:web
 
   build:
     name: Build

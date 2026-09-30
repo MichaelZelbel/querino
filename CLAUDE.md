@@ -58,6 +58,7 @@ npm run build      # Production build
 npm run lint       # Run ESLint
 npm run check      # Migrations, lint ratchet, Deno type ratchet (runs on every push)
 npm run test:unit  # Deno unit tests for supabase/functions/_shared
+npm run test:web   # Deno unit tests for the frontend's pure logic (tests/web/, `@/` maps to src/)
 npm test           # Security test suite against the deployed project (tests/security/, see its README)
 npm run preview    # Preview production build
 node scripts/check-public-pages.mjs [origin]   # Outside check: is the text in the first response? (default https://querino.ai)
@@ -99,6 +100,7 @@ supabase/
   migrations/      # Database migrations
 scripts/           # the `npm run check` gates (migrations, lint ratchet, deno-check ratchet)
 tests/security/    # live tripwire suite against the deployed project
+tests/web/         # Deno unit tests for pure frontend logic (no React, no Supabase client)
 docs/              # Implementation guides and schema documentation
 ```
 
