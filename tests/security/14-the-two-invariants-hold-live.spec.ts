@@ -47,6 +47,11 @@ const DELIBERATELY_SERVICE_ROLE_ONLY = [
   // 20260930130300). Only record_prompt_copy, which runs as its owner, and the
   // daily prune touch it; the browser must never read its visitor hashes.
   "prompt_copy_events",
+  // The day's secret key for those hashes (2026-10-07, migration
+  // 20261007120900). A browser that could read it could tie every row back to
+  // a user id or an address, so nothing but record_prompt_copy and the prune
+  // job may touch it.
+  "prompt_copy_salts",
 ];
 
 async function violations(): Promise<Violation[]> {
