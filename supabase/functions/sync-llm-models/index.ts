@@ -24,6 +24,7 @@ import {
   type StoredModel,
 } from "../_shared/openrouter-catalogue.ts";
 import { CALL_SITES, getCallSiteMeta } from "../_shared/llm-registry.ts";
+import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,25 +111,38 @@ Deno.serve(async (req: Request) => {
   const startedAt = Date.now();
 
   // ── 1. What we already know ───────────────────────────────────────────────
-  const { data: storedData, error: storedErr } = await admin
-    .from("llm_models")
-    .select("provider, model_id, supports_tools, retired_at")
-    .eq("provider", PROVIDER);
-  if (storedErr) {
-    console.error(
-      "[sync-llm-models] could not read llm_models:",
-      storedErr.message,
+  //
+  // Every stored row, paged. diffCatalogue retires a model it cannot see, and
+  // counts as "added" a returning one it cannot see, and the plausibility rail
+  // below compares against the live count read here. Retired rows are never
+  // deleted, so the table only grows (about 520 rows on 2026-10-07); once it
+  // passed PostgREST's 1,000-row default an unpaged read would have quietly
+  // dropped rows from all three.
+  let stored: StoredModel[];
+  try {
+    stored = await fetchAllRows<StoredModel>(
+      () =>
+        admin
+          .from("llm_models")
+          .select("provider, model_id, supports_tools, retired_at")
+          .eq("provider", PROVIDER),
+      [{ column: "provider" }, { column: "model_id" }],
     );
-    return json({ ok: false, error: storedErr.message }, 500);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[sync-llm-models] could not read llm_models:", message);
+    return json({ ok: false, error: message }, 500);
   }
-  const stored = (storedData ?? []) as StoredModel[];
   const knownLive = stored.filter((r) => !r.retired_at).length;
 
   // ── 2. The catalogue ──────────────────────────────────────────────────────
   let fetched: CatalogueModel[];
   try {
+    // An OpenRouter that does not answer is a failed sync in 15 s, reported
+    // like any other, rather than a run the platform kills with no alert.
     const res = await fetch(OPENROUTER_MODELS_URL, {
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
     const body = (await res.json()) as { data?: RawModel[] };

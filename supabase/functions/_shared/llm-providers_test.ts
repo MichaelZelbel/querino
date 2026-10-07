@@ -327,3 +327,99 @@ Deno.test(
     });
   },
 );
+
+// ── An answer cut off at the output cap (7 October 2026) ────────────────────
+//
+// callLovableAI refuses a truncated answer instead of handing the start of a
+// rewrite back as the whole of it, so each dialect's way of saying "I hit
+// max_tokens" has to come through as `truncated`.
+
+Deno.test(
+  "openai-compatible: finish_reason length is a cut-off answer, stop is not",
+  async () => {
+    const run = (choice: Record<string, unknown>) =>
+      callProvider({
+        provider: "openrouter",
+        model: "m",
+        messages: MESSAGES,
+        apiKey: "k",
+        fetchImpl: stubFetch(200, {
+          choices: [{ message: { content: "the start of" }, ...choice }],
+        }),
+      });
+    assertEquals((await run({ finish_reason: "length" })).truncated, true);
+    assertEquals((await run({ finish_reason: "stop" })).truncated, false);
+    assertEquals((await run({ finish_reason: "tool_calls" })).truncated, false);
+    assertEquals((await run({})).truncated, false);
+    // OpenRouter keeps the upstream provider's own word as well.
+    assertEquals(
+      (await run({ finish_reason: null, native_finish_reason: "MAX_TOKENS" }))
+        .truncated,
+      true,
+    );
+  },
+);
+
+Deno.test("anthropic: stop_reason max_tokens is a cut-off answer", async () => {
+  const run = (stop_reason: string) =>
+    callProvider({
+      provider: "anthropic",
+      model: "claude-3-5-haiku-20241022",
+      messages: MESSAGES,
+      apiKey: "k",
+      fetchImpl: stubFetch(200, {
+        content: [{ type: "text", text: "the start of" }],
+        stop_reason,
+      }),
+    });
+  assertEquals((await run("max_tokens")).truncated, true);
+  assertEquals((await run("end_turn")).truncated, false);
+  assertEquals((await run("tool_use")).truncated, false);
+});
+
+Deno.test("gemini: finishReason MAX_TOKENS is a cut-off answer", async () => {
+  const run = (finishReason: string) =>
+    callProvider({
+      provider: "gemini",
+      model: "gemini-2.0-flash",
+      messages: MESSAGES,
+      apiKey: "k",
+      fetchImpl: stubFetch(200, {
+        candidates: [
+          { content: { parts: [{ text: "the start of" }] }, finishReason },
+        ],
+      }),
+    });
+  assertEquals((await run("MAX_TOKENS")).truncated, true);
+  assertEquals((await run("STOP")).truncated, false);
+});
+
+Deno.test(
+  "the output cap goes to OpenAI as max_completion_tokens and to the others as max_tokens",
+  async () => {
+    const sent = async (provider: "openai" | "openrouter" | "lovable") => {
+      const cap: { url?: string; init?: RequestInit } = {};
+      await callProvider({
+        provider,
+        model: "m",
+        messages: MESSAGES,
+        apiKey: "k",
+        maxTokens: 16_000,
+        fetchImpl: stubFetch(
+          200,
+          { choices: [{ message: { content: "x" } }] },
+          cap,
+        ),
+      });
+      return JSON.parse(String(cap.init!.body));
+    };
+    const openai = await sent("openai");
+    assertEquals(openai.max_completion_tokens, 16_000);
+    assertEquals("max_tokens" in openai, false);
+    for (const provider of ["openrouter", "lovable"] as const) {
+      const body = await sent(provider);
+      assertEquals(body.max_tokens, 16_000, provider);
+      assertEquals("max_completion_tokens" in body, false, provider);
+    }
+  },
+);

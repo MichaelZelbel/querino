@@ -45,6 +45,68 @@ export function statusAfterFailure(
   return attempt >= max ? "error" : "pending";
 }
 
+// WHY THE WHOLE TEXT IS READ, IN SLICES (7 October 2026)
+//
+// The classifier used to see content.substring(0, 4000) of title, description
+// and content joined. 27 of the 165 public artifacts were longer than that,
+// so their tails had never been read, and anyone could publish 4,000
+// harmless characters followed by anything at all. Each slice is one forced
+// tool call of a few thousand tokens; slices overlap so a sentence cut at a
+// boundary is read whole in one of them. Past the last slice the text is not
+// read, and the row says so instead of claiming a full review.
+
+export const CLASSIFY_WINDOW_CHARS = 12_000;
+export const CLASSIFY_WINDOW_OVERLAP = 500;
+export const MAX_CLASSIFY_WINDOWS = 8;
+
+export interface ClassifyWindows {
+  windows: string[];
+  /** How many characters, from the start, the windows cover. */
+  coveredChars: number;
+  totalChars: number;
+}
+
+/** The slices of `text` the classifier reads, in order. Never empty. */
+export function classificationWindows(
+  text: string,
+  size: number = CLASSIFY_WINDOW_CHARS,
+  overlap: number = CLASSIFY_WINDOW_OVERLAP,
+  max: number = MAX_CLASSIFY_WINDOWS,
+): ClassifyWindows {
+  const step = Math.max(1, size - overlap);
+  const windows: string[] = [];
+  let start = 0;
+  do {
+    windows.push(text.slice(start, start + size));
+    start += step;
+  } while (start + overlap < text.length && windows.length < max);
+  const last = (windows.length - 1) * step;
+  return {
+    windows,
+    coveredChars: Math.min(text.length, last + size),
+    totalChars: text.length,
+  };
+}
+
+export interface AIClassification {
+  safe: boolean;
+  category: string;
+  confidence: number;
+  reason: string;
+}
+
+/**
+ * One verdict from the verdicts of every slice: the most confident violation
+ * if any slice found one, else the first slice's (all safe, or unsure).
+ */
+export function combineClassifications(
+  results: AIClassification[],
+): AIClassification {
+  const violations = results.filter((r) => !r.safe);
+  if (violations.length === 0) return results[0];
+  return violations.reduce((a, b) => (b.confidence > a.confidence ? b : a));
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   sexual: "Inappropriate content",
   hate: "Hateful or abusive content",
@@ -80,6 +142,25 @@ export function violationEmail(input: {
     CATEGORY_LABELS[input.category] || "Content policy violation";
   const t = escapeHtml(title);
   const type = escapeHtml(itemType);
+
+  // A comment is not unpublished but replaced with a notice (it has replies
+  // that would go with it), and it has no title of its own.
+  if (itemType === "comment") {
+    return {
+      subject: "Your comment on Querino has been removed",
+      html: `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1a1a1a;">Your comment has been removed</h2>
+      <p>Hi,</p>
+      <p>Our automated content review found that one of your comments may violate our <a href="https://querino.ai/community-guidelines">Community Guidelines</a>.</p>
+      <p><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
+      <p>Its text has been replaced with a note that it was removed. Replies to it are unchanged.</p>
+      <p>If you believe this is a mistake, please contact us at <a href="mailto:support@querino.ai">support@querino.ai</a> and we'll review it manually.</p>
+      <p style="color: #666; font-size: 14px; margin-top: 30px;">The Querino Team</p>
+    </div>
+  `,
+    };
+  }
 
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

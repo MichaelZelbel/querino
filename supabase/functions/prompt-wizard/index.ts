@@ -6,6 +6,7 @@ import {
   CreditsExhaustedError,
   GatewayError,
   getCallerUserId,
+  OutputTruncatedError,
   RateLimitedError,
 } from "../_shared/llm.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/prompt-wizard.ts";
@@ -85,6 +86,16 @@ serve(async (req) => {
         JSON.stringify({ error: "Rate limited, please try again shortly." }),
         {
           status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    // A subclass of GatewayError, so it is checked first.
+    if (error instanceof OutputTruncatedError) {
+      return new Response(
+        JSON.stringify({ error: error.message, code: "output_truncated" }),
+        {
+          status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );

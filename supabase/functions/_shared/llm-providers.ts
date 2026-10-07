@@ -65,8 +65,20 @@ export interface ProviderResult {
     total_tokens: number;
   };
   model: string;
+  /**
+   * True when the provider stopped because the output cap was reached, so
+   * `content` or the tool arguments are only the start of the answer. Each
+   * dialect says it its own way: finish_reason "length" (OpenAI, OpenRouter,
+   * Lovable), stop_reason "max_tokens" (Anthropic), finishReason "MAX_TOKENS"
+   * (Gemini). Since 2026-10-07 callLovableAI refuses such an answer.
+   */
+  truncated: boolean;
   raw: unknown;
 }
+
+// OpenRouter normalises finish_reason to "length" and keeps the upstream
+// provider's own word in native_finish_reason; either one is enough.
+const CUT_OFF_REASONS = new Set(["length", "max_tokens", "MAX_TOKENS"]);
 
 export class ProviderHttpError extends Error {
   status: number;
@@ -188,8 +200,14 @@ async function callOpenAICompatible(
   };
   if (req.temperature !== undefined && req.temperature !== null)
     body.temperature = req.temperature;
-  if (req.maxTokens !== undefined && req.maxTokens !== null)
-    body.max_tokens = req.maxTokens;
+  // OpenAI's own API takes max_completion_tokens and answers 400 to
+  // max_tokens on its reasoning models (gpt-5, o-series). That stayed hidden
+  // while no call sent a cap; since 2026-10-07 every call does. OpenRouter and
+  // the Lovable gateway document max_tokens, so they keep it.
+  if (req.maxTokens !== undefined && req.maxTokens !== null) {
+    if (req.provider === "openai") body.max_completion_tokens = req.maxTokens;
+    else body.max_tokens = req.maxTokens;
+  }
   if (req.tools && req.tools.length > 0) {
     body.tools = req.tools;
     body.tool_choice = req.toolChoice ?? "auto";
@@ -208,6 +226,8 @@ async function callOpenAICompatible(
   )) as {
     choices?: Array<{
       message?: { content?: string | null; tool_calls?: ToolCall[] };
+      finish_reason?: string | null;
+      native_finish_reason?: string | null;
     }>;
     usage?: {
       prompt_tokens?: number;
@@ -217,7 +237,8 @@ async function callOpenAICompatible(
     model?: string;
   };
 
-  const message = json.choices?.[0]?.message;
+  const choice = json.choices?.[0];
+  const message = choice?.message;
   return {
     content: message?.content ?? null,
     tool_calls: message?.tool_calls ?? [],
@@ -227,6 +248,9 @@ async function callOpenAICompatible(
       total_tokens: Number(json.usage?.total_tokens ?? 0),
     },
     model: json.model || req.model,
+    truncated:
+      CUT_OFF_REASONS.has(choice?.finish_reason ?? "") ||
+      CUT_OFF_REASONS.has(choice?.native_finish_reason ?? ""),
     raw: json,
   };
 }
@@ -281,6 +305,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     }>;
     usage?: { input_tokens?: number; output_tokens?: number };
     model?: string;
+    stop_reason?: string | null;
   };
 
   const blocks = json.content ?? [];
@@ -309,6 +334,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
       total_tokens: prompt + completion,
     },
     model: json.model || req.model,
+    truncated: json.stop_reason === "max_tokens",
     raw: json,
   };
 }
@@ -370,6 +396,7 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
           functionCall?: { name?: string; args?: unknown };
         }>;
       };
+      finishReason?: string | null;
     }>;
     usageMetadata?: {
       promptTokenCount?: number;
@@ -399,6 +426,7 @@ async function callGemini(req: ProviderRequest): Promise<ProviderResult> {
       total_tokens: Number(json.usageMetadata?.totalTokenCount ?? 0),
     },
     model: req.model,
+    truncated: json.candidates?.[0]?.finishReason === "MAX_TOKENS",
     raw: json,
   };
 }

@@ -7,10 +7,10 @@ import {
   CreditsExhaustedError,
   RateLimitedError,
   GatewayError,
-  DEFAULT_MODEL,
-  capText,
+  OutputTruncatedError,
   type ToolDefinition,
 } from "../_shared/llm.ts";
+import { tooLongToRefine } from "../_shared/inputLimit.ts";
 import { SYSTEM_PROMPT } from "../_shared/prompts/refine-prompt.ts";
 
 const REFINE_TOOL: ToolDefinition = {
@@ -66,9 +66,7 @@ serve(async (req) => {
       );
     }
     const body = raw as RefineBody;
-    // Same cap as the coach canvas. The credit gate only checks for a balance
-    // above zero, so this is what bounds the size of one call.
-    const prompt = capText(body.prompt, 16000).trim();
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const framework = (body.framework ?? "auto").toString().slice(0, 64);
     const goal = (body.goal ?? "").toString().slice(0, 500);
 
@@ -77,6 +75,21 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Refused whole rather than cut (7 October 2026). This used to read the
+    // first 16,000 characters, and the Refine dialog saved the model's rewrite
+    // of that start as the prompt's entire content, so everything after it was
+    // gone. Before the credit check, so a refusal costs nothing.
+    const tooLong = tooLongToRefine(prompt);
+    if (tooLong) {
+      return new Response(
+        JSON.stringify({ error: tooLong, code: "content_too_long" }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // 3. Credit gate
@@ -165,6 +178,17 @@ serve(async (req) => {
         JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }),
         {
           status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    // A subclass of GatewayError, so it is checked first. A rewrite that
+    // stopped halfway never reaches the dialog's Save button.
+    if (error instanceof OutputTruncatedError) {
+      return new Response(
+        JSON.stringify({ error: error.message, code: "output_truncated" }),
+        {
+          status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );

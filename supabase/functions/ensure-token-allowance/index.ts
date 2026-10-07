@@ -5,6 +5,7 @@ import {
   ensureAllowance,
   type EnsureAllowanceResult,
 } from "../_shared/allowance.ts";
+import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,20 +82,26 @@ serve(async (req) => {
       }
       logStep("Batch initialization requested");
 
-      // Get all users from profiles
-      const { data: profiles, error: profilesError } = await supabaseAdmin
-        .from("profiles")
-        .select("id");
-
-      if (profilesError) {
-        throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
+      // Every profile, paged (since 2026-10-07). Unpaged, the batch stopped at
+      // PostgREST's first 1,000 rows and reported success, so every account
+      // after that never got an allowance from it.
+      let profiles: Array<{ id: string }>;
+      try {
+        profiles = await fetchAllRows<{ id: string }>(
+          () => supabaseAdmin.from("profiles").select("id"),
+          [{ column: "id" }],
+        );
+      } catch (e) {
+        throw new Error(
+          `Failed to fetch profiles: ${e instanceof Error ? e.message : String(e)}`,
+        );
       }
 
       let created = 0;
       let skipped = 0;
       let errors = 0;
 
-      for (const profile of profiles || []) {
+      for (const profile of profiles) {
         try {
           const result = await ensureAllowance(supabaseAdmin, profile.id, {
             createdBy: "ensure-token-allowance:batch_init",

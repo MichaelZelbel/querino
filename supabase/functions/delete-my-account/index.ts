@@ -156,6 +156,12 @@ serve(async (req) => {
 
     // Only now, with the auth user really gone. Sending this first meant a run
     // that failed halfway still reported the account as deleted.
+    //
+    // Best effort, and bounded: until 2026-10-07 a notify-admin (or Resend
+    // behind it) that never answered held this request until the platform
+    // killed it, and the user whose account was already gone got an error.
+    // 15 s covers notify-admin's own 10 s Resend timeout plus a cold start; a
+    // timeout lands in the catch below like any other failed notification.
     try {
       const notifyResponse = await fetch(
         `${supabaseUrl}/functions/v1/notify-admin`,
@@ -171,6 +177,7 @@ serve(async (req) => {
             userId,
             displayName,
           }),
+          signal: AbortSignal.timeout(15_000),
         },
       );
       console.log(

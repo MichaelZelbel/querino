@@ -167,3 +167,25 @@ Deno.test(
     assertEquals(interpolatePrompt("Hello {{nobody}}!"), "Hello !");
   },
 );
+
+// Every live row had max_tokens NULL on 2026-10-07, so the call site's code
+// budget, passed in as the default, is what actually caps the output.
+Deno.test(
+  "pickConfig: a row without max_tokens takes the code budget, a row with one keeps it",
+  () => {
+    const withBudget: CallDefaults = { ...DEFAULTS, maxTokens: 16_000 };
+    assertEquals(
+      pickConfig([row()], "free", withBudget).effective.max_tokens,
+      16_000,
+    );
+    assertEquals(
+      pickConfig([row({ max_tokens: 900 })], "free", withBudget).effective
+        .max_tokens,
+      900,
+    );
+    assertEquals(
+      pickConfig([], "free", withBudget).effective.max_tokens,
+      16_000,
+    );
+  },
+);

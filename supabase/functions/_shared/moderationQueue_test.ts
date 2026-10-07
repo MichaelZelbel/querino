@@ -3,6 +3,8 @@ import {
   assertStringIncludes,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  classificationWindows,
+  combineClassifications,
   MAX_MODERATION_ATTEMPTS,
   planAttempt,
   statusAfterFailure,
@@ -98,3 +100,76 @@ Deno.test("an untitled artifact is called Untitled", () => {
   });
   assertStringIncludes(mail.subject, '"Untitled"');
 });
+
+Deno.test("short text is read in one slice, whole", () => {
+  const w = classificationWindows("hello", 12_000, 500, 8);
+  assertEquals(w.windows, ["hello"]);
+  assertEquals(w.coveredChars, 5);
+  assertEquals(w.totalChars, 5);
+});
+
+Deno.test(
+  "long text is read to the end in overlapping slices, not cut at 4,000",
+  () => {
+    const text = "a".repeat(29_000) + "TAIL";
+    const w = classificationWindows(text, 12_000, 500, 8);
+    assertEquals(w.windows.length, 3);
+    assertEquals(w.coveredChars, text.length);
+    assertStringIncludes(w.windows[w.windows.length - 1], "TAIL");
+    // Each slice starts 500 characters before the previous one ended.
+    assertEquals(w.windows[1].slice(0, 500), w.windows[0].slice(-500));
+  },
+);
+
+Deno.test("text past the last slice is reported as not read", () => {
+  const w = classificationWindows("x".repeat(100_000), 12_000, 500, 8);
+  assertEquals(w.windows.length, 8);
+  assertEquals(w.coveredChars, 7 * 11_500 + 12_000);
+  assertEquals(w.totalChars, 100_000);
+});
+
+Deno.test("text exactly one slice long needs no second slice", () => {
+  assertEquals(classificationWindows("y".repeat(12_000)).windows.length, 1);
+  assertEquals(classificationWindows("y".repeat(12_001)).windows.length, 2);
+});
+
+Deno.test(
+  "one confident violation in any slice decides, however safe the rest",
+  () => {
+    const safe = {
+      safe: true,
+      category: "none",
+      confidence: 0.99,
+      reason: "ok",
+    };
+    const weak = {
+      safe: false,
+      category: "pii",
+      confidence: 0.4,
+      reason: "maybe",
+    };
+    const strong = {
+      safe: false,
+      category: "malware",
+      confidence: 0.95,
+      reason: "payload",
+    };
+    assertEquals(combineClassifications([safe, weak, strong, safe]), strong);
+    assertEquals(combineClassifications([safe, weak]), weak);
+    assertEquals(combineClassifications([safe, safe]), safe);
+  },
+);
+
+Deno.test(
+  "a removed comment gets its own mail, not the unpublished one",
+  () => {
+    const { subject, html } = violationEmail({
+      itemType: "comment",
+      title: null,
+      category: "hate",
+    });
+    assertStringIncludes(subject, "comment");
+    assertStringIncludes(html, "replaced with a note");
+    assertEquals(html.includes("set to private"), false);
+  },
+);

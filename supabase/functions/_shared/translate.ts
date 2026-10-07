@@ -6,7 +6,10 @@
 // new one. Nothing said the rest was missing, and eight artifacts in
 // production (the longest a 69,984-character skill) were past the cut. A
 // translation that loses its end is worse than none, so longer content is now
-// refused before anything is charged, with a message that says why.
+// refused before anything is charged, with a message that says why. The
+// wording is shared with refine-prompt (inputLimit.ts).
+
+import { refuseTooLong } from "./inputLimit.ts";
 
 export const MAX_TRANSLATE_CHARS = 16_000;
 
@@ -19,11 +22,10 @@ export function tooLongToTranslate(
   artifactType: string,
   max: number = MAX_TRANSLATE_CHARS,
 ): string | null {
-  if (typeof content !== "string" || content.length <= max) return null;
-  const what = (artifactType || "artifact").replace(/_/g, " ");
-  return (
-    `This ${what} is ${content.length.toLocaleString("en-US")} characters long, ` +
-    `and translation handles up to ${max.toLocaleString("en-US")}. ` +
-    "Nothing was translated and no credits were used."
-  );
+  return refuseTooLong(content, {
+    max,
+    what: (artifactType || "artifact").replace(/_/g, " "),
+    task: "translation",
+    done: "translated",
+  });
 }

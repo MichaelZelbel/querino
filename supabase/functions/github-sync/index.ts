@@ -16,6 +16,7 @@ import {
   managedFolders,
 } from "../_shared/githubSyncFormat.ts";
 import { gitBlobSha } from "../_shared/gitBlob.ts";
+import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 
 // A row from prompts, skills, workflows or prompt_kits. Only id and slug are
 // read here; generateMarkdown reads the rest.
@@ -43,8 +44,6 @@ const COMMON_COLUMNS =
 const PROMPT_COLUMNS = `${COMMON_COLUMNS}, is_public`;
 const PUBLISHED_COLUMNS = `${COMMON_COLUMNS}, published`;
 
-const PAGE_SIZE = 1000;
-
 /**
  * Every row of one artifact table that belongs to this sync, in pages of
  * 1000 until a short page, with the query error surfaced instead of
@@ -55,7 +54,9 @@ const PAGE_SIZE = 1000;
  * repository. Before 2026-09-16 a failed query became an empty list (data
  * null, then `|| []`) and PostgREST's default row cap silently dropped
  * everything past the first thousand, so either one deleted the user's
- * files from GitHub in a commit that looked like a normal sync.
+ * files from GitHub in a commit that looked like a normal sync. The loop
+ * itself moved to _shared/fetchAllRows.ts on 2026-10-07, when four other
+ * functions turned out to need it.
  */
 async function fetchAllArtifacts(
   // deno-lint-ignore no-explicit-any
@@ -64,22 +65,16 @@ async function fetchAllArtifacts(
   columns: string,
   scope: { teamId: string } | { userId: string },
 ): Promise<ArtifactRow[]> {
-  const all: ArtifactRow[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    let query = client.from(table).select(columns);
-    query =
-      "teamId" in scope
+  try {
+    return await fetchAllRows<ArtifactRow>(() => {
+      const query = client.from(table).select(columns);
+      return "teamId" in scope
         ? query.eq("team_id", scope.teamId)
         : query.eq("author_id", scope.userId).is("team_id", null);
-    const { data, error } = await query
-      .order("id", { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`${table}: ${error.message}`);
-    const page = (data ?? []) as ArtifactRow[];
-    all.push(...page);
-    if (page.length < PAGE_SIZE) break;
+    }, [{ column: "id" }]);
+  } catch (e) {
+    throw new Error(`${table}: ${e instanceof Error ? e.message : String(e)}`);
   }
-  return all;
 }
 
 interface GitHubTreeItem {

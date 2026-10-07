@@ -1,10 +1,14 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   buildProviderRequest,
+  defaultMaxTokensFor,
   estimateReservation,
+  GatewayError,
   MIN_RESERVATION_TOKENS,
   MAX_OUTPUT_RESERVATION_TOKENS,
+  OutputTruncatedError,
 } from "./llm.ts";
+import { CALL_SITES, REWRITE_OUTPUT_TOKENS } from "./llm-registry.ts";
 import type { EffectiveConfig } from "./llm-config.ts";
 
 const CONFIG: EffectiveConfig = {
@@ -108,4 +112,50 @@ Deno.test("estimateReservation counts tool definitions as input", () => {
   const withTools = estimateReservation([], 1000, tools);
   const without = estimateReservation([], 1000);
   assertEquals(withTools > without, true);
+});
+
+// ── Output budgets and cut-off answers (7 October 2026) ─────────────────────
+
+Deno.test("every registered call site has an output budget", () => {
+  assertEquals(
+    defaultMaxTokensFor("translate-artifact"),
+    REWRITE_OUTPUT_TOKENS,
+  );
+  assertEquals(defaultMaxTokensFor("suggest-metadata"), 4_000);
+  assertEquals(defaultMaxTokensFor("no-such-call-site"), null);
+});
+
+Deno.test("the hold for a rewrite call covers everything it may write", () => {
+  // Until 2026-10-07 output above 4,000 tokens was not held, and with no
+  // max_tokens configured anywhere the hold assumed 1,000.
+  const content = "x".repeat(16_000);
+  assertEquals(
+    estimateReservation(
+      [{ role: "user", content }],
+      defaultMaxTokensFor("prompt-refinement"),
+    ),
+    Math.ceil(16_000 / 3) + REWRITE_OUTPUT_TOKENS,
+  );
+});
+
+Deno.test(
+  "a cut-off answer is a GatewayError, so a caller that does not know it still saves nothing",
+  () => {
+    const e = new OutputTruncatedError();
+    assertEquals(e instanceof GatewayError, true);
+    assertEquals(e.status, 502);
+    assertEquals(e.name, "OutputTruncatedError");
+    assertEquals(e.message.includes("nothing was changed"), true);
+    assertEquals(e.message.includes("—"), false);
+  },
+);
+
+Deno.test("the credit hold covers every call site's whole budget", () => {
+  for (const site of CALL_SITES) {
+    assertEquals(
+      site.maxOutputTokens <= MAX_OUTPUT_RESERVATION_TOKENS,
+      true,
+      site.call_site,
+    );
+  }
 });

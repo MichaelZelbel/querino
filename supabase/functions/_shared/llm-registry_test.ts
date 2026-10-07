@@ -22,6 +22,7 @@ import {
   PROVIDER_PRESETS,
   PROVIDER_SUPPORTS_TOOLS,
   providerSupportsTools,
+  REWRITE_OUTPUT_TOKENS,
 } from "./llm-registry.ts";
 
 const SENDS_A_TOOLS_ARRAY = [
@@ -103,3 +104,59 @@ Deno.test("every preset says the same thing about tools as the flag", () => {
     );
   }
 });
+
+// ── Output budgets (7 October 2026) ─────────────────────────────────────────
+//
+// A budget that is too small turns a working feature into "the answer was cut
+// off"; one that is too large only holds more credit for the length of a call.
+// These pin the direction that matters.
+
+const REWRITES_WHOLE_TEXT = [
+  "prompt-coach",
+  "prompt-kit-coach",
+  "prompt-refinement",
+  "skill-coach",
+  "translate-artifact",
+  "workflow-coach",
+];
+
+Deno.test("every call site has a positive output budget", () => {
+  for (const site of CALL_SITES) {
+    assertEquals(
+      Number.isInteger(site.maxOutputTokens) && site.maxOutputTokens > 0,
+      true,
+      site.call_site,
+    );
+  }
+});
+
+Deno.test(
+  "a call site that answers with the whole text has room for 16,000 characters of it",
+  () => {
+    // 16,000 characters of German are about 6,000 tokens; scripts that take
+    // more tokens per character, JSON escaping and thinking come on top.
+    for (const name of REWRITES_WHOLE_TEXT) {
+      const budget = getCallSiteMeta(name)?.maxOutputTokens ?? 0;
+      assertEquals(budget >= 12_000, true, `${name}: ${budget}`);
+      assertEquals(budget, REWRITE_OUTPUT_TOKENS, name);
+    }
+  },
+);
+
+Deno.test(
+  "no budget is above the 16,384 output tokens gpt-4o and gpt-4o-mini accept",
+  () => {
+    for (const site of CALL_SITES) {
+      assertEquals(site.maxOutputTokens <= 16_384, true, site.call_site);
+    }
+  },
+);
+
+Deno.test(
+  "a call site without tools, which may point at Claude 3.5, stays within its 8,192",
+  () => {
+    for (const site of CALL_SITES.filter((c) => !c.requiresTools)) {
+      assertEquals(site.maxOutputTokens <= 8_192, true, site.call_site);
+    }
+  },
+);

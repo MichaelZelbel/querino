@@ -30,6 +30,7 @@ import {
   PROVIDER_SECRETS,
   DEFAULT_PROVIDER,
   DEFAULT_MODEL as REGISTRY_DEFAULT_MODEL,
+  REWRITE_OUTPUT_TOKENS,
   getCallSiteMeta,
   type Provider,
 } from "./llm-registry.ts";
@@ -118,6 +119,24 @@ export class GatewayError extends Error {
 }
 
 /**
+ * The provider stopped at the output cap, so the answer is only its start.
+ *
+ * Thrown instead of returning the partial text (since 2026-10-07): the coach,
+ * refinement and translation answer with a whole artifact that replaces the
+ * user's, and a rewrite missing its end would be saved over the real one. The
+ * message is meant for the user. A GatewayError, so a caller that does not
+ * know this class still answers 502 and saves nothing.
+ */
+export class OutputTruncatedError extends GatewayError {
+  constructor(
+    message = "The AI's answer was cut off before it was complete, so it was not used and nothing was changed. Please try again, or try with a shorter text.",
+  ) {
+    super(502, message);
+    this.name = "OutputTruncatedError";
+  }
+}
+
+/**
  * Build a service-role Supabase client. Edge functions use this internally for
  * the credit gate and the usage RPC. Never return this client to the caller.
  */
@@ -155,10 +174,21 @@ export async function getCallerUserId(req: Request): Promise<string> {
 
 /** The smallest reservation any call takes, whatever its size. */
 export const MIN_RESERVATION_TOKENS = 1000;
-/** Output assumed when the call site configures no max_tokens. */
+/**
+ * Output assumed when a call has no max_tokens at all. Since 2026-10-07 every
+ * registered call site has a budget (llm-registry.ts), so this only covers a
+ * feature name the registry does not know.
+ */
 export const DEFAULT_OUTPUT_RESERVATION_TOKENS = 1000;
-/** A configured max_tokens above this is not held against a balance in full. */
-export const MAX_OUTPUT_RESERVATION_TOKENS = 4000;
+/**
+ * A max_tokens above this is not held against a balance in full. It was 4,000
+ * until 2026-10-07; it now equals the largest code budget, so the hold for a
+ * coach, refinement or translation covers everything that call may write.
+ * The smallest allowance on record on that day was 300,000 tokens, so holding
+ * 16,000 for the length of one call refuses nobody but a balance that is
+ * nearly spent.
+ */
+export const MAX_OUTPUT_RESERVATION_TOKENS = REWRITE_OUTPUT_TOKENS;
 
 /**
  * How many tokens to hold against a caller's balance before a call.
@@ -294,6 +324,16 @@ export function fallbackModelFor(feature: string, pinned?: string): string {
 }
 
 /**
+ * The output cap a call site gets when its admin row sets no max_tokens: its
+ * budget in llm-registry.ts, or null for a feature the registry does not know.
+ * It goes to resolveConfig as the default, so an admin's own value still wins,
+ * and from there into both the provider request and the credit hold.
+ */
+export function defaultMaxTokensFor(feature: string): number | null {
+  return getCallSiteMeta(feature)?.maxOutputTokens ?? null;
+}
+
+/**
  * Resolve this call site's configuration, call whichever provider it names,
  * record token usage, return the parsed result. Usage recording is best-effort
  * through the record_llm_usage RPC: an accounting failure is logged, never
@@ -312,6 +352,7 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
     provider: DEFAULT_PROVIDER,
     model: fallbackModelFor(opts.feature, opts.model),
     temperature: opts.temperature ?? null,
+    maxTokens: defaultMaxTokensFor(opts.feature),
   });
 
   const secretName = PROVIDER_SECRETS[effective.provider];
@@ -425,7 +466,13 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
       p_prompt_tokens: result.usage.prompt_tokens,
       p_completion_tokens: result.usage.completion_tokens,
       p_total_tokens: result.usage.total_tokens,
-      p_metadata: { ...(opts.metadata ?? {}), config_source: source },
+      p_metadata: {
+        ...(opts.metadata ?? {}),
+        config_source: source,
+        ...(result.truncated
+          ? { output_truncated: true, max_tokens: effective.max_tokens }
+          : {}),
+      },
       p_reserved_tokens: reserved,
       p_period_id: periodId,
     });
@@ -433,6 +480,17 @@ export async function callLovableAI(opts: CallOptions): Promise<CallResult> {
       console.error("[llm.callLovableAI] record_llm_usage error:", error);
   } catch (e) {
     console.error("[llm.callLovableAI] usage logging threw:", e);
+  }
+
+  // Only after the settlement above: the provider was paid for what it wrote,
+  // so the tokens are charged and the hold is released like any other call.
+  // Refused rather than returned, because every caller that rewrites a user's
+  // text would otherwise hand the start of an answer back as the whole of it.
+  if (result.truncated) {
+    console.error(
+      `[llm.callLovableAI] call site "${opts.feature}" hit its output cap of ${effective.max_tokens ?? "the provider's default"} tokens (${result.usage.completion_tokens} written); the answer was refused`,
+    );
+    throw new OutputTruncatedError();
   }
 
   return {

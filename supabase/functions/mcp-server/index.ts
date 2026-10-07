@@ -12,6 +12,7 @@ import {
   mcpMethodGate,
   type TokenLookup,
 } from "../_shared/mcpGate.ts";
+import { editableTeamFilter } from "../_shared/teamScope.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,8 +30,9 @@ interface Auth {
 }
 
 // Service-role client. We deliberately bypass RLS here and enforce ownership
-// in every tool by filtering on author_id = auth.userId, and column access
-// in every update_* tool with pickDeclared below.
+// in every tool by filtering on author_id = auth.userId, column access in
+// every update_* tool with pickDeclared below, and the website's team rule
+// for updates in updateOwnArtifact.
 function authedClient(_auth: Auth) {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -214,6 +216,82 @@ function buildMcpServer(auth: Auth) {
   });
 
   const sb = authedClient(auth);
+
+  // The teams the caller belongs to, read at most once per request (this
+  // function runs per request). A failed read is remembered too, so every
+  // update in the request is refused rather than run without the check.
+  let teamIds: Promise<string[]> | null = null;
+  const callerTeamIds = (): Promise<string[]> =>
+    (teamIds ??= (async () => {
+      const { data, error } = await sb
+        .from("team_members")
+        .select("team_id")
+        .eq("user_id", auth.userId);
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Array<{ team_id: string }>).map(
+        (row: { team_id: string }) => row.team_id,
+      );
+    })());
+
+  /**
+   * The body of all four update_* tools after pickDeclared.
+   *
+   * Since 2026-10-07 an update also needs what the website's UPDATE policy
+   * needs: the artifact is personal, or the caller is still a member of its
+   * team (_shared/teamScope.ts). The author_id filter alone let an author
+   * removed from a team keep rewriting and publishing that team's artifacts
+   * through an MCP token minted while they were a member. team_id is not an
+   * updatable column here and create_* never sets one, so no MCP path moves
+   * an artifact into a team, and the row after the update has the team it
+   * had before: the condition in the update's WHERE is the whole check.
+   */
+  const updateOwnArtifact = async (
+    table: "prompts" | "skills" | "workflows" | "prompt_kits",
+    noun: string,
+    id: string,
+    updates: Record<string, unknown>,
+  ) => {
+    let teams: string[];
+    try {
+      teams = await callerTeamIds();
+    } catch (e) {
+      return toolError(
+        `could not check your team memberships, nothing was changed (${e instanceof Error ? e.message : String(e)})`,
+      );
+    }
+    const { data, error } = await sb
+      .from(table)
+      .update(updates)
+      .eq("id", id)
+      .eq("author_id", auth.userId)
+      .or(editableTeamFilter(teams))
+      .select("id, title")
+      .maybeSingle();
+    if (error) return toolError(error.message);
+    if (!data) {
+      // Only on a miss: say which of the two it was, because "not in your
+      // library" is wrong for a team artifact the caller can still see.
+      const { data: own } = await sb
+        .from(table)
+        .select("team_id")
+        .eq("id", id)
+        .eq("author_id", auth.userId)
+        .maybeSingle();
+      if (own?.team_id) {
+        return toolError(
+          `this ${noun} belongs to a team you are not a member of, so it cannot be edited; nothing was changed`,
+        );
+      }
+      return toolError(
+        `No ${noun} with that id in your library, nothing was changed`,
+      );
+    }
+    return {
+      content: [
+        { type: "text" as const, text: `Updated: ${JSON.stringify(data)}` },
+      ],
+    };
+  };
 
   // Every table below keeps its text in the same three columns, and an agent
   // looking for "the skill about grilling me" has no idea which of the three
@@ -442,22 +520,7 @@ function buildMcpServer(auth: Auth) {
       const id = input.id as string;
       const updates = pickDeclared(input, UPDATABLE.prompts);
       if (!updates) return toolError("no updatable fields given");
-      const { data, error } = await sb
-        .from("prompts")
-        .update(updates)
-        .eq("id", id)
-        .eq("author_id", auth.userId)
-        .select("id, title")
-        .maybeSingle();
-      if (error) return toolError(error.message);
-      if (!data) {
-        return toolError(
-          "No prompt with that id in your library, nothing was changed",
-        );
-      }
-      return {
-        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
-      };
+      return await updateOwnArtifact("prompts", "prompt", id, updates);
     },
   });
 
@@ -630,22 +693,7 @@ function buildMcpServer(auth: Auth) {
       const id = input.id as string;
       const updates = pickDeclared(input, UPDATABLE.skills);
       if (!updates) return toolError("no updatable fields given");
-      const { data, error } = await sb
-        .from("skills")
-        .update(updates)
-        .eq("id", id)
-        .eq("author_id", auth.userId)
-        .select("id, title")
-        .maybeSingle();
-      if (error) return toolError(error.message);
-      if (!data) {
-        return toolError(
-          "No skill with that id in your library, nothing was changed",
-        );
-      }
-      return {
-        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
-      };
+      return await updateOwnArtifact("skills", "skill", id, updates);
     },
   });
 
@@ -822,22 +870,7 @@ function buildMcpServer(auth: Auth) {
       const id = input.id as string;
       const updates = pickDeclared(input, UPDATABLE.workflows);
       if (!updates) return toolError("no updatable fields given");
-      const { data, error } = await sb
-        .from("workflows")
-        .update(updates)
-        .eq("id", id)
-        .eq("author_id", auth.userId)
-        .select("id, title")
-        .maybeSingle();
-      if (error) return toolError(error.message);
-      if (!data) {
-        return toolError(
-          "No workflow with that id in your library, nothing was changed",
-        );
-      }
-      return {
-        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
-      };
+      return await updateOwnArtifact("workflows", "workflow", id, updates);
     },
   });
 
@@ -1190,22 +1223,7 @@ function buildMcpServer(auth: Auth) {
       const id = input.id as string;
       const updates = pickDeclared(input, UPDATABLE.prompt_kits);
       if (!updates) return toolError("no updatable fields given");
-      const { data, error } = await sb
-        .from("prompt_kits")
-        .update(updates)
-        .eq("id", id)
-        .eq("author_id", auth.userId)
-        .select("id, title")
-        .maybeSingle();
-      if (error) return toolError(error.message);
-      if (!data) {
-        return toolError(
-          "No prompt kit with that id in your library, nothing was changed",
-        );
-      }
-      return {
-        content: [{ type: "text", text: `Updated: ${JSON.stringify(data)}` }],
-      };
+      return await updateOwnArtifact("prompt_kits", "prompt kit", id, updates);
     },
   });
 

@@ -12,6 +12,7 @@ import {
   CreditsExhaustedError,
   RateLimitedError,
   GatewayError,
+  OutputTruncatedError,
   DEFAULT_MODEL,
   type ToolDefinition,
 } from "./llm.ts";
@@ -153,6 +154,10 @@ export function startSuggestServer(cfg: SuggestConfig) {
           { error: "Rate limit exceeded, please retry shortly." },
           429,
         );
+      }
+      // A subclass of GatewayError, so it is checked first.
+      if (error instanceof OutputTruncatedError) {
+        return json({ error: error.message, code: "output_truncated" }, 502);
       }
       if (error instanceof GatewayError) {
         console.error(

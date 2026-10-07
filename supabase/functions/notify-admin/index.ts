@@ -175,9 +175,13 @@ serve(async (req) => {
     }
 
     const payload: NotifyRequest = await req.json();
+    // The event and the account id, never the address: on 2026-10-07 this
+    // line and the "Sending email" one below still wrote every new and every
+    // deleted user's email (in the subject) to the function log, although
+    // delete-my-account had stopped logging it on 2026-09-30.
     logStep("Received notification request", {
       eventType: payload.eventType,
-      userEmail: payload.userEmail,
+      userId: payload.userId ?? null,
     });
 
     if (!payload.eventType || !payload.userEmail) {
@@ -200,8 +204,13 @@ serve(async (req) => {
     const subject = getSubjectLine(payload.eventType, payload.userEmail);
     const html = getEmailBody(payload);
 
-    logStep("Sending email via Resend REST API", { to: ADMIN_EMAIL, subject });
+    logStep("Sending email via Resend REST API", {
+      eventType: payload.eventType,
+      userId: payload.userId ?? null,
+    });
 
+    // A Resend that does not answer fails this request in 10 s instead of
+    // holding it, and with it the caller that is waiting on it.
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -214,6 +223,7 @@ serve(async (req) => {
         subject,
         html,
       }),
+      signal: AbortSignal.timeout(10_000),
     });
 
     const data = await res.json();

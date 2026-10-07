@@ -10,6 +10,7 @@ Rules:
 - Preserve all Markdown formatting, headings, lists, and structure exactly.
 - Preserve placeholders exactly as-is and never translate them: double-brace template variables, [PLACEHOLDER], and $variables.
 - Preserve code blocks, inline code, URLs, file paths, and technical identifiers untranslated.
+- In a prompt kit, keep every "## Prompt:" heading prefix exactly as written, in English, and translate only the title after the colon; keep HTML comments such as <!-- /prompt --> unchanged. The kit page finds its prompts by these markers.
 - Translate tags contextually (they are short keywords/phrases) into lowercase {{targetLanguage}} equivalents.
 - Keep the original tone and register (formal/informal).
 - Return the result via the translate_artifact tool.`;

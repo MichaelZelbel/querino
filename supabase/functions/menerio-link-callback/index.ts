@@ -1,7 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCallerUserId } from "../_shared/llm.ts";
 import { readMenerioApiKey } from "../_shared/menerioKey.ts";
-import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";
+import {
+  assertMenerioBaseUrl,
+  assertMenerioLinkCallback,
+} from "../_shared/menerioUrl.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,32 +68,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate callback URL: must be https. Its host is allowlisted below
-    // against the one Menerio host, so the API key cannot be sent anywhere
-    // else.
-    let callbackUrl: URL;
-    try {
-      callbackUrl = new URL(menerio_callback);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid menerio_callback URL" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-    if (callbackUrl.protocol !== "https:") {
-      return new Response(
-        JSON.stringify({ error: "menerio_callback must use https" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Get the user's Menerio API key + registered base URL
+    // Get the user's registered Menerio base URL
     const { data: integration, error: integrationError } = await supabase
       .from("menerio_integration")
       .select("menerio_base_url")
@@ -111,33 +89,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    let menerioApiKey: string;
+    // Allowlist check, before the key is even read. menerio_base_url is
+    // user-writable through PostgREST, so matching the callback against it
+    // alone let anyone point both at a host of their choosing and receive
+    // their own API key there, or make this function POST to any address from
+    // inside the Supabase network. The stored address is first checked
+    // against the one Menerio host, and the callback must then be exactly
+    // Menerio's link-note address on that host: https, no credentials, no
+    // port, that one path and no query (_shared/menerioUrl.ts). Pinning the
+    // host alone, as until 2026-10-07, let a crafted link send the key to any
+    // other function on Menerio's host.
+    let allowedBase: string;
     try {
-      menerioApiKey = await readMenerioApiKey(supabase, user_id);
-    } catch (keyErr) {
-      console.error("Menerio key lookup failed:", keyErr);
-      return new Response(
-        JSON.stringify({
-          error: "No active Menerio connection found for this user",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Allowlist check. menerio_base_url is user-writable through PostgREST,
-    // so matching the callback against it alone let anyone point both at a
-    // host of their choosing and receive their own API key there, or make
-    // this function POST to any address from inside the Supabase network.
-    // The stored address is first checked against the one Menerio host
-    // (_shared/menerioUrl.ts), and the callback must be on exactly that
-    // host, with no credentials and no port.
-    let allowedHost: string;
-    try {
-      allowedHost = new URL(assertMenerioBaseUrl(integration.menerio_base_url))
-        .host;
+      allowedBase = assertMenerioBaseUrl(integration.menerio_base_url);
     } catch (urlErr) {
       console.warn(
         `menerio-link-callback: ${urlErr instanceof Error ? urlErr.message : urlErr}`,
@@ -152,15 +116,32 @@ Deno.serve(async (req) => {
         },
       );
     }
-    if (
-      callbackUrl.host !== allowedHost ||
-      callbackUrl.username !== "" ||
-      callbackUrl.password !== ""
-    ) {
+    let callbackUrl: URL;
+    try {
+      callbackUrl = assertMenerioLinkCallback(menerio_callback, allowedBase);
+    } catch (urlErr) {
       return new Response(
         JSON.stringify({
           error:
-            "menerio_callback host does not match registered Menerio base URL",
+            urlErr instanceof Error
+              ? urlErr.message
+              : "Invalid menerio_callback URL",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    let menerioApiKey: string;
+    try {
+      menerioApiKey = await readMenerioApiKey(supabase, user_id);
+    } catch (keyErr) {
+      console.error("Menerio key lookup failed:", keyErr);
+      return new Response(
+        JSON.stringify({
+          error: "No active Menerio connection found for this user",
         }),
         {
           status: 400,

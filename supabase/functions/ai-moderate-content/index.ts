@@ -15,12 +15,16 @@ import {
   PROVIDER_SECRETS,
   DEFAULT_PROVIDER,
   DEFAULT_MODEL,
+  getCallSiteMeta,
 } from "../_shared/llm-registry.ts";
 import { SYSTEM_PROMPT as systemPrompt } from "../_shared/prompts/ai-moderate-content.ts";
 import {
+  classificationWindows,
+  combineClassifications,
   planAttempt,
   statusAfterFailure,
   violationEmail,
+  type AIClassification,
 } from "../_shared/moderationQueue.ts";
 
 const corsHeaders = {
@@ -45,9 +49,13 @@ const BATCH_SIZE = 5;
 // forced tool call, so a provider that has not answered in 45 s is not going
 // to, and holding on to it for the transport's 110 s let a batch of five run
 // far past the kill. After TICK_DEADLINE_MS no new row is started, and the
-// rows not yet begun go back to 'pending' untouched.
+// rows not yet begun go back to 'pending' untouched. The deadline leaves room
+// for the last row started: up to 45 s of classifying (its slices run side by
+// side) and then, on a violation, up to two mails at a user lookup plus 15 s
+// each. At 90 s that last row could end near 165 s, and the kill lost its
+// mails (2026-10-07).
 const CLASSIFY_TIMEOUT_MS = 45_000;
-const TICK_DEADLINE_MS = 90_000;
+const TICK_DEADLINE_MS = 55_000;
 const CONFIDENCE_AUTO_UNPUBLISH = 0.85;
 const STRIKE_THRESHOLD = 5;
 
@@ -55,35 +63,70 @@ interface QueueItem {
   id: string;
   item_type: string;
   item_id: string;
+  // The author: what the row is checked against before anything is enforced.
   user_id: string;
+  // Who wrote the text under review (a teammate can edit a team artifact).
+  // Struck and mailed instead of the author since 2026-10-07; null on older
+  // rows and on rows filed by moderate-content, which are the author's own.
+  editor_id?: string | null;
+  // More than one person changed the text while the review was pending: a
+  // violation is still taken down, but nobody is struck automatically.
+  editors_mixed?: boolean | null;
   content_snapshot: string;
   retry_count: number;
 }
 
-interface AIClassification {
-  safe: boolean;
-  category: string;
-  confidence: number;
-  reason: string;
-}
-
-// Where each moderated artifact type lives and which column takes it off the
-// public site. A comment has no row of its own, so it is not in this map and
-// the worker never unpublishes anything for it.
-const ARTIFACT_TABLES: Record<
+// Where each moderated type lives, which columns hold its text and its
+// writer, and what enforcing a violation writes. Since 2026-10-07 a comment
+// has its own queue row keyed by its own id (20261007120400), so it is here
+// too; it is not deleted, because its replies would cascade with it, but its
+// text is replaced with a notice.
+const COMMENT_REMOVED = "[This comment was removed by moderation.]";
+const MODERATED: Record<
   string,
-  { table: string; unpublish: Record<string, boolean> }
+  {
+    table: string;
+    author: string;
+    text: string[];
+    enforce: Record<string, unknown>;
+  }
 > = {
-  prompt: { table: "prompts", unpublish: { is_public: false } },
-  skill: { table: "skills", unpublish: { published: false } },
-  prompt_kit: { table: "prompt_kits", unpublish: { published: false } },
-  workflow: { table: "workflows", unpublish: { published: false } },
+  prompt: {
+    table: "prompts",
+    author: "author_id",
+    text: ["title", "description", "content"],
+    enforce: { is_public: false },
+  },
+  skill: {
+    table: "skills",
+    author: "author_id",
+    text: ["title", "description", "content"],
+    enforce: { published: false },
+  },
+  prompt_kit: {
+    table: "prompt_kits",
+    author: "author_id",
+    text: ["title", "description", "content"],
+    enforce: { published: false },
+  },
+  workflow: {
+    table: "workflows",
+    author: "author_id",
+    text: ["title", "description", "content"],
+    enforce: { published: false },
+  },
+  comment: {
+    table: "comments",
+    author: "user_id",
+    text: ["content"],
+    enforce: { content: COMMENT_REMOVED },
+  },
 };
 
 interface ArtifactRow {
   title: string | null;
-  description: string | null;
-  content: string | null;
+  // The live text, every text column joined.
+  text: string;
   author_id: string | null;
 }
 
@@ -123,7 +166,7 @@ function parseClassification(raw: string): AIClassification {
   };
 }
 
-async function classifyContent(content: string): Promise<AIClassification> {
+async function classifyWindow(content: string): Promise<AIClassification> {
   // Deliberately no credit gate. This runs from cron or an admin button, the
   // cost is the platform's, and gating it on some user's balance would mean
   // moderation stops the moment that user runs dry.
@@ -138,6 +181,9 @@ async function classifyContent(content: string): Promise<AIClassification> {
       provider: DEFAULT_PROVIDER,
       model: DEFAULT_MODEL,
       systemPrompt,
+      // The registry budget, unless an admin set one: a classification is a
+      // short forced tool call, and an uncapped one is charged in full.
+      maxTokens: getCallSiteMeta("ai-moderate-content")?.maxOutputTokens,
     },
   );
 
@@ -159,7 +205,7 @@ async function classifyContent(content: string): Promise<AIClassification> {
       { role: "system", content: effective.system_prompt ?? systemPrompt },
       {
         role: "user",
-        content: `Analyze this content for policy violations:\n\n${content.substring(0, 4000)}`,
+        content: `Analyze this content for policy violations:\n\n${content}`,
       },
     ],
     tools: [
@@ -231,42 +277,69 @@ async function classifyContent(content: string): Promise<AIClassification> {
   return parseClassification(toolCall.function.arguments);
 }
 
-// The current text and author of the artifact a queue row points at. Null
-// when the type has no table (a comment) or the row is gone. A read failure
-// is neither: it throws, so the row takes the retry path instead of being
-// marked reviewed for an artifact that is still live.
+// Every slice of the text, classified side by side so a long artifact takes
+// one provider round trip rather than eight, then one verdict. A slice that
+// fails fails the whole row, which goes down the retry path. The note says
+// how much was read when the text is longer than the slices reach.
+async function classifyContent(
+  text: string,
+): Promise<{ classification: AIClassification; note: string }> {
+  const { windows, coveredChars, totalChars } = classificationWindows(text);
+  const results = await Promise.all(windows.map((w) => classifyWindow(w)));
+  const classification = combineClassifications(results);
+  const note =
+    coveredChars < totalChars
+      ? ` (read the first ${coveredChars} of ${totalChars} characters)`
+      : "";
+  return { classification, note };
+}
+
+// The current text and writer of the row a queue item points at. Null when
+// the type is unknown or the row is gone. A read failure is neither: it
+// throws, so the item takes the retry path instead of being marked reviewed
+// for something that is still live.
 async function loadArtifact(
   serviceClient: SupabaseClient,
   itemType: string,
   itemId: string,
 ): Promise<ArtifactRow | null> {
-  const target = ARTIFACT_TABLES[itemType];
+  const target = MODERATED[itemType];
   if (!target) return null;
   const { data, error } = await serviceClient
     .from(target.table)
-    .select("title, description, content, author_id")
+    .select([...target.text, target.author].join(", "))
     .eq("id", itemId)
     .maybeSingle();
   if (error) {
     throw new Error(`Failed to load ${itemType} ${itemId}: ${error.message}`);
   }
-  return (data as ArtifactRow | null) ?? null;
+  if (!data) return null;
+  const row = data as unknown as Record<string, unknown>;
+  const text = target.text
+    .map((c) => row[c])
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .join("\n\n");
+  return {
+    title: typeof row.title === "string" ? row.title : null,
+    text,
+    author_id: (row[target.author] as string | null) ?? null,
+  };
 }
 
-async function unpublishArtifact(
+async function enforceViolation(
   serviceClient: SupabaseClient,
   itemType: string,
   itemId: string,
 ): Promise<void> {
-  const target = ARTIFACT_TABLES[itemType];
+  const target = MODERATED[itemType];
   if (!target) return;
   const { error } = await serviceClient
     .from(target.table)
-    .update(target.unpublish)
+    .update(target.enforce)
     .eq("id", itemId);
   if (error) {
     throw new Error(
-      `Failed to unpublish ${itemType} ${itemId}: ${error.message}`,
+      `Failed to enforce on ${itemType} ${itemId}: ${error.message}`,
     );
   }
 }
@@ -341,6 +414,8 @@ async function sendViolationEmail(
   try {
     const res = await fetch(RESEND_URL, {
       method: "POST",
+      // A hung mail provider must not hold the tick past the platform's kill.
+      signal: AbortSignal.timeout(15_000),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${RESEND_API_KEY}`,
@@ -475,12 +550,11 @@ Deno.serve(async (req: Request) => {
         // said. The queue row is filed by moderate-content with a snapshot
         // the client assembled, so until 2026-09-16 a benign snapshot filed
         // against a real item id kept the real content from ever being read.
-        // The snapshot is only used for types with no row of their own (a
-        // comment).
+        // The snapshot is only used for a type with no table here.
         let artifact: ArtifactRow | null = null;
         let text = item.content_snapshot ?? "";
 
-        if (ARTIFACT_TABLES[item.item_type] && item.item_id) {
+        if (MODERATED[item.item_type] && item.item_id) {
           artifact = await loadArtifact(
             serviceClient,
             item.item_type,
@@ -523,15 +597,16 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          const live = [artifact.title, artifact.description, artifact.content]
-            .filter(
-              (s): s is string => typeof s === "string" && s.trim().length > 0,
-            )
-            .join("\n\n");
-          if (live) text = live;
+          if (artifact.text) text = artifact.text;
         }
 
-        const classification = await classifyContent(text);
+        const { classification, note } = await classifyContent(text);
+        // The editor answers for the text, not the author of what they edited
+        // (20261007120300). When several people edited it, nobody can be
+        // named, so nobody is struck: the newest may only have fixed a typo.
+        const offender = item.editors_mixed
+          ? null
+          : (item.editor_id ?? item.user_id);
         console.log(
           `Item ${item.id}: safe=${classification.safe}, category=${classification.category}, confidence=${classification.confidence}`,
         );
@@ -543,14 +618,14 @@ Deno.serve(async (req: Request) => {
           // HIGH confidence violation: auto-unpublish. Every write below
           // throws on failure, so a half-done enforcement goes back to the
           // queue instead of counting as done.
-          await unpublishArtifact(serviceClient, item.item_type, item.item_id);
+          await enforceViolation(serviceClient, item.item_type, item.item_id);
           const title = artifact?.title ?? null;
 
           // Log moderation event
           const { error: eventErr } = await serviceClient
             .from("moderation_events")
             .insert({
-              user_id: item.user_id,
+              user_id: offender ?? item.user_id,
               action: "ai_review",
               item_type: item.item_type,
               item_id: item.item_id,
@@ -573,26 +648,39 @@ Deno.serve(async (req: Request) => {
             status: "violation",
             ai_category: classification.category,
             ai_confidence: classification.confidence,
-            ai_reason: classification.reason,
+            ai_reason: classification.reason + note,
             reviewed_at: new Date().toISOString(),
           });
           violations++;
 
           try {
-            const strike = await incrementStrike(serviceClient, item.user_id);
-            if (strike.suspended) {
-              console.log(
-                `User ${item.user_id} suspended after ${strike.strikeCount} strikes`,
+            if (offender) {
+              const strike = await incrementStrike(serviceClient, offender);
+              if (strike.suspended) {
+                console.log(
+                  `User ${offender} suspended after ${strike.strikeCount} strikes`,
+                );
+              }
+            } else {
+              console.warn(
+                `Item ${item.id}: several people edited this text, so no strike was given`,
               );
             }
 
-            await sendViolationEmail(
+            // The writer, and the author too when a teammate's edit took the
+            // author's artifact off the site.
+            for (const recipient of new Set([
+              offender ?? item.user_id,
               item.user_id,
-              item.item_type,
-              title,
-              classification.category,
-              serviceClient,
-            );
+            ])) {
+              await sendViolationEmail(
+                recipient,
+                item.item_type,
+                title,
+                classification.category,
+                serviceClient,
+              );
+            }
           } catch (lateErr) {
             // Logged, never retried: the artifact is unpublished and the row
             // is final, and a retry would classify, strike and email again.
@@ -607,7 +695,7 @@ Deno.serve(async (req: Request) => {
             status: "reviewed",
             ai_category: classification.category || "none",
             ai_confidence: classification.confidence,
-            ai_reason: classification.reason,
+            ai_reason: classification.reason + note,
             reviewed_at: new Date().toISOString(),
           });
         }

@@ -173,10 +173,11 @@ Deno.test(
 // before the move, so they fail if the rewrite changed a single character of
 // what the model receives.
 
-// Identical to the old prompt but for one line. That line told the model to
+// Identical to the old prompt but for two lines. One told the model to
 // preserve "template variables like {{variable}}", and this prompt is now
 // interpolated, so the interpolator would have eaten the example and left the
-// sentence naming nothing.
+// sentence naming nothing. The other (2026-10-07) keeps a prompt kit's
+// "## Prompt:" markers in English, because the kit page finds prompts by them.
 Deno.test(
   "translate-artifact: the template interpolates to the old prompt, with the reworded rule",
   () => {
@@ -187,7 +188,7 @@ Deno.test(
     };
     assertEquals(
       interpolatePrompt(TRANSLATE_PROMPT, vars),
-      "You are a professional translator. Translate the following prompt from English to German.\n\nRules:\n- Preserve all Markdown formatting, headings, lists, and structure exactly.\n- Preserve placeholders exactly as-is and never translate them: double-brace template variables, [PLACEHOLDER], and $variables.\n- Preserve code blocks, inline code, URLs, file paths, and technical identifiers untranslated.\n- Translate tags contextually (they are short keywords/phrases) into lowercase German equivalents.\n- Keep the original tone and register (formal/informal).\n- Return the result via the translate_artifact tool.",
+      'You are a professional translator. Translate the following prompt from English to German.\n\nRules:\n- Preserve all Markdown formatting, headings, lists, and structure exactly.\n- Preserve placeholders exactly as-is and never translate them: double-brace template variables, [PLACEHOLDER], and $variables.\n- Preserve code blocks, inline code, URLs, file paths, and technical identifiers untranslated.\n- In a prompt kit, keep every "## Prompt:" heading prefix exactly as written, in English, and translate only the title after the colon; keep HTML comments such as <!-- /prompt --> unchanged. The kit page finds its prompts by these markers.\n- Translate tags contextually (they are short keywords/phrases) into lowercase German equivalents.\n- Keep the original tone and register (formal/informal).\n- Return the result via the translate_artifact tool.',
     );
   },
 );

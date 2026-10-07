@@ -57,3 +57,67 @@ export function assertMenerioBaseUrl(raw: string): string {
   const path = url.pathname.replace(/\/+$/, "");
   return `${url.origin}${path}`;
 }
+
+// ── The link callback (7 October 2026) ──────────────────────────────────────
+//
+// menerio-link-callback POSTs the user's Menerio API key to the callback URL
+// that arrives in the browser's address bar (?menerio_callback=...), so that
+// URL is attacker-supplied. Until 2026-10-07 only its host was pinned. Every
+// Menerio function lives on that one host, under /functions/v1/<name>, so a
+// crafted link could name any of them, and Querino would hand the victim's
+// key to whichever one stores, forwards or echoes what it is sent.
+// Menerio builds this URL in exactly one form (ForwardToAppDialog.tsx and
+// GlobalCreateButton.tsx: `${SUPABASE_URL}/functions/v1/link-note`), so
+// exactly that form is accepted. The path is a constant, never derived from
+// menerio_base_url: that column is user-writable, and a base ending in
+// /functions/v1/other would otherwise move the callback to another function.
+
+export const MENERIO_LINK_CALLBACK_PATH = "/functions/v1/link-note";
+
+/**
+ * Returns the URL to POST the link to, or throws a plain Error naming what was
+ * wrong. Accepted: https, exactly the host of the registered (and checked)
+ * Menerio base URL, no credentials, no port, exactly
+ * MENERIO_LINK_CALLBACK_PATH, no query string and no fragment. The returned
+ * URL is rebuilt from the checked parts, not the raw string.
+ */
+export function assertMenerioLinkCallback(
+  rawCallback: unknown,
+  registeredBaseUrl: string,
+): URL {
+  if (typeof rawCallback !== "string" || rawCallback.trim() === "") {
+    throw new Error("menerio_callback is empty");
+  }
+
+  let url: URL;
+  try {
+    url = new URL(rawCallback.trim());
+  } catch {
+    throw new Error("menerio_callback is not a valid URL");
+  }
+
+  if (url.protocol !== "https:") {
+    throw new Error("menerio_callback must use https");
+  }
+  if (url.username !== "" || url.password !== "") {
+    throw new Error("menerio_callback must not carry credentials");
+  }
+  if (url.port !== "") {
+    throw new Error("menerio_callback must not name a port");
+  }
+  // Throws on its own if the stored base is not Menerio's.
+  const allowedHost = new URL(assertMenerioBaseUrl(registeredBaseUrl)).host;
+  if (url.host !== allowedHost) {
+    throw new Error(
+      "menerio_callback host does not match registered Menerio base URL",
+    );
+  }
+  if (url.pathname !== MENERIO_LINK_CALLBACK_PATH) {
+    throw new Error("menerio_callback is not Menerio's link-note address");
+  }
+  if (url.search !== "" || url.hash !== "") {
+    throw new Error("menerio_callback must not carry a query or fragment");
+  }
+
+  return new URL(MENERIO_LINK_CALLBACK_PATH, url.origin);
+}

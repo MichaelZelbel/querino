@@ -302,7 +302,11 @@ Deno.serve(async (req: Request) => {
     // 2026-09-16 the database also files a row whenever an artifact goes
     // public or changes while public, and one pending row per item is
     // enforced by a unique index, so a duplicate here is expected and quiet.
-    if (item_id) {
+    // Not for a comment: its item_id here is the ARTIFACT (the comment has no
+    // id yet), so a second comment on the same artifact was never reviewed.
+    // Since 2026-10-07 the database files each comment under its own id
+    // (20261007120400).
+    if (item_id && ARTIFACT_ITEM_TYPES.includes(item_type)) {
       try {
         // A failed insert comes back in `error`, not as a throw.
         const { error: queueErr } = await serviceClient

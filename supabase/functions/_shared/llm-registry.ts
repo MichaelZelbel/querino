@@ -25,6 +25,30 @@ export const DEFAULT_MODEL = "google/gemini-3.1-flash-lite";
 export const BACKGROUND_MODEL = "deepseek/deepseek-v4-flash";
 export const TRANSLATION_MODEL = "google/gemini-3.7-flash";
 
+// ── Output budgets (7 October 2026) ─────────────────────────────────────────
+//
+// How many tokens a call site may write when its admin row sets no max_tokens,
+// which on 2026-10-07 was every one of the sixteen live rows. Until then no
+// call capped its output and the credit hold assumed 1,000 output tokens, so
+// one call could spend many times what was held for it. The budget is now
+// both the provider's max_tokens and the output part of the hold.
+//
+// A cap that is too low is the dangerous direction, not one that is too high.
+// The coaches (in collab_edit), refinement and translation answer with the
+// whole text, up to 16,000 characters of it, and the editor applies that text
+// in place of what the user had. 16,000 characters of German are about 6,000
+// tokens, other scripts and JSON escaping take more, and a model that thinks
+// before answering spends from the same budget. So those six get 16,000, just
+// under the 16,384 that gpt-4o and gpt-4o-mini accept, and an answer that
+// still hits the cap is refused in llm.ts rather than saved half-written.
+// The sites without tools stay at or below 8,192, the most the Claude 3.5
+// models in PROVIDER_PRESETS accept: admin-llm-config refuses to point a
+// tools site at Anthropic, so only these can end up there.
+export const REWRITE_OUTPUT_TOKENS = 16_000;
+export const WIZARD_OUTPUT_TOKENS = 8_000;
+/** Metadata, insights and moderation: short answers, room for a thinking model. */
+export const SHORT_OUTPUT_TOKENS = 4_000;
+
 export interface CallSiteMeta {
   call_site: string;
   description: string;
@@ -40,6 +64,11 @@ export interface CallSiteMeta {
    * llm-registry_test.ts is what holds it level with the code.
    */
   requiresTools: boolean;
+  /**
+   * Output tokens allowed when the admin row sets no max_tokens. See the
+   * budgets above; an admin's own max_tokens still wins.
+   */
+  maxOutputTokens: number;
 }
 
 export const CALL_SITES: CallSiteMeta[] = [
@@ -50,6 +79,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: REWRITE_OUTPUT_TOKENS,
   },
   {
     call_site: "prompt-kit-coach",
@@ -58,6 +88,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: REWRITE_OUTPUT_TOKENS,
   },
   {
     call_site: "skill-coach",
@@ -66,6 +97,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: REWRITE_OUTPUT_TOKENS,
   },
   {
     call_site: "workflow-coach",
@@ -74,6 +106,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: REWRITE_OUTPUT_TOKENS,
   },
   {
     call_site: "suggest-metadata",
@@ -82,6 +115,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "suggest-promptkit-metadata",
@@ -90,6 +124,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "suggest-skill-metadata",
@@ -98,6 +133,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "suggest-workflow-metadata",
@@ -106,6 +142,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "ai-insights-prompt",
@@ -114,6 +151,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: false,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "ai-insights-skill",
@@ -122,6 +160,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: false,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "ai-insights-workflow",
@@ -130,6 +169,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: false,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "ai-insights-prompt_kit",
@@ -138,6 +178,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: BACKGROUND_MODEL,
     placeholders: [],
     requiresTools: false,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
   {
     call_site: "prompt-wizard",
@@ -146,6 +187,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: false,
+    maxOutputTokens: WIZARD_OUTPUT_TOKENS,
   },
   {
     call_site: "prompt-refinement",
@@ -154,6 +196,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: REWRITE_OUTPUT_TOKENS,
   },
   {
     call_site: "translate-artifact",
@@ -162,6 +205,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: TRANSLATION_MODEL,
     placeholders: ["artifactType", "sourceLanguage", "targetLanguage"],
     requiresTools: true,
+    maxOutputTokens: REWRITE_OUTPUT_TOKENS,
   },
   {
     call_site: "ai-moderate-content",
@@ -170,6 +214,7 @@ export const CALL_SITES: CallSiteMeta[] = [
     model: DEFAULT_MODEL,
     placeholders: [],
     requiresTools: true,
+    maxOutputTokens: SHORT_OUTPUT_TOKENS,
   },
 ];
 

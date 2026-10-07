@@ -21,6 +21,7 @@ import {
   CreditsExhaustedError,
   RateLimitedError,
   GatewayError,
+  OutputTruncatedError,
   DEFAULT_MODEL,
   capText,
   type ChatMessage,
@@ -447,6 +448,17 @@ export function startCoachServer(cfg: CoachConfig) {
           }),
           {
             status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+      // Before the GatewayError branch it belongs to: the user is told the
+      // answer was cut off, and the editor keeps what it had.
+      if (error instanceof OutputTruncatedError) {
+        return new Response(
+          JSON.stringify({ error: error.message, code: "output_truncated" }),
+          {
+            status: 502,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           },
         );

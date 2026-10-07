@@ -29,6 +29,7 @@
 // request you have to stop it in front of the function, which is point 1.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,17 +69,20 @@ async function loadAll(): Promise<PublicModel[]> {
     { auth: { persistSession: false } },
   );
 
-  const { data, error } = await db
-    .from("llm_models")
-    .select(
-      "provider, model_id, name, context_length, prompt_price_per_m, completion_price_per_m, supports_tools, input_modalities, output_modalities, expiration_date, retired_at, last_seen_at",
-    )
-    .order("provider")
-    .order("model_id");
+  // Paged (since 2026-10-07): retired models are kept, so the table only
+  // grows, and past 1,000 rows an unpaged read would have ended the public
+  // catalogue partway through the alphabet without saying so. (provider,
+  // model_id) is the primary key, so the order is total.
+  const models = await fetchAllRows<PublicModel>(
+    () =>
+      db
+        .from("llm_models")
+        .select(
+          "provider, model_id, name, context_length, prompt_price_per_m, completion_price_per_m, supports_tools, input_modalities, output_modalities, expiration_date, retired_at, last_seen_at",
+        ),
+    [{ column: "provider" }, { column: "model_id" }],
+  );
 
-  if (error) throw new Error(error.message);
-
-  const models = (data ?? []) as PublicModel[];
   cache = { at: Date.now(), models };
   return models;
 }

@@ -9,6 +9,7 @@ import {
   type SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { isAdminCaller } from "../_shared/internalAuth.ts";
+import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 import {
   CALL_SITES,
   getCallSiteMeta,
@@ -149,30 +150,41 @@ async function syncDefaults(
 async function livePresets(
   admin: SupabaseClient,
 ): Promise<typeof PROVIDER_PRESETS> {
-  const { data, error } = await admin
-    .from("llm_models")
-    .select(
-      "provider, model_id, name, prompt_price_per_m, completion_price_per_m, supports_tools",
-    )
-    .is("retired_at", null)
-    .order("prompt_price_per_m", { nullsFirst: false });
-
-  if (error) {
-    console.warn(
-      "[admin-llm-config] llm_models unreadable, using the static presets:",
-      error.message,
-    );
-    return PROVIDER_PRESETS;
-  }
-
-  const rows = (data ?? []) as Array<{
+  type ModelRow = {
     provider: string;
     model_id: string;
     name: string;
     prompt_price_per_m: number | null;
     completion_price_per_m: number | null;
     supports_tools: boolean;
-  }>;
+  };
+  // Paged (since 2026-10-07), cheapest first, and the primary key after the
+  // price so that models of equal price keep one order across pages. Unpaged,
+  // the list would have stopped at the first 1,000 live models, and the
+  // dearest ones would have vanished from the picker.
+  let rows: ModelRow[];
+  try {
+    rows = await fetchAllRows<ModelRow>(
+      () =>
+        admin
+          .from("llm_models")
+          .select(
+            "provider, model_id, name, prompt_price_per_m, completion_price_per_m, supports_tools",
+          )
+          .is("retired_at", null),
+      [
+        { column: "prompt_price_per_m", nullsFirst: false },
+        { column: "provider" },
+        { column: "model_id" },
+      ],
+    );
+  } catch (e) {
+    console.warn(
+      "[admin-llm-config] llm_models unreadable, using the static presets:",
+      e instanceof Error ? e.message : String(e),
+    );
+    return PROVIDER_PRESETS;
+  }
   if (rows.length === 0) return PROVIDER_PRESETS;
 
   const byProvider = new Map<string, typeof rows>();
@@ -451,6 +463,9 @@ Deno.serve(async (req: Request) => {
           provider: meta?.provider ?? DEFAULT_PROVIDER,
           model: meta?.model ?? DEFAULT_MODEL,
           systemPrompt: getDefaultSystemPrompt(callSite),
+          // And the same output cap (since 2026-10-07), so a model that
+          // refuses the call site's max_tokens fails here, not in the app.
+          maxTokens: meta?.maxOutputTokens ?? null,
         },
       );
 

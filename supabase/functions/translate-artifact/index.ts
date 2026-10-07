@@ -7,6 +7,7 @@ import {
   CreditsExhaustedError,
   RateLimitedError,
   GatewayError,
+  OutputTruncatedError,
   DEFAULT_MODEL,
   capText,
   type ToolDefinition,
@@ -239,6 +240,17 @@ ${truncatedContent}`;
         JSON.stringify({ error: "Rate limit exceeded, please retry shortly." }),
         {
           status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    // A subclass of GatewayError, so it is checked first. A translation that
+    // stops halfway is not prefilled into a new artifact.
+    if (error instanceof OutputTruncatedError) {
+      return new Response(
+        JSON.stringify({ error: error.message, code: "output_truncated" }),
+        {
+          status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
