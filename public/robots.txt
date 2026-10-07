@@ -1,25 +1,17 @@
-# One group for every crawler. A crawler obeys only the most specific group
-# that names it, so a separate allow-all group for Googlebot or Bingbot made
-# those crawlers ignore every Disallow below.
+# One group for every crawler, and nothing is blocked.
+#
+# The private surfaces (sign-in, library, settings, admin, every editor) stay out
+# of search through the noindex tag each of them sends (privateHead in
+# src/lib/seo.ts). A Disallow here stops Google from fetching such a page, so it
+# never sees that tag: from 2026-09-23 to 2026-10-07 a Disallow list here put 44
+# pages under "Blocked by robots.txt" in Search Console and left /auth?tab=signup
+# "Indexed, though blocked by robots.txt", with no way for Google to drop it.
+# Google's rule: a page that should be noindexed must not be blocked here.
+#
+# Never add a separate allow-all group for one crawler either: a crawler obeys
+# only the most specific group that names it.
 User-agent: *
 Allow: /
-
-# Private/app surfaces — useless in search, often require auth
-Disallow: /auth
-Disallow: /library
-Disallow: /settings
-Disallow: /admin
-Disallow: /studio
-Disallow: /coach
-Disallow: /prompts/new
-Disallow: /prompts/*/edit
-Disallow: /skills/new
-Disallow: /skills/*/edit
-Disallow: /workflows/new
-Disallow: /workflows/*/edit
-Disallow: /prompt-kits/new
-Disallow: /prompt-kits/*/edit
-Disallow: /collections/new
 
 # Dynamic sitemap, served by the app itself (always up-to-date with public artifacts)
 Sitemap: https://querino.ai/sitemap.xml
