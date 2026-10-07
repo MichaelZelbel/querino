@@ -79,8 +79,11 @@ test.describe("Activity is private, and the app now says so", () => {
     expect(main, "no main bundle in the published HTML").toBeTruthy();
 
     const mainJs = await (await fetch(`https://querino.ai${main}`)).text();
+    // Case-insensitive: since the 2026-10-07 build the chunks are named after
+    // the route file (activity-*.js), not the page component (Activity-*.js),
+    // and the case-sensitive search found none and failed for that alone.
     const chunks = [
-      ...new Set(mainJs.match(/Activity[A-Za-z]*-[A-Za-z0-9_-]+\.js/g) ?? []),
+      ...new Set(mainJs.match(/activity[A-Za-z]*-[A-Za-z0-9_-]+\.js/gi) ?? []),
     ];
     expect(
       chunks.length,
