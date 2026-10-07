@@ -50,7 +50,7 @@ touches Stripe.
   (OpenRouter, OpenAI or the Lovable gateway; the model per call site is configured in the admin panel).
   The old n8n orchestration is gone: there is no `n8n/` directory and no `N8N_*` secret.
 - **Payments**: none (see the product policy above)
-- **Package Manager**: bun (bun.lock present) or npm
+- **Package Manager**: bun. `bun.lock` is the only lockfile and is what Lovable builds from; CI installs with `bun install --frozen-lockfile` and fails when it no longer matches `package.json`. After changing a dependency, run `bun install` and commit `bun.lock`. There is no `package-lock.json` (removed 2026-10-07: CI tested a different dependency tree from the one Lovable shipped); `npm run <script>` still works for running scripts.
 
 ## Development Commands
 
@@ -114,7 +114,9 @@ React Frontend → TanStack Query → Supabase Edge Functions → _shared/llm.ts
 ```
 
 ### Key Patterns
-- **Custom hooks** wrap all Supabase queries/mutations (e.g. `usePrompts`, `useSkills`, `useTeams`)
+- **Custom hooks** wrap all Supabase queries/mutations (e.g. `useSearchPrompts`, `useSkills`, `useTeams`)
+- **One list hook for all four artifact types**: `createArtifactListHook` (`src/hooks/useArtifactList.ts`) pages every list with `.range()` over an order that ends in the id, and selects the columns in `src/lib/artifactListColumns.ts`, never `select("*")` (that downloads each row's embedding). Fix list behaviour there, not in a per-type copy: copies that diverged are how prompts kept downloading 20 KB of vector per row after the other three types were fixed.
+- **Detail pages get their row from the route loader** (`src/lib/route-loaders.ts`), which answers an old UUID or renamed slug with a 301 and a true miss with a 404; the browser re-runs it once with the session for private rows. The pages make no fetch of their own.
 - **TanStack Query** handles all server state with `useQuery` / `useMutation`
 - **Path alias**: `@/*` maps to `./src/*`
 - **shadcn/ui** components live in `src/components/ui/` — do not edit these directly
@@ -124,7 +126,7 @@ React Frontend → TanStack Query → Supabase Edge Functions → _shared/llm.ts
 
 ### Artifact Types
 The four web-surfaced artifact types follow the same CRUD pattern:
-- **Prompts** — `src/pages/Prompt*.tsx`, `src/hooks/usePrompts.ts`
+- **Prompts** — `src/pages/Prompt*.tsx`, `src/hooks/useSearchPrompts.ts`
 - **Skills** — `src/pages/Skill*.tsx`, `src/hooks/useSkills.ts`
 - **Workflows** — `src/pages/Workflow*.tsx`, `src/hooks/useWorkflows.ts`
 - **Prompt Kits** — `src/pages/PromptKit*.tsx`, `src/hooks/usePromptKits.ts`
