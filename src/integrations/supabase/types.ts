@@ -87,6 +87,74 @@ export type Database = {
           },
         ]
       }
+      admin_allowance_adjustments: {
+        Row: {
+          admin_id: string | null
+          allowance_period_id: string | null
+          created_at: string
+          id: string
+          new_tokens_granted: number
+          new_tokens_used: number
+          previous_tokens_granted: number
+          previous_tokens_used: number
+          user_id: string | null
+          via: string
+        }
+        Insert: {
+          admin_id?: string | null
+          allowance_period_id?: string | null
+          created_at?: string
+          id?: string
+          new_tokens_granted: number
+          new_tokens_used: number
+          previous_tokens_granted: number
+          previous_tokens_used: number
+          user_id?: string | null
+          via: string
+        }
+        Update: {
+          admin_id?: string | null
+          allowance_period_id?: string | null
+          created_at?: string
+          id?: string
+          new_tokens_granted?: number
+          new_tokens_used?: number
+          previous_tokens_granted?: number
+          previous_tokens_used?: number
+          user_id?: string | null
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_allowance_adjustments_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_allowance_adjustments_allowance_period_id_fkey"
+            columns: ["allowance_period_id"]
+            isOneToOne: false
+            referencedRelation: "ai_allowance_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_allowance_adjustments_allowance_period_id_fkey"
+            columns: ["allowance_period_id"]
+            isOneToOne: false
+            referencedRelation: "v_ai_allowance_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_allowance_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_allowance_periods: {
         Row: {
           created_at: string
@@ -1076,6 +1144,8 @@ export type Database = {
           claimed_at: string | null
           content_snapshot: string
           created_at: string
+          editor_id: string | null
+          editors_mixed: boolean
           id: string
           item_id: string
           item_type: string
@@ -1091,6 +1161,8 @@ export type Database = {
           claimed_at?: string | null
           content_snapshot: string
           created_at?: string
+          editor_id?: string | null
+          editors_mixed?: boolean
           id?: string
           item_id: string
           item_type: string
@@ -1106,6 +1178,8 @@ export type Database = {
           claimed_at?: string | null
           content_snapshot?: string
           created_at?: string
+          editor_id?: string | null
+          editors_mixed?: boolean
           id?: string
           item_id?: string
           item_type?: string
@@ -1115,6 +1189,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "moderation_review_queue_editor_id_fkey"
+            columns: ["editor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "moderation_review_queue_user_id_fkey"
             columns: ["user_id"]
@@ -1257,6 +1338,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prompt_copy_salts: {
+        Row: {
+          day: string
+          salt: string
+        }
+        Insert: {
+          day: string
+          salt?: string
+        }
+        Update: {
+          day?: string
+          salt?: string
+        }
+        Relationships: []
       }
       prompt_kit_coach_messages: {
         Row: {
@@ -1997,6 +2093,7 @@ export type Database = {
       suggestions: {
         Row: {
           author_id: string
+          base_content: string | null
           content: string
           created_at: string | null
           description: string | null
@@ -2012,6 +2109,7 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          base_content?: string | null
           content: string
           created_at?: string | null
           description?: string | null
@@ -2027,6 +2125,7 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          base_content?: string | null
           content?: string
           created_at?: string | null
           description?: string | null
@@ -2538,6 +2637,20 @@ export type Database = {
     }
     Functions: {
       active_creators_last_7_days: { Args: never; Returns: number }
+      admin_adjust_allowance: {
+        Args: {
+          p_allowance_id: string
+          p_granted_delta: number
+          p_used_delta: number
+          p_via: string
+        }
+        Returns: {
+          new_tokens_granted: number
+          new_tokens_used: number
+          previous_tokens_granted: number
+          previous_tokens_used: number
+        }[]
+      }
       admin_llm_usage_summary: {
         Args: { p_since?: string }
         Returns: {
@@ -2602,6 +2715,8 @@ export type Database = {
         Args: { batch_size?: number; stale_after?: string }
         Returns: {
           content_snapshot: string
+          editor_id: string
+          editors_mixed: boolean
           id: string
           item_id: string
           item_type: string
