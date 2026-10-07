@@ -5,10 +5,19 @@ name: CI
 #
 # Four gates, cheapest first:
 #
-#   checks    the three migration rules, the linter, the edge-function types,
-#             and the two unit suites (edge-function shared code, frontend logic)
+#   checks    the migration rules, the linter, the frontend and edge-function
+#             types, and the two unit suites (edge-function shared code,
+#             frontend logic)
 #   build     the app compiles
 #   security  the suite in tests/security, against the deployed project
+#
+# Every job installs from bun.lock with --frozen-lockfile, because bun.lock is
+# what Lovable builds the live site from. Until 2026-10-07 CI ran `npm ci` on a
+# package-lock.json that Lovable never reads: 28 of the 96 direct dependencies
+# resolved to different versions in the two files (supabase-js 2.86.2 here,
+# 2.112.3 in production), so a green build vouched for code nobody shipped.
+# package-lock.json is gone, and a bun.lock that no longer matches package.json
+# now fails the install step instead of drifting for weeks.
 #
 # The security suite talks to the real project, so it needs credentials and it
 # is skipped where they are not available, which includes every pull request
@@ -49,21 +58,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install
-        run: npm ci
+      # Pinned to the version that wrote bun.lock. Raising it is a deliberate
+      # change, made together with the lockfile it writes.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Install exactly what Lovable builds
+        run: bun install --frozen-lockfile
 
       - name: Migrations declare their security
         # Fails when a migration adds a SECURITY DEFINER function without
         # SET search_path, a table without row-level security, or a view
-        # without security_invoker.
+        # without security_invoker, or takes any of them away again with an
+        # ALTER.
         run: node scripts/check-migrations.mjs
 
       - name: Lint, and the `any` count has not risen
         run: node scripts/lint-ratchet.mjs
 
-      # No setup-deno step: Deno is a pinned devDependency, so npm ci above
+      # The frontend was never type-checked here until 2026-10-07: the build
+      # strips types without reading them, so a wrong prop type or a call to a
+      # function that no longer exists went out green. The tsconfig is loose
+      # (no strict null checks, implicit any allowed), and it passes today, so
+      # this holds the line rather than raising it.
+      - name: Frontend types
+        run: npx tsc --noEmit -p tsconfig.json
+
+      # No setup-deno step: Deno is a pinned devDependency, so the install above
       # already provided it. One less action, one less version to drift.
       - name: Edge function types have not got worse
         run: node scripts/deno-check.mjs
@@ -71,10 +94,10 @@ jobs:
       # Written on every audit and never run here until 2026-09-30: the unit tests
       # of the edge functions' shared code, and of the frontend's pure logic.
       - name: Unit tests, edge functions
-        run: npm run test:unit
+        run: bun run test:unit
 
       - name: Unit tests, frontend logic
-        run: npm run test:web
+        run: bun run test:web
 
   build:
     name: Build
@@ -84,24 +107,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
 
   security:
     name: Security suite
     runs-on: ubuntu-latest
     needs: [checks, build]
+    # A run waits at most 15 minutes for another run's lock and must finish
+    # within 20 of taking it, because global-setup treats an older lock as
+    # abandoned and a second run would then start beside this one. Past that
+    # the job is hung, not slow, and GitHub's default limit is six hours.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
 
       - name: Install
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Are the credentials here?
         id: creds
@@ -125,7 +158,7 @@ jobs:
           QUERINO_TEST_PASSWORD: ${{ secrets.QUERINO_TEST_PASSWORD }}
           INTERNAL_JOB_SECRET: ${{ secrets.INTERNAL_JOB_SECRET }}
           QUERINO_PROJECT_REF: ${{ vars.QUERINO_PROJECT_REF || 'zvuwkffneqxqsihlnfsd' }}
-        run: npm test
+        run: bun run test
 
       - name: Keep the report
         if: always() && steps.creds.outputs.available == 'true'

@@ -37,7 +37,7 @@ function runEslint() {
   // quoting arguments by hand.
   const eslintBin = join(ROOT, "node_modules", "eslint", "bin", "eslint.js");
   if (!existsSync(eslintBin)) {
-    console.error("ESLint is not installed. Run: npm ci");
+    console.error("ESLint is not installed. Run: bun install");
     process.exit(2);
   }
 

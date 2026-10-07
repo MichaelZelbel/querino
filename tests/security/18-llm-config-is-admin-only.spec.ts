@@ -20,6 +20,11 @@ import {
   signInTestUser,
 } from "./helpers/api";
 import { ANON_KEY, REST_URL } from "./helpers/env";
+import {
+  type LlmConfigSnapshot,
+  restoreLlmConfig,
+  snapshotLlmConfig,
+} from "./helpers/llmConfig";
 
 interface ConfigRow {
   call_site: string;
@@ -28,44 +33,30 @@ interface ConfigRow {
 }
 
 // The write tests below aim a fake model at the live prompt-coach row. When one
-// of them fails, the write went through, and without this the Prompt Coach for
-// every real user was left pointing at "attacker/expensive-model" (it happened
-// on 2026-09-23, when a second copy of this suite ran spec 08's temporary admin
-// promotion at the same moment). Whatever the outcome, the row is put back.
+// of them fails, the write went through, and without a restore the Prompt
+// Coach for every real user is left pointing at "attacker/expensive-model" (it
+// happened on 2026-09-23, when a second copy of this suite ran spec 08's
+// temporary admin promotion at the same moment). Whatever the outcome, the row
+// is put back.
 //
-// `enabled` too: within two minutes of that write the nightly model sync saw an
-// unknown model and switched the row off, and the model was put back on
-// 2026-09-23 but the switch was not, until 2026-09-30.
-const PROMPT_COACH_ROW =
-  "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default";
-let promptCoach: { model: string; enabled: boolean } | null = null;
+// The whole row, `enabled` included: within two minutes of that write the
+// nightly model sync saw an unknown model and switched the row off, and the
+// model was put back on 2026-09-23 but the switch was not, until 2026-09-30.
+//
+// Read before the first write, restored in that test's `finally` and again in
+// afterAll, and the restore checks that it landed (helpers/llmConfig.ts).
+// Until 2026-10-07 a failed first read meant no restore at all, and nothing
+// looked at whether the restoring PATCH had worked.
+let promptCoach: LlmConfigSnapshot | undefined;
 
-test.beforeAll(async () => {
-  const res = await restAsService<ConfigRow[]>(
-    `${PROMPT_COACH_ROW}&select=call_site,model,enabled`,
-  );
-  const row = res.data?.[0];
-  promptCoach = row
-    ? { model: row.model, enabled: row.enabled !== false }
-    : null;
-});
+async function promptCoachBeforeWriting(): Promise<LlmConfigSnapshot> {
+  promptCoach ??= await snapshotLlmConfig("prompt-coach");
+  return promptCoach;
+}
 
 test.afterAll(async () => {
-  if (!promptCoach) return;
-  const res = await restAsService<ConfigRow[]>(
-    `${PROMPT_COACH_ROW}&select=call_site,model,enabled`,
-  );
-  const now = res.data?.[0];
-  if (
-    now?.model !== promptCoach.model ||
-    (now?.enabled !== false) !== promptCoach.enabled
-  ) {
-    await restAsService(PROMPT_COACH_ROW, {
-      method: "PATCH",
-      body: { model: promptCoach.model, enabled: promptCoach.enabled },
-      headers: { Prefer: "return=minimal" },
-    });
-  }
+  // No snapshot means no test got as far as writing.
+  if (promptCoach) await restoreLlmConfig(promptCoach);
 });
 
 test.describe("LLM configuration is admin-only", () => {
@@ -100,22 +91,27 @@ test.describe("LLM configuration is admin-only", () => {
   test("a signed-in non-admin cannot repoint a call site at a model of its choosing", async () => {
     const path =
       "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default&select=call_site,model";
-    const before = await restAsService<ConfigRow[]>(path);
+    const snapshot = await promptCoachBeforeWriting();
+    try {
+      const before = await restAsService<ConfigRow[]>(path);
 
-    await restAsUser(
-      "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default",
-      {
-        method: "PATCH",
-        body: { model: "attacker/expensive-model" },
-      },
-    );
+      await restAsUser(
+        "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default",
+        {
+          method: "PATCH",
+          body: { model: "attacker/expensive-model" },
+        },
+      );
 
-    // The status code is not the assertion. Whether the row moved is.
-    const after = await restAsService<ConfigRow[]>(path);
-    expect(
-      after.data[0].model,
-      "a non-admin changed which model an AI call uses, on the platform's bill",
-    ).toBe(before.data[0].model);
+      // The status code is not the assertion. Whether the row moved is.
+      const after = await restAsService<ConfigRow[]>(path);
+      expect(
+        after.data[0].model,
+        "a non-admin changed which model an AI call uses, on the platform's bill",
+      ).toBe(before.data[0].model);
+    } finally {
+      await restoreLlmConfig(snapshot);
+    }
   });
 
   test("admin-llm-config refuses a non-admin", async () => {
@@ -140,20 +136,25 @@ test.describe("LLM configuration is admin-only", () => {
 
   test("the save action refuses a non-admin too, which is the write path the panel uses", async () => {
     const session = await signInTestUser();
-    const res = await callFunction(
-      "admin-llm-config",
-      {
-        action: "save",
-        call_site: "prompt-coach",
-        patch: { model: "attacker/expensive-model" },
-      },
-      asUser(session.accessToken),
-    );
-    expect(res.status).toBe(403);
+    const snapshot = await promptCoachBeforeWriting();
+    try {
+      const res = await callFunction(
+        "admin-llm-config",
+        {
+          action: "save",
+          call_site: "prompt-coach",
+          patch: { model: "attacker/expensive-model" },
+        },
+        asUser(session.accessToken),
+      );
+      expect(res.status).toBe(403);
 
-    const after = await restAsService<ConfigRow[]>(
-      "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default&select=call_site,model",
-    );
-    expect(after.data[0].model).not.toBe("attacker/expensive-model");
+      const after = await restAsService<ConfigRow[]>(
+        "llm_call_configs?call_site=eq.prompt-coach&tier=eq.default&select=call_site,model",
+      );
+      expect(after.data[0].model).not.toBe("attacker/expensive-model");
+    } finally {
+      await restoreLlmConfig(snapshot);
+    }
   });
 });

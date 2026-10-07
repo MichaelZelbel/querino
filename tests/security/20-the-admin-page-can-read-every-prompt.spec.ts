@@ -22,6 +22,11 @@ import {
   restAsService,
   signInTestUser,
 } from "./helpers/api";
+import {
+  type LlmConfigSnapshot,
+  restoreLlmConfig,
+  snapshotLlmConfig,
+} from "./helpers/llmConfig";
 
 interface ListedConfig {
   call_site: string;
@@ -59,20 +64,33 @@ async function listAsAdmin(): Promise<ListedConfig[]> {
 
 // Captured before anything is written, restored afterwards. Hardcoding the
 // restore value would silently overwrite whatever an administrator had set.
-let originalPrompt: string | null = null;
+//
+// Until 2026-10-07 this was `let originalPrompt: string | null = null` and the
+// restore ran only `if (originalPrompt !== null)`. The live prompt-wizard row's
+// system_prompt IS null (it follows the code), so "captured, and it was null"
+// and "never captured" looked the same, and a run that stopped between saving
+// the German edit below and resetting it would have left every user's Prompt
+// Wizard answering in German with nothing putting it back. Now the complete row
+// is read before the first write, restored in each writing test's `finally`
+// and again here, and the restore checks that it landed.
+let promptWizard: LlmConfigSnapshot | undefined;
+
+async function promptWizardBeforeWriting(): Promise<LlmConfigSnapshot> {
+  promptWizard ??= await snapshotLlmConfig(CALL_SITE);
+  return promptWizard;
+}
 
 test.beforeAll(async () => {
   await setRole("free");
 });
 
 test.afterAll(async () => {
-  if (originalPrompt !== null) {
-    await restAsService(ROW, {
-      method: "PATCH",
-      body: { system_prompt: originalPrompt },
-    });
+  try {
+    // No snapshot means no test got as far as writing.
+    if (promptWizard) await restoreLlmConfig(promptWizard);
+  } finally {
+    await setRole("free");
   }
-  await setRole("free");
 });
 
 test.describe("the admin page can read the prompt it would send", () => {
@@ -120,89 +138,97 @@ test.describe("the admin page can read the prompt it would send", () => {
 
   test("saving the prefilled default does not turn it into an override", async () => {
     await setRole("admin");
+    const snapshot = await promptWizardBeforeWriting();
+    try {
+      const listed = (await listAsAdmin()).find(
+        (c) => c.call_site === CALL_SITE,
+      );
+      expect(
+        listed?.default_system_prompt,
+        "no default to save back",
+      ).toBeTruthy();
 
-    const before = await restAsService<Array<{ system_prompt: string | null }>>(
-      `${ROW}&select=system_prompt`,
-    );
-    originalPrompt = before.data[0]?.system_prompt ?? null;
+      // Exactly what the dialog would send if someone opened it and pressed Save.
+      const session = await signInTestUser();
+      const res = await callFunction(
+        "admin-llm-config",
+        {
+          action: "save",
+          call_site: CALL_SITE,
+          tier: "default",
+          patch: { system_prompt: listed!.default_system_prompt },
+        },
+        asUser(session.accessToken),
+      );
+      expect(res.status, res.text.slice(0, 300)).toBe(200);
 
-    const listed = (await listAsAdmin()).find((c) => c.call_site === CALL_SITE);
-    expect(
-      listed?.default_system_prompt,
-      "no default to save back",
-    ).toBeTruthy();
-
-    // Exactly what the dialog would send if someone opened it and pressed Save.
-    const session = await signInTestUser();
-    const res = await callFunction(
-      "admin-llm-config",
-      {
-        action: "save",
-        call_site: CALL_SITE,
-        tier: "default",
-        patch: { system_prompt: listed!.default_system_prompt },
-      },
-      asUser(session.accessToken),
-    );
-    expect(res.status, res.text.slice(0, 300)).toBe(200);
-
-    const after = await restAsService<Array<{ system_prompt: string | null }>>(
-      `${ROW}&select=system_prompt`,
-    );
-    expect(
-      after.data[0].system_prompt,
-      "the untouched default was stored as a custom override. This call site has stopped " +
-        "following the prompt in the code and the admin table now says Custom when nothing " +
-        "was customised.",
-    ).toBeNull();
+      const after = await restAsService<
+        Array<{ system_prompt: string | null }>
+      >(`${ROW}&select=system_prompt`);
+      expect(
+        after.data[0].system_prompt,
+        "the untouched default was stored as a custom override. This call site has stopped " +
+          "following the prompt in the code and the admin table now says Custom when nothing " +
+          "was customised.",
+      ).toBeNull();
+    } finally {
+      await restoreLlmConfig(snapshot);
+    }
   });
 
   test("a real edit is still stored, and reset puts it back", async () => {
     await setRole("admin");
-    const session = await signInTestUser();
+    const snapshot = await promptWizardBeforeWriting();
+    try {
+      const session = await signInTestUser();
 
-    const listed = (await listAsAdmin()).find((c) => c.call_site === CALL_SITE);
-    const edited = `${listed!.default_system_prompt}\n\nAlways answer in German.`;
+      const listed = (await listAsAdmin()).find(
+        (c) => c.call_site === CALL_SITE,
+      );
+      const edited = `${listed!.default_system_prompt}\n\nAlways answer in German.`;
 
-    const saved = await callFunction(
-      "admin-llm-config",
-      {
-        action: "save",
-        call_site: CALL_SITE,
-        tier: "default",
-        patch: { system_prompt: edited },
-      },
-      asUser(session.accessToken),
-    );
-    expect(saved.status, saved.text.slice(0, 300)).toBe(200);
+      const saved = await callFunction(
+        "admin-llm-config",
+        {
+          action: "save",
+          call_site: CALL_SITE,
+          tier: "default",
+          patch: { system_prompt: edited },
+        },
+        asUser(session.accessToken),
+      );
+      expect(saved.status, saved.text.slice(0, 300)).toBe(200);
 
-    const withOverride = await restAsService<
-      Array<{ system_prompt: string | null }>
-    >(`${ROW}&select=system_prompt`);
-    expect(
-      withOverride.data[0].system_prompt,
-      "a genuine edit was discarded, which would make the whole page read-only in practice",
-    ).toBe(edited);
+      const withOverride = await restAsService<
+        Array<{ system_prompt: string | null }>
+      >(`${ROW}&select=system_prompt`);
+      expect(
+        withOverride.data[0].system_prompt,
+        "a genuine edit was discarded, which would make the whole page read-only in practice",
+      ).toBe(edited);
 
-    // "Reset to code default" sends the default back, which means null again.
-    const reset = await callFunction(
-      "admin-llm-config",
-      {
-        action: "save",
-        call_site: CALL_SITE,
-        tier: "default",
-        patch: { system_prompt: listed!.default_system_prompt },
-      },
-      asUser(session.accessToken),
-    );
-    expect(reset.status).toBe(200);
+      // "Reset to code default" sends the default back, which means null again.
+      const reset = await callFunction(
+        "admin-llm-config",
+        {
+          action: "save",
+          call_site: CALL_SITE,
+          tier: "default",
+          patch: { system_prompt: listed!.default_system_prompt },
+        },
+        asUser(session.accessToken),
+      );
+      expect(reset.status).toBe(200);
 
-    const afterReset = await restAsService<
-      Array<{ system_prompt: string | null }>
-    >(`${ROW}&select=system_prompt`);
-    expect(
-      afterReset.data[0].system_prompt,
-      "reset left the override in place",
-    ).toBeNull();
+      const afterReset = await restAsService<
+        Array<{ system_prompt: string | null }>
+      >(`${ROW}&select=system_prompt`);
+      expect(
+        afterReset.data[0].system_prompt,
+        "reset left the override in place",
+      ).toBeNull();
+    } finally {
+      await restoreLlmConfig(snapshot);
+    }
   });
 });

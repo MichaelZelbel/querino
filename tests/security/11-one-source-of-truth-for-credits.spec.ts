@@ -98,10 +98,16 @@ test.describe("M6 — one conversion rate, and it refuses to guess", () => {
     const view = await restAsUser<Array<{ tokens_per_credit: number }>>(
       "v_ai_allowance_current?select=tokens_per_credit&limit=1",
     );
-    expect(view.ok).toBe(true);
-    if (view.data?.length) {
-      expect(Number(view.data[0].tokens_per_credit)).toBe(rate);
-    }
+    expect(view.ok, JSON.stringify(view.error)).toBe(true);
+    // The test account always has a current period: specs 06, 07 and 27 spend
+    // from it, and activeAllowance() refuses to run without one. Until
+    // 2026-10-07 an empty answer here skipped the comparison and passed, so a
+    // view that had stopped returning anyone's row looked like agreement.
+    expect(
+      view.data?.length ?? 0,
+      "the test account cannot see its own current allowance period, so there is no rate to compare",
+    ).toBe(1);
+    expect(Number(view.data[0].tokens_per_credit)).toBe(rate);
   });
 });
 
@@ -112,6 +118,12 @@ test.describe("M5 — one active allowance period per user, enforced", () => {
     );
     expect(rows.ok).toBe(true);
     const ids = (rows.data ?? []).map((r) => r.user_id);
+    // An empty view has no duplicates either, and the test account alone
+    // guarantees it is not empty.
+    expect(
+      ids.length,
+      "the view returns nobody at all, so it cannot show that nobody is in it twice",
+    ).toBeGreaterThan(0);
     expect(
       ids.length - new Set(ids).size,
       "a user has two current periods, which makes assertCredits fail closed for them for ever",

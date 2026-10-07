@@ -2,6 +2,7 @@
 // wire an attacker would use, so a test can only pass because the running
 // system behaves, never because a local copy of the code reads well.
 
+import { test } from "@playwright/test";
 import {
   ANON_KEY,
   FUNCTIONS_URL,
@@ -34,6 +35,7 @@ async function wireFetch(
 ): Promise<Response> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
+    roomForAttempt(timeoutMs);
     try {
       return await fetch(url, {
         ...init,
@@ -48,6 +50,44 @@ async function wireFetch(
     `No answer from ${path} within ${timeoutMs / 1000} s, twice. That is a network ` +
       `stall between this machine and Supabase, not a security finding. (${String(lastError)})`,
   );
+}
+
+/**
+ * Make sure the running test has room for one whole attempt of `attemptMs`.
+ *
+ * Until 2026-10-07 the retry above could not happen for an edge function: a
+ * first attempt that stalls for its full 25 s leaves at most 5 s of the test's
+ * 30, and the second attempt was cut off by the test's own timeout, which is
+ * exactly the uninformative failure the retry was written to replace. A call
+ * made 10 s into a test could not even finish its first attempt.
+ *
+ * So before each attempt the test's deadline moves out, if it must, to fit
+ * that attempt. A healthy run is not slowed by it: a deadline is a ceiling.
+ * A run where everything hangs is still bounded, because each attempt has its
+ * own deadline and a call that stalls twice throws, so a hung test ends within
+ * about two attempts of its first stalled call.
+ *
+ * Playwright does not say how long a test has been running, so the clock
+ * starts at the test's first call through here; time spent before that (a
+ * SQL probe, a sleep) is not counted. Outside a running test (global setup)
+ * there is no deadline to move.
+ */
+const firstWireCall = new WeakMap<object, number>();
+
+function roomForAttempt(attemptMs: number): void {
+  let info: ReturnType<typeof test.info>;
+  try {
+    info = test.info();
+  } catch {
+    return;
+  }
+  // Zero means the test has no timeout at all, so there is nothing to move.
+  if (info.timeout === 0) return;
+  const now = Date.now();
+  const started = firstWireCall.get(info) ?? now;
+  firstWireCall.set(info, started);
+  const short = attemptMs + 2_000 - (info.timeout - (now - started));
+  if (short > 0) info.setTimeout(info.timeout + short);
 }
 
 /** PostgREST and GoTrue answer in well under a second when they answer at all. */
@@ -183,6 +223,12 @@ export interface RestResponse<T = unknown> {
   data: T;
   /** PostgREST's error object when the request was refused. */
   error: { code?: string; message?: string; details?: string } | null;
+  /**
+   * The total row count, when the request asked for one with
+   * `Prefer: count=exact`: PostgREST puts it after the slash in
+   * Content-Range, as in "0-0/156". Null otherwise.
+   */
+  count: number | null;
 }
 
 async function rest<T>(
@@ -217,11 +263,13 @@ async function rest<T>(
   }
 
   const failed = !res.ok;
+  const total = /\/(\d+)\s*$/.exec(res.headers.get("content-range") ?? "");
   return {
     status: res.status,
     ok: res.ok,
     data: (failed ? null : parsed) as T,
     error: failed ? (parsed as RestResponse["error"]) : null,
+    count: total ? Number(total[1]) : null,
   };
 }
 

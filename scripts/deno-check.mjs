@@ -23,10 +23,11 @@
 //   node scripts/deno-check.mjs            check against the baseline
 //   node scripts/deno-check.mjs --update   record today's counts
 //
-// Deno is a devDependency, so npm ci provides it on every machine and in CI.
-// $DENO_BIN overrides it if you want a different one.
+// Deno is a devDependency, so `bun install` provides it on every machine and
+// in CI. $DENO_BIN overrides it if you want a different one.
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -39,7 +40,7 @@ const BASELINE_FILE = join(ROOT, "scripts", "deno-check-baseline.json");
 function denoBinary() {
   if (process.env.DENO_BIN) return process.env.DENO_BIN;
 
-  // Deno is a devDependency, so `npm ci` puts a real binary here on every
+  // Deno is a devDependency, so the install puts a real binary here on every
   // machine and in CI. Nobody has to install a second runtime by hand, and
   // nobody has to remember that this check needs one.
   //
@@ -54,6 +55,25 @@ function denoBinary() {
   );
   if (existsSync(vendored)) return vendored;
 
+  // Under bun the binary is not there yet. npm ran the deno package's
+  // postinstall, which copies the platform binary next to it; bun blocks
+  // lifecycle scripts of packages it does not trust, and deno is not trusted
+  // on purpose: on a musl system that script throws and would fail the whole
+  // install, which on Lovable is the build (2026-10-07, when CI moved to
+  // bun.lock). The package's own fallback does the same copy on first use, so
+  // ask it rather than give up.
+  const installApi = join(ROOT, "node_modules", "deno", "install_api.cjs");
+  if (existsSync(installApi)) {
+    try {
+      const installed = createRequire(import.meta.url)(installApi).runInstall();
+      if (installed && existsSync(installed)) return installed;
+    } catch (error) {
+      console.error(
+        `The deno package could not place its binary: ${error.message}`,
+      );
+    }
+  }
+
   const probe = spawnSync("deno", ["--version"], {
     encoding: "utf8",
     shell: true,
@@ -61,7 +81,7 @@ function denoBinary() {
   if (probe.status === 0) return "deno";
 
   console.error("Deno was not found.\n");
-  console.error("  It is a devDependency, so this usually means: npm ci");
+  console.error("  It is a devDependency, so this usually means: bun install");
   console.error("  Or point DENO_BIN at a binary you already have.");
   process.exit(2);
 }

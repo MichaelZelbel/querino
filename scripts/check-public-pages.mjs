@@ -19,8 +19,9 @@
  *   node scripts/check-public-pages.mjs                      # https://querino.ai
  *   node scripts/check-public-pages.mjs http://localhost:8792
  *
- * Exit code 0 only when every page passes. Not part of `npm run check`: it needs the
- * network and a deployed (or locally served) build.
+ * Exit code 0 only when the sitemap lists at least one artifact page and every page
+ * passes. Not part of `npm run check`: it needs the network and a deployed (or
+ * locally served) build.
  */
 
 const origin = (process.argv[2] || "https://querino.ai").replace(/\/+$/, "");
@@ -62,6 +63,18 @@ if (sitemap.status !== 200) {
 const paths = [...sitemap.text.matchAll(/<loc>([^<]+)<\/loc>/g)]
   .map((m) => new URL(decode(m[1])).pathname)
   .filter((p) => KINDS.some((k) => p.startsWith(`/${k}/`)));
+
+// "0 of 0 readable ... all good" was a pass until 2026-10-07. A sitemap that
+// lists no artifact at all is the public site broken from a crawler's seat (the
+// sitemap route failing to read the database, or every row hidden from the
+// visitor it reads as), and it is the one failure this check could not see.
+if (paths.length === 0) {
+  console.error(
+    `${origin}/sitemap.xml lists no prompt, skill or workflow page, so nothing could be checked. ` +
+      "The live site has over a hundred; an empty sitemap is a failure, not a pass.",
+  );
+  process.exit(1);
+}
 
 const failures = [];
 let readable = 0;

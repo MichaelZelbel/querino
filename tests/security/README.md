@@ -34,10 +34,18 @@ Only the test account, and it puts everything back:
 
 - moves that account's `tokens_used` to zero-remaining and restores it
 - writes and deletes `llm_usage_events` rows keyed to a per-run idempotency key
-- creates and deletes one private prompt, and one MCP token that expires in an hour
+- creates and deletes private prompts and unpublished skills of its own, and one
+  MCP token that expires in an hour
 - promotes the test account to admin for two assertions and demotes it again, in
   `afterAll`, which runs even when a test fails, and again in the next run's
   `beforeAll` in case a run was killed outright
+- rewrites three live `llm_call_configs` rows (prompt-coach, suggest-metadata,
+  prompt-wizard). Each is read whole before the first write and written back
+  whole, NULLs included, in the test's `finally` and again in `afterAll`, and a
+  restore that did not land fails the run loudly (`helpers/llmConfig.ts`)
+- queues Menerio sync rows for the test account and deletes them. Every claim
+  of the queue runs inside a rolled-back SQL probe that first makes all other
+  rows unclaimable, because the claim takes the oldest rows of any user
 
 It never writes another user's rows. It does not create accounts, because a
 profile insert fires `notify_admin_on_signup` and mails a real person.
@@ -71,6 +79,9 @@ Every request has a deadline (12 s for PostgREST and sign-in, 25 s for
 functions) and is tried twice (`wireFetch` in `helpers/api.ts`). On 2026-09-30
 spec 18 timed out while Supabase's logs showed no request at all: a network
 stall on the runner's side, which now says so instead of failing as a test.
+Before each attempt the running test's own timeout is moved out, if it must
+be, to fit that attempt; until 2026-10-07 two 25 s attempts could not fit in
+a 30 s test, so the retry for a function never actually ran.
 
 ## The rule these tests exist to enforce
 
