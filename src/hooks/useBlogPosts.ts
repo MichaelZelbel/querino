@@ -147,14 +147,12 @@ export function useCreateBlogPost() {
 
       const { category_ids, tag_ids, ...postData } = data;
 
-      // Generate slug if not provided
+      // No slug unless the admin typed one: set_blog_post_slug fills it from
+      // the title and adds a suffix when that slug is taken. Building it here
+      // skipped that step, so a second post with the same title hit the
+      // unique constraint (2026-10-07).
       const title = postData.title || "Untitled";
-      const slug =
-        postData.slug ||
-        title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "");
+      const slug = postData.slug || ""; // empty: the trigger fills it in
 
       const { data: post, error } = await supabase
         .from("blog_posts")

@@ -16,6 +16,7 @@ import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface SkillCardProps {
   skill: Skill & { author?: SkillAuthor | null };
@@ -39,6 +40,11 @@ export function SkillCard({
   const [copied, setCopied] = useState(false);
   const { cloneSkill, cloning } = useCloneSkill();
   const isAuthor = currentUserId && skill.author_id === currentUserId;
+  // Edit, not Clone, for everyone the database lets edit: the author, or a
+  // premium member of the skill's team, the rule the detail pages use since
+  // 2026-09-23. The team and role lookups are cached queries shared by every
+  // card, so this costs no request per card.
+  const canEdit = useCanEditArtifact(currentUserId ? skill : null);
   const detailUrl = `/skills/${skill.slug}`;
 
   const handleCopy = async () => {
@@ -180,7 +186,7 @@ export function SkillCard({
           </div>
 
           <div className="flex items-center gap-1">
-            {isAuthor && showEditButton && (
+            {canEdit && showEditButton && (
               <Button
                 asChild
                 aria-label="Edit"
@@ -193,7 +199,7 @@ export function SkillCard({
                 </Link>
               </Button>
             )}
-            {currentUserId && !isAuthor && (
+            {currentUserId && !canEdit && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -201,6 +207,7 @@ export function SkillCard({
                 disabled={cloning}
                 className="gap-1.5 h-8 px-2"
                 title="Clone to my library"
+                aria-label="Clone to my library"
               >
                 <Files className="h-3.5 w-3.5" />
               </Button>

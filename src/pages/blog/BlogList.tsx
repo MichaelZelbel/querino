@@ -4,15 +4,17 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { BlogPagination } from "@/components/blog/BlogPagination";
+import { parseBlogPage } from "@/components/blog/blogPage";
 import { BlogSidebar } from "@/components/blog/BlogSidebar";
 import { usePublicPosts } from "@/hooks/usePublicBlog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { siteOrigin } from "@/config/site";
 
 export default function BlogList() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = parseInt(searchParams.get("page") || "1", 10);
+  const page = parseBlogPage(searchParams.get("page"));
 
   const { data, isLoading } = usePublicPosts({ page });
 
@@ -55,14 +57,21 @@ export default function BlogList() {
                         <BlogPostCard key={post.id} post={post} />
                       ))}
                     </div>
-                    <div className="mt-10">
-                      <BlogPagination
-                        currentPage={data.currentPage}
-                        totalPages={data.totalPages}
-                        onPageChange={handlePageChange}
-                      />
-                    </div>
                   </>
+                ) : data && data.totalPages > 0 ? (
+                  // A page past the last one (an old link, a hand-edited address).
+                  <div className="text-center py-16">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h2 className="text-xl font-semibold text-foreground mb-2">
+                      There is no page {page}
+                    </h2>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(1)}
+                    >
+                      Go to the first page
+                    </Button>
+                  </div>
                 ) : (
                   <div className="text-center py-16">
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -72,6 +81,15 @@ export default function BlogList() {
                     <p className="text-muted-foreground">
                       Check back soon for new content.
                     </p>
+                  </div>
+                )}
+                {data && data.totalPages > 1 && (
+                  <div className="mt-10">
+                    <BlogPagination
+                      currentPage={Math.min(page, data.totalPages)}
+                      totalPages={data.totalPages}
+                      onPageChange={handlePageChange}
+                    />
                   </div>
                 )}
               </div>

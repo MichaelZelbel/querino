@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BlogAdminLayout } from "@/components/blog/admin/BlogAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,10 +44,17 @@ import {
   Trash2,
   Eye,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { BlogPostStatus } from "@/types/blog";
+
+// The list showed the first 20 posts and nothing told the admin there were
+// more (2026-10-07). It now pages; one row more than a page is fetched to know
+// whether a next page exists, since the hook returns no total.
+const PAGE_SIZE = 20;
 
 export default function BlogAdminPosts() {
   const navigate = useNavigate();
@@ -57,14 +64,24 @@ export default function BlogAdminPosts() {
   );
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: posts, isLoading } = useBlogPosts({
+  // A new filter starts again at the first page.
+  useEffect(() => {
+    setPage(0);
+  }, [statusFilter, categoryFilter, debouncedSearch]);
+
+  const { data: pageRows, isLoading } = useBlogPosts({
     status: statusFilter,
     categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
     search: debouncedSearch || undefined,
+    limit: PAGE_SIZE + 1,
+    offset: page * PAGE_SIZE,
   });
+  const hasNextPage = (pageRows?.length ?? 0) > PAGE_SIZE;
+  const posts = pageRows?.slice(0, PAGE_SIZE);
   const { data: categories } = useBlogCategories();
   const deleteMutation = useDeleteBlogPost();
 
@@ -229,6 +246,22 @@ export default function BlogAdminPosts() {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : page > 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No posts on this page.{" "}
+                    <button
+                      type="button"
+                      onClick={() => setPage(0)}
+                      className="text-primary hover:underline"
+                    >
+                      Back to the first page
+                    </button>
+                  </TableCell>
+                </TableRow>
               ) : (
                 <TableRow>
                   <TableCell
@@ -248,6 +281,32 @@ export default function BlogAdminPosts() {
             </TableBody>
           </Table>
         </div>
+
+        {(page > 0 || hasNextPage) && (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0 || isLoading}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page + 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasNextPage || isLoading}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation */}

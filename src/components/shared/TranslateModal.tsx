@@ -134,9 +134,25 @@ export function TranslateModal({
     }
   };
 
+  // The dialog stays open while a translation runs. Closing it did not stop
+  // the request: the credits were charged and the page then navigated to the
+  // new draft anyway, after the user had chosen to leave (2026-10-07).
+  const handleOpenChange = (next: boolean) => {
+    if (!next && isTranslating) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className={`sm:max-w-md ${isTranslating ? "[&>button]:hidden" : ""}`}
+        onInteractOutside={(e) => {
+          if (isTranslating) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isTranslating) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Languages className="h-5 w-5" />

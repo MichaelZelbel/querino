@@ -84,6 +84,7 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { artifactDetailSelect } from "@/lib/artifactListColumns";
 
 interface PromptVersion {
   id: string;
@@ -238,9 +239,11 @@ export default function LibraryPromptEdit() {
       }
 
       try {
+        // Only the columns a page reads (artifactListColumns.ts): "*" also
+        // downloaded the embedding vector and the search index.
         const { data: promptData, error: promptError } = await supabase
           .from("prompts")
-          .select("*")
+          .select(artifactDetailSelect("prompts"))
           .eq("slug", slug)
           .maybeSingle();
 
@@ -258,12 +261,13 @@ export default function LibraryPromptEdit() {
         // No admin shortcut: prompts have no admin update or delete rule, so
         // an admin on someone else's prompt got an editor whose every button
         // answered "Nothing was saved".
-        if (!(await userCanEditArtifact(promptData, userId))) {
+        // The select list is built at run time, so the row is typed here.
+        const typedPrompt = promptData as unknown as Prompt;
+        if (!(await userCanEditArtifact(typedPrompt, userId))) {
           setNotAuthorized(true);
           return;
         }
 
-        const typedPrompt = promptData as Prompt;
         setPrompt(typedPrompt);
         applyPromptToForm(typedPrompt);
         loadedKeyRef.current = `${slug}|${userId}`;
@@ -271,7 +275,7 @@ export default function LibraryPromptEdit() {
         const { data: versionsData, error: versionsError } = await supabase
           .from("prompt_versions")
           .select("*")
-          .eq("prompt_id", promptData.id)
+          .eq("prompt_id", typedPrompt.id)
           .order("version_number", { ascending: false });
 
         if (!versionsError && versionsData) {
@@ -299,12 +303,12 @@ export default function LibraryPromptEdit() {
 
     const { data: promptData } = await supabase
       .from("prompts")
-      .select("*")
+      .select(artifactDetailSelect("prompts"))
       .eq("id", promptId)
       .maybeSingle();
 
     if (promptData) {
-      const typedPrompt = promptData as Prompt;
+      const typedPrompt = promptData as unknown as Prompt;
       setPrompt(typedPrompt);
       applyPromptToForm(typedPrompt);
     }

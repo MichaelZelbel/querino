@@ -1,7 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
-import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
+import { useState } from "react";
+import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Header } from "@/components/layout/Header";
@@ -33,7 +31,10 @@ import { toast } from "sonner";
 import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
-import { parsePromptKitItems } from "@/lib/promptKitParser";
+import {
+  parsePromptKitItems,
+  stripPromptEndMarkers,
+} from "@/lib/promptKitParser";
 import { useClonePromptKit } from "@/hooks/useClonePromptKit";
 import { CopyPromptKitToTeamModal } from "@/components/promptKits/CopyPromptKitToTeamModal";
 import { PromptKitVersionHistoryPanel } from "@/components/promptKits/PromptKitVersionHistoryPanel";
@@ -55,31 +56,24 @@ import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
 import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
+import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 
-interface KitWithAuthor extends PromptKit {
+export interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
 }
 
-// The route loader fetches this record on the server, so the first render already has
-// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
-// it keeps the page current and handles a slug change without a full navigation.
-export default function PromptKitDetail({
-  initialKit = null,
-}: { initialKit?: KitWithAuthor | null } = {}) {
-  const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
+// The route loader is the one source of this record (2026-10-07): on the
+// server for the first request, in the browser for later visits, and once more
+// with the session when a private kit was not visible to the server
+// (useSignedInRetry). The page no longer fetches the row a second time.
+export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
   const goBack = useGoBack("/discover?type=kits");
   const { user } = useAuthContext();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { teams } = useWorkspace();
   const { cloneKit, cloning } = useClonePromptKit();
-  const [kit, setKit] = useState<KitWithAuthor | null>(initialKit);
-  const [loading, setLoading] = useState(!initialKit);
-  const [notFound, setNotFound] = useState(false);
-  // A failed request is not a missing kit: it gets its own screen with a
-  // retry instead of "Prompt Kit Not Found". Bumping reloadKey re-runs the fetch.
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
+  // A change this page makes to the kit re-runs the route's loader.
+  const reloadKit = useReloadRouteData();
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -90,7 +84,7 @@ export default function PromptKitDetail({
   const [translateOpen, setTranslateOpen] = useState(false);
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
-  const isAuthor = kit?.author_id && user?.id === kit.author_id;
+  const isAuthor = kit.author_id && user?.id === kit.author_id;
   // The author or a premium member of the kit's team, as row-level security
   // allows.
   const canEdit = useCanEditArtifact(kit);
@@ -98,7 +92,7 @@ export default function PromptKitDetail({
 
   const { isPinned: isKitPinned, togglePin: toggleKitPin } =
     usePinnedPromptKits();
-  const isPinned = kit?.id ? isKitPinned(kit.id) : false;
+  const isPinned = isKitPinned(kit.id);
 
   const handleTogglePin = async () => {
     if (!user) {
@@ -124,7 +118,7 @@ export default function PromptKitDetail({
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges,
-  } = useSuggestions("prompt_kit", kit?.id || "");
+  } = useSuggestions("prompt_kit", kit.id);
 
   const handleApplySuggestion = async (
     suggestion: SuggestionWithAuthor,
@@ -146,80 +140,16 @@ export default function PromptKitDetail({
       user?.id,
     );
     if (!applied) return false;
-    const { data } = await (supabase.from("prompt_kits") as any)
-      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("slug", kit.slug)
-      .maybeSingle();
-    if (data) setKit({ ...data, author: data.profiles || null });
+    await reloadKit();
     return true;
   };
-
-  useEffect(() => {
-    async function fetchKit() {
-      if (!slug) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-      // Legacy /prompt-kits/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
-      if (isUuid(slug)) {
-        const canonical = await resolveSlugFromId("prompt_kits", slug);
-        if (canonical) {
-          navigate(`/prompt-kits/${canonical}`, { replace: true });
-          return;
-        }
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-      try {
-        const { data, error } = await (supabase.from("prompt_kits") as any)
-          .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-          .eq("slug", slug)
-          .maybeSingle();
-        if (error) {
-          console.error("Error fetching prompt kit:", error);
-          setLoadError(true);
-        } else if (!data) {
-          // Try slug redirect
-          const { data: redirect } = await (
-            supabase.from("prompt_kit_slug_redirects") as any
-          )
-            .select("prompt_kit_id")
-            .eq("old_slug", slug)
-            .maybeSingle();
-          if (redirect?.prompt_kit_id) {
-            const { data: kit2 } = await (supabase.from("prompt_kits") as any)
-              .select(
-                `*, profiles:author_id (id, display_name, avatar_url), slug`,
-              )
-              .eq("id", redirect.prompt_kit_id)
-              .maybeSingle();
-            if (kit2?.slug) {
-              navigate(`/prompt-kits/${kit2.slug}`, { replace: true });
-              return;
-            }
-          }
-          setNotFound(true);
-        } else {
-          setKit({ ...data, author: data.profiles || null });
-          setNotFound(false);
-          setLoadError(false);
-        }
-      } catch (err) {
-        console.error("Error fetching prompt kit:", err);
-        setLoadError(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchKit();
-  }, [slug, navigate, reloadKey]);
 
   const handleCopyAll = async () => {
     if (!kit) return;
     try {
-      await navigator.clipboard.writeText(kit.content);
+      // The end-of-prompt markers are for the parser, not for the reader's
+      // clipboard. Downloads keep them, so a re-import still parses.
+      await navigator.clipboard.writeText(stripPromptEndMarkers(kit.content));
       setCopiedAll(true);
       toast.success("Entire kit copied!");
       setTimeout(() => setCopiedAll(false), 2000);
@@ -250,78 +180,6 @@ export default function PromptKitDetail({
     }
     return "U";
   };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="min-w-0 flex-1 py-12">
-          <div className="container mx-auto max-w-4xl px-4">
-            <Skeleton className="mb-4 h-8 w-48" />
-            <Skeleton className="mb-8 h-12 w-3/4" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (loadError && !kit) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Couldn't load this prompt kit
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Something went wrong while loading it. Check your connection and
-              try again.
-            </p>
-            <Button
-              className="gap-2"
-              onClick={() => {
-                setLoadError(false);
-                setLoading(true);
-                setReloadKey((k) => k + 1);
-              }}
-            >
-              Try again
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notFound || !kit) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Prompt Kit Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The prompt kit you're looking for doesn't exist or is no longer
-              available.
-            </p>
-            <Link to="/discover">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Discover
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   const items = parsePromptKitItems(kit.content || "");
 
@@ -556,7 +414,7 @@ export default function PromptKitDetail({
                   // Reload the kit, or the button kept saying "Sync to
                   // Menerio" after a sync (skills pass their refetch the
                   // same way).
-                  onSyncComplete={() => setReloadKey((k) => k + 1)}
+                  onSyncComplete={() => void reloadKit()}
                 />
               )}
             </div>
@@ -683,6 +541,7 @@ export default function PromptKitDetail({
           open={historyOpen}
           onOpenChange={setHistoryOpen}
           promptKitId={kit.id}
+          onRestoreComplete={() => void reloadKit()}
           currentKit={{
             id: kit.id,
             title: kit.title,
@@ -707,6 +566,50 @@ export default function PromptKitDetail({
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** The page's shape while its row is on the way. */
+export function PromptKitDetailSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="min-w-0 flex-1 py-12">
+        <div className="container mx-auto max-w-4xl px-4">
+          <Skeleton className="mb-4 h-8 w-48" />
+          <Skeleton className="mb-8 h-12 w-3/4" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+/** The route's not-found view; the route answers HTTP 404 with it. */
+export function PromptKitNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-20">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h1 className="mb-4 text-display-md font-bold text-foreground">
+            Prompt Kit Not Found
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground">
+            The prompt kit you're looking for doesn't exist or is no longer
+            available.
+          </p>
+          <Link to="/discover">
+            <Button className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Discover
+            </Button>
+          </Link>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }

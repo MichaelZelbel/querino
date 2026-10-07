@@ -14,7 +14,8 @@ import { Copy, Check, Pencil, Package, Star } from "lucide-react";
 import { toast } from "sonner";
 import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
-import { countPromptItems } from "@/lib/promptKitParser";
+import { countPromptItems, stripPromptEndMarkers } from "@/lib/promptKitParser";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface PromptKitCardProps {
   kit: PromptKit & { author?: PromptKitAuthor | null };
@@ -33,12 +34,19 @@ export function PromptKitCard({
 }: PromptKitCardProps) {
   const [copied, setCopied] = useState(false);
   const isAuthor = currentUserId && kit.author_id === currentUserId;
+  // Edit for everyone the database lets edit: the author, or a premium
+  // member of the kit's team, the rule the detail pages use since
+  // 2026-09-23. The team and role lookups are cached queries shared by every
+  // card, so this costs no request per card.
+  const canEdit = useCanEditArtifact(currentUserId ? kit : null);
   const detailUrl = `/prompt-kits/${kit.slug}`;
   const promptCount = countPromptItems(kit.content || "");
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(kit.content);
+      // Without the editor's <!-- /prompt --> markers, which mean nothing
+      // outside Querino.
+      await navigator.clipboard.writeText(stripPromptEndMarkers(kit.content));
       setCopied(true);
       toast.success("Prompt kit copied!");
       setTimeout(() => setCopied(false), 2000);
@@ -91,7 +99,9 @@ export function PromptKitCard({
       <CardContent className="flex-1 pb-3">
         <div className="relative min-w-0 rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
           <div className="line-clamp-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {kit.content}
+            {/* Plain text: the editor's <!-- /prompt --> markers would show
+                here as written, so they are taken out like on copy. */}
+            {stripPromptEndMarkers(kit.content ?? "")}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-muted/50 to-transparent rounded-b-lg" />
         </div>
@@ -167,7 +177,7 @@ export function PromptKitCard({
           </div>
 
           <div className="flex items-center gap-1">
-            {isAuthor && showEditButton && (
+            {canEdit && showEditButton && (
               <Button
                 asChild
                 aria-label="Edit"

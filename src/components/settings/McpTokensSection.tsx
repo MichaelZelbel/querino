@@ -377,12 +377,16 @@ export function McpTokensSection() {
         </DialogContent>
       </Dialog>
 
-      {/* One-time reveal dialog */}
-      <Dialog
-        open={!!revealedToken}
-        onOpenChange={(open) => !open && setRevealedToken(null)}
-      >
-        <DialogContent>
+      {/* One-time reveal dialog. Only "I've saved it" closes it: a click
+          beside it, Esc or the corner X used to close it, and the token,
+          shown this once, was gone (2026-10-07). [&>button]:hidden hides the
+          X that DialogContent always renders. */}
+      <Dialog open={!!revealedToken}>
+        <DialogContent
+          className="[&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Copy your new token</DialogTitle>
             <DialogDescription>

@@ -25,6 +25,8 @@ interface SuggestEditModalProps {
     title?: string;
     description?: string;
     content: string;
+    /** The content the suggestion was written against (base_content). */
+    baseContent?: string;
   }) => Promise<any>;
 }
 
@@ -40,6 +42,7 @@ export function SuggestEditModal({
   const [title, setTitle] = useState(currentTitle);
   const [description, setDescription] = useState(currentDescription);
   const [content, setContent] = useState(currentContent);
+  const [baseContent, setBaseContent] = useState(currentContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset the form each time the modal opens. Every parent sets `open`
@@ -50,6 +53,7 @@ export function SuggestEditModal({
       setTitle(currentTitle);
       setDescription(currentDescription);
       setContent(currentContent);
+      setBaseContent(currentContent);
     }
   }, [open, currentTitle, currentDescription, currentContent]);
 
@@ -66,6 +70,7 @@ export function SuggestEditModal({
         description:
           description !== currentDescription ? description : undefined,
         content,
+        baseContent,
       });
       toast.success("Edit suggestion submitted");
       onOpenChange(false);

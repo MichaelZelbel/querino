@@ -9,7 +9,6 @@ import { format } from "date-fns";
 import { SuggestionWithAuthor, SuggestionItemType } from "@/types/suggestion";
 import { SuggestionReviewModal } from "./SuggestionReviewModal";
 import { UpdateSuggestionModal } from "./UpdateSuggestionModal";
-import { CommentsSection } from "@/components/comments/CommentsSection";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 interface SuggestionsTabProps {
@@ -72,7 +71,6 @@ export function SuggestionsTab({
     useState<SuggestionWithAuthor | null>(null);
   const [updateSuggestion, setUpdateSuggestion] =
     useState<SuggestionWithAuthor | null>(null);
-  const [expandedComments, setExpandedComments] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -264,31 +262,10 @@ export function SuggestionsTab({
                   )}
                 </div>
               </div>
-
-              {/* Comments toggle */}
-              <div className="mt-3 pt-3 border-t">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setExpandedComments(
-                      expandedComments === suggestion.id ? null : suggestion.id,
-                    )
-                  }
-                >
-                  {expandedComments === suggestion.id ? "Hide" : "Show"}{" "}
-                  Comments
-                </Button>
-
-                {expandedComments === suggestion.id && (
-                  <div className="mt-3">
-                    <CommentsSection
-                      itemType="suggestion"
-                      itemId={suggestion.id}
-                    />
-                  </div>
-                )}
-              </div>
+              {/* No comments thread here: comments_item_type_check allows only
+                  prompt, skill, workflow, collection and prompt_kit, so every
+                  comment on a suggestion failed to post (removed 2026-10-07).
+                  The review comment above is the conversation. */}
             </CardContent>
           </Card>
         );

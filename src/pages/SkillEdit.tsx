@@ -80,6 +80,7 @@ import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { writeOutcome } from "@/components/editors/writeOutcome";
+import { artifactDetailSelect } from "@/lib/artifactListColumns";
 
 interface SkillFormData {
   title: string;
@@ -165,8 +166,10 @@ export default function SkillEdit() {
     async function fetchSkill() {
       if (!slug || !userId) return;
       try {
+        // Only the columns a page reads (artifactListColumns.ts): "*" also
+        // downloaded the embedding vector and the search index.
         const { data, error } = await (supabase.from("skills") as any)
-          .select("*")
+          .select(artifactDetailSelect("skills"))
           .eq("slug", slug)
           .maybeSingle();
 
@@ -451,7 +454,7 @@ export default function SkillEdit() {
   const handleRestoreComplete = async () => {
     if (!skillId) return;
     const { data } = await (supabase.from("skills") as any)
-      .select("*")
+      .select(artifactDetailSelect("skills"))
       .eq("id", skillId)
       .maybeSingle();
     if (data) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,49 +13,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, X, User, MessageSquare } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Loader2,
+  Check,
+  X,
+  User,
+  MessageSquare,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { SuggestionWithAuthor } from "@/types/suggestion";
 import { format } from "date-fns";
+import { diffCounts, diffLines, sideBySide } from "@/lib/lineDiff";
+import { baseContentOf, suggestionBaseState } from "./suggestionBase";
 
-interface DiffLine {
-  type: "added" | "removed" | "unchanged";
-  content: string;
-  lineNumber: number;
-}
-
-function computeSimpleDiff(
-  original: string,
-  suggested: string,
-): { left: DiffLine[]; right: DiffLine[] } {
-  const originalLines = original.split("\n");
-  const suggestedLines = suggested.split("\n");
-  const left: DiffLine[] = [];
-  const right: DiffLine[] = [];
-
-  const maxLines = Math.max(originalLines.length, suggestedLines.length);
-
-  for (let i = 0; i < maxLines; i++) {
-    const origLine = originalLines[i] ?? "";
-    const suggLine = suggestedLines[i] ?? "";
-
-    if (i >= originalLines.length) {
-      left.push({ type: "unchanged", content: "", lineNumber: i + 1 });
-      right.push({ type: "added", content: suggLine, lineNumber: i + 1 });
-    } else if (i >= suggestedLines.length) {
-      left.push({ type: "removed", content: origLine, lineNumber: i + 1 });
-      right.push({ type: "unchanged", content: "", lineNumber: i + 1 });
-    } else if (origLine !== suggLine) {
-      left.push({ type: "removed", content: origLine, lineNumber: i + 1 });
-      right.push({ type: "added", content: suggLine, lineNumber: i + 1 });
-    } else {
-      left.push({ type: "unchanged", content: origLine, lineNumber: i + 1 });
-      right.push({ type: "unchanged", content: suggLine, lineNumber: i + 1 });
-    }
-  }
-
-  return { left, right };
-}
+const ITEM_LABELS: Record<string, string> = {
+  prompt: "prompt",
+  skill: "skill",
+  workflow: "workflow",
+  prompt_kit: "prompt kit",
+};
 
 interface SuggestionReviewModalProps {
   open: boolean;
@@ -92,14 +70,25 @@ export function SuggestionReviewModal({
   const [isRejecting, setIsRejecting] = useState(false);
   const [isRequestingChanges, setIsRequestingChanges] = useState(false);
   const [showRequestChangesPanel, setShowRequestChangesPanel] = useState(false);
+  const [confirmedOverwrite, setConfirmedOverwrite] = useState(false);
 
-  const suggestedTitle = suggestion.title || originalTitle;
-  const suggestedDescription = suggestion.description || originalDescription;
-  const suggestedContent = suggestion.content;
-
-  const contentDiff = computeSimpleDiff(originalContent, suggestedContent);
+  // Accepting replaces the whole content with the suggested text, so the diff
+  // is against the content as it is NOW: the red lines are exactly what goes,
+  // including any edit made after the suggestion was written (2026-10-07).
+  // Memoised: typing a review comment re-renders the dialog on every key.
+  const { rows, counts } = useMemo(() => {
+    const ops = diffLines(originalContent, suggestion.content);
+    return { rows: sideBySide(ops), counts: diffCounts(ops) };
+  }, [originalContent, suggestion.content]);
+  const baseState = suggestionBaseState(
+    baseContentOf(suggestion),
+    originalContent,
+  );
+  const itemLabel = ITEM_LABELS[suggestion.item_type] ?? "item";
+  const needsConfirm = isOwner && baseState === "changed";
 
   const handleAccept = async () => {
+    if (needsConfirm && !confirmedOverwrite) return;
     setIsAccepting(true);
     try {
       const accepted = await onAccept(reviewComment || undefined);
@@ -211,60 +200,65 @@ export function SuggestionReviewModal({
             </div>
           )}
 
+          {baseState === "changed" && (
+            <div
+              role="alert"
+              className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm"
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+              <div className="space-y-2">
+                <p>
+                  This {itemLabel} was changed after the suggestion was written.
+                  Accepting replaces the whole content with the suggested text,
+                  so the edits made since then are lost. The red lines below are
+                  everything that would be removed.
+                </p>
+                {isOwner && (
+                  <label className="flex items-start gap-2 font-medium cursor-pointer">
+                    <Checkbox
+                      checked={confirmedOverwrite}
+                      onCheckedChange={(v) => setConfirmedOverwrite(v === true)}
+                      disabled={isProcessing}
+                      className="mt-0.5"
+                    />
+                    I understand that accepting replaces the later edits.
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+          {baseState === "unknown" && (
+            <div className="flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+              <p>
+                Accepting replaces the whole content with the suggested text. If
+                this {itemLabel} was edited after the suggestion was written,
+                those edits are lost too. The red lines below are everything
+                that would be removed.
+              </p>
+            </div>
+          )}
+
           {/* Content Diff */}
           <div className="flex-1 overflow-hidden">
             <Label className="text-xs text-muted-foreground mb-2 block">
-              Content Changes
+              Content Changes ({counts.removed} removed, {counts.added} added)
             </Label>
-            <div className="grid grid-cols-2 gap-2 h-[250px]">
-              <div className="border rounded-lg overflow-hidden">
-                <div className="bg-muted px-3 py-1.5 text-xs font-medium border-b">
-                  Original
-                </div>
-                <ScrollArea className="h-[218px]">
-                  <div className="p-2 font-mono text-xs">
-                    {contentDiff.left.map((line, i) => (
-                      <div
-                        key={i}
-                        className={`px-2 py-0.5 ${
-                          line.type === "removed"
-                            ? "bg-destructive/20 text-destructive"
-                            : ""
-                        }`}
-                      >
-                        <span className="text-muted-foreground mr-2 select-none w-6 inline-block">
-                          {line.lineNumber}
-                        </span>
-                        {line.content || " "}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="grid grid-cols-2 bg-muted text-xs font-medium border-b">
+                <div className="px-3 py-1.5 border-r">Current</div>
+                <div className="px-3 py-1.5">Suggested</div>
               </div>
-              <div className="border rounded-lg overflow-hidden">
-                <div className="bg-muted px-3 py-1.5 text-xs font-medium border-b">
-                  Suggested
+              <ScrollArea className="h-[250px]">
+                <div className="font-mono text-xs">
+                  {rows.map((row, i) => (
+                    <div key={i} className="grid grid-cols-2">
+                      <DiffCellView cell={row.left} className="border-r" />
+                      <DiffCellView cell={row.right} />
+                    </div>
+                  ))}
                 </div>
-                <ScrollArea className="h-[218px]">
-                  <div className="p-2 font-mono text-xs">
-                    {contentDiff.right.map((line, i) => (
-                      <div
-                        key={i}
-                        className={`px-2 py-0.5 ${
-                          line.type === "added"
-                            ? "bg-green-500/20 text-green-700 dark:text-green-400"
-                            : ""
-                        }`}
-                      >
-                        <span className="text-muted-foreground mr-2 select-none w-6 inline-block">
-                          {line.lineNumber}
-                        </span>
-                        {line.content || " "}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
+              </ScrollArea>
             </div>
           </div>
 
@@ -349,7 +343,10 @@ export function SuggestionReviewModal({
                 <X className="mr-1 h-4 w-4" />
                 Reject
               </Button>
-              <Button onClick={handleAccept} disabled={isProcessing}>
+              <Button
+                onClick={handleAccept}
+                disabled={isProcessing || (needsConfirm && !confirmedOverwrite)}
+              >
                 {isAccepting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
@@ -361,5 +358,36 @@ export function SuggestionReviewModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function DiffCellView({
+  cell,
+  className = "",
+}: {
+  cell: {
+    type: "unchanged" | "removed" | "added";
+    content: string;
+    line: number;
+  } | null;
+  className?: string;
+}) {
+  const tone =
+    cell?.type === "removed"
+      ? "bg-destructive/20 text-destructive"
+      : cell?.type === "added"
+        ? "bg-green-500/20 text-green-700 dark:text-green-400"
+        : "";
+  return (
+    <div
+      className={`flex px-2 py-0.5 whitespace-pre-wrap [overflow-wrap:anywhere] ${tone} ${
+        cell ? "" : "bg-muted/40"
+      } ${className}`}
+    >
+      <span className="text-muted-foreground mr-2 select-none w-8 shrink-0 text-right">
+        {cell?.line ?? ""}
+      </span>
+      <span className="min-w-0">{cell ? cell.content || " " : ""}</span>
+    </div>
   );
 }

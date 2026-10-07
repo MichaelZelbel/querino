@@ -100,14 +100,21 @@ export function RefinePromptModal({
       }
 
       if (!data?.refinedPrompt) {
-        throw new Error("No refined prompt in response");
+        throw new Error("The AI returned no refined prompt. Please try again.");
       }
 
       setRefinedPrompt(data.refinedPrompt);
       setExplanation(data.explanation || null);
     } catch (error) {
       console.error("Error refining prompt:", error);
-      toast.error("Failed to refine prompt. Please try again.");
+      // The server's own sentence, as TranslateModal does: a prompt too long
+      // to refine whole, or an answer that was cut off, says so and why,
+      // instead of "please try again", which would fail the same way.
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to refine prompt. Please try again.",
+      );
     } finally {
       setIsRefining(false);
     }

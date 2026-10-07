@@ -10,6 +10,7 @@ import {
 import { CloudUpload, RefreshCw, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 interface MenerioSyncButtonProps {
   artifactType: "prompt" | "skill" | "workflow" | "prompt_kit";
@@ -48,8 +49,11 @@ export function MenerioSyncButton({
         },
       );
 
+      // On a non-2xx answer `data` is null and error.message is only "Edge
+      // Function returned a non-2xx status code"; the server's own reason is
+      // in the response body (2026-10-07).
       if (error) {
-        toast.error(data?.error || error.message || "Sync failed");
+        toast.error(await getFunctionErrorMessage(error, "Sync failed"));
         return;
       }
 

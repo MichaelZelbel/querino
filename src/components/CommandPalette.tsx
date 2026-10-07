@@ -11,6 +11,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   Sparkles,
   FileText,
@@ -218,6 +219,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
+      {/* A dialog needs a name for screen readers; this one had none
+          (2026-10-07). Hidden, because the search box says what it is. */}
+      <DialogTitle className="sr-only">Command palette</DialogTitle>
+      <DialogDescription className="sr-only">
+        Search your artifacts or run a command.
+      </DialogDescription>
       {/* The search results come from the server and match on description
           and content too; cmdk's own filter re-matched them on the visible
           title and hid them. Every group below is filtered by hand. */}

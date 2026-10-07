@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { installAICreditsRefresh } from "@/lib/aiCredits";
+import { RouteErrorPage } from "@/components/layout/RouteErrorPage";
 
 // Plain query strings, the way the pages were written for (react-router, via
 // router-compat, where every value is a string). TanStack's default serializer
@@ -58,6 +59,10 @@ export const getRouter = () => {
     stringifySearch,
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Without it a failing route below the root rendered TanStack's raw
+    // fallback on the server and the root's error page in the browser: a
+    // hydration error, and the database message on screen (RouteErrorPage).
+    defaultErrorComponent: RouteErrorPage,
   });
 
   return router;

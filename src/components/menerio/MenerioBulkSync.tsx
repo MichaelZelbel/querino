@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { RefreshCw, Loader2, Trash2, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Loader2, Trash2, CheckCircle2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { summariseSyncRun, syncRunMessage } from "./menerioSyncSummary";
 
@@ -45,27 +45,75 @@ const ARTIFACT_LABELS: Record<string, string> = {
 const TABLES = ["prompts", "prompt_kits", "skills", "workflows"] as const;
 const TYPES = ["prompt", "prompt_kit", "skill", "workflow"] as const;
 
-export function MenerioBulkSync() {
+/**
+ * Bulk sync for an account with an active Menerio connection, limited to the
+ * artifact types it syncs (2026-10-07). It used to show without a connection
+ * and count every type: the worker then marked each row "completed" with
+ * "skipped: no active integration" or "skipped: artifact type not in sync
+ * list", and the toast said they were synchronized.
+ *
+ * `revision` changes when the connection section above saves, so a connect,
+ * a disconnect or a new type list is picked up without a reload.
+ *
+ * Without a connection only "Remove all syncs" is offered, and only while an
+ * artifact is still linked (see below).
+ */
+export function MenerioBulkSync({ revision = 0 }: { revision?: number }) {
   const { user } = useAuthContext();
   const [stats, setStats] = useState<StatsMap | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [resetting, setResetting] = useState(false);
+  // undefined while loading, null without an active connection.
+  const [syncTypes, setSyncTypes] = useState<string[] | null | undefined>(
+    undefined,
+  );
 
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void supabase
+      .from("menerio_integration" as any)
+      .select("sync_artifact_types")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Menerio integration load error:", error);
+          setSyncTypes(null);
+          return;
+        }
+        const row = data as { sync_artifact_types?: string[] | null } | null;
+        setSyncTypes(row ? (row.sync_artifact_types ?? []) : null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, revision]);
+
+  const selected = TYPES.filter((t) => syncTypes?.includes(t));
+
+  // Counted with two head requests per table: the old count read the rows
+  // themselves, and PostgREST returns at most 1000 of them.
   const fetchStats = useCallback(async () => {
     if (!user) return;
     const results: Partial<StatsMap> = {};
 
-    const queries = TABLES.map((table, i) =>
-      (supabase.from(table) as any)
-        .select("id, menerio_synced", { count: "exact" })
-        .eq("author_id", user.id)
-        .then(({ data, count }: any) => {
-          const synced = data?.filter((r: any) => r.menerio_synced).length ?? 0;
-          results[TYPES[i]] = { total: count ?? 0, synced };
-        }),
-    );
+    const queries = TABLES.map(async (table, i) => {
+      const [all, linked] = await Promise.all([
+        (supabase.from(table) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("author_id", user.id),
+        (supabase.from(table) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("author_id", user.id)
+          .eq("menerio_synced", true),
+      ]);
+      results[TYPES[i]] = { total: all.count ?? 0, synced: linked.count ?? 0 };
+    });
 
     await Promise.all(queries);
     setStats(results as StatsMap);
@@ -77,13 +125,14 @@ export function MenerioBulkSync() {
   }, [fetchStats]);
 
   const handleBulkSync = async () => {
-    if (!user) return;
+    if (!user || selected.length === 0) return;
     setSyncing(true);
 
     try {
       const toSync: { type: string; id: string }[] = [];
 
       for (let i = 0; i < TABLES.length; i++) {
+        if (!selected.includes(TYPES[i])) continue;
         const { data } = await (supabase.from(TABLES[i]) as any)
           .select("id, menerio_synced, updated_at, menerio_synced_at")
           .eq("author_id", user.id);
@@ -130,7 +179,7 @@ export function MenerioBulkSync() {
       let completed = 0;
       const maxPolls = 120;
       let polls = 0;
-      let lastStatuses: string[] = [];
+      let lastRows: { status: string; error_message: string | null }[] = [];
 
       while (completed < toSync.length && polls < maxPolls) {
         await new Promise((r) => setTimeout(r, 5000));
@@ -138,12 +187,12 @@ export function MenerioBulkSync() {
 
         const { data: queueData } = await supabase
           .from("menerio_sync_queue")
-          .select("status")
+          .select("status, error_message")
           .eq("user_id", user.id)
           .in("id", queueIds);
 
         if (queueData) {
-          lastStatuses = queueData.map((q) => String(q.status));
+          lastRows = queueData;
           const done = queueData.filter(
             (q: any) => q.status === "completed" || q.status === "failed",
           ).length;
@@ -168,9 +217,7 @@ export function MenerioBulkSync() {
       }
 
       await fetchStats();
-      const result = syncRunMessage(
-        summariseSyncRun(lastStatuses, toSync.length),
-      );
+      const result = syncRunMessage(summariseSyncRun(lastRows, toSync.length));
       if (result.ok) toast.success(result.text);
       else toast.error(result.text);
     } catch (error) {
@@ -225,14 +272,81 @@ export function MenerioBulkSync() {
     }
   };
 
-  if (!user) return null;
+  if (!user || syncTypes === undefined) return null;
 
   const totalArtifacts = stats
-    ? Object.values(stats).reduce((s, v) => s + v.total, 0)
+    ? selected.reduce((s, t) => s + stats[t].total, 0)
     : 0;
   const totalSynced = stats
+    ? selected.reduce((s, t) => s + stats[t].synced, 0)
+    : 0;
+  // "Remove all syncs" clears the links of every type, so it counts them all.
+  const linkedCount = stats
     ? Object.values(stats).reduce((s, v) => s + v.synced, 0)
     : 0;
+  const anyLinked = linkedCount > 0;
+
+  const resetControl = (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={syncing || resetting || !anyLinked}
+          className="text-destructive hover:text-destructive"
+        >
+          {resetting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="mr-2 h-4 w-4" />
+          )}
+          Remove all syncs
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove all Menerio links?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The notes in Menerio will remain, but they will no longer be
+            automatically updated. You can re-sync at any time.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleResetAll}>
+            Yes, remove all
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  // No active connection: syncing is impossible, but artifacts synced before
+  // a disconnect still carry menerio_synced and menerio_note_id, because
+  // disconnecting leaves them. This card used to vanish with the connection
+  // and took "Remove all syncs" with it, so those marks could not be cleared
+  // at all (2026-10-07). The reset stays for as long as anything is linked.
+  if (!syncTypes) {
+    if (!anyLinked) return null;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2">
+            <Unlink className="h-5 w-5" />
+            Menerio links
+          </CardTitle>
+          <CardDescription>
+            {linkedCount === 1
+              ? "1 artifact is"
+              : `${linkedCount} artifacts are`}{" "}
+            still marked as synced with Menerio from an earlier connection.
+            Remove the links to clear those marks.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>{resetControl}</CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -242,8 +356,8 @@ export function MenerioBulkSync() {
           Sync all artifacts
         </CardTitle>
         <CardDescription>
-          Sync all your artifacts at once with Menerio. Already synced artifacts
-          will be updated.
+          Sync all your artifacts of the types chosen above with Menerio at
+          once. Already synced artifacts will be updated.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -253,8 +367,14 @@ export function MenerioBulkSync() {
           </div>
         ) : (
           <>
+            {selected.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No artifact type is chosen for syncing. Choose at least one in
+                the Menerio settings above and save them.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {TYPES.map((type) => (
+              {selected.map((type) => (
                 <div
                   key={type}
                   className="rounded-lg border border-border bg-secondary/30 p-3 text-center"
@@ -285,7 +405,10 @@ export function MenerioBulkSync() {
             )}
 
             <div className="flex gap-3 flex-wrap items-center">
-              <Button onClick={handleBulkSync} disabled={syncing || resetting}>
+              <Button
+                onClick={handleBulkSync}
+                disabled={syncing || resetting || selected.length === 0}
+              >
                 {syncing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -301,40 +424,7 @@ export function MenerioBulkSync() {
                 )}
               </Button>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={syncing || resetting || totalSynced === 0}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    {resetting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="mr-2 h-4 w-4" />
-                    )}
-                    Remove all syncs
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Remove all Menerio links?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      The notes in Menerio will remain, but they will no longer
-                      be automatically updated. You can re-sync at any time.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleResetAll}>
-                      Yes, remove all
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {resetControl}
             </div>
           </>
         )}

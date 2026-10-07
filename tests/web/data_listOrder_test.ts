@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import {
   applyOrder,
+  artifactBrowseOrder,
   type OrderTerm,
   promptBrowseOrder,
   withIdTiebreak,
@@ -107,3 +108,23 @@ Deno.test("applyOrder passes each term to the query in order", () => {
     ["id", { ascending: true }],
   ]);
 });
+
+// Skills, workflows and kits page with "Load more" since 2026-10-07, so their
+// orders need the same last word as the prompts'.
+Deno.test(
+  "every skill, workflow and kit browse order pages without gaps",
+  () => {
+    for (const sort of ["trending", "newest", "rating"] as const) {
+      const terms = artifactBrowseOrder(sort);
+      assertEquals(terms.at(-1)?.column, "id", sort);
+      // They have no copy count to sort by.
+      assert(!terms.some((t) => t.column === "copies_count"), sort);
+      const shown = pageThrough(rows, terms, 24);
+      assertEquals(new Set(shown).size, rows.length, sort);
+    }
+    assertEquals(
+      artifactBrowseOrder("rating").map((t) => t.column),
+      ["rating_avg", "rating_count", "created_at", "id"],
+    );
+  },
+);

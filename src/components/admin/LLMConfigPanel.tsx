@@ -122,8 +122,9 @@ export default function LLMConfigPanel() {
   const [editing, setEditing] = useState<Config | null>(null);
   const [filter, setFilter] = useState("");
 
-  const load = async () => {
-    setLoading(true);
+  // quiet: refresh the rows behind an open dialog without the skeleton.
+  const load = async ({ quiet = false }: { quiet?: boolean } = {}) => {
+    if (!quiet) setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke(
         "admin-llm-config",
@@ -321,6 +322,7 @@ export default function LLMConfigPanel() {
             presets={presets}
             availability={availability}
             onClose={() => setEditing(null)}
+            onPersisted={() => void load({ quiet: true })}
             onSaved={async () => {
               setEditing(null);
               await load();
@@ -337,12 +339,15 @@ function EditDialog({
   presets,
   availability,
   onClose,
+  onPersisted,
   onSaved,
 }: {
   config: Config;
   presets: ProviderPreset[];
   availability: Record<string, boolean>;
   onClose: () => void;
+  /** A save that keeps the dialog open (Test) still has to reach the list. */
+  onPersisted: () => void;
   onSaved: () => void;
 }) {
   // The box opens showing the prompt that would actually be sent, so it can be
@@ -420,8 +425,12 @@ function EditDialog({
     setTesting(true);
     setTestResult(null);
     try {
-      // Save first, so the test exercises what is actually persisted.
+      // Save first, so the test exercises what is actually persisted. The list
+      // is reloaded too: it used to keep the row from before the save, so
+      // closing this dialog and pressing Edit again opened the old model, and
+      // the next save quietly put it back (2026-10-07).
       if (!(await save())) return;
+      onPersisted();
       const { data, error } = await supabase.functions.invoke(
         "admin-llm-config",
         {

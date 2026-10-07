@@ -1,13 +1,9 @@
+// The toolbar offers only what the public kit page renders (plain Markdown, no
+// GFM, no raw HTML). Underline, highlight, colour, sub/superscript went out as
+// HTML tags shown literally on the page; strikethrough and checklists need GFM;
+// alignment was dropped on save. All removed on 2026-10-07.
 import { Editor } from "@tiptap/react";
 import { useState } from "react";
-// Side-effect imports so module augmentation registers commands on ChainedCommands
-import "@tiptap/extension-highlight";
-import "@tiptap/extension-superscript";
-import "@tiptap/extension-subscript";
-import "@tiptap/extension-text-align";
-import "@tiptap/extension-color";
-import "@tiptap/extension-task-list";
-import "@tiptap/extension-underline";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,26 +21,16 @@ import { Separator } from "@/components/ui/separator";
 import {
   Bold,
   Italic,
-  Underline,
-  Strikethrough,
   Code,
   Heading1,
   Heading2,
   Heading3,
   List,
   ListOrdered,
-  ListChecks,
   Quote,
   Minus,
   Link as LinkIcon,
   Unlink,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Highlighter,
-  Superscript,
-  Subscript,
   Undo,
   Redo,
   ChevronDown,
@@ -54,18 +40,6 @@ import {
   Code2,
   Plus,
 } from "lucide-react";
-
-const TEXT_COLORS = [
-  { label: "Default", value: "inherit" },
-  { label: "Red", value: "hsl(0, 72%, 51%)" },
-  { label: "Orange", value: "hsl(25, 95%, 53%)" },
-  { label: "Yellow", value: "hsl(45, 93%, 47%)" },
-  { label: "Green", value: "hsl(142, 71%, 45%)" },
-  { label: "Blue", value: "hsl(217, 91%, 60%)" },
-  { label: "Purple", value: "hsl(263, 70%, 50%)" },
-  { label: "Pink", value: "hsl(330, 81%, 60%)" },
-  { label: "Gray", value: "hsl(220, 9%, 46%)" },
-];
 
 function ToolbarButton({
   onClick,
@@ -199,92 +173,12 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
           <Italic className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          active={editor.isActive("underline")}
-          title="Underline (Ctrl+U)"
-        >
-          <Underline className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          active={editor.isActive("strike")}
-          title="Strikethrough"
-        >
-          <Strikethrough className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
           onClick={() => editor.chain().focus().toggleCode().run()}
           active={editor.isActive("code")}
           title="Inline code"
         >
           <Code className="h-3.5 w-3.5" />
         </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          active={editor.isActive("highlight")}
-          title="Highlight"
-        >
-          <Highlighter className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleSuperscript().run()}
-          active={editor.isActive("superscript")}
-          title="Superscript"
-        >
-          <Superscript className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleSubscript().run()}
-          active={editor.isActive("subscript")}
-          title="Subscript"
-        >
-          <Subscript className="h-3.5 w-3.5" />
-        </ToolbarButton>
-
-        <Separator orientation="vertical" className="h-5 mx-1" />
-
-        {/* Text color */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 sm:h-7 sm:w-7"
-              title="Text color"
-              aria-label="Text color"
-            >
-              <span
-                className="text-xs font-bold"
-                style={{
-                  color: editor.getAttributes("textStyle").color || "inherit",
-                }}
-              >
-                A
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {TEXT_COLORS.map((c) => (
-              <DropdownMenuItem
-                key={c.value}
-                onClick={() =>
-                  c.value === "inherit"
-                    ? editor.chain().focus().unsetColor().run()
-                    : editor.chain().focus().setColor(c.value).run()
-                }
-              >
-                <span
-                  className="mr-2 h-3 w-3 rounded-full inline-block border border-border"
-                  style={{
-                    backgroundColor:
-                      c.value === "inherit" ? "currentColor" : c.value,
-                  }}
-                />
-                {c.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         <Separator orientation="vertical" className="h-5 mx-1" />
 
@@ -302,13 +196,6 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
           title="Numbered list"
         >
           <ListOrdered className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
-          active={editor.isActive("taskList")}
-          title="Checklist"
-        >
-          <ListChecks className="h-3.5 w-3.5" />
         </ToolbarButton>
 
         <Separator orientation="vertical" className="h-5 mx-1" />
@@ -333,38 +220,6 @@ export function PromptKitEditorToolbar({ editor }: { editor: Editor | null }) {
           title="Code block"
         >
           <Code2 className="h-3.5 w-3.5" />
-        </ToolbarButton>
-
-        <Separator orientation="vertical" className="h-5 mx-1" />
-
-        {/* Alignment */}
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          active={editor.isActive({ textAlign: "left" })}
-          title="Align left"
-        >
-          <AlignLeft className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          active={editor.isActive({ textAlign: "center" })}
-          title="Align center"
-        >
-          <AlignCenter className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          active={editor.isActive({ textAlign: "right" })}
-          title="Align right"
-        >
-          <AlignRight className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-          active={editor.isActive({ textAlign: "justify" })}
-          title="Justify"
-        >
-          <AlignJustify className="h-3.5 w-3.5" />
         </ToolbarButton>
 
         <Separator orientation="vertical" className="h-5 mx-1" />

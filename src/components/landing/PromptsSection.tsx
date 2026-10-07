@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "@/lib/router-compat";
-import { useQueryClient } from "@tanstack/react-query";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { CategoryFilter } from "@/components/prompts/CategoryFilter";
 import { useSearchPrompts } from "@/hooks/useSearchPrompts";
@@ -11,6 +10,7 @@ import { Search, TrendingUp, Clock, Star, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadMoreRow } from "@/components/discover/LoadMoreRow";
 
 type SortOption = "trending" | "newest" | "rating";
 
@@ -63,7 +63,6 @@ export function PromptsSection({
     setSearchQuery(initialSearch);
   }, [initialSearch]);
 
-  const queryClient = useQueryClient();
   // Discover hands over a search it has already debounced.
   const debouncedSearch = useDebounce(searchQuery, controlled ? 0 : 300);
   const isSearching = debouncedSearch.trim().length > 0;
@@ -78,6 +77,7 @@ export function PromptsSection({
     fetchNextPage,
     isFetchingNextPage,
     isSemantic,
+    refetch,
   } = useSearchPrompts({
     searchQuery: debouncedSearch,
     isPublic: true,
@@ -87,17 +87,17 @@ export function PromptsSection({
     ...(isPreview ? { pageSize: previewCount } : {}),
   });
 
-  // useSearchPrompts does not hand out refetch, so retry through its query key.
-  const retry = () =>
-    queryClient.refetchQueries({
-      queryKey: ["prompts", "search", "hybrid"],
-      type: "active",
-    });
+  const retry = () => void refetch();
 
   const allPrompts = prompts ?? [];
   const filteredAndSortedPrompts = isPreview
     ? allPrompts.slice(0, previewCount)
     : allPrompts;
+  // The full error screen only when there is nothing to show. A failed "Load
+  // more" leaves the query in error with its pages intact, and replacing those
+  // cards with "Failed to load prompts" threw away what the visitor was
+  // reading (2026-10-07); LoadMoreRow reports it beside the button instead.
+  const failedWithoutRows = !!error && filteredAndSortedPrompts.length === 0;
   const discoverHref = debouncedSearch.trim()
     ? `/discover?q=${encodeURIComponent(debouncedSearch.trim())}`
     : "/discover";
@@ -145,7 +145,7 @@ export function PromptsSection({
       )}
 
       {/* Error State */}
-      {error && (
+      {failedWithoutRows && (
         <div className="py-12 text-center">
           <p className="text-lg text-destructive">Failed to load prompts.</p>
           <Button variant="outline" className="mt-4" onClick={retry}>
@@ -155,7 +155,7 @@ export function PromptsSection({
       )}
 
       {/* Prompts Grid */}
-      {!isLoading && !error && (
+      {!isLoading && !failedWithoutRows && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredAndSortedPrompts.map((prompt, index) => (
             <div
@@ -169,31 +169,26 @@ export function PromptsSection({
         </div>
       )}
 
-      {!isLoading &&
-        !error &&
-        isPreview &&
-        filteredAndSortedPrompts.length > 0 && (
-          <div className="mt-8 flex justify-center">
-            <Button asChild variant="outline" className="gap-2">
-              <Link to={discoverHref}>
-                See all in Discover
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        )}
-
-      {!isLoading && !error && !isPreview && hasNextPage && (
+      {!isLoading && isPreview && filteredAndSortedPrompts.length > 0 && (
         <div className="mt-8 flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className="gap-2"
-          >
-            {isFetchingNextPage ? "Loading…" : "Load more prompts"}
+          <Button asChild variant="outline" className="gap-2">
+            <Link to={discoverHref}>
+              See all in Discover
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
+      )}
+
+      {!isLoading && filteredAndSortedPrompts.length > 0 && (
+        <LoadMoreRow
+          what="prompts"
+          hasNext={!isPreview && hasNextPage}
+          fetching={isFetchingNextPage}
+          failed={!!error}
+          onLoadMore={() => void fetchNextPage()}
+          onRetry={retry}
+        />
       )}
 
       {!isLoading && !error && filteredAndSortedPrompts.length === 0 && (

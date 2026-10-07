@@ -151,6 +151,24 @@ export async function applySuggestionToArtifact(
   }
 
   const { table, versionsTable } = TABLES[itemType];
+
+  // The review window showed what accepting removes from target.content, the
+  // page's copy. If the stored content has moved on since (another tab, a
+  // teammate), applying would also wipe edits nobody was shown (2026-10-07).
+  const { data: liveRow, error: liveError } = await supabase
+    .from(table as "prompts")
+    .select("content")
+    .eq("id", target.id)
+    .maybeSingle();
+  if (liveError) throw liveError;
+  const liveContent = (liveRow as { content: string | null } | null)?.content;
+  if (liveRow && (liveContent ?? "") !== (target.content ?? "")) {
+    toast.error(
+      "This item was changed while you were reviewing. Reload the page and review the suggestion again.",
+    );
+    return false;
+  }
+
   const snapshotId = await snapshotCurrent(itemType, target, userId);
 
   const { data: updatedRows, error } = await supabase

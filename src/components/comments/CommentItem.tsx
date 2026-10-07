@@ -17,12 +17,16 @@ import { MessageCircle, Pencil, Trash2, X, Check } from "lucide-react";
 import { Comment } from "@/types/comment";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Link } from "@/lib/router-compat";
+import { isDeletedComment } from "./deletedComment";
 
+// Each handler resolves true only when the change went through, so a reply or
+// an edit that failed (moderation, network) keeps the typed text on screen
+// instead of clearing it (2026-10-07).
 interface CommentItemProps {
   comment: Comment;
-  onReply: (parentId: string, content: string) => Promise<void>;
-  onEdit: (commentId: string, content: string) => Promise<void>;
-  onDelete: (commentId: string) => Promise<void>;
+  onReply: (parentId: string, content: string) => Promise<boolean>;
+  onEdit: (commentId: string, content: string) => Promise<boolean>;
+  onDelete: (commentId: string) => Promise<boolean>;
   isReply?: boolean;
 }
 
@@ -41,7 +45,9 @@ export const CommentItem = ({
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const isOwner = user?.id === comment.user_id;
+  const isDeleted = isDeletedComment(comment);
+  const hasReplies = (comment.replies?.length ?? 0) > 0;
+  const isOwner = user?.id === comment.user_id && !isDeleted;
   const displayName = comment.author?.display_name || "Anonymous";
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -63,9 +69,10 @@ export const CommentItem = ({
     if (!replyContent.trim()) return;
     setLoading(true);
     try {
-      await onReply(comment.id, replyContent);
-      setReplyContent("");
-      setIsReplying(false);
+      if (await onReply(comment.id, replyContent)) {
+        setReplyContent("");
+        setIsReplying(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -75,8 +82,7 @@ export const CommentItem = ({
     if (!editContent.trim()) return;
     setLoading(true);
     try {
-      await onEdit(comment.id, editContent);
-      setIsEditing(false);
+      if (await onEdit(comment.id, editContent)) setIsEditing(false);
     } finally {
       setLoading(false);
     }
@@ -95,6 +101,46 @@ export const CommentItem = ({
       setLoading(false);
     }
   };
+
+  const startEditing = () => {
+    setEditContent(comment.content);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditContent(comment.content);
+    setIsEditing(false);
+  };
+
+  if (isDeleted) {
+    // The replies under it are other people's and stay readable.
+    return (
+      <div className={`${isReply ? "ml-8 pl-4 border-l border-border" : ""}`}>
+        <div className="flex gap-3 py-4">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs">?</AvatarFallback>
+          </Avatar>
+          <p className="flex-1 min-w-0 mt-1 text-sm italic text-muted-foreground">
+            This comment was deleted by its author.
+          </p>
+        </div>
+        {hasReplies && (
+          <div className="space-y-0">
+            {comment.replies!.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                onReply={onReply}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                isReply
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`${isReply ? "ml-8 pl-4 border-l border-border" : ""}`}>
@@ -138,11 +184,7 @@ export const CommentItem = ({
                 <Button size="sm" onClick={handleEdit} disabled={loading}>
                   <Check className="h-3 w-3 mr-1" /> Save
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditing(false)}
-                >
+                <Button size="sm" variant="ghost" onClick={cancelEditing}>
                   <X className="h-3 w-3 mr-1" /> Cancel
                 </Button>
               </div>
@@ -171,7 +213,7 @@ export const CommentItem = ({
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => setIsEditing(true)}
+                    onClick={startEditing}
                   >
                     <Pencil className="h-3 w-3 mr-1" /> Edit
                   </Button>
@@ -239,8 +281,9 @@ export const CommentItem = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete comment</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete your comment. This action cannot be
-              undone.
+              {hasReplies
+                ? "Your comment will be removed for good. The replies other people wrote stay, under a note that your comment was deleted."
+                : "This will permanently delete your comment. This action cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

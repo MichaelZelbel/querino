@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { restoreArtifactVersion } from "@/components/versions/restoreVersion";
 
 interface PromptVersion {
   id: string;
@@ -144,110 +145,38 @@ export default function VersionHistory() {
     }
   }, [slug, user]);
 
+  // The restore itself is the version panel's (restoreVersion.ts): it updates
+  // the prompt before it writes "Restored from vN", and a refused update is
+  // reported instead of recorded (2026-10-07).
   const handleRestore = async () => {
     if (!restoringVersion || !promptId || !user) return;
 
     setIsRestoring(true);
     try {
-      // Fetch the live prompt content and the latest version fresh, so we can
-      // preserve unsaved-into-history content and avoid version-number collisions.
-      const [
-        { data: livePrompt, error: liveError },
-        { data: latest, error: latestError },
-      ] = await Promise.all([
-        supabase
-          .from("prompts")
-          .select("title, description, content, tags")
-          .eq("id", promptId)
-          .maybeSingle(),
-        supabase
-          .from("prompt_versions")
-          .select("version_number, title, description, content")
-          .eq("prompt_id", promptId)
-          .order("version_number", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-      if (liveError || latestError || !livePrompt) {
-        console.error(
-          "Error fetching current state:",
-          liveError || latestError,
-        );
-        toast.error("Failed to restore version. Please try again.");
-        return;
-      }
-
-      let nextVersionNumber = (latest?.version_number ?? 0) + 1;
-
-      // Snapshot the current live content first if it isn't already saved
-      // as the latest version — otherwise restoring would silently discard it.
-      const currentMatchesLatest =
-        latest &&
-        latest.title === livePrompt.title &&
-        (latest.description ?? "") === (livePrompt.description ?? "") &&
-        latest.content === livePrompt.content;
-
-      if (!currentMatchesLatest) {
-        const { error: snapshotError } = await supabase
-          .from("prompt_versions")
-          .insert({
-            prompt_id: promptId,
-            version_number: nextVersionNumber,
-            title: livePrompt.title,
-            description: livePrompt.description,
-            content: livePrompt.content,
-            tags: livePrompt.tags,
-            change_notes: `Snapshot before restoring v${restoringVersion.version_number}`,
-          });
-
-        if (snapshotError) {
-          console.error("Error snapshotting current content:", snapshotError);
-          toast.error("Failed to preserve current content. Restore cancelled.");
-          return;
-        }
-        nextVersionNumber += 1;
-      }
-
-      // Create a new version entry for the restoration
-      const { error: versionError } = await supabase
-        .from("prompt_versions")
-        .insert({
-          prompt_id: promptId,
-          version_number: nextVersionNumber,
-          title: restoringVersion.title,
-          description: restoringVersion.description,
-          content: restoringVersion.content,
-          tags: restoringVersion.tags,
-          change_notes: `Restored from version v${restoringVersion.version_number}`,
-        });
-
-      if (versionError) {
-        console.error("Error creating restore version:", versionError);
-        toast.error("Failed to restore version. Please try again.");
-        return;
-      }
-
-      // Update the main prompt with restored content
-      const { error: updateError } = await supabase
+      const { data: livePrompt, error: liveError } = await supabase
         .from("prompts")
-        .update({
-          title: restoringVersion.title,
-          description: restoringVersion.description || "",
-          content: restoringVersion.content,
-          tags: restoringVersion.tags,
-        })
+        .select("title, description, content, tags")
         .eq("id", promptId)
-        .eq("author_id", user.id);
+        .maybeSingle();
 
-      if (updateError) {
-        console.error("Error updating prompt:", updateError);
-        toast.error("Version entry created but failed to update prompt.");
+      if (liveError || !livePrompt) {
+        console.error("Error fetching current state:", liveError);
+        toast.error("Failed to restore version. Please try again.");
         return;
       }
 
-      toast.success(`Restored to version v${restoringVersion.version_number}`);
-      navigate(`/library/${slug}/edit`);
+      const restored = await restoreArtifactVersion({
+        config: {
+          versionsTable: "prompt_versions",
+          idColumn: "prompt_id",
+          artifactTable: "prompts",
+        },
+        artifactId: promptId,
+        current: livePrompt,
+        version: restoringVersion,
+        artifactLabel: "prompt",
+      });
+      if (restored) navigate(`/library/${slug}/edit`);
     } catch (err) {
       console.error("Error restoring version:", err);
       toast.error("Something went wrong. Please try again.");

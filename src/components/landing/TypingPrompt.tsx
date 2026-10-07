@@ -61,9 +61,10 @@ export function TypingPrompt({ dark = false }: TypingPromptProps) {
   }, [text, phase, idx]);
 
   return (
+    // Decoration, hidden from screen readers: as a live region it announced
+    // every typed and erased letter of an endless loop (2026-10-07).
     <div
-      role="status"
-      aria-live="polite"
+      aria-hidden="true"
       style={{
         position: "absolute",
         bottom: -52,

@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams, Link, useNavigate } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
-import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
+import { useState } from "react";
+import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneWorkflow } from "@/hooks/useCloneWorkflow";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
@@ -58,32 +56,28 @@ import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
+import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 import { workflowText } from "@/components/workflows/workflowText";
 
-interface WorkflowWithAuthor extends Workflow {
+export interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
 }
 
-// The route loader fetches this record on the server, so the first render already has
-// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
-// it keeps the page current and handles a slug change without a full navigation.
+// The route loader is the one source of this record (2026-10-07): on the
+// server for the first request, in the browser for later visits, and once more
+// with the session when a private workflow was not visible to the server
+// (useSignedInRetry). The page no longer fetches the row a second time.
 export default function WorkflowDetail({
-  initialWorkflow = null,
-}: { initialWorkflow?: WorkflowWithAuthor | null } = {}) {
-  const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
+  workflow,
+}: {
+  workflow: WorkflowWithAuthor;
+}) {
   const goBack = useGoBack("/discover?type=workflows");
   const { user } = useAuthContext();
   const { cloneWorkflow, cloning } = useCloneWorkflow();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
-  const [workflow, setWorkflow] = useState<WorkflowWithAuthor | null>(
-    initialWorkflow,
-  );
-  const [loading, setLoading] = useState(!initialWorkflow);
-  const [notFound, setNotFound] = useState(false);
-  // A failed request is not a missing workflow: it gets its own screen with a
-  // retry instead of "Workflow Not Found".
-  const [loadError, setLoadError] = useState(false);
+  // A change this page makes to the workflow re-runs the route's loader.
+  const reloadWorkflow = useReloadRouteData();
   const [copied, setCopied] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(true);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -91,7 +85,7 @@ export default function WorkflowDetail({
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   const [showTranslateModal, setShowTranslateModal] = useState(false);
   const { items: similarWorkflows, loading: loadingSimilar } =
-    useSimilarWorkflows(workflow?.id);
+    useSimilarWorkflows(workflow.id);
   const {
     suggestions,
     loading: loadingSuggestions,
@@ -100,8 +94,8 @@ export default function WorkflowDetail({
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges,
-  } = useSuggestions("workflow", workflow?.id || "");
-  const isAuthor = workflow?.author_id && user?.id === workflow.author_id;
+  } = useSuggestions("workflow", workflow.id);
+  const isAuthor = workflow.author_id && user?.id === workflow.author_id;
   // The author or a premium member of the workflow's team, as row-level
   // security allows.
   const canEdit = useCanEditArtifact(workflow);
@@ -115,73 +109,13 @@ export default function WorkflowDetail({
   const isPersonalWorkspace = currentWorkspace === "personal";
   const hasTeams = teams.length > 0;
   // Show "Copy to team" only for personal workflows the user owns (no team_id)
-  const isPersonalWorkflow = !(workflow as any)?.team_id;
+  const isPersonalWorkflow = !workflow.team_id;
   const canCopyToTeam =
     isAuthor &&
     isPremium &&
     hasTeams &&
     isPersonalWorkspace &&
     isPersonalWorkflow;
-
-  const fetchWorkflow = useCallback(async () => {
-    if (!slug) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    // Legacy /workflows/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
-    if (isUuid(slug)) {
-      const canonical = await resolveSlugFromId("workflows", slug);
-      if (canonical) {
-        navigate(`/workflows/${canonical}`, { replace: true });
-        return;
-      }
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await (supabase.from("workflows") as any)
-        .select(
-          `
-          *,
-          profiles:author_id (
-            id,
-            display_name,
-            avatar_url
-          )
-        `,
-        )
-        .eq("slug", slug)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching workflow:", error);
-        setLoadError(true);
-      } else if (!data) {
-        setNotFound(true);
-      } else {
-        const workflowData: WorkflowWithAuthor = {
-          ...data,
-          author: data.profiles || null,
-        };
-        setWorkflow(workflowData);
-        setNotFound(false);
-        setLoadError(false);
-      }
-    } catch (err) {
-      console.error("Error fetching workflow:", err);
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
-
-  useEffect(() => {
-    fetchWorkflow();
-  }, [fetchWorkflow]);
 
   // Get workflow content - use new content field, or fall back to json for legacy
   const getWorkflowContent = (): string => {
@@ -225,14 +159,7 @@ export default function WorkflowDetail({
     );
     if (!applied) return false;
 
-    const { data } = await (supabase.from("workflows") as any)
-      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("slug", slug)
-      .maybeSingle();
-
-    if (data) {
-      setWorkflow({ ...data, author: data.profiles || null });
-    }
+    await reloadWorkflow();
     return true;
   };
 
@@ -247,78 +174,6 @@ export default function WorkflowDetail({
     }
     return "U";
   };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="min-w-0 flex-1 py-12">
-          <div className="container mx-auto max-w-4xl px-4">
-            <Skeleton className="mb-4 h-8 w-48" />
-            <Skeleton className="mb-8 h-12 w-3/4" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (loadError && !workflow) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Couldn't load this workflow
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Something went wrong while loading it. Check your connection and
-              try again.
-            </p>
-            <Button
-              className="gap-2"
-              onClick={() => {
-                setLoadError(false);
-                setLoading(true);
-                void fetchWorkflow();
-              }}
-            >
-              Try again
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notFound || !workflow) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Workflow Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The workflow you're looking for doesn't exist or is no longer
-              available.
-            </p>
-            <Link to="/discover">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Discover
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -520,7 +375,7 @@ export default function WorkflowDetail({
                   menerioSynced={(workflow as any).menerio_synced || false}
                   menerioSyncedAt={(workflow as any).menerio_synced_at || null}
                   menerioNoteId={(workflow as any).menerio_note_id || null}
-                  onSyncComplete={fetchWorkflow}
+                  onSyncComplete={() => void reloadWorkflow()}
                 />
               )}
 
@@ -699,6 +554,50 @@ export default function WorkflowDetail({
           teamId={(workflow as any).team_id}
         />
       </div>
+      <Footer />
+    </div>
+  );
+}
+
+/** The page's shape while its row is on the way. */
+export function WorkflowDetailSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="min-w-0 flex-1 py-12">
+        <div className="container mx-auto max-w-4xl px-4">
+          <Skeleton className="mb-4 h-8 w-48" />
+          <Skeleton className="mb-8 h-12 w-3/4" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+/** The route's not-found view; the route answers HTTP 404 with it. */
+export function WorkflowNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-20">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h1 className="mb-4 text-display-md font-bold text-foreground">
+            Workflow Not Found
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground">
+            The workflow you're looking for doesn't exist or is no longer
+            available.
+          </p>
+          <Link to="/discover">
+            <Button className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Discover
+            </Button>
+          </Link>
+        </div>
+      </main>
       <Footer />
     </div>
   );

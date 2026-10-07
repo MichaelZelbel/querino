@@ -10,15 +10,26 @@
  * same row-level security. A logged-out server request sees exactly what a logged-out
  * visitor sees, which is the point.
  *
- * Every loader returns null rather than throwing when the record is missing. The page
- * components already render their own "not found" state, and a thrown loader error would
- * replace that with the router's error boundary, which is a behaviour change.
+ * The four artefact loaders answer the way a crawler needs (2026-10-07). They used to
+ * return null for a database error, for a pre-slug UUID address and for a renamed slug
+ * alike, and the page then went out as "Not Found | Querino", noindex, with HTTP 200:
+ * Google's soft 404, and a link preview of an old link said "Not Found". Old addresses
+ * were only sent on by the page's own script after hydration, which a crawler never runs.
+ * Now a database error throws (the error page, HTTP 500, which a crawler retries), an old
+ * address throws a 301 to the current one, and only a true miss is notFound() (HTTP 404).
+ * The browser runs the same loader once more with the visitor's session when the server
+ * found nothing, because a private or team row is invisible to the signed-out server
+ * (useSignedInRetry).
  */
+import { notFound, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPublicPost } from "@/hooks/usePublicBlog";
 import type { BlogPost } from "@/types/blog";
-
-const AUTHOR = "profiles:author_id ( id, display_name, avatar_url )";
+import {
+  artifactDetailSelect,
+  type ArtifactListTable,
+} from "@/lib/artifactListColumns";
+import { isUuid } from "@/lib/uuidRoute";
 
 export interface LoadedArtefact {
   id: string;
@@ -37,45 +48,108 @@ export interface LoadedArtefact {
   [key: string]: unknown;
 }
 
-// A pre-slug UUID in the slug position is a legacy URL. The components already redirect
-// those; the loader simply declines to guess, so the component's redirect still runs.
-const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+// The detail route of each table, which an old address is sent on to.
+const DETAIL_ROUTE = {
+  prompts: "/prompts/$slug",
+  skills: "/skills/$slug",
+  workflows: "/workflows/$slug",
+  prompt_kits: "/prompt-kits/$slug",
+} as const satisfies Record<ArtifactListTable, string>;
 
-// Every column of each table except the search internals (embedding,
-// embedding_attempts, embedding_error, embedding_failed_at, fts), taken from the
-// Row types in src/integrations/supabase/types.ts. Whatever a loader returns is
-// written into the HTML as the router's page data, and the internals are 1,536
-// floats and a word index: most of the 37 KB an artefact page weighed, read by
-// nobody. They used to be fetched with select("*") and deleted afterwards, so
-// the database still read and sent the vector on every server render. When a
-// table gains a column a page needs, add it here.
-const COMMON_COLUMNS =
-  "id, slug, title, description, content, category, tags, language, author_id, team_id, rating_avg, rating_count, created_at, updated_at, menerio_note_id, menerio_synced, menerio_synced_at";
+// Prompts and kits remember the slugs they were renamed away from. Anon may read
+// a redirect row exactly when it may read the item, so a public item's old link
+// is answered on the server and a private one's in the browser's second run.
+const RENAMED_SLUGS: Partial<
+  Record<
+    ArtifactListTable,
+    {
+      table: "prompt_slug_redirects" | "prompt_kit_slug_redirects";
+      idColumn: "prompt_id" | "prompt_kit_id";
+    }
+  >
+> = {
+  prompts: { table: "prompt_slug_redirects", idColumn: "prompt_id" },
+  prompt_kits: {
+    table: "prompt_kit_slug_redirects",
+    idColumn: "prompt_kit_id",
+  },
+};
 
-const DETAIL_COLUMNS = {
-  prompts: `${COMMON_COLUMNS}, summary, example_output, copies_count, is_public, published_at`,
-  skills: `${COMMON_COLUMNS}, published`,
-  workflows: `${COMMON_COLUMNS}, published, filename, json, scope`,
-  prompt_kits: `${COMMON_COLUMNS}, published`,
-} as const;
+// The thrown error travels to the browser inside the router's page state, so
+// it says only what failed; the database's own message goes to the log.
+function queryFailed(what: string, message: string): Error {
+  console.error(`[route-loaders] ${what} could not be read:`, message);
+  return new Error(`${what} could not be read`);
+}
+
+/** The current slug of the row with this id, or null when it is not visible. */
+async function currentSlug(
+  table: ArtifactListTable,
+  id: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from(table)
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle<{ slug: string | null }>();
+  if (error) throw queryFailed(table, error.message);
+  return data?.slug ?? null;
+}
+
+// Permanent, so a search engine replaces the old address in its index rather
+// than keeping both.
+function movedTo(table: ArtifactListTable, slug: string) {
+  return redirect({
+    to: DETAIL_ROUTE[table],
+    params: { slug },
+    statusCode: 301,
+  });
+}
 
 async function loadBySlug(
-  table: keyof typeof DETAIL_COLUMNS,
+  table: ArtifactListTable,
   slug: string,
-): Promise<LoadedArtefact | null> {
-  if (!slug || isUuid(slug)) return null;
+): Promise<LoadedArtefact> {
+  if (!slug) throw notFound();
+
+  // A pre-slug UUID in the slug position is a legacy address, still indexed by
+  // Google from before slugs existed.
+  if (isUuid(slug)) {
+    const canonical = await currentSlug(table, slug);
+    if (canonical) throw movedTo(table, canonical);
+    throw notFound();
+  }
+
   const { data, error } = await supabase
     .from(table as never)
-    .select(`${DETAIL_COLUMNS[table]}, ${AUTHOR}`)
+    .select(artifactDetailSelect(table))
     .eq("slug", slug)
     .maybeSingle();
-  if (error || !data) return null;
-  const row = { ...(data as Record<string, unknown>) };
-  return {
-    ...row,
-    author: (row.profiles as LoadedArtefact["author"]) ?? null,
-  } as LoadedArtefact;
+  if (error) throw queryFailed(table, error.message);
+  if (data) {
+    const row = { ...(data as Record<string, unknown>) };
+    return {
+      ...row,
+      author: (row.profiles as LoadedArtefact["author"]) ?? null,
+    } as LoadedArtefact;
+  }
+
+  const renamed = RENAMED_SLUGS[table];
+  if (renamed) {
+    const { data: hit, error: redirectError } = await supabase
+      .from(renamed.table as never)
+      .select(renamed.idColumn)
+      .eq("old_slug", slug)
+      .maybeSingle<Record<string, string>>();
+    if (redirectError) throw queryFailed(renamed.table, redirectError.message);
+    const id = hit?.[renamed.idColumn];
+    if (id) {
+      const canonical = await currentSlug(table, id);
+      if (canonical && canonical !== slug) throw movedTo(table, canonical);
+    }
+  }
+
+  throw notFound();
 }
 
 export const loadPrompt = (slug: string) => loadBySlug("prompts", slug);
@@ -112,7 +186,9 @@ async function loadPublicIndex(
     const { data, error } = await supabase
       .from(table)
       .select("slug, title, description")
-      .eq(publicColumn, true as never)
+      // The column differs per table, which .eq()'s per-table column type
+      // cannot follow across a union of tables; .filter() takes it as text.
+      .filter(publicColumn, "eq", true)
       .order("title", { ascending: true })
       // Titles repeat. The key keeps a list longer than one page from showing
       // a tied row twice and another not at all (listOrder.ts).

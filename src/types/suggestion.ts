@@ -16,6 +16,8 @@ export interface Suggestion {
   reviewer_id: string | null;
   review_comment: string | null;
   requested_changes: string[] | null;
+  /** The artifact's content when the suggestion was written (since 2026-10-07). */
+  base_content?: string | null;
 }
 
 export interface SuggestionWithAuthor extends Suggestion {

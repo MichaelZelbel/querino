@@ -7,6 +7,7 @@ export interface Workflow {
   content: string; // Markdown content for Antigravity workflows
   category: string | null;
   filename: string | null; // e.g., "my-workflow.md" - legacy, kept for backwards compatibility
+  scope?: string | null;
   tags: string[] | null;
   published: boolean;
   created_at: string;

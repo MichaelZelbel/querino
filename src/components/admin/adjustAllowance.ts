@@ -7,117 +7,71 @@ export interface AllowanceTokens {
 
 interface AdjustAllowanceArgs {
   allowanceId: string;
-  userId: string;
+  /** Kept for the callers; the database reads the user from the period. */
+  userId?: string;
   displayName?: string | null;
-  adminId: string;
+  /** Kept for the callers; the database takes the admin from the login. */
+  adminId?: string;
   /** Change to tokens_granted, relative to the row as it is now. */
   grantedDelta: number;
   /** Change to tokens_used, relative to the row as it is now. */
   usedDelta: number;
-  /** Which admin control made the change, recorded in the audit event. */
+  /** Which admin control made the change, recorded with it. */
   via: "token_modal" | "inline_balance";
 }
 
 export interface AdjustAllowanceResult {
   previous: AllowanceTokens;
   next: AllowanceTokens;
-  /** False when the balance changed but the audit event could not be written. */
+  /** Always true since 2026-10-07: the record is written with the change. */
   audited: boolean;
 }
-
-const MAX_ATTEMPTS = 3;
 
 /**
  * Apply an admin's balance change as a delta on the row as it is in the
  * database right now, never as absolute values from the admin's screen.
  *
  * The admin panels used to write absolute tokens_used / tokens_granted taken
- * from a snapshot loaded when the page opened. Any AI call the user made in
- * between was charged to tokens_used and then silently erased by the admin's
- * save. Here the row is re-read, the delta applied, and the write only lands
- * if the row still holds what was read (otherwise it is read again).
- * Every change writes the same audit event, whichever control made it.
+ * from a snapshot loaded when the page opened, which silently erased any AI
+ * call the user made in between. Until 2026-10-07 this then re-read the row
+ * and wrote with a compare-and-retry loop, and inserted an audit row into
+ * llm_usage_events, which the browser may not write: every change went
+ * unrecorded. admin_adjust_allowance (migration 20261007121300) now locks the
+ * row, applies the delta and records the change in one transaction.
  */
 export async function adjustAllowance({
   allowanceId,
-  userId,
-  displayName = null,
-  adminId,
   grantedDelta,
   usedDelta,
   via,
 }: AdjustAllowanceArgs): Promise<AdjustAllowanceResult> {
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const { data: current, error: readError } = await supabase
-      .from("ai_allowance_periods")
-      .select("tokens_granted, tokens_used")
-      .eq("id", allowanceId)
-      .maybeSingle();
-    if (readError) throw readError;
-    if (!current) throw new Error("The allowance period no longer exists.");
+  const { data, error } = await supabase.rpc("admin_adjust_allowance", {
+    p_allowance_id: allowanceId,
+    p_granted_delta: Math.trunc(grantedDelta),
+    p_used_delta: Math.trunc(usedDelta),
+    p_via: via,
+  });
+  if (error) throw error;
 
-    const previous: AllowanceTokens = {
-      tokens_granted: Number(current.tokens_granted) || 0,
-      tokens_used: Number(current.tokens_used) || 0,
-    };
-    let nextGranted = Math.max(previous.tokens_granted + grantedDelta, 0);
-    let nextUsed = previous.tokens_used + usedDelta;
-    if (nextUsed < 0) {
-      // More remaining than the period grants: grant the difference.
-      nextGranted += -nextUsed;
-      nextUsed = 0;
-    }
-    const next: AllowanceTokens = {
-      tokens_granted: nextGranted,
-      tokens_used: nextUsed,
-    };
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | {
+        previous_tokens_granted: number | string;
+        previous_tokens_used: number | string;
+        new_tokens_granted: number | string;
+        new_tokens_used: number | string;
+      }
+    | undefined;
+  if (!row) throw new Error("The balance change returned nothing.");
 
-    const { data: written, error: writeError } = await supabase
-      .from("ai_allowance_periods")
-      .update(next)
-      .eq("id", allowanceId)
-      .eq("tokens_granted", previous.tokens_granted)
-      .eq("tokens_used", previous.tokens_used)
-      .select("id");
-    if (writeError) throw writeError;
-    if (!written || written.length === 0) {
-      // The row moved between the read and the write (a charge landed).
-      continue;
-    }
-
-    const { error: logError } = await supabase.from("llm_usage_events").insert({
-      user_id: userId,
-      idempotency_key: `admin_adjustment_${allowanceId}_${Date.now()}`,
-      feature: "admin_balance_adjustment",
-      total_tokens: next.tokens_granted - previous.tokens_granted, // Net change in granted tokens
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      credits_charged: 0,
-      metadata: {
-        admin_id: adminId,
-        admin_action: "balance_adjustment",
-        admin_control: via,
-        allowance_period_id: allowanceId,
-        target_user_id: userId,
-        target_display_name: displayName,
-        previous_tokens_granted: previous.tokens_granted,
-        new_tokens_granted: next.tokens_granted,
-        tokens_granted_delta: next.tokens_granted - previous.tokens_granted,
-        previous_tokens_used: previous.tokens_used,
-        new_tokens_used: next.tokens_used,
-        tokens_used_delta: next.tokens_used - previous.tokens_used,
-        previous_remaining: previous.tokens_granted - previous.tokens_used,
-        new_remaining: next.tokens_granted - next.tokens_used,
-        adjusted_at: new Date().toISOString(),
-      },
-    });
-    if (logError) {
-      console.error("Failed to log admin adjustment:", logError);
-    }
-
-    return { previous, next, audited: !logError };
-  }
-  throw new Error(
-    "The balance kept changing while saving. Reload and try again.",
-  );
+  return {
+    previous: {
+      tokens_granted: Number(row.previous_tokens_granted) || 0,
+      tokens_used: Number(row.previous_tokens_used) || 0,
+    },
+    next: {
+      tokens_granted: Number(row.new_tokens_granted) || 0,
+      tokens_used: Number(row.new_tokens_used) || 0,
+    },
+    audited: true,
+  };
 }

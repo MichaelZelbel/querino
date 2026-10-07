@@ -1,33 +1,14 @@
-import { supabase } from "@/integrations/supabase/client";
-
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** True when a `:slug` route param is actually a legacy UUID id. */
+/**
+ * True when a `:slug` route param is actually a legacy UUID id.
+ *
+ * Legacy /<route>/<uuid> URLs are still indexed by Google from before slugs
+ * existed. Since 2026-10-07 the detail routes' loaders answer them with a 301
+ * to the current slug on the server (route-loaders.ts); the pages used to do it
+ * in the browser after hydration, which a crawler never saw.
+ */
 export function isUuid(value: string | undefined): boolean {
   return !!value && UUID_RE.test(value);
-}
-
-/**
- * Legacy /<route>/<uuid> URLs are still indexed by Google from before slugs
- * existed. Detail pages look artifacts up by slug only, so those URLs render
- * the not-found branch and Google reports them as Soft 404. Resolve the id to
- * its current slug and redirect instead.
- *
- * Returns the canonical slug, or null when the artifact is gone / has no slug.
- */
-export async function resolveSlugFromId(
-  table: "prompts" | "skills" | "workflows" | "prompt_kits",
-  id: string,
-): Promise<string | null> {
-  // `table` is a union, so supabase-js cannot resolve which generated row type
-  // this query returns and the whole chain collapses. Only the shape actually
-  // read is asserted, rather than switching the client off with `any`: all four
-  // tables have a nullable slug, and nothing else here is touched.
-  const { data } = await supabase
-    .from(table)
-    .select("slug")
-    .eq("id", id)
-    .maybeSingle<{ slug: string | null }>();
-  return data?.slug ?? null;
 }

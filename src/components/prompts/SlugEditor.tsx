@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
 import { useUpdatePromptSlug } from "@/hooks/useUpdatePromptSlug";
 import { toast } from "sonner";
 import { generateSlug } from "@/hooks/useGenerateSlug";
+import { slugInputProblem } from "@/components/shared/slugInput";
 
 interface SlugEditorProps {
   promptId: string;
@@ -46,14 +47,32 @@ export function SlugEditor({
     setIsEditing(false);
   };
 
+  // Set before anything is awaited: Enter pressed again while the slug was
+  // still being generated or saved started a second rename (2026-10-07).
+  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+
   const handleSave = async () => {
+    if (savingRef.current || updating) return;
     const trimmed = slugInput.trim();
-    if (!trimmed) {
-      setError("Slug cannot be empty");
+    const problem = slugInputProblem(trimmed);
+    if (problem) {
+      setError(problem);
       return;
     }
 
     setError(null);
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await saveSlug(trimmed);
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const saveSlug = async (trimmed: string) => {
     // Transliterate before sending to backend for consistent Latin slugs
     const transliterated = await generateSlug(trimmed);
     if (!transliterated) {
@@ -114,10 +133,10 @@ export function SlugEditor({
               size="icon"
               variant="default"
               onClick={handleSave}
-              disabled={updating}
+              disabled={updating || saving}
               aria-label="Save slug"
             >
-              {updating ? (
+              {updating || saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Check className="h-4 w-4" />
@@ -127,7 +146,7 @@ export function SlugEditor({
               size="icon"
               variant="outline"
               onClick={handleCancel}
-              disabled={updating}
+              disabled={updating || saving}
               aria-label="Cancel"
             >
               <X className="h-4 w-4" />

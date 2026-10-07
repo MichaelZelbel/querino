@@ -74,12 +74,54 @@ export function buildMarkdownContent(data: {
 const FRONTMATTER_RE =
   /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
 
+/**
+ * Whether a leading `---` block belongs to a SKILL.md and so is part of the
+ * file itself rather than metadata to lift into the form. A standard SKILL.md
+ * opens with `name:`, `description:` and often `allowed-tools:`; stripping
+ * that block left a skill that was no longer a valid SKILL.md (7 of 19
+ * production skills carry one, 2026-10-07). `name:` is required in a SKILL.md
+ * and neither of Querino's exports ("Download .md", the GitHub sync) writes
+ * it, so it is the test, and only a top-level key counts.
+ *
+ * Every other block stays metadata, whatever else it carries. The first
+ * version of this check kept any block with a key Querino did not know, so an
+ * Obsidian note or a Jekyll post (title, tags, author, date) imported with its
+ * YAML pasted into the prompt and no tags, where it used to import cleanly.
+ * Unknown keys are simply ignored again.
+ */
+function isSkillFrontmatter(block: string): boolean {
+  return block.split(/\r?\n/).some((line) => /^name\s*:/.test(line));
+}
+
 export function parseMarkdownContent(
   markdown: string,
   filename?: string,
 ): ParsedMarkdown {
   const trimmed = markdown.trim();
   const block = trimmed.match(FRONTMATTER_RE);
+  if (block && isSkillFrontmatter(block[1] ?? "")) {
+    // A SKILL.md: keep the whole file as the content and only read a title,
+    // a description and any tags from it for the form.
+    const body = trimmed.slice(block[0].length).trim();
+    const own = parseFrontmatter(block[1] ?? "");
+    const heading = body.match(/^#\s+(.+)$/m)?.[1]?.trim();
+    const name = own.name?.trim();
+    return {
+      frontmatter: {
+        title:
+          heading ||
+          own.title ||
+          (name && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+            ? unslugify(name)
+            : name) ||
+          deriveTitle(body, filename),
+        type: "prompt",
+        description: own.description || undefined,
+        tags: own.tags?.length ? own.tags : undefined,
+      },
+      content: trimmed,
+    };
+  }
   if (block) {
     const content = trimmed.slice(block[0].length).trim();
     const frontmatter = parseFrontmatter(block[1] ?? "");
@@ -207,6 +249,8 @@ interface Frontmatter {
   description?: string;
   tags?: string[];
   framework?: string;
+  /** A SKILL.md's `name:`, used for the title when the body has no heading. */
+  name?: string;
 }
 
 function parseFrontmatter(str: string): Frontmatter {
@@ -261,6 +305,30 @@ function parseFrontmatter(str: string): Frontmatter {
       continue;
     }
 
+    // A SKILL.md often writes a long description as a YAML block scalar
+    // (`description: >` or `|`) or as a bare value wrapped onto indented
+    // lines. Read the indented lines that follow instead of keeping ">" or
+    // the first line only.
+    const isBlockScalar = /^[>|][+-]?$/.test(value);
+    if (isBlockScalar || (value && !/^["'[]/.test(value))) {
+      const more: string[] = [];
+      while (
+        i + 1 < lines.length &&
+        (/^\s+\S/.test(lines[i + 1]) ||
+          (isBlockScalar && lines[i + 1].trim() === ""))
+      ) {
+        more.push(lines[++i].trim());
+      }
+      if (isBlockScalar) {
+        fields[key] = more
+          .join(value.startsWith("|") ? "\n" : " ")
+          .replace(/ {2,}/g, " ")
+          .trim();
+        continue;
+      }
+      if (more.length) value = [value, ...more].join(" ");
+    }
+
     // Only tags is a list. A title such as "[Draft] Notes" is text, and read
     // as a list it became an array where the pages expect a string.
     fields[key] = unquoteScalar(value);
@@ -272,6 +340,7 @@ function parseFrontmatter(str: string): Frontmatter {
     description: fields.description,
     tags,
     framework: fields.framework,
+    name: fields.name,
   };
 }
 

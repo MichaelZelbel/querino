@@ -88,12 +88,14 @@ export const CommentsSection = ({
           modResult.reason ||
             "Your reply could not be posted. It appears to violate our Community Guidelines.",
         );
-        return;
+        return false;
       }
       await createComment(content, parentId);
       toast.success("Reply posted");
+      return true;
     } catch (err: any) {
       toast.error(err.message || "Failed to post reply");
+      return false;
     }
   };
 
@@ -112,12 +114,14 @@ export const CommentsSection = ({
           modResult.reason ||
             "Your edit could not be saved. It appears to violate our Community Guidelines.",
         );
-        return;
+        return false;
       }
       await editComment(commentId, content);
       toast.success("Comment updated");
+      return true;
     } catch (err: any) {
       toast.error(err.message || "Failed to update comment");
+      return false;
     }
   };
 
@@ -125,8 +129,10 @@ export const CommentsSection = ({
     try {
       await deleteComment(commentId);
       toast.success("Comment deleted");
+      return true;
     } catch (err: any) {
       toast.error(err.message || "Failed to delete comment");
+      return false;
     }
   };
 

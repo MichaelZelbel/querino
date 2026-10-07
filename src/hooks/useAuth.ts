@@ -5,6 +5,7 @@ import type { AuthChangeEvent, User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Profile } from "@/types/profile";
+import { forgetCoachChats } from "@/lib/coachChats";
 
 /** One row from the get_my_plan() RPC, which is how role and plan_type are
  * read now that they are no longer selectable off the profiles table. */
@@ -289,10 +290,12 @@ export function useAuth() {
   const signOut = useCallback(
     async (scope: "local" | "global" = "local") => {
       const { error } = await supabase.auth.signOut({ scope });
-      // The SIGNED_OUT event above already empties the caches. This stays for a
-      // failed signOut that emits no event: the person pressed "sign out" and
-      // must not keep seeing the account's rows.
+      // The SIGNED_OUT event above already empties the caches (and the
+      // AuthProvider the coach chats). This stays for a failed signOut that
+      // emits no event: the person pressed "sign out" and must not keep seeing
+      // the account's rows, nor leave its coach chats on this computer.
       queryClient.clear();
+      forgetCoachChats();
       return { error };
     },
     [queryClient],

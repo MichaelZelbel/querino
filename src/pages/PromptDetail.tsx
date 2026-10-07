@@ -1,7 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
-import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
+import { useState } from "react";
+import { Link, useNavigate } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSavedPrompts } from "@/hooks/useSavedPrompts";
@@ -66,18 +64,20 @@ import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { formatCount } from "@/components/shared/formatDate";
 import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
+import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 
-interface PromptWithAuthor extends Prompt {
+export interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
 }
 
-// The route loader fetches this record on the server, so the first render already has
-// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
-// it keeps the page current and handles a slug change without a full navigation.
-export default function PromptDetail({
-  initialPrompt = null,
-}: { initialPrompt?: PromptWithAuthor | null } = {}) {
-  const { slug } = useParams<{ slug: string }>();
+// The route loader is the one source of this record (2026-10-07). It runs on
+// the server for the first request, so the HTML a crawler receives is the
+// whole page, and in the browser for later visits and once more with the
+// session when a private prompt was not visible to the server
+// (useSignedInRetry). The page used to fetch the same row again with
+// select("*") after hydration: a second request per visit that also carried
+// the embedding vector.
+export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
   const navigate = useNavigate();
   const goBack = useGoBack("/discover");
   const { user } = useAuthContext();
@@ -85,12 +85,9 @@ export default function PromptDetail({
   const { clonePrompt, cloning } = useClonePrompt();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isPromptPinned, togglePin } = usePinnedPrompts();
-  const [prompt, setPrompt] = useState<PromptWithAuthor | null>(initialPrompt);
-  const [loading, setLoading] = useState(!initialPrompt);
-  const [notFound, setNotFound] = useState(false);
-  // A failed request is not a missing prompt: it gets its own screen with a
-  // retry instead of "Prompt Not Found".
-  const [loadError, setLoadError] = useState(false);
+  // A change this page makes to the prompt re-runs the route's loader rather
+  // than selecting the row again here.
+  const reloadPrompt = useReloadRouteData();
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pinning, setPinning] = useState(false);
@@ -111,12 +108,11 @@ export default function PromptDetail({
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges,
-    refetch: refetchSuggestions,
-  } = useSuggestions("prompt", prompt?.id || "");
+  } = useSuggestions("prompt", prompt.id);
 
-  const isSaved = prompt?.id ? isPromptSaved(prompt.id) : false;
-  const isPinned = prompt?.id ? isPromptPinned(prompt.id) : false;
-  const isAuthor = prompt?.author_id && user?.id === prompt.author_id;
+  const isSaved = isPromptSaved(prompt.id);
+  const isPinned = isPromptPinned(prompt.id);
+  const isAuthor = prompt.author_id && user?.id === prompt.author_id;
   // The author or a premium member of the prompt's team, as row-level
   // security allows.
   const canEdit = useCanEditArtifact(prompt);
@@ -130,95 +126,13 @@ export default function PromptDetail({
   const isPersonalWorkspace = currentWorkspace === "personal";
   const hasTeams = teams.length > 0;
   // Show "Copy to team" only for personal prompts the user owns (no team_id)
-  const isPersonalPrompt = !prompt?.team_id;
+  const isPersonalPrompt = !prompt.team_id;
   const canCopyToTeam =
     isAuthor &&
     isPremium &&
     hasTeams &&
     isPersonalWorkspace &&
     isPersonalPrompt;
-
-  const fetchPrompt = async () => {
-    if (!slug) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    // Legacy /prompts/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
-    if (isUuid(slug)) {
-      const canonical = await resolveSlugFromId("prompts", slug);
-      if (canonical) {
-        navigate(`/prompts/${canonical}`, { replace: true });
-        return;
-      }
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("prompts")
-        .select(
-          `
-          *,
-          profiles:author_id (
-            id,
-            display_name,
-            avatar_url
-          )
-        `,
-        )
-        .eq("slug", slug)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching prompt:", error);
-        setLoadError(true);
-      } else if (!data) {
-        // Prompt not found by current slug — check redirect history
-        const { data: redirect } = await supabase
-          .from("prompt_slug_redirects")
-          .select("prompt_id")
-          .eq("old_slug", slug)
-          .maybeSingle();
-
-        if (redirect?.prompt_id) {
-          // Fetch the current slug for this prompt
-          const { data: currentPrompt } = await supabase
-            .from("prompts")
-            .select("slug")
-            .eq("id", redirect.prompt_id)
-            .maybeSingle();
-
-          if (currentPrompt?.slug) {
-            navigate(`/prompts/${currentPrompt.slug}`, { replace: true });
-            return;
-          }
-        }
-
-        setNotFound(true);
-      } else {
-        const promptData: PromptWithAuthor = {
-          ...(data as any),
-          author: (data as any).profiles || null,
-        };
-        setPrompt(promptData);
-        setNotFound(false);
-        setLoadError(false);
-      }
-    } catch (err) {
-      console.error("Error fetching prompt:", err);
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPrompt();
-  }, [slug]);
 
   const handleCopy = async () => {
     if (!prompt) return;
@@ -309,20 +223,7 @@ export default function PromptDetail({
     );
     if (!applied) return false;
 
-    // Refresh the prompt data
-    const { data } = await supabase
-      .from("prompts")
-      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      // The caller returns early when slug is missing.
-      .eq("slug", slug!)
-      .maybeSingle();
-
-    if (data) {
-      setPrompt({
-        ...(data as any),
-        author: (data as any).profiles || null,
-      });
-    }
+    await reloadPrompt();
     return true;
   };
 
@@ -337,80 +238,6 @@ export default function PromptDetail({
     }
     return "U";
   };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="min-w-0 flex-1 py-12">
-          <div className="container mx-auto max-w-4xl px-4">
-            <Skeleton className="mb-4 h-8 w-48" />
-            <Skeleton className="mb-8 h-12 w-3/4" />
-            <Skeleton className="mb-4 h-6 w-24" />
-            <Skeleton className="mb-8 h-24 w-full" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (loadError && !prompt) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Couldn't load this prompt
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Something went wrong while loading it. Check your connection and
-              try again.
-            </p>
-            <Button
-              className="gap-2"
-              onClick={() => {
-                setLoadError(false);
-                setLoading(true);
-                void fetchPrompt();
-              }}
-            >
-              Try again
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notFound || !prompt) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Prompt Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The prompt you're looking for doesn't exist or is no longer
-              available.
-            </p>
-            <Link to="/discover">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Discover
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -697,7 +524,7 @@ export default function PromptDetail({
                   menerioSynced={(prompt as any).menerio_synced || false}
                   menerioSyncedAt={(prompt as any).menerio_synced_at || null}
                   menerioNoteId={(prompt as any).menerio_note_id || null}
-                  onSyncComplete={fetchPrompt}
+                  onSyncComplete={() => void reloadPrompt()}
                 />
               )}
 
@@ -776,7 +603,7 @@ export default function PromptDetail({
               promptTitle={prompt.title}
               promptId={isAuthor ? prompt.id : undefined}
               isPublic={prompt.is_public}
-              onPromptUpdated={fetchPrompt}
+              onPromptUpdated={() => void reloadPrompt()}
               userId={user?.id}
             />
 
@@ -829,7 +656,7 @@ export default function PromptDetail({
                 onOpenChange={setShowVersionHistory}
                 promptId={prompt.id}
                 promptSlug={prompt.slug}
-                onRestoreComplete={fetchPrompt}
+                onRestoreComplete={() => void reloadPrompt()}
                 currentPrompt={{
                   id: prompt.id,
                   title: prompt.title,
@@ -915,6 +742,52 @@ export default function PromptDetail({
           teamId={(prompt as any).team_id}
         />
       </div>
+      <Footer />
+    </div>
+  );
+}
+
+/** The page's shape while its row is on the way. */
+export function PromptDetailSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="min-w-0 flex-1 py-12">
+        <div className="container mx-auto max-w-4xl px-4">
+          <Skeleton className="mb-4 h-8 w-48" />
+          <Skeleton className="mb-8 h-12 w-3/4" />
+          <Skeleton className="mb-4 h-6 w-24" />
+          <Skeleton className="mb-8 h-24 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+/** The route's not-found view; the route answers HTTP 404 with it. */
+export function PromptNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-20">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h1 className="mb-4 text-display-md font-bold text-foreground">
+            Prompt Not Found
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground">
+            The prompt you're looking for doesn't exist or is no longer
+            available.
+          </p>
+          <Link to="/discover">
+            <Button className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Discover
+            </Button>
+          </Link>
+        </div>
+      </main>
       <Footer />
     </div>
   );

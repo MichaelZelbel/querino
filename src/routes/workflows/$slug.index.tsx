@@ -1,13 +1,29 @@
-import { createFileRoute } from "@tanstack/react-router";
-import WorkflowDetail from "@/pages/WorkflowDetail";
+import {
+  createFileRoute,
+  type ErrorComponentProps,
+} from "@tanstack/react-router";
+import WorkflowDetail, {
+  WorkflowDetailSkeleton,
+  WorkflowNotFound,
+  type WorkflowWithAuthor,
+} from "@/pages/WorkflowDetail";
 import { loadWorkflow } from "@/lib/route-loaders";
 import { creativeWorkJsonLd, pageHead, privateHead } from "@/lib/seo";
+import {
+  loadRememberingMiss,
+  useSignedInRetry,
+} from "@/hooks/useRouteLoaderData";
+import { RouteErrorPage } from "@/components/layout/RouteErrorPage";
 
 // The loader runs on the server for the first request, so the artefact is in the HTML
 // and head() can build a real title from a real record. Before this, every route served
 // the same site-wide title and no canonical link at all.
 export const Route = createFileRoute("/workflows/$slug/")({
-  loader: ({ params }) => loadWorkflow(params.slug),
+  // Returns the row, or throws: a 301 for an old address, notFound() for a miss,
+  // an error when the database fails (route-loaders.ts). A miss in the browser
+  // with a session is noted, so the signed-in retry does not ask twice.
+  loader: ({ params, route }) =>
+    loadRememberingMiss(route.id, params.slug, () => loadWorkflow(params.slug)),
 
   head: ({ loaderData }) => {
     if (!loaderData) return privateHead("Not Found");
@@ -34,15 +50,33 @@ export const Route = createFileRoute("/workflows/$slug/")({
   },
 
   component: RouteComponent,
+  notFoundComponent: NotFoundComponent,
+  // A database error: the same page on the server and in the browser, inside
+  // the site layout, with a "Try again" that runs the loader again.
+  errorComponent: ErrorComponent,
+  // Shown while the loader runs again: a client-side visit that takes long, and
+  // the signed-in second run of a not-found page.
+  pendingComponent: WorkflowDetailSkeleton,
 });
 
 function RouteComponent() {
-  // Handed to the page so its first render already has the record. The page keeps its
-  // own fetch for slug changes and for staying current; this only removes the empty
-  // first paint, which is the paint a crawler sees.
-  // The key remounts the page per slug: it seeds its state once from the initial
-  // record and never resets loading, so a client-side move from one workflow to
-  // another showed the old content under the new URL until the fetch resolved.
+  // The loader's row is the page's row; the page makes no fetch of its own.
+  // The key remounts the page per slug, so a client-side move from one workflow
+  // to another starts with fresh page state (copied flags, open dialogs).
   const { slug } = Route.useParams();
-  return <WorkflowDetail key={slug} initialWorkflow={Route.useLoaderData()} />;
+  const workflow = Route.useLoaderData() as unknown as WorkflowWithAuthor;
+  return <WorkflowDetail key={slug} workflow={workflow} />;
+}
+
+function NotFoundComponent() {
+  const { slug } = Route.useParams();
+  // A private or team workflow is not found by the signed-out server, which
+  // sends the not-found view; once a session turns up, the browser asks once
+  // more and shows the skeleton meanwhile (useSignedInRetry).
+  const mayStillLoad = useSignedInRetry(Route.id, slug);
+  return mayStillLoad ? <WorkflowDetailSkeleton /> : <WorkflowNotFound />;
+}
+
+function ErrorComponent(props: ErrorComponentProps) {
+  return <RouteErrorPage {...props} what="this workflow" />;
 }

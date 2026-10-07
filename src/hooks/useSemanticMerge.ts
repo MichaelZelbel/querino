@@ -1,4 +1,4 @@
-// Used by usePrompts/useSkills/useWorkflows hooks so that
+// Used by the artifact list hooks (useArtifactList) so that
 // keyword-mismatched but semantically-related artifacts still surface.
 //
 // - Embedding generation goes through the `generate-embedding` edge function
@@ -34,15 +34,39 @@ const RPC_BY_TYPE: Record<
   prompt_kit: "search_prompt_kits_semantic",
 };
 
-// In-memory cache for query embeddings (per page lifetime).
-// Avoids repeated OpenAI calls when the user toggles tabs / filters.
-const embeddingCache = new Map<string, number[]>();
+// In-memory cache for query embeddings (per page lifetime), keyed by the
+// signed-in user and the text. It holds the request itself, not only its
+// answer: one Discover search starts the four tabs' lists at once, and with
+// finished answers only, all four missed the cache and each called
+// generate-embedding, which charges the caller every time (2026-10-07). A
+// failed or empty answer is dropped from the cache so the next search asks
+// again.
+const embeddingCache = new Map<string, Promise<number[] | null>>();
+
+async function requestEmbedding(text: string): Promise<number[] | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      "generate-embedding",
+      {
+        body: { text },
+      },
+    );
+    if (error) {
+      console.warn("[semantic-merge] embedding error:", error);
+      return null;
+    }
+    const emb = (data as { embedding?: unknown } | null)?.embedding;
+    if (!Array.isArray(emb) || emb.length === 0) return null;
+    return emb as number[];
+  } catch (e) {
+    console.warn("[semantic-merge] embedding threw:", e);
+    return null;
+  }
+}
 
 async function getQueryEmbedding(query: string): Promise<number[] | null> {
   const trimmed = query.trim();
   if (!trimmed) return null;
-  const cached = embeddingCache.get(trimmed);
-  if (cached) return cached;
 
   // generate-embedding needs a signed-in caller (it answers 401 otherwise and
   // charges the caller's credits), so a visitor gets keyword search only.
@@ -51,25 +75,18 @@ async function getQueryEmbedding(query: string): Promise<number[] | null> {
   } = await supabase.auth.getSession();
   if (!session) return null;
 
-  try {
-    const { data, error } = await supabase.functions.invoke(
-      "generate-embedding",
-      {
-        body: { text: trimmed },
-      },
-    );
-    if (error) {
-      console.warn("[semantic-merge] embedding error:", error);
-      return null;
-    }
-    const emb = (data as any)?.embedding as number[] | undefined;
-    if (!Array.isArray(emb) || emb.length === 0) return null;
-    embeddingCache.set(trimmed, emb);
+  // Per account: the charge is the caller's, so another account on the same
+  // tab must not ride on this one's request.
+  const key = `${session.user.id}\u0000${trimmed}`;
+  const cached = embeddingCache.get(key);
+  if (cached) return cached;
+
+  const pending = requestEmbedding(trimmed).then((emb) => {
+    if (!emb) embeddingCache.delete(key);
     return emb;
-  } catch (e) {
-    console.warn("[semantic-merge] embedding threw:", e);
-    return null;
-  }
+  });
+  embeddingCache.set(key, pending);
+  return pending;
 }
 
 /**

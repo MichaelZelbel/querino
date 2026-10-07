@@ -3,15 +3,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import Typography from "@tiptap/extension-typography";
-import Underline from "@tiptap/extension-underline";
-import TextAlign from "@tiptap/extension-text-align";
-import Highlight from "@tiptap/extension-highlight";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import { TextStyle } from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
-import Superscript from "@tiptap/extension-superscript";
-import Subscript from "@tiptap/extension-subscript";
 import { Markdown } from "tiptap-markdown";
 import { useEffect, useRef } from "react";
 import { PromptBlock } from "./extensions/PromptBlockNode";
@@ -36,15 +27,19 @@ export function PromptKitRichEditor({
   const isInternalUpdate = useRef(false);
 
   const editor = useEditor({
+    // Only what the public kit page renders: it reads plain Markdown without
+    // GFM and shows raw HTML as text, so underline, strikethrough, highlight,
+    // colour, sub/superscript, checklists and alignment are not offered
+    // (2026-10-07). Without the extension a pasted mark is dropped instead of
+    // being saved as a tag.
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         codeBlock: { HTMLAttributes: { class: "rounded-md" } },
         link: false,
-        // StarterKit may bundle Underline in newer versions — disable to avoid duplicate.
         underline: false,
+        strike: false,
       } as any),
-      Underline,
       Placeholder.configure({ placeholder }),
       Link.configure({
         openOnClick: false,
@@ -52,14 +47,6 @@ export function PromptKitRichEditor({
         HTMLAttributes: { rel: "noopener noreferrer" },
       }),
       Typography,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Highlight.configure({ multicolor: true }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      TextStyle,
-      Color,
-      Superscript,
-      Subscript,
       Markdown.configure({
         html: true,
         transformPastedText: true,

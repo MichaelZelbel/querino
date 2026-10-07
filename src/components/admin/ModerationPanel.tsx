@@ -566,11 +566,27 @@ function AIReviewQueueTab() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [processing, setProcessing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Counted in the database, not from the list: the list holds at most 100
+  // rows of the chosen filter, so pending rows outside it (or any filter other
+  // than All and Pending) showed "0 pending" and disabled Process Queue Now
+  // while work was waiting (2026-10-07).
+  const [statusCounts, setStatusCounts] = useState<{
+    pending: number;
+    flagged: number;
+  } | null>(null);
   const profileNames = useProfileNames(items.map((i) => i.user_id));
 
   useEffect(() => {
     fetchItems();
   }, [filterStatus]);
+
+  const countStatus = async (status: string): Promise<number | null> => {
+    const { count, error } = await supabase
+      .from("moderation_review_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("status", status);
+    return error ? null : (count ?? 0);
+  };
 
   const fetchItems = async () => {
     let query = (supabase.from("moderation_review_queue") as any)
@@ -582,7 +598,14 @@ function AIReviewQueueTab() {
       query = query.eq("status", filterStatus);
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, pending, flagged] = await Promise.all([
+      query,
+      countStatus("pending"),
+      countStatus("flagged"),
+    ]);
+    setStatusCounts(
+      pending === null || flagged === null ? null : { pending, flagged },
+    );
     if (error) {
       const message = loadErrorMessage(error);
       setLoadError(message);
@@ -634,8 +657,12 @@ function AIReviewQueueTab() {
 
   if (loading) return <Skeleton className="h-32 w-full" />;
 
-  const pendingCount = items.filter((i) => i.status === "pending").length;
-  const flaggedCount = items.filter((i) => i.status === "flagged").length;
+  // If the counts could not be read, fall back to the list rather than
+  // block the button.
+  const pendingCount =
+    statusCounts?.pending ?? items.filter((i) => i.status === "pending").length;
+  const flaggedCount =
+    statusCounts?.flagged ?? items.filter((i) => i.status === "flagged").length;
 
   return (
     <div className="space-y-4">
@@ -657,11 +684,11 @@ function AIReviewQueueTab() {
           </SelectContent>
         </Select>
         <span className="text-sm text-muted-foreground">
-          {pendingCount} pending · {flaggedCount} flagged · {items.length} total
+          {pendingCount} pending · {flaggedCount} flagged · {items.length} shown
         </span>
         <Button
           onClick={triggerProcessing}
-          disabled={processing || pendingCount === 0}
+          disabled={processing || (statusCounts !== null && pendingCount === 0)}
           size="sm"
           className="gap-1 ml-auto"
         >

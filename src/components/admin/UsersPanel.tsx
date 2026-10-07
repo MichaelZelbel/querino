@@ -45,6 +45,7 @@ import { format } from "date-fns";
 import { UserTokenBalance } from "@/components/admin/UserTokenBalance";
 import { UserTokenModal } from "@/components/admin/UserTokenModal";
 import type { AppRole } from "@/types/userRole";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 
 interface AllowancePeriod {
   id: string;
@@ -220,6 +221,7 @@ export function UsersPanel() {
     if (!changes?.role) return;
 
     setSavingUserId(userId);
+    const previousRole = users.find((u) => u.id === userId)?.role ?? "free";
     try {
       // Update user_roles table
       const { error } = await supabase
@@ -240,7 +242,22 @@ export function UsersPanel() {
         return rest;
       });
 
-      toast.success("User role updated successfully");
+      // An allowance period is made once per calendar month from the role the
+      // user has then, so an upgrade changes nothing about this month's
+      // credits. Said here, so the admin does not tell the user otherwise.
+      const premiumRoles: AppRole[] = ["premium", "premium_gift", "admin"];
+      const becamePremium =
+        premiumRoles.includes(changes.role) &&
+        !premiumRoles.includes(previousRole);
+      toast.success(
+        "User role updated successfully",
+        becamePremium
+          ? {
+              description:
+                "The Premium credit allowance starts with their next monthly period (the 1st of next month). This month keeps its current allowance.",
+            }
+          : undefined,
+      );
     } catch (error) {
       console.error("Error updating user:", error);
       toast.error("Failed to update user role");
@@ -268,8 +285,15 @@ export function UsersPanel() {
         body: { userId },
       });
 
+      // The server's own reason is in the response body; error.message is
+      // only "Edge Function returned a non-2xx status code" (2026-10-07).
       if (response.error) {
-        throw new Error(response.error.message || "Failed to delete user");
+        throw new Error(
+          await getFunctionErrorMessage(
+            response.error,
+            "Failed to delete user",
+          ),
+        );
       }
 
       if (response.data?.error) {

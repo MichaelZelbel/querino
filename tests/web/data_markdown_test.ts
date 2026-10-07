@@ -127,3 +127,172 @@ Deno.test("Windows line endings and an empty frontmatter parse", () => {
   assertEquals(empty.frontmatter.title, "H");
   assertEquals(empty.content, "# H\nBody");
 });
+
+// ---------------------------------------------------------------------------
+// A standard SKILL.md keeps its own frontmatter (2026-10-07). Any leading
+// `---` block used to be read as Querino's metadata and cut off, so `name:`
+// and `allowed-tools:` vanished and the skill was no longer a valid SKILL.md.
+
+const SKILL_MD = [
+  "---",
+  "name: pdf-processing",
+  "description: Extract text and tables from PDF files. Use when working",
+  "  with PDFs or when the user mentions forms.",
+  "allowed-tools: Read, Grep, Bash(python:*)",
+  "---",
+  "",
+  "# PDF Processing",
+  "",
+  "Use pdfplumber.",
+].join("\n");
+
+Deno.test("a SKILL.md is imported whole, frontmatter included", () => {
+  const parsed = parseMarkdownContent(SKILL_MD, "SKILL.md");
+  assertEquals(parsed.content, SKILL_MD);
+  assertEquals(parsed.frontmatter.title, "PDF Processing");
+  assertEquals(
+    parsed.frontmatter.description,
+    "Extract text and tables from PDF files. Use when working with PDFs or when the user mentions forms.",
+  );
+  assertEquals(parsed.frontmatter.tags, undefined);
+});
+
+Deno.test("a SKILL.md without a heading takes its title from name", () => {
+  const md = [
+    "---",
+    "name: code-review",
+    "description: >",
+    "  Reviews a diff for bugs",
+    "  and missing tests.",
+    "license: MIT",
+    "---",
+    "Look at the diff.",
+  ].join("\n");
+  const parsed = parseMarkdownContent(md, "SKILL.md");
+  assertEquals(parsed.content, md);
+  assertEquals(parsed.frontmatter.title, "Code Review");
+  assertEquals(
+    parsed.frontmatter.description,
+    "Reviews a diff for bugs and missing tests.",
+  );
+});
+
+Deno.test("Querino's own export is still read as metadata", () => {
+  // "Download .md" always writes `type:`.
+  const exported = buildMarkdownContent({
+    title: "Reviewer",
+    type: "skill",
+    description: "Reviews things",
+    tags: ["review"],
+    content: "---\nname: reviewer\n---\n\nBody",
+  });
+  const parsed = parseMarkdownContent(exported);
+  assertEquals(parsed.frontmatter.title, "Reviewer");
+  assertEquals(parsed.frontmatter.type, "skill");
+  assertEquals(parsed.frontmatter.tags, ["review"]);
+  // The skill's own frontmatter inside the content survives the round trip.
+  assertEquals(parsed.content, "---\nname: reviewer\n---\n\nBody");
+});
+
+Deno.test("a GitHub sync file, which has no type, is metadata too", () => {
+  const synced = [
+    "---",
+    'id: "0b6f"',
+    'title: "Synced"',
+    'description: "From GitHub"',
+    'category: ""',
+    'tags: ["a"]',
+    'language: "en"',
+    'created_at: "2026-10-01"',
+    'updated_at: "2026-10-02"',
+    "published: true",
+    "---",
+    "",
+    "# Synced",
+  ].join("\n");
+  const parsed = parseMarkdownContent(synced);
+  assertEquals(parsed.frontmatter.title, "Synced");
+  assertEquals(parsed.frontmatter.tags, ["a"]);
+  assertEquals(parsed.content, "# Synced");
+});
+
+Deno.test("a SKILL.md's own type: does not make its block Querino's", () => {
+  const md = "---\nname: helper\ntype: agent\n---\nBody";
+  assertEquals(parseMarkdownContent(md).content, md);
+});
+
+// Only a SKILL.md keeps its block (2026-10-07). The first version kept any
+// block with a key Querino does not write, so a note from Obsidian or a
+// Jekyll post arrived with its YAML pasted into the prompt and no tags.
+
+Deno.test("an Obsidian note's frontmatter is metadata, not content", () => {
+  const md = [
+    "---",
+    "title: Meeting notes prompt",
+    "tags:",
+    "  - meetings",
+    "  - summary",
+    "author: Jane",
+    "date: 2026-10-01",
+    "---",
+    "",
+    "Summarise the meeting below.",
+  ].join("\n");
+  const parsed = parseMarkdownContent(md, "meeting.md");
+  assertEquals(parsed.content, "Summarise the meeting below.");
+  assertEquals(parsed.frontmatter.title, "Meeting notes prompt");
+  assertEquals(parsed.frontmatter.tags, ["meetings", "summary"]);
+  assertEquals(parsed.frontmatter.description, undefined);
+});
+
+Deno.test("a Jekyll post with inline tags imports cleanly", () => {
+  const md = [
+    "---",
+    "layout: post",
+    'title: "Release notes"',
+    "description: Turns a changelog into notes",
+    "tags: [writing, release]",
+    "permalink: /release-notes/",
+    "---",
+    "Write release notes.",
+  ].join("\n");
+  const parsed = parseMarkdownContent(md);
+  assertEquals(parsed.content, "Write release notes.");
+  assertEquals(parsed.frontmatter.title, "Release notes");
+  assertEquals(parsed.frontmatter.description, "Turns a changelog into notes");
+  assertEquals(parsed.frontmatter.tags, ["writing", "release"]);
+});
+
+Deno.test("a SKILL.md with tags keeps its block and lifts the tags", () => {
+  const md = [
+    "---",
+    "name: commit-writer",
+    "description: Writes commit messages.",
+    "tags: [git, writing]",
+    "---",
+    "",
+    "# Commit Writer",
+    "",
+    "Read the diff.",
+  ].join("\n");
+  const parsed = parseMarkdownContent(md, "SKILL.md");
+  assertEquals(parsed.content, md);
+  assertEquals(parsed.frontmatter.title, "Commit Writer");
+  assertEquals(parsed.frontmatter.description, "Writes commit messages.");
+  assertEquals(parsed.frontmatter.tags, ["git", "writing"]);
+});
+
+Deno.test("only a top-level name: makes a block a SKILL.md's", () => {
+  // A `name:` nested under another key is not the skill's name.
+  const md = [
+    "---",
+    "title: Nested",
+    "author:",
+    "  name: Jane",
+    "---",
+    "Body",
+  ].join("\n");
+  const parsed = parseMarkdownContent(md);
+  assertEquals(parsed.content, "Body");
+  assertEquals(parsed.frontmatter.title, "Nested");
+});

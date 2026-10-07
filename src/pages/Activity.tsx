@@ -7,7 +7,7 @@ import { Link } from "@/lib/router-compat";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 
 export default function Activity() {
-  const { user } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext();
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useOwnActivityFeed(user?.id);
@@ -35,12 +35,15 @@ export default function Activity() {
             </div>
           </div>
 
-          {/* Activity Timeline */}
-          {user ? (
+          {/* Activity Timeline. While the session is still being read there
+              is no user yet, and the "Sign in" box flashed up for people who
+              were signed in (2026-10-07): that moment shows the loading
+              state instead. */}
+          {user || authLoading ? (
             <div className="border border-border rounded-lg bg-card overflow-hidden">
               <ActivityTimeline
                 events={events}
-                isLoading={isLoading}
+                isLoading={isLoading || (authLoading && !user)}
                 isFetchingNextPage={isFetchingNextPage}
                 hasNextPage={hasNextPage ?? false}
                 fetchNextPage={fetchNextPage}

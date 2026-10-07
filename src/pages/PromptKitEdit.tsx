@@ -69,6 +69,7 @@ import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDi
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { writeOutcome } from "@/components/editors/writeOutcome";
+import { artifactDetailSelect } from "@/lib/artifactListColumns";
 
 interface KitFormData {
   title: string;
@@ -164,8 +165,10 @@ export default function PromptKitEdit() {
         return;
       }
       try {
+        // Only the columns a page reads (artifactListColumns.ts): "*" also
+        // downloaded the embedding vector and the search index.
         const { data, error } = await (supabase.from("prompt_kits") as any)
-          .select("*")
+          .select(artifactDetailSelect("prompt_kits"))
           .eq("slug", slug)
           .maybeSingle();
 
@@ -208,6 +211,40 @@ export default function PromptKitEdit() {
     // must never reload the form over unsaved edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, userId]);
+
+  // The restored row goes into the form in place, as SkillEdit does. A page
+  // reload with unsaved edits raised the leave-page warning, and "stay" kept
+  // the pre-restore form, whose next save overwrote the restore (2026-10-07).
+  const handleRestoreComplete = async () => {
+    if (!kitId) return;
+    const { data: row, error } = await supabase
+      .from("prompt_kits")
+      .select(artifactDetailSelect("prompt_kits"))
+      .eq("id", kitId)
+      .maybeSingle();
+    if (error || !row) {
+      toast.error(
+        "The version was restored, but the editor could not load it. Reload the page.",
+      );
+      return;
+    }
+    // The select list is built at run time, so the row is typed here.
+    const data = row as unknown as PromptKit;
+    setKit(data);
+    const restored: KitFormData = {
+      title: data.title,
+      description: data.description || "",
+      content: data.content || "",
+      category: data.category || "",
+      tags: data.tags || [],
+      isPublic: data.published ?? false,
+      language: data.language || DEFAULT_LANGUAGE,
+    };
+    setFormData(restored);
+    markSaved(restored);
+    previousContentRef.current = null;
+    setPreviousContent(null);
+  };
 
   const normalizeTag = (tag: string) =>
     tag
@@ -808,7 +845,7 @@ export default function PromptKitEdit() {
             content: formData.content,
             tags: formData.tags,
           }}
-          onRestoreComplete={() => window.location.reload()}
+          onRestoreComplete={handleRestoreComplete}
         />
       )}
 

@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams, Link, useNavigate } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
-import { isUuid, resolveSlugFromId } from "@/lib/uuidRoute";
+import { useState } from "react";
+import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCloneSkill } from "@/hooks/useCloneSkill";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
@@ -52,36 +50,30 @@ import type { Skill, SkillAuthor } from "@/types/skill";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
+import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 
-interface SkillWithAuthor extends Skill {
+export interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
 }
 
-// The route loader fetches this record on the server, so the first render already has
-// it and the HTML a crawler receives is not an empty shell. The fetch below still runs:
-// it keeps the page current and handles a slug change without a full navigation.
-export default function SkillDetail({
-  initialSkill = null,
-}: { initialSkill?: SkillWithAuthor | null } = {}) {
-  const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
+// The route loader is the one source of this record (2026-10-07): on the
+// server for the first request, in the browser for later visits, and once more
+// with the session when a private skill was not visible to the server
+// (useSignedInRetry). The page no longer fetches the row a second time.
+export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
   const goBack = useGoBack("/discover?type=skills");
   const { user } = useAuthContext();
   const { cloneSkill, cloning } = useCloneSkill();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
-  const [skill, setSkill] = useState<SkillWithAuthor | null>(initialSkill);
-  const [loading, setLoading] = useState(!initialSkill);
-  const [notFound, setNotFound] = useState(false);
-  // A failed request is not a missing skill: it gets its own screen with a
-  // retry instead of "Skill Not Found".
-  const [loadError, setLoadError] = useState(false);
+  // A change this page makes to the skill re-runs the route's loader.
+  const reloadSkill = useReloadRouteData();
   const [copied, setCopied] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showCopyToTeamModal, setShowCopyToTeamModal] = useState(false);
   const [showTranslateModal, setShowTranslateModal] = useState(false);
   const { items: similarSkills, loading: loadingSimilar } = useSimilarSkills(
-    skill?.id,
+    skill.id,
   );
   const {
     suggestions,
@@ -91,8 +83,8 @@ export default function SkillDetail({
     reviewSuggestion,
     requestChanges,
     updateSuggestionAfterChanges,
-  } = useSuggestions("skill", skill?.id || "");
-  const isAuthor = skill?.author_id && user?.id === skill.author_id;
+  } = useSuggestions("skill", skill.id);
+  const isAuthor = skill.author_id && user?.id === skill.author_id;
   // The author or a premium member of the skill's team, as row-level
   // security allows.
   const canEdit = useCanEditArtifact(skill);
@@ -106,69 +98,9 @@ export default function SkillDetail({
   const isPersonalWorkspace = currentWorkspace === "personal";
   const hasTeams = teams.length > 0;
   // Show "Copy to team" only for personal skills the user owns (no team_id)
-  const isPersonalSkill = !(skill as any)?.team_id;
+  const isPersonalSkill = !skill.team_id;
   const canCopyToTeam =
     isAuthor && isPremium && hasTeams && isPersonalWorkspace && isPersonalSkill;
-
-  const fetchSkill = useCallback(async () => {
-    if (!slug) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    // Legacy /skills/<uuid> URLs (pre-slug era) — redirect to the canonical slug.
-    if (isUuid(slug)) {
-      const canonical = await resolveSlugFromId("skills", slug);
-      if (canonical) {
-        navigate(`/skills/${canonical}`, { replace: true });
-        return;
-      }
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await (supabase.from("skills") as any)
-        .select(
-          `
-          *,
-          profiles:author_id (
-            id,
-            display_name,
-            avatar_url
-          )
-        `,
-        )
-        .eq("slug", slug)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching skill:", error);
-        setLoadError(true);
-      } else if (!data) {
-        setNotFound(true);
-      } else {
-        const skillData: SkillWithAuthor = {
-          ...data,
-          author: data.profiles || null,
-        };
-        setSkill(skillData);
-        setNotFound(false);
-        setLoadError(false);
-      }
-    } catch (err) {
-      console.error("Error fetching skill:", err);
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
-
-  useEffect(() => {
-    fetchSkill();
-  }, [fetchSkill]);
 
   const handleCopy = async () => {
     if (!skill) return;
@@ -204,14 +136,7 @@ export default function SkillDetail({
     );
     if (!applied) return false;
 
-    const { data } = await (supabase.from("skills") as any)
-      .select(`*, profiles:author_id (id, display_name, avatar_url)`)
-      .eq("slug", slug)
-      .maybeSingle();
-
-    if (data) {
-      setSkill({ ...data, author: data.profiles || null });
-    }
+    await reloadSkill();
     return true;
   };
 
@@ -226,78 +151,6 @@ export default function SkillDetail({
     }
     return "U";
   };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="min-w-0 flex-1 py-12">
-          <div className="container mx-auto max-w-4xl px-4">
-            <Skeleton className="mb-4 h-8 w-48" />
-            <Skeleton className="mb-8 h-12 w-3/4" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (loadError && !skill) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Couldn't load this skill
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Something went wrong while loading it. Check your connection and
-              try again.
-            </p>
-            <Button
-              className="gap-2"
-              onClick={() => {
-                setLoadError(false);
-                setLoading(true);
-                void fetchSkill();
-              }}
-            >
-              Try again
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notFound || !skill) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Skill Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The skill you're looking for doesn't exist or is no longer
-              available.
-            </p>
-            <Link to="/discover">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Discover
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -482,7 +335,7 @@ export default function SkillDetail({
                   menerioSynced={(skill as any).menerio_synced || false}
                   menerioSyncedAt={(skill as any).menerio_synced_at || null}
                   menerioNoteId={(skill as any).menerio_note_id || null}
-                  onSyncComplete={fetchSkill}
+                  onSyncComplete={() => void reloadSkill()}
                 />
               )}
 
@@ -647,6 +500,50 @@ export default function SkillDetail({
           teamId={(skill as any).team_id}
         />
       </div>
+      <Footer />
+    </div>
+  );
+}
+
+/** The page's shape while its row is on the way. */
+export function SkillDetailSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="min-w-0 flex-1 py-12">
+        <div className="container mx-auto max-w-4xl px-4">
+          <Skeleton className="mb-4 h-8 w-48" />
+          <Skeleton className="mb-8 h-12 w-3/4" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+/** The route's not-found view; the route answers HTTP 404 with it. */
+export function SkillNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-20">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h1 className="mb-4 text-display-md font-bold text-foreground">
+            Skill Not Found
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground">
+            The skill you're looking for doesn't exist or is no longer
+            available.
+          </p>
+          <Link to="/discover">
+            <Button className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Discover
+            </Button>
+          </Link>
+        </div>
+      </main>
       <Footer />
     </div>
   );

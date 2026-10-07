@@ -11,11 +11,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Folder, Plus, Loader2 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
-import {
-  useCollections,
-  useAddToCollection,
-  useCreateCollection,
-} from "@/hooks/useCollections";
+import { useCollections, useCreateCollection } from "@/hooks/useCollections";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export type BulkSelectionItem = {
@@ -38,40 +36,69 @@ export function BulkAddToCollectionModal({
 }: BulkAddToCollectionModalProps) {
   const { user } = useAuthContext();
   const { data: collections, isLoading } = useCollections(user?.id);
-  const addToCollection = useAddToCollection();
+  const queryClient = useQueryClient();
   const createCollection = useCreateCollection();
 
   const [showNewForm, setShowNewForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // One insert for the whole selection and one toast. It used to add item by
+  // item through the single-item mutation, which showed its own "Added to
+  // collection!" toast every time: twenty items, twenty toasts (2026-10-07).
+  // Items already in the collection are left alone by the unique key
+  // (collection_id, item_type, item_id) and counted from what came back.
   const addAll = async (collectionId: string) => {
     setBusyId(collectionId);
-    let added = 0;
-    let skipped = 0;
-    let failed = 0;
-    for (const item of items) {
-      try {
-        await addToCollection.mutateAsync({
-          collection_id: collectionId,
-          item_type: item.type,
-          item_id: item.id,
-        });
-        added++;
-      } catch (err: any) {
-        if (err?.code === "23505") skipped++;
-        else failed++;
-      }
+    try {
+      const { data: last, error: lastError } = await supabase
+        .from("collection_items")
+        .select("sort_order")
+        .eq("collection_id", collectionId)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      if (lastError) throw lastError;
+      const start = (last?.[0]?.sort_order ?? -1) + 1;
+
+      const { data: inserted, error } = await supabase
+        .from("collection_items")
+        .upsert(
+          items.map((item, i) => ({
+            collection_id: collectionId,
+            item_type: item.type,
+            item_id: item.id,
+            sort_order: start + i,
+          })),
+          {
+            onConflict: "collection_id,item_type,item_id",
+            ignoreDuplicates: true,
+          },
+        )
+        .select("id");
+      if (error) throw error;
+
+      const added = inserted?.length ?? 0;
+      const already = items.length - added;
+      const parts = [
+        `Added ${added} item${added === 1 ? "" : "s"} to the collection`,
+      ];
+      if (already > 0)
+        parts.push(
+          `${already} ${already === 1 ? "was" : "were"} already in it`,
+        );
+      toast.success(`${parts.join(", ")}.`);
+      onOpenChange(false);
+      onDone?.();
+    } catch (err) {
+      console.error("Error adding to collection:", err);
+      toast.error("Nothing was added to the collection. Please try again.");
+    } finally {
+      setBusyId(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["collection-items", collectionId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["collections"] });
     }
-    setBusyId(null);
-    if (added > 0)
-      toast.success(
-        `Added ${added} item${added === 1 ? "" : "s"} to collection.`,
-      );
-    if (skipped > 0) toast.info(`${skipped} already in collection.`);
-    if (failed > 0) toast.error(`${failed} failed to add.`);
-    onOpenChange(false);
-    onDone?.();
   };
 
   const handleCreateAndAdd = async () => {

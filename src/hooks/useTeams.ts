@@ -119,8 +119,21 @@ export function useCreateTeam() {
 
       return team;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-teams"] });
+    // The caller switches to the new team as soon as this resolves, and the
+    // workspace context drops any team it cannot find in the cached list. The
+    // invalidation used to run unawaited, so the switch met the old list and
+    // the new team's creator landed back in Personal (2026-10-07). The team
+    // goes into the list at once, and the returned refetch is awaited by
+    // mutateAsync before the caller continues (JoinTeamModal awaits it too).
+    onSuccess: (team) => {
+      queryClient.setQueryData<TeamWithRole[]>(
+        ["user-teams", user?.id],
+        (old) => [
+          ...(old ?? []).filter((t) => t.id !== team.id),
+          { ...team, role: "owner" },
+        ],
+      );
+      return queryClient.invalidateQueries({ queryKey: ["user-teams"] });
     },
   });
 }
@@ -174,33 +187,9 @@ export function useDeleteTeam() {
 }
 
 // Members join via invite links (team_invites + redeem_team_invite RPC,
-// see useTeamInvites.ts). The old not-implemented invite-by-email stub was
-// removed with that change.
-
-export function useAddTeamMemberById() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      teamId,
-      userId,
-      role,
-    }: {
-      teamId: string;
-      userId: string;
-      role: "admin" | "member";
-    }) => {
-      const { error } = await supabase
-        .from("team_members")
-        .insert({ team_id: teamId, user_id: userId, role });
-
-      if (error) throw error;
-    },
-    onSuccess: (_, { teamId }) => {
-      queryClient.invalidateQueries({ queryKey: ["team-members", teamId] });
-    },
-  });
-}
+// see useTeamInvites.ts). Since 2026-10-07 the database refuses any other way
+// in: the browser may insert only an owner's own seat (20261007120500), so
+// there is no hook for adding someone by id.
 
 export function useUpdateTeamMemberRole() {
   const queryClient = useQueryClient();

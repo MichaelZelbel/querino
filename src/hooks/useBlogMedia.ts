@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogMedia } from "@/types/blog";
 import { toast } from "sonner";
+import { blogMediaPath } from "@/components/blog/admin/blogMediaPath";
 
 export function useBlogMedia() {
   return useQuery({
@@ -117,10 +118,40 @@ export function useDeleteBlogMedia() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // The file goes first, then the row (2026-10-07). Deleting only the row
+    // left the image publicly reachable at its URL with nothing in the admin
+    // pointing at it. If the file cannot be removed the row stays, so the
+    // admin sees the image still listed and can try again.
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("blog_media").delete().eq("id", id);
+      const { data: row, error: readError } = await supabase
+        .from("blog_media")
+        .select("url")
+        .eq("id", id)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!row) throw new Error("This image no longer exists.");
 
-      if (error) throw error;
+      const path = blogMediaPath(row.url);
+      if (!path) {
+        throw new Error(
+          "Could not tell where this file is stored, so it was not deleted.",
+        );
+      }
+      const { error: storageError } = await supabase.storage
+        .from("blog-media")
+        .remove([path]);
+      if (storageError) {
+        throw new Error(
+          `The file could not be removed from storage: ${storageError.message}`,
+        );
+      }
+
+      const { error } = await supabase.from("blog_media").delete().eq("id", id);
+      if (error) {
+        throw new Error(
+          `The file was removed, but its entry could not be deleted: ${error.message}`,
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog-media"] });

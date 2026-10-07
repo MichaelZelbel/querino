@@ -126,18 +126,12 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           throw new Error("Failed to fetch artefact data");
         }
 
-        // The edge function derives the caller from the JWT; the body never
-        // names a user.
+        // The edge function derives the caller from the JWT and reads the
+        // item itself; since 2026-10-07 it also saves the insight, because
+        // the browser may no longer write one (20261007130000).
         const { data: response, error: fnError } =
           await supabase.functions.invoke("ai-insights", {
-            body: {
-              item_type: itemType,
-              title: artefact.title,
-              description: artefact.description || "",
-              content: artefact.content,
-              tags: artefact.tags || [],
-              metadata: { id: itemId },
-            },
+            body: { item_type: itemType, item_id: itemId },
           });
 
         if (fnError) {
@@ -150,30 +144,8 @@ export function useAIInsights(itemType: ItemType, itemId: string) {
           );
         }
 
-        // Edge function already normalizes the response
-        const summary = response.summary || null;
-        const tags: string[] = response.tags || [];
-        const recommendations: string[] = response.recommendations || [];
-        const quality: AIQuality | null = response.quality || null;
-
-        // Upsert into cache
-        const insightData = {
-          item_type: itemType,
-          item_id: itemId,
-          summary,
-          tags,
-          recommendations,
-          quality,
-          updated_at: new Date().toISOString(),
-        };
-
-        const { data: upserted, error: upsertError } = await supabase
-          .from("ai_insights")
-          .upsert(insightData as any, { onConflict: "item_type,item_id" })
-          .select()
-          .single();
-
-        if (upsertError) throw upsertError;
+        const upserted = response?.insight;
+        if (!upserted) throw new Error("Failed to generate insights");
 
         setInsights({
           ...upserted,

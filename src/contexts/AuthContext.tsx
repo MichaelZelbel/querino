@@ -1,6 +1,7 @@
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/useAuth";
+import { settleCoachChats } from "@/lib/coachChats";
 import type { Profile } from "@/types/profile";
 
 interface AuthContextType {
@@ -26,8 +27,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * The AI coach chats on disk belong to one account: they go when it signs out
+ * here (or in another tab, which supabase-js reports to this one) and when a
+ * different account signs in (coachChats.ts).
+ */
+function useCoachChatsFollowAccount(userId: string | null, known: boolean) {
+  const previousUserId = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!known) return;
+    const previous = previousUserId.current;
+    previousUserId.current = userId;
+    if (previous === userId) return;
+    settleCoachChats(userId, previous);
+  }, [userId, known]);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  // `loading` waits for the profile too; the account is known once there is a
+  // user, or once loading ends without one.
+  useCoachChatsFollowAccount(
+    auth.user?.id ?? null,
+    !!auth.user || !auth.loading,
+  );
 
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }

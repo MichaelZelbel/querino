@@ -50,7 +50,12 @@ const ARTIFACT_TYPES = [
   { value: "workflow", label: "Workflows" },
 ] as const;
 
-export function MenerioIntegrationSection() {
+export function MenerioIntegrationSection({
+  onChange,
+}: {
+  /** Called after a connect, disconnect or settings save went through. */
+  onChange?: () => void;
+} = {}) {
   const { user } = useAuthContext();
 
   // Connection state
@@ -167,6 +172,7 @@ export function MenerioIntegrationSection() {
       setIsConnected(true);
       setConnectedDisplayName(json.user_display_name || null);
       setConnectionKey("");
+      onChange?.();
       toast.success(
         json.already_connected
           ? "Already connected to Menerio!"
@@ -194,6 +200,7 @@ export function MenerioIntegrationSection() {
       setConnectedDisplayName(null);
       setExistingId(null);
       setConnectionKey("");
+      onChange?.();
       toast.success("Menerio integration disconnected.");
     } catch (error) {
       console.error("Menerio disconnect error:", error);
@@ -216,6 +223,7 @@ export function MenerioIntegrationSection() {
         })
         .eq("id", existingId);
       if (error) throw error;
+      onChange?.();
       toast.success("Menerio settings saved.");
     } catch (error) {
       console.error("Error saving settings:", error);

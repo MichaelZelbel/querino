@@ -1,7 +1,14 @@
 // Convert between Markdown (DB source of truth) and Tiptap JSON for the
 // Prompt Kit editor. The `## Prompt: <title>` convention is preserved on
 // the markdown side; in Tiptap it becomes a `promptBlock` node with
-// `title` and `body` attributes.
+// `title` and `body` attributes. A prompt section ends at the
+// `<!-- /prompt -->` line the editor writes after it (see promptKitParser).
+
+import {
+  PROMPT_END_MARKER,
+  PROMPT_HEADING_RE,
+  isPromptEndLine,
+} from "@/lib/promptKitParser.ts";
 
 // The shape of Tiptap's JSONContent this file reads, written out here so the
 // file has no package import and its unit tests (tests/web) run without one.
@@ -10,8 +17,6 @@ interface JSONContent {
   attrs?: Record<string, unknown>;
   content?: JSONContent[];
 }
-
-const HEADING_RE = /^##\s*Prompt:\s*(.*)$/i;
 
 interface ProseOrPrompt {
   type: "prose" | "prompt";
@@ -37,11 +42,18 @@ function splitMarkdown(markdown: string): ProseOrPrompt[] {
   };
 
   for (const line of lines) {
-    const m = line.match(HEADING_RE);
+    const m = line.match(PROMPT_HEADING_RE);
     if (m) {
       flush();
       mode = "prompt";
       title = (m[1] || "").trim();
+    } else if (isPromptEndLine(line)) {
+      // What follows the marker is the kit's own prose again. A stray marker
+      // outside a prompt is dropped.
+      if (mode === "prompt") {
+        flush();
+        mode = "prose";
+      }
     } else {
       buf.push(line);
     }
@@ -129,11 +141,14 @@ export const promptBlockAttributes = {
  * HTML <div> that a regular expression then had to find again: a ">" inside
  * the body, left unescaped in attributes by some browsers, ended that match
  * early and left raw HTML in the saved kit.
+ *
+ * The closing marker keeps a note written below the block out of the prompt
+ * (2026-10-07).
  */
 export function promptBlockMarkdown(title: unknown, body: unknown): string {
   const t = String(title ?? "").trim() || "Untitled";
   const b = String(body ?? "").replace(/\s+$/, "");
-  return `## Prompt: ${t}\n\n${b}\n`;
+  return `## Prompt: ${t}\n\n${b}\n\n${PROMPT_END_MARKER}\n`;
 }
 
 /**

@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Comment, ItemType } from "@/types/comment";
 import { triggerNotification } from "@/lib/notifications";
+import {
+  DELETED_COMMENT_TEXT,
+  countReadableComments,
+} from "@/components/comments/deletedComment";
 
 export const useComments = (itemType: ItemType, itemId: string) => {
   const { user } = useAuthContext();
@@ -131,16 +135,38 @@ export const useComments = (itemType: ItemType, itemId: string) => {
     await fetchComments();
   };
 
+  // A comment with replies is blanked, not deleted: parent_id cascades, so a
+  // delete took every reply other people wrote under it (2026-10-07). The
+  // replies are counted in the database, not in the loaded thread, which can
+  // be older than a reply posted a moment ago.
   const deleteComment = async (commentId: string) => {
     if (!user) throw new Error("Must be logged in to delete");
 
-    const { error: deleteError } = await supabase
+    const { count: replyCount, error: countError } = await supabase
       .from("comments")
-      .delete()
-      .eq("id", commentId)
-      .eq("user_id", user.id);
+      .select("id", { count: "exact", head: true })
+      .eq("parent_id", commentId);
+    if (countError) throw countError;
+
+    const { data: changed, error: deleteError } =
+      (replyCount ?? 0) > 0
+        ? await supabase
+            .from("comments")
+            .update({ content: DELETED_COMMENT_TEXT })
+            .eq("id", commentId)
+            .eq("user_id", user.id)
+            .select("id")
+        : await supabase
+            .from("comments")
+            .delete()
+            .eq("id", commentId)
+            .eq("user_id", user.id)
+            .select("id");
 
     if (deleteError) throw deleteError;
+    if (!changed || changed.length === 0) {
+      throw new Error("This comment could not be deleted.");
+    }
 
     // Log activity
     await supabase.from("activity_events").insert({
@@ -156,10 +182,7 @@ export const useComments = (itemType: ItemType, itemId: string) => {
     await fetchComments();
   };
 
-  const totalCount = comments.reduce(
-    (acc, c) => acc + 1 + (c.replies?.length || 0),
-    0,
-  );
+  const totalCount = countReadableComments(comments);
 
   return {
     comments,

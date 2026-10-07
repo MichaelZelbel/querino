@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "@/lib/router-compat";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,7 +59,6 @@ import {
   useCollectionItemDetails,
   useOwnItemsForPicker,
 } from "@/hooks/useCollections";
-import { useMyPrompts } from "@/hooks/usePrompts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -79,9 +79,10 @@ export default function CollectionEdit() {
     id || "",
   );
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
-  // The picker lists the owner's own prompts, private ones included. The public
-  // catalogue hook filtered on is_public, so private prompts could not be added.
-  const { data: myPrompts } = useMyPrompts(user?.id);
+  // The picker lists the owner's own prompts, private ones included, by id and
+  // title like the other types. useMyPrompts downloaded every column of every
+  // own prompt (embedding included) to show their titles (2026-10-07).
+  const { data: myPrompts } = useOwnItemsForPicker("prompt", user?.id);
   const { data: mySkills } = useOwnItemsForPicker("skill", user?.id);
   const { data: myWorkflows } = useOwnItemsForPicker("workflow", user?.id);
   // collection_items accepts prompt_kit (check constraint of migration
@@ -114,6 +115,44 @@ export default function CollectionEdit() {
     setInitialized(true);
   }
 
+  const handleSave = async () => {
+    if (!id || !title.trim()) return;
+
+    try {
+      await updateCollection.mutateAsync({
+        id,
+        title: title.trim(),
+        // null, not undefined: JSON drops undefined, so an emptied description
+        // could never be cleared.
+        description: description.trim() || null,
+        is_public: isPublic,
+      });
+      markSaved();
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
+  };
+
+  // The leave-page warning and Ctrl+S every other editor has (2026-10-07):
+  // a renamed collection used to be lost without a word on the way out.
+  const { markSaved } = useUnsavedChanges({
+    data: { title, description, isPublic },
+    isSaving: updateCollection.isPending,
+    onSave: handleSave,
+  });
+
+  useEffect(() => {
+    if (initialized && collection) {
+      markSaved({
+        title: collection.title,
+        description: collection.description || "",
+        isPublic: collection.is_public,
+      });
+    }
+    // Only the first load sets the baseline; later saves call markSaved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized]);
+
   // Authorization check. The redirect runs from an effect: navigating in the
   // render body updates the router while React is still rendering.
   const notAllowed =
@@ -127,27 +166,11 @@ export default function CollectionEdit() {
     return null;
   }
 
-  const handleSave = async () => {
-    if (!id || !title.trim()) return;
-
-    try {
-      await updateCollection.mutateAsync({
-        id,
-        title: title.trim(),
-        // null, not undefined: JSON drops undefined, so an emptied description
-        // could never be cleared.
-        description: description.trim() || null,
-        is_public: isPublic,
-      });
-    } catch {
-      // The mutation hook already shows the error toast.
-    }
-  };
-
   const handleDelete = async () => {
     if (!id) return;
     try {
       await deleteCollection.mutateAsync(id);
+      markSaved();
       navigate("/collections");
     } catch {
       // The mutation hook already shows the error toast.

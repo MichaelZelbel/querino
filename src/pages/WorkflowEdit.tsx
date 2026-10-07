@@ -83,6 +83,7 @@ import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { workflowText } from "@/components/workflows/workflowText";
+import { artifactDetailSelect } from "@/lib/artifactListColumns";
 
 interface WorkflowFormData {
   title: string;
@@ -168,8 +169,10 @@ export default function WorkflowEdit() {
     async function fetchWorkflow() {
       if (!slug || !userId) return;
       try {
+        // Only the columns a page reads (artifactListColumns.ts): "*" also
+        // downloaded the embedding vector and the search index.
         const { data, error } = await (supabase.from("workflows") as any)
-          .select("*")
+          .select(artifactDetailSelect("workflows"))
           .eq("slug", slug)
           .maybeSingle();
 
@@ -462,7 +465,7 @@ export default function WorkflowEdit() {
   const handleRestoreComplete = async () => {
     if (!workflowId) return;
     const { data } = await (supabase.from("workflows") as any)
-      .select("*")
+      .select(artifactDetailSelect("workflows"))
       .eq("id", workflowId)
       .maybeSingle();
     if (data) {

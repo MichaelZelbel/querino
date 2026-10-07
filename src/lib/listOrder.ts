@@ -26,7 +26,25 @@ export function withIdTiebreak(terms: readonly OrderTerm[]): OrderTerm[] {
     : [...terms, ID_TIEBREAK];
 }
 
-export type PromptBrowseSort = "trending" | "newest" | "rating";
+export type BrowseSort = "trending" | "newest" | "rating";
+export type PromptBrowseSort = BrowseSort;
+
+/**
+ * The browse orders of skills, workflows and prompt kits (Discover and the
+ * Library). They have no copy count, so "trending" is the newest first. Since
+ * 2026-10-07 these lists page with "Load more" like the prompts, so they end in
+ * the primary key too; before that Discover cut them at 60 rows.
+ */
+export function artifactBrowseOrder(sort: BrowseSort): OrderTerm[] {
+  if (sort === "rating") {
+    return withIdTiebreak([
+      { column: "rating_avg", ascending: false },
+      { column: "rating_count", ascending: false },
+      { column: "created_at", ascending: false },
+    ]);
+  }
+  return withIdTiebreak([{ column: "created_at", ascending: false }]);
+}
 
 /** The browse orders of the public prompt grid (Discover and the home page). */
 export function promptBrowseOrder(sort: PromptBrowseSort): OrderTerm[] {

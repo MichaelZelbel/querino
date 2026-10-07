@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { VersionDetailView } from "./VersionDetailView";
 import { VersionCompareView } from "./VersionCompareView";
+import { restoreArtifactVersion } from "./restoreVersion";
 
 export interface PromptVersion {
   id: string;
@@ -172,112 +173,14 @@ export function VersionHistoryPanel({
 
     setIsRestoring(true);
     try {
-      // Fetch the latest version fresh so the next number can't collide
-      // with inserts made since the panel loaded.
-      const { data: latestRow, error: latestError } = await supabase
-        .from(tableConfig.versionsTable as any)
-        .select("version_number, title, description, content, tags")
-        .eq(tableConfig.idColumn, promptId)
-        .order("version_number", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (latestError) {
-        console.error("Error fetching latest version:", latestError);
-        toast.error("Failed to restore version. Please try again.");
-        return;
-      }
-
-      const latest = latestRow as unknown as Partial<PromptVersion> | null;
-      let nextVersionNumber = (latest?.version_number ?? 0) + 1;
-
-      // Snapshot the current live content first if it isn't already saved
-      // as the latest version — otherwise restoring would silently discard it.
-      const currentMatchesLatest =
-        latest &&
-        latest.title === currentPrompt.title &&
-        (latest.description ?? "") === (currentPrompt.description ?? "") &&
-        latest.content === currentPrompt.content;
-
-      let snapshotId: string | null = null;
-      if (!currentMatchesLatest) {
-        const { data: snapshotRow, error: snapshotError } = await supabase
-          .from(tableConfig.versionsTable as any)
-          .insert({
-            [tableConfig.idColumn]: promptId,
-            version_number: nextVersionNumber,
-            title: currentPrompt.title,
-            description: currentPrompt.description,
-            content: currentPrompt.content,
-            tags: currentPrompt.tags,
-            change_notes: `Snapshot before restoring v${restoringVersion.version_number}`,
-          })
-          .select("id")
-          .maybeSingle();
-
-        if (snapshotError) {
-          console.error("Error snapshotting current content:", snapshotError);
-          toast.error("Failed to preserve current content. Restore cancelled.");
-          return;
-        }
-        snapshotId = (snapshotRow as { id: string } | null)?.id ?? null;
-        nextVersionNumber += 1;
-      }
-
-      // Update the live artifact before writing the "Restored" row. There is
-      // no author filter here: RLS decides who may edit (team editors too),
-      // and an update it refuses comes back as zero rows, not as an error.
-      const { data: updatedRows, error: updateError } = await supabase
-        .from(tableConfig.artifactTable as any)
-        .update({
-          title: restoringVersion.title,
-          description: restoringVersion.description || "",
-          content: restoringVersion.content,
-          tags: restoringVersion.tags,
-        })
-        .eq("id", promptId)
-        .select("id");
-
-      if (updateError || !updatedRows || updatedRows.length === 0) {
-        console.error(
-          `Restore did not update the ${artifactLabel}:`,
-          updateError ?? promptId,
-        );
-        // The restore did not happen, so the snapshot would be false history.
-        if (snapshotId) {
-          await supabase
-            .from(tableConfig.versionsTable as "prompt_versions")
-            .delete()
-            .eq("id", snapshotId);
-        }
-        toast.error(
-          `Failed to restore: the ${artifactLabel} could not be updated.`,
-        );
-        return;
-      }
-
-      // Record the restoration in the history
-      const { error: versionError } = await supabase
-        .from(tableConfig.versionsTable as any)
-        .insert({
-          [tableConfig.idColumn]: promptId,
-          version_number: nextVersionNumber,
-          title: restoringVersion.title,
-          description: restoringVersion.description,
-          content: restoringVersion.content,
-          tags: restoringVersion.tags,
-          change_notes: `Restored from version v${restoringVersion.version_number}`,
-        });
-
-      if (versionError) {
-        // The content is restored; only the history entry is missing.
-        console.error("Error creating restore version:", versionError);
-        toast.warning(
-          `Restored, but the history entry for v${restoringVersion.version_number} could not be saved.`,
-        );
-      }
-
-      toast.success(`Restored to version v${restoringVersion.version_number}`);
+      const restored = await restoreArtifactVersion({
+        config: tableConfig,
+        artifactId: promptId,
+        current: currentPrompt,
+        version: restoringVersion,
+        artifactLabel,
+      });
+      if (!restored) return;
       onOpenChange(false);
 
       if (onRestoreComplete) {

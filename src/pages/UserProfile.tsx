@@ -23,17 +23,18 @@ import {
 import type { Prompt } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { Workflow as WorkflowType } from "@/types/workflow";
+import { ARTIFACT_LIST_COLUMNS } from "@/lib/artifactListColumns";
 
 /** How many artifacts of each kind a profile page shows. */
 const PROFILE_LIST_LIMIT = 60;
 
-// What PromptCard / SkillCard / WorkflowCard and their clone buttons read.
-const PROMPT_CARD_COLUMNS =
-  "id, slug, title, description, summary, content, category, tags, language, example_output, author_id, team_id, is_public, rating_avg, rating_count, copies_count, created_at, updated_at, menerio_synced, menerio_synced_at";
-const SKILL_CARD_COLUMNS =
-  "id, slug, title, description, content, category, tags, language, author_id, team_id, published, rating_avg, rating_count, created_at, updated_at, menerio_synced, menerio_synced_at";
-const WORKFLOW_CARD_COLUMNS =
-  "id, slug, title, description, content, json, category, tags, language, author_id, team_id, published, rating_avg, rating_count, created_at, updated_at, menerio_synced, menerio_synced_at";
+// What PromptCard / SkillCard / WorkflowCard and their clone buttons read:
+// the columns every artifact list asks for (artifactListColumns.ts). The
+// profile kept its own copy, which lacked a workflow's filename and scope, so
+// a workflow cloned from a profile card lost both (2026-10-07).
+const PROMPT_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.prompts.join(", ");
+const SKILL_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.skills.join(", ");
+const WORKFLOW_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.workflows.join(", ");
 
 function MoreNote({ kind }: { kind: string }) {
   return (
@@ -144,7 +145,11 @@ export default function UserProfile() {
         // match costs 25 further strict errors and a product decision about what a
         // prompt without a slug should render, so it is recorded as a migration risk
         // rather than decided here. See migration/migration-risks.md.
-        setPrompts(promptRows.slice(0, PROFILE_LIST_LIMIT) as Prompt[]);
+        // The column list is built at run time, so the client cannot type
+        // the rows from it.
+        setPrompts(
+          promptRows.slice(0, PROFILE_LIST_LIMIT) as unknown as Prompt[],
+        );
         setSkills(skillRows.slice(0, PROFILE_LIST_LIMIT));
         setWorkflows(workflowRows.slice(0, PROFILE_LIST_LIMIT));
       } catch (err) {

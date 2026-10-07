@@ -60,6 +60,7 @@ import { CreditsDisplay } from "@/components/settings/CreditsDisplay";
 import { McpSetupSection } from "@/components/settings/McpSetupSection";
 import { MenerioIntegrationSection } from "@/components/settings/MenerioIntegrationSection";
 import { MenerioBulkSync } from "@/components/menerio/MenerioBulkSync";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 import { JoinTeamModal } from "@/components/teams/JoinTeamModal";
 import { toast } from "sonner";
 import heroSettings from "@/assets/hero-settings.png";
@@ -131,6 +132,10 @@ export default function Settings() {
 
   // Password reset state
   const [sendingReset, setSendingReset] = useState(false);
+
+  // Bumped when the Menerio connection changes, so the bulk sync below it
+  // reads the new connection and type list.
+  const [menerioRevision, setMenerioRevision] = useState(0);
 
   // Signing out here goes home. Without this flag the redirect below saw the
   // user disappear first and sent them to the sign-in page for /settings.
@@ -427,10 +432,19 @@ export default function Settings() {
           body: { confirmation: "DELETE" },
         },
       );
-      if (error) throw error;
+      if (error) {
+        throw new Error(
+          await getFunctionErrorMessage(error, "Failed to delete account"),
+        );
+      }
       if (data?.success) {
         toast.success("Account deleted successfully. Redirecting...");
-        await supabase.auth.signOut();
+        // Flag first, as in handleSignOut: the redirect effect otherwise sees
+        // the user vanish and sends them to sign in to /settings. Local scope:
+        // the account no longer exists, so there is no server session left to
+        // end, only this browser's copy (2026-10-07).
+        signingOut.current = true;
+        await supabase.auth.signOut({ scope: "local" });
         navigate("/", { replace: true });
       } else {
         throw new Error(data?.error || "Failed to delete account");
@@ -1050,8 +1064,10 @@ export default function Settings() {
               </Card>
 
               {/* Menerio */}
-              <MenerioIntegrationSection />
-              <MenerioBulkSync />
+              <MenerioIntegrationSection
+                onChange={() => setMenerioRevision((r) => r + 1)}
+              />
+              <MenerioBulkSync revision={menerioRevision} />
 
               {/* MCP */}
               <div id="mcp" className="scroll-mt-24">

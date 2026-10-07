@@ -33,7 +33,7 @@ const NO_TEAMS: TeamWithRole[] = [];
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuthContext();
-  const { data: teamsData, isLoading } = useUserTeams();
+  const { data: teamsData, isLoading, isSuccess: teamsLoaded } = useUserTeams();
   // A stable empty list while loading: a fresh [] each render would defeat the
   // memoised context value below.
   const teams = teamsData ?? NO_TEAMS;
@@ -56,17 +56,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Validate workspace once the signed-in user's teams are known. Before auth
   // resolves, useUserTeams answers [] for a null user, which used to look like
   // "the saved team no longer exists" and wiped the saved workspace on every
-  // page load.
+  // page load. Known means loaded: a failed load also leaves the list empty,
+  // and until 2026-10-07 that reset a saved team workspace to personal and
+  // saved the reset, so one network hiccup lost the choice for good.
   useEffect(() => {
-    if (authLoading || !user) return;
-    if (!isLoading && currentWorkspace !== "personal") {
+    if (authLoading || !user || !teamsLoaded) return;
+    if (currentWorkspace !== "personal") {
       const teamExists = teams.some((t) => t.id === currentWorkspace);
       if (!teamExists) {
         setCurrentWorkspace("personal");
         safeStorage.setItem(WORKSPACE_STORAGE_KEY, "personal");
       }
     }
-  }, [teams, isLoading, currentWorkspace, authLoading, user]);
+  }, [teams, teamsLoaded, currentWorkspace, authLoading, user]);
 
   // Reset to personal on a real logout: a user that was there and is now gone.
   useEffect(() => {

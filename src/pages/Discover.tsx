@@ -9,6 +9,7 @@ import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
 import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import { DiscoverToolbar } from "@/components/discover/DiscoverToolbar";
+import { LoadMoreRow } from "@/components/discover/LoadMoreRow";
 import {
   readDiscoverParams,
   writeDiscoverParams,
@@ -101,22 +102,31 @@ const Discover = () => {
     isLoading: skillsLoading,
     isError: skillsError,
     refetch: refetchSkills,
+    hasNextPage: skillsHasNext,
+    fetchNextPage: fetchMoreSkills,
+    isFetchingNextPage: skillsFetchingMore,
   } = useSkills(listOptions);
   const {
     data: workflows,
     isLoading: workflowsLoading,
     isError: workflowsError,
     refetch: refetchWorkflows,
+    hasNextPage: workflowsHasNext,
+    fetchNextPage: fetchMoreWorkflows,
+    isFetchingNextPage: workflowsFetchingMore,
   } = useWorkflows(listOptions);
   const {
     data: kits,
     isLoading: kitsLoading,
     isError: kitsError,
     refetch: refetchKits,
+    hasNextPage: kitsHasNext,
+    fetchNextPage: fetchMoreKits,
+    isFetchingNextPage: kitsFetchingMore,
   } = usePromptKits(listOptions);
 
-  // The tag is filtered on the server (see useArtifactList), so the 60-row cap
-  // applies to tagged rows rather than hiding matches past the first 60.
+  // The tag is filtered on the server (see useArtifactList), so each page of
+  // 60 is a page of tagged rows, and Load more fetches the next one.
   const visibleSkills = skills || [];
   const visibleWorkflows = workflows || [];
   const visibleKits = kits || [];
@@ -151,6 +161,9 @@ const Discover = () => {
     />
   );
 
+  // Only for a list with no rows to show. A failed "Load more" leaves the
+  // query in error with its pages intact, and those cards stay on screen with
+  // the failure reported beside the button (LoadMoreRow).
   const loadError = (what: string, retry: () => void) => (
     <div className="py-12 text-center">
       <p className="text-lg text-destructive">Failed to load {what}.</p>
@@ -222,7 +235,7 @@ const Discover = () => {
 
             <TabsContent value="kits" className="mt-0">
               <div className="space-y-6">
-                {kitsError ? (
+                {kitsError && visibleKits.length === 0 ? (
                   loadError("prompt kits", () => void refetchKits())
                 ) : kitsLoading ? (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -238,11 +251,24 @@ const Discover = () => {
                     ))}
                   </div>
                 ) : visibleKits.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {visibleKits.map((kit) => (
-                      <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {visibleKits.map((kit) => (
+                        <PromptKitCard key={kit.id} kit={kit} showAuthorInfo />
+                      ))}
+                    </div>
+                    {/* The list hooks page with .range() like the prompts
+                        tab does, so rows past the first 60 are one click
+                        away instead of unreachable (2026-10-07). */}
+                    <LoadMoreRow
+                      what="prompt kits"
+                      hasNext={kitsHasNext}
+                      fetching={kitsFetchingMore}
+                      failed={kitsError}
+                      onLoadMore={() => void fetchMoreKits()}
+                      onRetry={() => void refetchKits()}
+                    />
+                  </>
                 ) : (
                   <EmptyState
                     variant="compact"
@@ -288,7 +314,7 @@ const Discover = () => {
 
             <TabsContent value="skills" className="mt-0">
               <div className="space-y-6">
-                {skillsError ? (
+                {skillsError && visibleSkills.length === 0 ? (
                   loadError("skills", () => void refetchSkills())
                 ) : skillsLoading ? (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -304,11 +330,25 @@ const Discover = () => {
                     ))}
                   </div>
                 ) : visibleSkills.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {visibleSkills.map((skill) => (
-                      <SkillCard key={skill.id} skill={skill} showAuthorInfo />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {visibleSkills.map((skill) => (
+                        <SkillCard
+                          key={skill.id}
+                          skill={skill}
+                          showAuthorInfo
+                        />
+                      ))}
+                    </div>
+                    <LoadMoreRow
+                      what="skills"
+                      hasNext={skillsHasNext}
+                      fetching={skillsFetchingMore}
+                      failed={skillsError}
+                      onLoadMore={() => void fetchMoreSkills()}
+                      onRetry={() => void refetchSkills()}
+                    />
+                  </>
                 ) : (
                   <EmptyState
                     variant="compact"
@@ -354,7 +394,7 @@ const Discover = () => {
 
             <TabsContent value="workflows" className="mt-0">
               <div className="space-y-6">
-                {workflowsError ? (
+                {workflowsError && visibleWorkflows.length === 0 ? (
                   loadError("workflows", () => void refetchWorkflows())
                 ) : workflowsLoading ? (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -370,15 +410,25 @@ const Discover = () => {
                     ))}
                   </div>
                 ) : visibleWorkflows.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {visibleWorkflows.map((workflow) => (
-                      <WorkflowCard
-                        key={workflow.id}
-                        workflow={workflow}
-                        showAuthorInfo
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {visibleWorkflows.map((workflow) => (
+                        <WorkflowCard
+                          key={workflow.id}
+                          workflow={workflow}
+                          showAuthorInfo
+                        />
+                      ))}
+                    </div>
+                    <LoadMoreRow
+                      what="workflows"
+                      hasNext={workflowsHasNext}
+                      fetching={workflowsFetchingMore}
+                      failed={workflowsError}
+                      onLoadMore={() => void fetchMoreWorkflows()}
+                      onRetry={() => void refetchWorkflows()}
+                    />
+                  </>
                 ) : (
                   <EmptyState
                     variant="compact"

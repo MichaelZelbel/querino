@@ -68,6 +68,12 @@ import type { Prompt } from "@/types/prompt";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UpsellModal } from "@/components/premium/UpsellModal";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
+import { ARTIFACT_LIST_COLUMNS } from "@/lib/artifactListColumns";
+
+// What the prompt cards, the search box and the bulk actions read. These lists
+// asked for select("*"), which carried every prompt's embedding vector: 3.7 MB
+// per Library visit for the author with 174 prompts (2026-10-07).
+const PROMPT_COLUMNS = ARTIFACT_LIST_COLUMNS.prompts.join(", ");
 
 type ArtifactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 const TABLE_BY_TYPE: Record<
@@ -283,11 +289,13 @@ export default function Library() {
     pinnedPromptIds,
     pinnedPrompts,
     loading: pinnedLoading,
+    error: pinnedError,
     isPromptPinned,
     refetch: refetchPinned,
   } = usePinnedPrompts({
     teamId: isTeamWorkspace ? currentWorkspace : undefined,
     personalOnly: !isTeamWorkspace,
+    withPrompts: true,
   });
 
   // Fetch user's collections
@@ -408,8 +416,36 @@ export default function Library() {
     if (!user || !hasMenerio) return;
     // Prompt kits sync to Menerio again since migration 20260908231000 (section
     // 23), so every selected type is queued.
-    const syncable = selectedItems;
-    if (syncable.length === 0) return;
+    if (selectedItems.length === 0) return;
+    // The queue takes only items the caller wrote, and the insert is one
+    // statement, so a single team-mate's item in a team selection failed the
+    // whole batch (2026-10-07). Queue the caller's own and say how many were
+    // left out.
+    const authorOf = new Map<string, string | null | undefined>();
+    const note = (
+      type: ArtifactType,
+      rows: { id: string; author_id?: string | null }[] | undefined,
+    ) => {
+      for (const row of rows ?? [])
+        authorOf.set(selKey(type, row.id), row.author_id);
+    };
+    note("prompt", myPrompts);
+    note("prompt", pinnedPrompts);
+    note("skill", mySkills);
+    note("workflow", myWorkflows);
+    note("prompt_kit", myKits);
+    const syncable = selectedItems.filter(
+      (i) => authorOf.get(selKey(i.type, i.id)) === user.id,
+    );
+    const skipped = selectedItems.length - syncable.length;
+    const skippedNote =
+      skipped > 0
+        ? ` ${skipped} item${skipped === 1 ? "" : "s"} by team-mates left out: only an item's author can sync it.`
+        : "";
+    if (syncable.length === 0) {
+      toast.error(`Nothing queued for Menerio sync.${skippedNote}`);
+      return;
+    }
     setBulkSyncing(true);
     try {
       const rows = syncable.map((i) => ({
@@ -424,7 +460,7 @@ export default function Library() {
         toast.error("Failed to queue Menerio sync");
       } else {
         toast.success(
-          `${rows.length} item${rows.length === 1 ? "" : "s"} queued for Menerio sync.`,
+          `${rows.length} item${rows.length === 1 ? "" : "s"} queued for Menerio sync.${skippedNote}`,
         );
         exitSelectMode();
       }
@@ -717,7 +753,7 @@ export default function Library() {
       setPromptsLoadError(false);
       try {
         // Fetch prompts based on workspace
-        let promptsQuery = supabase.from("prompts").select("*");
+        let promptsQuery = supabase.from("prompts").select(PROMPT_COLUMNS);
 
         if (isTeamWorkspace) {
           // Team workspace: get prompts with this team_id
@@ -739,7 +775,7 @@ export default function Library() {
           console.error("Error fetching prompts:", ownError);
           setPromptsLoadError(true);
         } else {
-          setMyPrompts((ownPrompts as Prompt[]) || []);
+          setMyPrompts((ownPrompts as unknown as Prompt[]) || []);
         }
 
         // Fetch saved prompts (only in personal workspace)
@@ -759,7 +795,7 @@ export default function Library() {
             const promptIds = savedData.map((s) => s.prompt_id);
             const { data: promptsData, error: promptsError } = await supabase
               .from("prompts")
-              .select("*")
+              .select(PROMPT_COLUMNS)
               .in("id", promptIds);
             if (cancelled) return;
 
@@ -767,7 +803,7 @@ export default function Library() {
               console.error("Error fetching prompts:", promptsError);
               setPromptsLoadError(true);
             } else {
-              setSavedPrompts((promptsData as Prompt[]) || []);
+              setSavedPrompts((promptsData as unknown as Prompt[]) || []);
             }
 
             // Fetch user's ratings for saved prompts
@@ -802,18 +838,20 @@ export default function Library() {
       }
     }
 
+    // The pinned prompts are a query keyed by the workspace, so a switch loads
+    // them on its own.
     if (user) {
       fetchLibraryData();
-      refetchPinned();
     }
 
     return () => {
       cancelled = true;
     };
-  }, [user, currentWorkspace, isTeamWorkspace, refetchPinned, reloadKey]);
+  }, [user, currentWorkspace, isTeamWorkspace, reloadKey]);
 
   const loadFailed =
     promptsLoadError ||
+    !!pinnedError ||
     skillsError ||
     workflowsError ||
     kitsError ||
@@ -825,6 +863,7 @@ export default function Library() {
 
   const retryLoad = () => {
     setReloadKey((k) => k + 1);
+    void refetchPinned();
     void refetchSkills();
     void refetchWorkflows();
     void refetchKits();

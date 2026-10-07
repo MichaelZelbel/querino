@@ -1,8 +1,18 @@
 import { Link } from "@/lib/router-compat";
 import logo from "@/assets/logo.png";
 import { openConsentSettings } from "@/lib/consent";
+import { useEffect, useState } from "react";
 
 export function Footer() {
+  // The year is filled in after mount. Computed while rendering, the server
+  // and the browser can disagree around New Year (different clocks and time
+  // zones), and React then throws away the server markup with a hydration
+  // error. The first render is the same everywhere: no year (2026-10-07).
+  const [year, setYear] = useState<number | null>(null);
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="border-t border-border bg-card/50">
       <div className="container mx-auto px-4 py-12">
@@ -140,7 +150,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border pt-6">
           <p className="text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Querino. All rights reserved.
+            © {year ? `${year} ` : ""}Querino. All rights reserved.
           </p>
         </div>
       </div>

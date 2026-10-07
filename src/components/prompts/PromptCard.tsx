@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
 import { formatCount } from "@/components/shared/formatDate";
+import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 
 interface PromptCardProps {
   prompt: Prompt & { author?: PromptAuthor | null };
@@ -46,6 +47,11 @@ export function PromptCard({
   const [copied, setCopied] = useState(false);
   const { clonePrompt, cloning } = useClonePrompt();
   const isAuthor = currentUserId && prompt.author_id === currentUserId;
+  // Edit, not Clone, for everyone the database lets edit: the author, or a
+  // premium member of the prompt's team, the rule the detail pages use since
+  // 2026-09-23. The team and role lookups are cached queries shared by every
+  // card, so this costs no request per card.
+  const canEdit = useCanEditArtifact(currentUserId ? prompt : null);
   const editUrl = `/library/${prompt.slug}/edit`;
   const detailUrl = `/prompts/${prompt.slug}`;
   const handleCopy = async () => {
@@ -219,7 +225,7 @@ export function PromptCard({
           </div>
 
           <div className="flex items-center gap-1">
-            {isAuthor && (
+            {canEdit && (
               <Button
                 asChild
                 aria-label="Edit"
@@ -232,7 +238,7 @@ export function PromptCard({
                 </Link>
               </Button>
             )}
-            {currentUserId && !isAuthor && (
+            {currentUserId && !canEdit && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -240,6 +246,7 @@ export function PromptCard({
                 disabled={cloning}
                 className="gap-1.5 h-8 px-2"
                 title="Clone to my library"
+                aria-label="Clone to my library"
               >
                 <Files className="h-3.5 w-3.5" />
               </Button>

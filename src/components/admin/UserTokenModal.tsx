@@ -52,14 +52,21 @@ export function UserTokenModal({
   const [tokensGranted, setTokensGranted] = useState<number>(0);
   const [tokensUsed, setTokensUsed] = useState<number>(0);
 
+  // A reply for an earlier opening is dropped. Closing and reopening quickly
+  // for another user let the first user's late reply land last: the dialog
+  // showed user B with user A's allowance, and Save changed A's (2026-10-07).
   useEffect(() => {
-    if (open && userId) {
-      fetchAllowanceData();
-    }
+    if (!open || !userId) return;
+    let current = true;
+    void fetchAllowanceData(() => current);
+    return () => {
+      current = false;
+    };
   }, [open, userId]);
 
-  const fetchAllowanceData = async () => {
+  const fetchAllowanceData = async (isCurrent: () => boolean) => {
     setLoading(true);
+    setAllowance(null);
     try {
       // Fetch tokens_per_credit setting and allowance data in parallel
       const [settingsResult, allowanceResult] = await Promise.all([
@@ -78,6 +85,7 @@ export function UserTokenModal({
           .limit(1)
           .maybeSingle(),
       ]);
+      if (!isCurrent()) return;
 
       if (settingsResult.data) {
         setTokensPerCredit(settingsResult.data.value_int || 200);
@@ -94,15 +102,16 @@ export function UserTokenModal({
         setTokensUsed(0);
       }
     } catch (error) {
+      if (!isCurrent()) return;
       console.error("Error fetching allowance data:", error);
       toast.error("Failed to load token data");
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!allowance) {
+    if (!allowance || allowance.user_id !== userId) {
       toast.error("No allowance period found for this user");
       return;
     }

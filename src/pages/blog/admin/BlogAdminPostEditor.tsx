@@ -22,6 +22,7 @@ import {
 import { useBlogCategories } from "@/hooks/useBlogCategories";
 import { useBlogTags } from "@/hooks/useBlogTags";
 import { useAutosave } from "@/hooks/useAutosave";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { AutosaveIndicator } from "@/components/editors/AutosaveIndicator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Save, Eye, ArrowLeft } from "lucide-react";
@@ -29,6 +30,7 @@ import ReactMarkdown from "react-markdown";
 import { format } from "date-fns";
 import type { BlogPostFormData, BlogPostStatus } from "@/types/blog";
 import { canAutosavePost } from "@/components/blog/admin/blogAutosave";
+import { cleanBlogSlug, slugForSave } from "@/components/blog/admin/blogSlug";
 
 /** An ISO timestamp as the local time a datetime-local input expects. */
 function toLocalInputValue(iso: string | null): string {
@@ -38,14 +40,8 @@ function toLocalInputValue(iso: string | null): string {
   return format(date, "yyyy-MM-dd'T'HH:mm");
 }
 
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
-}
+/** What a save payload carries: the form, with the slug only when it is sent. */
+type PostPayload = Omit<BlogPostFormData, "slug"> & { slug?: string | null };
 
 export default function BlogAdminPostEditor() {
   const { id } = useParams<{ id: string }>();
@@ -73,15 +69,45 @@ export default function BlogAdminPostEditor() {
     tag_ids: [],
   });
 
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [previewTab, setPreviewTab] = useState<"edit" | "preview">("edit");
 
-  // Auto-generate slug from title
+  // Leave-page warning and Ctrl+S. A draft autosaves after 3 s, but a new
+  // post and a published one save only on a click, and leaving lost the text.
+  const { markSaved } = useUnsavedChanges({
+    data: formData,
+    isSaving: createMutation.isPending || updateMutation.isPending,
+    onSave: () => handleSave(),
+  });
+  // A new post's baseline is the empty form it opened with.
   useEffect(() => {
-    if (!slugManuallyEdited && formData.title) {
-      setFormData((prev) => ({ ...prev, slug: generateSlug(prev.title) }));
-    }
-  }, [formData.title, slugManuallyEdited]);
+    if (isNew) markSaved();
+  }, [isNew, markSaved]);
+
+  // The slug the database holds for this post (see blogSlug.ts).
+  const savedSlugRef = useRef<string | null>(null);
+
+  const payloadFor = (data: BlogPostFormData): PostPayload => {
+    const { slug: formSlug, ...rest } = data;
+    return {
+      ...rest,
+      ...slugForSave({ isNew, formSlug, savedSlug: savedSlugRef.current }),
+    };
+  };
+
+  // Show the slug the database stored. Only when the field still holds what
+  // was sent: an admin typing in it during the save keeps their text.
+  const applySavedSlug = (
+    rowSlug: string | null | undefined,
+    sentFormSlug: string,
+  ) => {
+    if (!rowSlug) return;
+    savedSlugRef.current = rowSlug;
+    setFormData((prev) =>
+      prev.slug === sentFormSlug && prev.slug !== rowSlug
+        ? { ...prev, slug: rowSlug }
+        : prev,
+    );
+  };
 
   // Autosave for drafts
   const autosaveData = useMemo(() => formData, [formData]);
@@ -104,12 +130,14 @@ export default function BlogAdminPostEditor() {
         // Status stays out of the autosave payload. A save already in flight
         // when the post was published used to land afterwards and flip it
         // back to draft.
-        const { status: _status, ...draft } = data;
-        await updateMutation.mutateAsync({
+        const { status: _status, ...draft } = payloadFor(data);
+        const row = await updateMutation.mutateAsync({
           id: post.id,
-          data: draft,
+          data: draft as Partial<BlogPostFormData>,
           silent: true,
         });
+        applySavedSlug(row?.slug, data.slug);
+        markSaved({ ...data, slug: row?.slug || data.slug });
       }
     },
     delay: 3000,
@@ -142,10 +170,11 @@ export default function BlogAdminPostEditor() {
       category_ids: post.categories?.map((c) => c.id) || [],
       tag_ids: post.tags?.map((t) => t.id) || [],
     };
+    savedSlugRef.current = post.slug;
     setFormData(loaded);
-    setSlugManuallyEdited(true);
     resetLastSaved(loaded);
-  }, [post, isNew, resetLastSaved]);
+    markSaved(loaded);
+  }, [post, isNew, resetLastSaved, markSaved]);
 
   const handleSave = async (newStatus?: BlogPostStatus) => {
     // A draft autosave still waiting on its timer must not fire after this
@@ -167,23 +196,29 @@ export default function BlogAdminPostEditor() {
         ? new Date().toISOString()
         : formData.published_at,
     };
+    const payload = payloadFor(dataToSave) as Partial<BlogPostFormData>;
 
     try {
       if (isNew) {
-        const result = await createMutation.mutateAsync(dataToSave);
+        const result = await createMutation.mutateAsync(payload);
         if (result) {
+          // Saved: the move to the edit page is not leaving unsaved work.
+          markSaved();
           navigate(`/blog/admin/posts/${result.id}/edit`);
         }
       } else if (id) {
-        await updateMutation.mutateAsync({ id, data: dataToSave });
+        const row = await updateMutation.mutateAsync({ id, data: payload });
         // The form is not re-hydrated from the refetched post, so the saved
-        // status and date are applied here and become the autosave baseline.
+        // status, date and slug are applied here and become the baseline.
         setFormData((prev) => ({
           ...prev,
           status,
           published_at: dataToSave.published_at,
         }));
-        resetLastSaved(dataToSave);
+        applySavedSlug(row?.slug, dataToSave.slug);
+        const saved = { ...dataToSave, slug: row?.slug || dataToSave.slug };
+        resetLastSaved(saved);
+        markSaved(saved);
       }
     } catch {
       // The mutation hook already shows the error toast.
@@ -303,13 +338,27 @@ export default function BlogAdminPostEditor() {
               <Input
                 id="slug"
                 value={formData.slug}
-                onChange={(e) => {
-                  setSlugManuallyEdited(true);
-                  updateField("slug", e.target.value);
+                onChange={(e) => updateField("slug", e.target.value)}
+                onBlur={() => {
+                  // Tidy what the admin typed; a stored slug left alone stays
+                  // exactly as it is.
+                  const clean = cleanBlogSlug(formData.slug);
+                  if (
+                    clean &&
+                    clean !== formData.slug &&
+                    formData.slug.trim() !== savedSlugRef.current
+                  ) {
+                    updateField("slug", clean);
+                  }
                 }}
-                placeholder="post-slug"
+                placeholder={cleanBlogSlug(formData.title) || "post-slug"}
               />
             </div>
+            {isNew && !formData.slug.trim() && (
+              <p className="text-xs text-muted-foreground">
+                Leave it empty to make one from the title when you save.
+              </p>
+            )}
           </div>
 
           {/* Content */}

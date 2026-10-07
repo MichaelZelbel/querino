@@ -5,14 +5,6 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { AI_CREDITS_QUERY_KEY } from "@/lib/aiCredits";
 
-/** One row from the get_my_plan() RPC, which is how role and plan_type are
- * read now that they are no longer selectable off the profiles table. */
-interface MyPlanRow {
-  role: string | null;
-  plan_type: string | null;
-  plan_source: string | null;
-}
-
 interface AICreditsData {
   id: string;
   tokensGranted: number;
@@ -38,22 +30,17 @@ async function fetchAICredits(userId: string): Promise<AICreditsData | null> {
   // First ensure the user has an allowance period
   await supabase.functions.invoke("ensure-token-allowance");
 
-  // Fetch allowance data and settings in parallel
-  const [allowanceResult, profileResult, settingsResult] = await Promise.all([
+  // Fetch the allowance and the token price in parallel
+  const [allowanceResult, settingsResult] = await Promise.all([
     supabase
       .from("v_ai_allowance_current")
       .select("*")
       .eq("user_id", userId)
       .maybeSingle(),
-    supabase.rpc("get_my_plan"),
     supabase
       .from("ai_credit_settings")
       .select("key, value_int")
-      .in("key", [
-        "credits_free_per_month",
-        "credits_premium_per_month",
-        "tokens_per_credit",
-      ]),
+      .eq("key", "tokens_per_credit"),
   ]);
 
   if (allowanceResult.error) {
@@ -61,18 +48,7 @@ async function fetchAICredits(userId: string): Promise<AICreditsData | null> {
     throw new Error(allowanceResult.error.message);
   }
 
-  // Build settings map
-  const settingsMap = Object.fromEntries(
-    (settingsResult.data || []).map((s) => [s.key, s.value_int]),
-  );
-  const tokensPerCredit = settingsMap["tokens_per_credit"] || 200;
-
-  // Determine plan base credits
-  const isPremium =
-    (profileResult.data as MyPlanRow[] | null)?.[0]?.plan_type === "premium";
-  const planBaseCredits = isPremium
-    ? settingsMap["credits_premium_per_month"] || 1500
-    : settingsMap["credits_free_per_month"] || 0;
+  const tokensPerCredit = settingsResult.data?.[0]?.value_int || 200;
 
   const data = allowanceResult.data;
   if (!data) return null;
@@ -88,6 +64,17 @@ async function fetchAICredits(userId: string): Promise<AICreditsData | null> {
   const tokensUsed = Number(data.tokens_used) || 0;
   const remainingTokens = Number(data.remaining_tokens) || 0;
 
+  // The plan's monthly base is the number the server granted this period, not
+  // one worked out here. This used to read profiles.plan_type, but
+  // ensure_ai_allowance grants by user_roles, so an account given Premium as a
+  // gift was shown a base of 500 credits while it had 1,500 (2026-10-07).
+  // base_tokens is what the grant wrote before adding the rollover; a period
+  // made without it carries its whole grant as the base.
+  const baseTokens =
+    typeof metadata?.base_tokens === "number"
+      ? metadata.base_tokens
+      : tokensGranted;
+
   return {
     id: data.id || "",
     tokensGranted,
@@ -101,8 +88,8 @@ async function fetchAICredits(userId: string): Promise<AICreditsData | null> {
     periodEnd: data.period_end || "",
     source: data.source,
     rolloverTokens: metadata?.rollover_tokens || 0,
-    baseTokens: metadata?.base_tokens || tokensGranted,
-    planBaseCredits,
+    baseTokens,
+    planBaseCredits: baseTokens / tokensPerCredit,
     tokensPerCredit,
   };
 }

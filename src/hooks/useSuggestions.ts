@@ -54,9 +54,14 @@ export const useSuggestions = (
     title?: string;
     description?: string;
     content: string;
+    /** The artifact's content the suggester started from. */
+    baseContent?: string;
   }) => {
     if (!user) throw new Error("Must be logged in to suggest edits");
 
+    // base_content lets the review window warn that the artifact changed
+    // after the suggestion was written: accepting replaces the whole content,
+    // so it would undo those later edits (2026-10-07).
     const { data: suggestion, error: createError } = await supabase
       .from("suggestions")
       .insert({
@@ -67,6 +72,7 @@ export const useSuggestions = (
         description: data.description || null,
         content: data.content,
         status: "open",
+        base_content: data.baseContent ?? null,
       })
       .select()
       .single();
