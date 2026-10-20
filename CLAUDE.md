@@ -58,7 +58,8 @@ touches Stripe.
 npm run dev        # Start dev server at http://localhost:8080
 npm run build      # Production build
 npm run lint       # Run ESLint
-npm run check      # Migrations, lint ratchet, Deno type ratchet (runs on every push)
+npm run check      # Migrations, table grants, lint ratchet, Deno type ratchet (runs on every push)
+npm run test:scripts  # Node tests for the scripts/ checks (fixtures in tests/scripts/)
 npm run test:unit  # Deno unit tests for supabase/functions/_shared
 npm run test:web   # Deno unit tests for the frontend's pure logic (tests/web/, `@/` maps to src/)
 npm test           # Security test suite against the deployed project (tests/security/, see its README)
@@ -203,6 +204,29 @@ npx supabase db push
 ```
 
 Do not edit migration files that have already been applied to production.
+
+### Every new table states its grants
+
+Since 2026-10-30 Supabase no longer grants new tables, views or sequences in
+`public` to `anon`, `authenticated` and `service_role`. A table created without
+an explicit grant answers "permission denied" to the browser, to every edge
+function on the service role key, and to the MCP server. So the migration that
+creates a table or view in `public` also says, in the same file, who may use it:
+
+```sql
+grant select on public.x to anon;  -- only if anon should read it
+grant select, insert, update, delete on public.x to authenticated;
+grant select, insert, update, delete on public.x to service_role;
+```
+
+A table that is private on purpose says so instead (`revoke all on public.x
+from anon, authenticated;`). A `serial` or `bigserial` column also needs
+`grant usage, select on sequence public.x_id_seq to authenticated, service_role;`;
+an identity column (`generated always as identity`) needs nothing.
+`scripts/check-migration-grants.mjs` enforces this for migrations from
+`20261020000000` on. It runs in `npm run check`, in CI, in `npm run db:push`
+(use it instead of a bare `npx supabase db push`), and in `.githooks/pre-push`;
+switch the hook on once per checkout with `git config core.hooksPath .githooks`.
 
 ### Deleting an account: one rule
 

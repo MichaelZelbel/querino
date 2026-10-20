@@ -75,6 +75,17 @@ jobs:
         # ALTER.
         run: node scripts/check-migrations.mjs
 
+      - name: New tables in public say who may use them
+        # Supabase stopped granting new tables in public to anon, authenticated
+        # and service_role on 2026-10-30. Fails when a migration from
+        # 20261020000000 on creates a table or view with no GRANT or REVOKE for
+        # it in the same file, or grants a serial table without its sequence.
+        # The same gate runs in .githooks/pre-push, because Actions is not
+        # always able to start on this account.
+        run: |
+          node scripts/check-migration-grants.mjs
+          node --test tests/scripts/check-migration-grants.test.mjs
+
       - name: Lint, and the `any` count has not risen
         run: node scripts/lint-ratchet.mjs
 
