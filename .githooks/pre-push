@@ -1,0 +1,11 @@
+#!/bin/sh
+# Runs before every push from a checkout that has said
+#   git config core.hooksPath .githooks
+# (CLAUDE.md, "Database Migrations"). GitHub Actions does not start jobs on
+# this account at the moment, so this is the copy of the migration gates that
+# actually runs. Fast and offline: two Node scripts over supabase/migrations.
+set -e
+cd "$(git rev-parse --show-toplevel)"
+node scripts/check-migrations.mjs
+node scripts/check-migration-grants.mjs
+node --test tests/scripts/check-migration-grants.test.mjs > /dev/null
