@@ -273,7 +273,10 @@ function privilegeStatements(sql) {
     );
     if (/^ALL\s+TABLES\s+IN\s+SCHEMA\s+"?public"?$/i.test(target)) {
       if (isGrant) roles.forEach((r) => allTables.grantedTo.add(r));
-      else allTables.revoked = true;
+      // A schema-wide REVOKE states privacy only when it takes everything:
+      // 20260930100700 revokes TRUNCATE, REFERENCES, TRIGGER and MAINTAIN on
+      // all tables, which says nothing about who may read or write them.
+      else if (/^ALL/i.test(m[2].trim())) allTables.revoked = true;
       continue;
     }
     if (/^ALL\s+SEQUENCES\s+IN\s+SCHEMA\s+"?public"?$/i.test(target)) {
@@ -316,12 +319,15 @@ function privilegeStatements(sql) {
 /**
  * Judge a list of migrations, given in the order they are applied.
  * Returns the problems (new migrations, these fail) and the older relations
- * that rely on the automatic grant (reported only).
+ * that rely on the automatic grant (reported only). An older relation stops
+ * relying on it once a later migration grants or revokes it by name, which is
+ * what 20261020120000_every_table_states_its_grants does for all of them.
  */
 export function checkGrants(migrations, { from = GRANTS_STATED_FROM } = {}) {
   const exists = new Set();
   const problems = [];
-  const older = [];
+  const pending = new Map(); // name -> older creations nothing has stated yet
+  let coveredLater = 0;
   let judged = 0;
 
   for (const { file, sql: raw } of migrations) {
@@ -334,11 +340,16 @@ export function checkGrants(migrations, { from = GRANTS_STATED_FROM } = {}) {
       const where = `${file}:${lineOf(sql, event.index)}`;
       if (event.type === "drop") {
         exists.delete(event.name);
+        pending.delete(event.name);
         continue;
       }
       if (event.type === "rename") {
         exists.delete(event.name);
         if (event.to) exists.add(event.to);
+        if (pending.has(event.name) && event.to) {
+          pending.set(event.to, pending.get(event.name));
+        }
+        pending.delete(event.name);
         continue;
       }
       if (event.type === "addSerial") {
@@ -373,7 +384,9 @@ export function checkGrants(migrations, { from = GRANTS_STATED_FROM } = {}) {
               `    or, if it is private on purpose:  revoke all on public.${event.name} from anon, authenticated;`,
           );
         } else {
-          older.push(`${file}  public.${event.name} (${event.kind})`);
+          const list = pending.get(event.name) ?? [];
+          list.push(`${file}  public.${event.name} (${event.kind})`);
+          pending.set(event.name, list);
         }
         continue;
       }
@@ -396,8 +409,21 @@ export function checkGrants(migrations, { from = GRANTS_STATED_FROM } = {}) {
         }
       }
     }
+
+    // A later file that grants or revokes an older relation by name covers it.
+    for (const [name, list] of pending) {
+      if (list.every((line) => line.startsWith(file))) continue;
+      if (!privileges.stated(name)) continue;
+      coveredLater += list.length;
+      pending.delete(name);
+    }
   }
-  return { problems, older, judged };
+  return {
+    problems,
+    older: [...pending.values()].flat(),
+    coveredLater,
+    judged,
+  };
 }
 
 export function readMigrations(dir) {
@@ -414,7 +440,9 @@ function main() {
   const dir =
     dirAt !== -1 ? args[dirAt + 1] : join(here, "..", "supabase", "migrations");
 
-  const { problems, older, judged } = checkGrants(readMigrations(dir));
+  const { problems, older, coveredLater, judged } = checkGrants(
+    readMigrations(dir),
+  );
   const olderFiles = new Set(older.map((line) => line.split(/\s+/)[0]));
 
   if (older.length) {
@@ -425,6 +453,11 @@ function main() {
     );
     if (args.includes("--verbose"))
       for (const line of older) console.log(`  ${line}`);
+  } else {
+    console.log(
+      `Grants, older migrations: none rely on Supabase's old automatic grant any more ` +
+        `(${coveredLater} relation${coveredLater === 1 ? "" : "s"} created without one are covered by a later migration's grants).`,
+    );
   }
 
   if (problems.length) {

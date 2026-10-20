@@ -82,3 +82,38 @@ test("tables outside public, and temporary tables, are not judged", () => {
   ]);
   assert.deepEqual(problems, []);
 });
+
+test("an older relation is covered once a later migration grants or revokes it", () => {
+  const old = {
+    file: "20251201000000_old.sql",
+    sql: "create table public.a (id int); create table public.b (id int); create table public.c (id int);",
+  };
+  const before = checkGrants([old]);
+  assert.equal(before.older.length, 3);
+  const after = checkGrants([
+    old,
+    {
+      file: "20261101000000_catch_up.sql",
+      sql: "grant all on public.a to service_role; revoke all on public.b from anon;",
+    },
+  ]);
+  assert.deepEqual(after.older, ["20251201000000_old.sql  public.c (table)"]);
+  assert.equal(after.coveredLater, 2);
+  assert.deepEqual(after.problems, []);
+});
+
+test("a schema-wide partial revoke does not count as stating a table's grants", () => {
+  const { older, problems } = checkGrants([
+    { file: "20251201000000_old.sql", sql: "create table public.a (id int);" },
+    {
+      file: "20251202000000_tighten.sql",
+      sql: "revoke truncate, trigger on all tables in schema public from anon;",
+    },
+    {
+      file: "20261101000000_new.sql",
+      sql: "create table public.n (id int); revoke truncate on all tables in schema public from anon;",
+    },
+  ]);
+  assert.equal(older.length, 1);
+  assert.equal(problems.length, 1);
+});

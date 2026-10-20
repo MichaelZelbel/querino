@@ -224,7 +224,10 @@ from anon, authenticated;`). A `serial` or `bigserial` column also needs
 `grant usage, select on sequence public.x_id_seq to authenticated, service_role;`;
 an identity column (`generated always as identity`) needs nothing.
 `scripts/check-migration-grants.mjs` enforces this for migrations from
-`20261020000000` on. It runs in `npm run check`, in CI, in `npm run db:push`
+`20261020000000` on. Everything older is covered by
+`20261020120000_every_table_states_its_grants`, which restates what live held on
+2026-10-20 (generated from the live ACLs, applied as a proven no-op), so a rebuild
+from migrations matches production. It runs in `npm run check`, in CI, in `npm run db:push`
 (use it instead of a bare `npx supabase db push`), and in `.githooks/pre-push`;
 switch the hook on once per checkout with `git config core.hooksPath .githooks`.
 
