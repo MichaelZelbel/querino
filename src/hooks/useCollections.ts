@@ -45,30 +45,45 @@ export function useCollections(userId?: string) {
   });
 }
 
-export function useCollection(id: string) {
+/**
+ * One collection with its owner, or null when none with this id is visible
+ * to the caller. The route loader and the page's query both read it here.
+ */
+export async function fetchCollection(
+  id: string,
+): Promise<CollectionWithOwner | null> {
+  const { data, error } = await supabase
+    .from("collections")
+    .select(
+      `
+      *,
+      profiles:owner_id (id, display_name, avatar_url)
+    `,
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    ...data,
+    owner: data.profiles,
+  } as CollectionWithOwner;
+}
+
+/**
+ * The collection, seeded with the route loader's row when there is one, so
+ * the first render shows it without asking again; it is fetched again only
+ * after a change invalidates it.
+ */
+export function useCollection(id: string, initial?: CollectionWithOwner) {
   return useQuery({
     queryKey: ["collection", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections")
-        .select(
-          `
-          *,
-          profiles:owner_id (id, display_name, avatar_url)
-        `,
-        )
-        .eq("id", id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      return {
-        ...data,
-        owner: data.profiles,
-      } as CollectionWithOwner;
-    },
+    queryFn: () => fetchCollection(id),
     enabled: !!id,
+    initialData: initial,
+    staleTime: initial ? 60_000 : 0,
   });
 }
 

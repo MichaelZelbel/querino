@@ -25,12 +25,14 @@ import { notFound, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPublicPost } from "@/hooks/usePublicBlog";
 import type { BlogPost } from "@/types/blog";
+import { fetchCollection } from "@/hooks/useCollections";
+import type { CollectionWithOwner } from "@/types/collection";
 import {
   ARTIFACT_PUBLIC_COLUMN,
   artifactDetailSelect,
   type ArtifactListTable,
 } from "@/lib/artifactListColumns";
-import { cutProfileList, profileListQuery } from "@/lib/profileLists";
+import { profileListQuery, type ProfileList } from "@/lib/profileLists";
 import type { Prompt } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { Workflow } from "@/types/workflow";
@@ -255,67 +257,97 @@ export interface PublicProfile {
 
 export interface ProfilePageData {
   profile: PublicProfile;
-  prompts: Prompt[];
-  skills: Skill[];
-  workflows: Workflow[];
-  promptKits: PromptKit[];
-  /** Which lists were cut at PROFILE_LIST_LIMIT. */
-  truncated: Record<"prompts" | "skills" | "workflows" | "promptKits", boolean>;
+  /** The first page of each list, and how many public items it has in all. */
+  prompts: ProfileList<Prompt>;
+  skills: ProfileList<Skill>;
+  workflows: ProfileList<Workflow>;
+  promptKits: ProfileList<PromptKit>;
 }
 
-async function loadProfileList(table: ArtifactListTable, authorId: string) {
-  const { data, error } = await profileListQuery(
-    supabase.from(table),
-    table,
-    authorId,
-  );
-  if (error) throw queryFailed(table, error.message);
-  return cutProfileList(data ?? []);
+/** The row type of each profile list's table. */
+export interface ProfileListRow {
+  prompts: Prompt;
+  skills: Skill;
+  workflows: Workflow;
+  prompt_kits: PromptKit;
 }
 
 /**
- * The public profile page, keyed off display_name: the profile and the newest
- * public artifacts of all four kinds, so the first response already shows the
- * person and their work. The page makes no fetch of its own. Null when no
- * profile has that name (the page's "Creator Not Found"); a database error
- * throws, like the artefact loaders, so a creator never shows as missing or
- * empty because a query failed.
+ * One page of a profile list, from `offset` on: the loader asks for the
+ * first, the page's "Load more" for each next one.
  */
-export async function loadProfile(
-  username: string,
-): Promise<ProfilePageData | null> {
-  if (!username) return null;
+export async function loadProfileListPage<Table extends ArtifactListTable>(
+  table: Table,
+  authorId: string,
+  offset = 0,
+): Promise<ProfileList<ProfileListRow[Table]>> {
+  // The union, not the generic: the client cannot follow a type parameter.
+  const source: ArtifactListTable = table;
+  const { data, error, count } = await profileListQuery(
+    supabase.from(source),
+    table,
+    authorId,
+    offset,
+  );
+  if (error) throw queryFailed(table, error.message);
+  // The column lists are built at run time, so the client cannot type the
+  // rows from them. Prompt also promises non-null slug, ratings, counts,
+  // is_public and created_at, which the prompts table allows NULL on; widening
+  // it is recorded as a migration risk (migration/migration-risks.md).
+  const items = (data ?? []) as unknown as ProfileListRow[Table][];
+  return { items, total: count ?? offset + items.length };
+}
+
+/**
+ * The public profile page, keyed off display_name: the profile and the first
+ * page of its public artifacts of all four kinds, so the first response
+ * already shows the person and their work. The page makes no fetch of its own
+ * until a visitor asks for more. No profile with that name is notFound()
+ * (HTTP 404, the not-found page, noindex), like an unknown artefact slug; a
+ * database error throws, so a creator never shows as missing or empty because
+ * a query failed.
+ */
+export async function loadProfile(username: string): Promise<ProfilePageData> {
+  if (!username) throw notFound();
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("id, display_name, avatar_url, bio, website, twitter, github")
     .eq("display_name", username)
     .maybeSingle();
   if (error) throw queryFailed("profiles", error.message);
-  if (!profile) return null;
+  if (!profile) throw notFound();
 
   const [prompts, skills, workflows, promptKits] = await Promise.all([
-    loadProfileList("prompts", profile.id),
-    loadProfileList("skills", profile.id),
-    loadProfileList("workflows", profile.id),
-    loadProfileList("prompt_kits", profile.id),
+    loadProfileListPage("prompts", profile.id),
+    loadProfileListPage("skills", profile.id),
+    loadProfileListPage("workflows", profile.id),
+    loadProfileListPage("prompt_kits", profile.id),
   ]);
-  // The column lists are built at run time, so the client cannot type the
-  // rows from them. Prompt also promises non-null slug, ratings, counts,
-  // is_public and created_at, which the prompts table allows NULL on; widening
-  // it is recorded as a migration risk (migration/migration-risks.md).
-  return {
-    profile,
-    prompts: prompts.items as unknown as Prompt[],
-    skills: skills.items as unknown as Skill[],
-    workflows: workflows.items as unknown as Workflow[],
-    promptKits: promptKits.items as unknown as PromptKit[],
-    truncated: {
-      prompts: prompts.truncated,
-      skills: skills.truncated,
-      workflows: workflows.truncated,
-      promptKits: promptKits.truncated,
-    },
-  };
+  return { profile, prompts, skills, workflows, promptKits };
+}
+
+/**
+ * A collection, by id. A malformed id or an id no visible collection has is
+ * notFound() (HTTP 404, noindex): both used to answer 200 with a "Collection
+ * not found" text. A private collection is invisible to the signed-out
+ * server, so the browser asks again with the session (useSignedInRetry), as
+ * for a private artefact. A database error throws.
+ */
+export async function loadCollection(id: string): Promise<CollectionWithOwner> {
+  // collections.id is a uuid: anything else could only fail the query.
+  if (!isUuid(id)) throw notFound();
+  let collection: CollectionWithOwner | null;
+  try {
+    collection = await fetchCollection(id);
+  } catch (err) {
+    throw queryFailed(
+      "collections",
+      // A PostgREST error is a plain object with a message, not always an Error.
+      (err as { message?: string } | null)?.message ?? String(err),
+    );
+  }
+  if (!collection) throw notFound();
+  return collection;
 }
 
 /** Blog taxonomy pages. Both key off slug and both are public. */

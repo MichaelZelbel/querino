@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
@@ -21,18 +21,124 @@ import {
   Activity,
   Package,
 } from "lucide-react";
-import type { ProfilePageData } from "@/lib/route-loaders";
-import { PROFILE_LIST_LIMIT } from "@/lib/profileLists";
+import { toast } from "sonner";
+import {
+  loadProfileListPage,
+  type ProfileListRow,
+  type ProfilePageData,
+} from "@/lib/route-loaders";
+import type { ArtifactListTable } from "@/lib/artifactListColumns";
+import {
+  appendProfilePage,
+  hasMoreInProfileList,
+  type ProfileList,
+} from "@/lib/profileLists";
 
-function MoreNote({ kind }: { kind: string }) {
+/**
+ * One profile list: the loader's first page, then each page "Load more"
+ * brings, until every public item of the person is shown.
+ */
+function useProfileList<Table extends ArtifactListTable>(
+  table: Table,
+  authorId: string,
+  first: ProfileList<ProfileListRow[Table]>,
+) {
+  const [list, setList] = useState(first);
+  const [loading, setLoading] = useState(false);
+  // The loader ran again (a sign-in, say): start over from its new first page.
+  const [shownFirst, setShownFirst] = useState(first);
+  if (shownFirst !== first) {
+    setShownFirst(first);
+    setList(first);
+  }
+
+  const loadMore = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const page = await loadProfileListPage(
+        table,
+        authorId,
+        list.items.length,
+      );
+      setList((current) => appendProfilePage(current, page));
+    } catch {
+      toast.error("Could not load more. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { list, loading, loadMore, hasMore: hasMoreInProfileList(list) };
+}
+
+function ProfileListTab<T extends { id: string }>({
+  list,
+  hasMore,
+  loading,
+  loadMore,
+  kind,
+  icon,
+  renderItem,
+}: {
+  list: ProfileList<T>;
+  hasMore: boolean;
+  loading: boolean;
+  loadMore: () => void;
+  kind: string;
+  icon: ReactNode;
+  renderItem: (item: T) => ReactNode;
+}) {
+  if (list.items.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        {icon}
+        <p className="text-muted-foreground">
+          This creator has not published any {kind} yet.
+        </p>
+      </div>
+    );
+  }
   return (
-    <p className="mt-6 text-center text-sm text-muted-foreground">
-      Showing the {PROFILE_LIST_LIMIT} newest {kind}. Find the rest on{" "}
-      <Link to="/discover" className="text-primary hover:underline">
-        Discover
-      </Link>
-      .
-    </p>
+    <>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {list.items.map(renderItem)}
+      </div>
+      {hasMore && (
+        <div className="mt-8 flex flex-col items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            Showing {list.items.length} of {list.total} {kind}
+          </p>
+          <Button variant="outline" onClick={loadMore} disabled={loading}>
+            {loading ? "Loading…" : "Load more"}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** The route's not-found view: no profile has this name (HTTP 404). */
+export function UserProfileNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-20">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h1 className="mb-4 text-display-md font-bold text-foreground">
+            Creator Not Found
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground">
+            The creator you're looking for doesn't exist or hasn't published
+            anything yet.
+          </p>
+          <Link to="/discover">
+            <Button>Browse Discover</Button>
+          </Link>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }
 
@@ -69,35 +175,15 @@ export default function UserProfile({
   data,
 }: {
   username: string;
-  data: ProfilePageData | null;
+  data: ProfilePageData;
 }) {
   const { user } = useAuthContext();
   const [activeTab, setActiveTab] = useState("prompts");
-
-  if (!data) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Creator Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The creator you're looking for doesn't exist or hasn't published
-              anything yet.
-            </p>
-            <Link to="/discover">
-              <Button>Browse Discover</Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  const { profile, prompts, skills, workflows, promptKits, truncated } = data;
+  const { profile } = data;
+  const prompts = useProfileList("prompts", profile.id, data.prompts);
+  const skills = useProfileList("skills", profile.id, data.skills);
+  const workflows = useProfileList("workflows", profile.id, data.workflows);
+  const promptKits = useProfileList("prompt_kits", profile.id, data.promptKits);
 
   const getInitials = () => {
     if (profile.display_name) {
@@ -197,113 +283,89 @@ export default function UserProfile({
             <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="prompts" className="gap-2">
                 <Sparkles className="h-4 w-4" />
-                Prompts ({prompts.length}
-                {truncated.prompts ? "+" : ""})
+                Prompts ({prompts.list.total})
               </TabsTrigger>
               <TabsTrigger value="skills" className="gap-2">
                 <BookOpen className="h-4 w-4" />
-                Skills ({skills.length}
-                {truncated.skills ? "+" : ""})
+                Skills ({skills.list.total})
               </TabsTrigger>
               <TabsTrigger value="workflows" className="gap-2">
                 <Workflow className="h-4 w-4" />
-                Workflows ({workflows.length}
-                {truncated.workflows ? "+" : ""})
+                Workflows ({workflows.list.total})
               </TabsTrigger>
               <TabsTrigger value="promptKits" className="gap-2">
                 <Package className="h-4 w-4" />
-                Prompt Kits ({promptKits.length}
-                {truncated.promptKits ? "+" : ""})
+                Prompt Kits ({promptKits.list.total})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="prompts">
-              {prompts.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...prompts}
+                kind="prompts"
+                icon={
                   <Sparkles className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any prompts yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {prompts.map((prompt) => (
-                    <PromptCard
-                      key={prompt.id}
-                      prompt={prompt}
-                      currentUserId={user?.id}
-                      showAuthorInfo={false}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.prompts && <MoreNote kind="prompts" />}
+                }
+                renderItem={(prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    currentUserId={user?.id}
+                    showAuthorInfo={false}
+                  />
+                )}
+              />
             </TabsContent>
 
             <TabsContent value="skills">
-              {skills.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...skills}
+                kind="skills"
+                icon={
                   <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any skills yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {skills.map((skill) => (
-                    <SkillCard
-                      key={skill.id}
-                      skill={skill}
-                      currentUserId={user?.id}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.skills && <MoreNote kind="skills" />}
+                }
+                renderItem={(skill) => (
+                  <SkillCard
+                    key={skill.id}
+                    skill={skill}
+                    currentUserId={user?.id}
+                  />
+                )}
+              />
             </TabsContent>
 
             <TabsContent value="workflows">
-              {workflows.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...workflows}
+                kind="workflows"
+                icon={
                   <Workflow className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any workflows yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {workflows.map((workflow) => (
-                    <WorkflowCard
-                      key={workflow.id}
-                      workflow={workflow}
-                      currentUserId={user?.id}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.workflows && <MoreNote kind="workflows" />}
+                }
+                renderItem={(workflow) => (
+                  <WorkflowCard
+                    key={workflow.id}
+                    workflow={workflow}
+                    currentUserId={user?.id}
+                  />
+                )}
+              />
             </TabsContent>
 
             <TabsContent value="promptKits">
-              {promptKits.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...promptKits}
+                kind="prompt kits"
+                icon={
                   <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any prompt kits yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {promptKits.map((kit) => (
-                    <PromptKitCard
-                      key={kit.id}
-                      kit={kit}
-                      currentUserId={user?.id}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.promptKits && <MoreNote kind="prompt kits" />}
+                }
+                renderItem={(kit) => (
+                  <PromptKitCard
+                    key={kit.id}
+                    kit={kit}
+                    currentUserId={user?.id}
+                  />
+                )}
+              />
             </TabsContent>
           </Tabs>
         </div>
