@@ -312,3 +312,41 @@ export function shellExports(vars) {
 export function sqlLiteral(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
+
+/**
+ * The first line of the `.env.local` the copy writes at the checkout's root.
+ * Vite reads that file, so a plain `bun run dev` in a fresh shell, with none
+ * of the exports set, still talks to the copy instead of falling back to the
+ * live project (src/integrations/supabase/client.ts falls back to it when the
+ * variables are missing). Only a file starting with this line is the copy's
+ * to overwrite or remove; anyone else's `.env.local` is left alone.
+ */
+export const ENV_LOCAL_MARKER =
+  "# Written by harness/test-copy.sh for this checkout's test copy; its `down` removes it.";
+
+/** The copy's `.env.local`: the marker, then what the app needs. */
+export function envLocalContent({ projectId, apiUrl, anonKey }) {
+  return [
+    ENV_LOCAL_MARKER,
+    `# Test copy ${projectId}. Shell variables still override these (Vite's rule).`,
+    `VITE_SUPABASE_URL=${apiUrl}`,
+    `VITE_SUPABASE_PUBLISHABLE_KEY=${anonKey}`,
+    "",
+  ].join("\n");
+}
+
+/** Whether an existing `.env.local` was written by the test copy. */
+export function isTestCopyEnvLocal(text) {
+  return text.replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0] === ENV_LOCAL_MARKER;
+}
+
+/**
+ * Whether `supabase start` failed because a port was taken after the copy
+ * checked it (another process bound it in the seconds between), which a new
+ * port block fixes, as opposed to any other failure, which it does not.
+ */
+export function isPortClash(output) {
+  return /address already in use|port is already allocated|ports are not available/i.test(
+    output,
+  );
+}

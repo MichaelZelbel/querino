@@ -5,15 +5,17 @@
 //
 //   up      start this checkout's copy: a local Supabase stack from this
 //           checkout's supabase/migrations, seeded with made-up accounts and
-//           items, its edge functions served; prints shell exports
+//           items, its edge functions served; writes the checkout's
+//           .env.local so a plain `bun run dev` talks to it; prints exports
 //   env     print the exports again (the copy must be up)
-//   down    remove this checkout's containers, volumes and network
+//   down    remove this checkout's containers, volumes, network and .env.local
 //   status  say whether this checkout's copy is up
 //   list    every copy on this machine and the checkout it belongs to
 //   prune   remove the copies whose checkout folder no longer exists
 //
 // Exports go to stdout and everything else to stderr, so a lap runs
 //   eval "$(harness/test-copy.sh up)"
+// The shell wrapper adds `dev [port]` and the per-checkout lock.
 
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -28,6 +30,9 @@ import {
   CLI_VERSION,
   EXCLUDED_SERVICES,
   LIVE_REF,
+  envLocalContent,
+  isPortClash,
+  isTestCopyEnvLocal,
   liveReferences,
   portBlockFor,
   portsFor,
@@ -59,6 +64,7 @@ const ACCOUNTS = JSON.parse(
   fs.readFileSync(path.join(HERE, "accounts.json"), "utf8"),
 ).accounts;
 const PROJECT_ID = projectIdFor(ROOT);
+const ENV_LOCAL = path.join(ROOT, ".env.local");
 const LABEL = "com.supabase.cli.project";
 
 const started = Date.now();
@@ -99,6 +105,7 @@ function childEnv(extra = {}) {
     if (fs.existsSync(sock)) env.DOCKER_HOST = `unix://${sock}`;
   }
   env.DO_NOT_TRACK = "1";
+  env.SUPABASE_TELEMETRY_DISABLED = "1";
   return { ...env, ...extra };
 }
 
@@ -228,12 +235,13 @@ function registryEntries() {
     .filter(Boolean);
 }
 
-async function choosePorts() {
-  const claimed = new Set(
-    registryEntries()
+async function choosePorts(avoid = new Set()) {
+  const claimed = new Set([
+    ...avoid,
+    ...registryEntries()
       .filter((e) => e.projectId !== PROJECT_ID)
       .map((e) => e.ports?.api),
-  );
+  ]);
   for (let attempt = 0; attempt < 50; attempt++) {
     const base = portBlockFor(ROOT, attempt);
     if (claimed.has(base)) continue;
@@ -412,6 +420,45 @@ async function waitFor(what, fn, seconds) {
   fail(`${what} did not answer within ${seconds}s (last: ${last})`);
 }
 
+// ── The checkout's .env.local ───────────────────────────────────────────────
+
+/**
+ * Refuse to start when the checkout has a `.env.local` the copy did not write:
+ * it is someone's own, and overwriting it could destroy a key.
+ */
+function checkEnvLocalIsOurs() {
+  if (!fs.existsSync(ENV_LOCAL)) return;
+  if (isTestCopyEnvLocal(fs.readFileSync(ENV_LOCAL, "utf8"))) return;
+  fail(
+    `${ENV_LOCAL} exists and was not written by the test copy, so it is left alone and the copy does not start. ` +
+      "Move it out of the checkout and run up again.",
+  );
+}
+
+/**
+ * Point a plain `bun run dev` at the copy, so an app started in a new shell,
+ * without the exports, never falls back to the live project.
+ */
+function writeEnvLocal(keys) {
+  checkEnvLocalIsOurs();
+  fs.writeFileSync(
+    ENV_LOCAL,
+    envLocalContent({
+      projectId: PROJECT_ID,
+      apiUrl: keys.API_URL,
+      anonKey: keys.ANON_KEY,
+    }),
+  );
+  log(`.env.local points the app at the copy (${keys.API_URL})`);
+}
+
+/** Remove `.env.local` only when the copy wrote it. */
+function removeEnvLocal() {
+  if (!fs.existsSync(ENV_LOCAL)) return;
+  if (!isTestCopyEnvLocal(fs.readFileSync(ENV_LOCAL, "utf8"))) return;
+  fs.rmSync(ENV_LOCAL);
+}
+
 async function up() {
   if (!fs.existsSync(path.join(ROOT, "supabase", "migrations")))
     fail(`${ROOT} is not a Querino checkout`);
@@ -424,11 +471,14 @@ async function up() {
     );
   }
 
+  checkEnvLocalIsOurs();
+
   if (running().length && fs.existsSync(STATE_FILE)) {
     const state = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
     const keys = await statusEnv();
     if (keys) {
       log(`already up (${PROJECT_ID}); printing its exports`);
+      writeEnvLocal(keys);
       process.stdout.write(exportsFor(state, keys) + "\n");
       return;
     }
@@ -444,21 +494,6 @@ async function up() {
   log(`project ${PROJECT_ID}, Supabase CLI ${CLI_VERSION} (${cmd})`);
   fs.mkdirSync(STATE, { recursive: true });
   fs.mkdirSync(REGISTRY, { recursive: true });
-
-  const ports = await choosePorts();
-  const entry = {
-    projectId: PROJECT_ID,
-    root: ROOT,
-    ports,
-    startedAt: new Date().toISOString(),
-  };
-  fs.writeFileSync(
-    path.join(REGISTRY, `${PROJECT_ID}.json`),
-    JSON.stringify(entry, null, 2),
-  );
-  log(
-    `ports ${ports.api} (API) and ${ports.db} (database), block ${ports.api}-${ports.inspector}`,
-  );
 
   const internalSecret = randomBytes(32).toString("hex");
   writeSecret("internal-job-secret", internalSecret);
@@ -483,20 +518,52 @@ async function up() {
       : `AI off: no ${OPENROUTER_KEY_FILE}, so the AI features fail closed`,
   );
 
-  buildWorkdir(ports, secrets);
+  // A port can be taken between the check and the start (another process
+  // binds it in those seconds). Then the next free block is tried, twice at
+  // most; any other failure stops the copy at once.
+  const avoid = new Set();
+  let ports;
+  for (let round = 1; ; round++) {
+    ports = await choosePorts(avoid);
+    fs.writeFileSync(
+      path.join(REGISTRY, `${PROJECT_ID}.json`),
+      JSON.stringify(
+        {
+          projectId: PROJECT_ID,
+          root: ROOT,
+          ports,
+          startedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      ),
+    );
+    log(
+      `ports ${ports.api} (API) and ${ports.db} (database), block ${ports.api}-${ports.inspector}`,
+    );
+    buildWorkdir(ports, secrets);
 
-  log(`starting the stack (without ${EXCLUDED_SERVICES.join(", ")})`);
-  const start = await supabase(
-    ["start", "--workdir", WORKDIR, "-x", EXCLUDED_SERVICES.join(",")],
-    {
-      env: childEnv(extraEnv),
-      quiet: true,
-      allowFail: true,
-      timeout: 20 * 60_000,
-    },
-  );
-  if (start.status !== 0) {
-    process.stderr.write(start.stdout.slice(-4000) + start.stderr.slice(-4000));
+    log(`starting the stack (without ${EXCLUDED_SERVICES.join(", ")})`);
+    const start = await supabase(
+      ["start", "--workdir", WORKDIR, "-x", EXCLUDED_SERVICES.join(",")],
+      {
+        env: childEnv(extraEnv),
+        quiet: true,
+        allowFail: true,
+        timeout: 20 * 60_000,
+      },
+    );
+    if (start.status === 0) break;
+    const output = start.stdout + start.stderr;
+    if (isPortClash(output) && round < 3) {
+      log(
+        `a port of block ${ports.api}-${ports.inspector} was taken after the check; removing the half-started stack and moving to another block`,
+      );
+      await removeStack(PROJECT_ID, { workdir: WORKDIR });
+      avoid.add(ports.api);
+      continue;
+    }
+    process.stderr.write(output.slice(-8000));
     log("start failed; removing what it left");
     await down({ quietIfNothing: true });
     fail("supabase start failed (its output is above)");
@@ -588,6 +655,7 @@ async function up() {
     upAt: new Date().toISOString(),
   };
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  writeEnvLocal(keys);
   log(`up in ${((Date.now() - started) / 1000).toFixed(0)}s: ${keys.API_URL}`);
   process.stdout.write(exportsFor(state, keys) + "\n");
 }
@@ -657,15 +725,27 @@ async function down({ quietIfNothing = false } = {}) {
     networksOf(PROJECT_ID).length;
   const left = await removeStack(PROJECT_ID, { workdir: WORKDIR });
   fs.rmSync(STATE, { recursive: true, force: true });
+  removeEnvLocal();
   if (left.length) fail(`still there after down: ${left.join(", ")}`);
   if (!quietIfNothing || had)
     log(`down: ${PROJECT_ID} removed (no container, volume or network left)`);
 }
 
+/** What a plain `bun run dev` in this checkout talks to. */
+function appTarget() {
+  if (!fs.existsSync(ENV_LOCAL))
+    return "no .env.local: a bun run dev without the exports would talk to the LIVE project";
+  const text = fs.readFileSync(ENV_LOCAL, "utf8");
+  if (!isTestCopyEnvLocal(text))
+    return ".env.local is not the test copy's: check what it points at before starting the app";
+  const url = text.match(/^VITE_SUPABASE_URL=(.*)$/m)?.[1];
+  return `.env.local points a plain bun run dev at the copy (${url})`;
+}
+
 async function status() {
   const names = running();
   if (!names.length) {
-    process.stdout.write(`down: ${PROJECT_ID} (${ROOT})\n`);
+    process.stdout.write(`down: ${PROJECT_ID} (${ROOT})\n${appTarget()}\n`);
     process.exit(3);
   }
   const state = fs.existsSync(STATE_FILE)
@@ -676,7 +756,7 @@ async function status() {
       (state
         ? `, API http://127.0.0.1:${state.ports.api}, AI ${state.ai ? "on" : "off"}, since ${state.upAt}`
         : "") +
-      "\n",
+      `\n${appTarget()}\n`,
   );
 }
 
@@ -776,7 +856,7 @@ const commands = {
 };
 if (!commands[command]) {
   process.stderr.write(
-    "usage: harness/test-copy.sh up|env|down|status|list|prune\n",
+    "usage: harness/test-copy.sh dev [port]|up|env|down|status|list|prune\n",
   );
   process.exit(2);
 }

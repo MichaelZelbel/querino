@@ -8,12 +8,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  ENV_LOCAL_MARKER,
   KEY_STAND_IN,
   LIVE_REF,
   LOCAL_GATEWAY,
   PORT_BLOCK_SIZE,
   PORT_FIRST,
   REF_STAND_IN,
+  envLocalContent,
+  isPortClash,
+  isTestCopyEnvLocal,
   jwtRef,
   liveReferences,
   portBlockFor,
@@ -203,4 +207,41 @@ test("exports are single-quoted shell words", () => {
     "export A='x y'\nexport C='$HOME'",
   );
   assert.throws(() => shellExports({ "bad-name": "x" }));
+});
+
+test("the copy's .env.local is recognised by its first line, anyone else's is not", () => {
+  const ours = envLocalContent({
+    projectId: "querino-tc-0123456789",
+    apiUrl: "http://127.0.0.1:21000",
+    anonKey: "local-anon",
+  });
+  assert.equal(ours.split("\n")[0], ENV_LOCAL_MARKER);
+  assert.match(ours, /^VITE_SUPABASE_URL=http:\/\/127\.0\.0\.1:21000$/m);
+  assert.match(ours, /^VITE_SUPABASE_PUBLISHABLE_KEY=local-anon$/m);
+  assert.equal(isTestCopyEnvLocal(ours), true);
+  assert.equal(isTestCopyEnvLocal(ours.replace(/\n/g, "\r\n")), true);
+  assert.equal(
+    isTestCopyEnvLocal("VITE_SUPABASE_URL=https://example.com\n"),
+    false,
+  );
+  assert.equal(isTestCopyEnvLocal(`# my notes\n${ours}`), false);
+  assert.equal(isTestCopyEnvLocal(""), false);
+});
+
+test("a taken port is told apart from any other start failure", () => {
+  assert.equal(
+    isPortClash(
+      "failed to start docker container: Error response from daemon: driver failed programming external connectivity on endpoint supabase_kong_x: listen tcp4 0.0.0.0:22460: bind: address already in use",
+    ),
+    true,
+  );
+  assert.equal(
+    isPortClash("Bind for 0.0.0.0:22460 failed: port is already allocated"),
+    true,
+  );
+  assert.equal(
+    isPortClash('ERROR: relation "public.x" does not exist (SQLSTATE 42P01)'),
+    false,
+  );
+  assert.equal(isPortClash("error running container: exit 1"), false);
 });
