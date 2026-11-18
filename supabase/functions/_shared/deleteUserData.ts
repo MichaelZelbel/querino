@@ -16,9 +16,8 @@
 // in, and every retry did the same thing again; stopping at the first
 // failure is what keeps the rest of the rows.
 
-// The two callers create their clients from different pinned versions of
-// supabase-js, which TypeScript treats as unrelated types. All this module
-// needs is `.from()` and `.rpc()`, so that is all it asks for.
+// All this module needs from the caller's client is `.from()` and `.rpc()`,
+// so that is all it asks for, and it imports no supabase-js of its own.
 export interface ServiceClient {
   // deno-lint-ignore no-explicit-any
   from(table: string): any;
