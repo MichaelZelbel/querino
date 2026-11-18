@@ -42,3 +42,25 @@ supabase/.temp/
 # would start enforcing a lockfile across all 35 edge functions, which is a
 # bigger change than the unit tests that created it.
 supabase/functions/deno.lock
+
+__pycache__/
+*.pyc
+*.pyo
+.factory/consumer.json
+.factory/backup/
+.factory/STOP
+.factory/PAUSE
+.factory/schedule.log
+.factory/schedule-task.xml
+.factory/trigger.json
+.factory/gate.json
+.factory/*.lock
+harness/.results/
+.factory/holdout/.results/
+.env.*
+!.env.example
+*.pem
+secrets.json
+credentials.json
+.factory/schedule.json
+!.env.test.example
