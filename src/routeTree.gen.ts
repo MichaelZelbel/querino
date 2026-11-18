@@ -32,6 +32,7 @@ import { Route as CollectionsIndexRouteImport } from './routes/collections/index
 import { Route as CollectionsNewRouteImport } from './routes/collections/new'
 import { Route as LibraryIndexRouteImport } from './routes/library/index'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as PromptKitsIndexRouteImport } from './routes/prompt-kits/index'
 import { Route as PromptKitsNewRouteImport } from './routes/prompt-kits/new'
 import { Route as PromptsIndexRouteImport } from './routes/prompts/index'
 import { Route as PromptsNewRouteImport } from './routes/prompts/new'
@@ -180,6 +181,11 @@ const LibraryIndexRoute = LibraryIndexRouteImport.update({
 const ProfileEditRoute = ProfileEditRouteImport.update({
   id: '/profile/edit',
   path: '/profile/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromptKitsIndexRoute = PromptKitsIndexRouteImport.update({
+  id: '/prompt-kits/',
+  path: '/prompt-kits/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PromptKitsNewRoute = PromptKitsNewRouteImport.update({
@@ -383,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/blog/': typeof BlogIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/library/': typeof LibraryIndexRoute
+  '/prompt-kits/': typeof PromptKitsIndexRoute
   '/prompts/': typeof PromptsIndexRoute
   '/skills/': typeof SkillsIndexRoute
   '/workflows/': typeof WorkflowsIndexRoute
@@ -442,6 +449,7 @@ export interface FileRoutesByTo {
   '/blog': typeof BlogIndexRoute
   '/collections': typeof CollectionsIndexRoute
   '/library': typeof LibraryIndexRoute
+  '/prompt-kits': typeof PromptKitsIndexRoute
   '/prompts': typeof PromptsIndexRoute
   '/skills': typeof SkillsIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
@@ -502,6 +510,7 @@ export interface FileRoutesById {
   '/blog/': typeof BlogIndexRoute
   '/collections/': typeof CollectionsIndexRoute
   '/library/': typeof LibraryIndexRoute
+  '/prompt-kits/': typeof PromptKitsIndexRoute
   '/prompts/': typeof PromptsIndexRoute
   '/skills/': typeof SkillsIndexRoute
   '/workflows/': typeof WorkflowsIndexRoute
@@ -563,6 +572,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/collections/'
     | '/library/'
+    | '/prompt-kits/'
     | '/prompts/'
     | '/skills/'
     | '/workflows/'
@@ -622,6 +632,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/collections'
     | '/library'
+    | '/prompt-kits'
     | '/prompts'
     | '/skills'
     | '/workflows'
@@ -681,6 +692,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/collections/'
     | '/library/'
+    | '/prompt-kits/'
     | '/prompts/'
     | '/skills/'
     | '/workflows/'
@@ -741,6 +753,7 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   CollectionsIndexRoute: typeof CollectionsIndexRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
+  PromptKitsIndexRoute: typeof PromptKitsIndexRoute
   PromptsIndexRoute: typeof PromptsIndexRoute
   SkillsIndexRoute: typeof SkillsIndexRoute
   WorkflowsIndexRoute: typeof WorkflowsIndexRoute
@@ -932,6 +945,13 @@ declare module '@tanstack/react-router' {
       path: '/profile/edit'
       fullPath: '/profile/edit'
       preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prompt-kits/': {
+      id: '/prompt-kits/'
+      path: '/prompt-kits'
+      fullPath: '/prompt-kits/'
+      preLoaderRoute: typeof PromptKitsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prompt-kits/new': {
@@ -1205,6 +1225,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   CollectionsIndexRoute: CollectionsIndexRoute,
   LibraryIndexRoute: LibraryIndexRoute,
+  PromptKitsIndexRoute: PromptKitsIndexRoute,
   PromptsIndexRoute: PromptsIndexRoute,
   SkillsIndexRoute: SkillsIndexRoute,
   WorkflowsIndexRoute: WorkflowsIndexRoute,

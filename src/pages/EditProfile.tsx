@@ -13,7 +13,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -251,10 +250,10 @@ export default function EditProfile() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <h1 className="flex items-center gap-2 text-xl font-semibold leading-none tracking-tight">
                 <User className="h-5 w-5" />
                 Edit Profile
-              </CardTitle>
+              </h1>
               <CardDescription>
                 Customize your public profile. This information will be visible
                 to everyone.

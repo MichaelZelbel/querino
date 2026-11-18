@@ -82,7 +82,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 interface BlogAdminLayoutProps {
   children: ReactNode;
-  title?: string;
+  // Required: it is the page's one <h1> (scripts/check-page-headings.mjs).
+  title: string;
   actions?: ReactNode;
 }
 
@@ -161,18 +162,14 @@ export function BlogAdminLayout({
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        {(title || actions) && (
-          <header className="bg-card border-b border-border px-4 py-4 md:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-xl font-semibold">{title}</h1>
-              {actions && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {actions}
-                </div>
-              )}
-            </div>
-          </header>
-        )}
+        <header className="bg-card border-b border-border px-4 py-4 md:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-xl font-semibold">{title}</h1>
+            {actions && (
+              <div className="flex flex-wrap items-center gap-2">{actions}</div>
+            )}
+          </div>
+        </header>
 
         {/* Content */}
         <div className="flex-1 p-4 md:p-6 overflow-auto">{children}</div>

@@ -42,8 +42,9 @@ const BACKSLASH = String.fromCharCode(92);
  * Escape a user-supplied string so it can sit inside a double-quoted PostgREST
  * filter value and be matched literally by ILIKE.
  *
- * The caller wraps the result in quotes and adds its own wildcards; see
- * {@link ilikeContains}.
+ * The caller wraps the result in quotes. Search terms no longer go through
+ * here but through {@link escapeRegexLiteral}: ilike cannot match a literal
+ * `*` (see below).
  */
 export function escapeFilterValue(input: string): string {
   let out = "";
@@ -90,25 +91,78 @@ export function escapeFilterValue(input: string): string {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Matching a fragment: imatch, not ilike (November 2026, issue #16)
+// ---------------------------------------------------------------------------
+//
+// Searching Discover for `*` listed the whole catalogue. PostgREST turns every
+// `*` in an ilike value into `%`, after unquoting, so a literal asterisk cannot
+// be said through ilike at all; the old workaround sent `_` instead, and
+// "%_%" matches every row with any text in it.
+//
+// `imatch` (PostgreSQL's case-insensitive regex match, `~*`) has no such
+// rewrite, and a regex can say every character literally: a backslash
+// followed by a character that is not a letter or a digit means that
+// character. So the term is escaped as a literal regex, then once more for
+// PostgREST's quoted-value parser (which, as above, eats one backslash):
+//
+//   literal   regex   sent to PostgREST
+//   *         \*      \\*      (2 backslashes, then the character)
+//   % _ , ; ( \%      \\%      (the same for every other punctuation mark)
+//   "         \"      \\\"     (one more: PostgREST's own escape for ")
+//   \         \\      \\\\     (one more: PostgREST's own escape for \)
+//
+// Measured against the live project on 18 November 2026, inside or=(...) as
+// the lists send it, against a scan of all 158 public prompts: `*` 33 rows,
+// `\` 2, `"` 93, `%` 15, `_` 9, `;` 26, `(` 48, `:` 91, each equal to the scan.
+//
+// Letters and digits are never escaped: in a regex a backslash before one of
+// those is a class such as \d or \w. Every other character is, so the pattern
+// is always a plain literal and never a regex a visitor wrote.
+
 /**
- * One `column.ilike."%term%"` filter term, safe for any user input.
- *
- * The wildcards are added outside {@link escapeFilterValue} on purpose: those
- * two are ours and must keep working as wildcards.
+ * Escape a user-supplied string so it can sit inside a double-quoted PostgREST
+ * `imatch` value and be matched as literal text, character for character.
  */
-export function ilikeContains(column: string, term: string): string {
-  return `${column}.ilike."%${escapeFilterValue(term)}%"`;
+export function escapeRegexLiteral(input: string): string {
+  let out = "";
+
+  for (const char of input) {
+    if (/[\p{L}\p{N}]/u.test(char)) {
+      out += char;
+    } else if (char === BACKSLASH || char === '"') {
+      // Regex escape (\) plus PostgREST's own escape for this one character:
+      // \\\\ -> \\ after PostgREST -> one literal backslash in the regex,
+      // \\\" -> \" after PostgREST -> one literal quote in the regex.
+      out += BACKSLASH.repeat(3) + char;
+    } else {
+      // \\X -> \X after PostgREST -> the regex reads X literally.
+      out += BACKSLASH.repeat(2) + char;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * One "this column contains this text" filter term, safe for any user input,
+ * case-insensitive, with every character (`*`, `%` and `_` included) matched
+ * literally. A regex without anchors matches anywhere in the value, so no
+ * wildcards are added.
+ */
+export function containsFilter(column: string, term: string): string {
+  return `${column}.imatch."${escapeRegexLiteral(term)}"`;
 }
 
 /**
  * The whole `or(...)` expression for "this term appears in any of these
  * columns". Pass the result straight to supabase-js `.or()`.
  */
-export function orIlikeContains(
+export function orContainsFilter(
   columns: readonly string[],
   term: string,
 ): string {
-  return columns.map((column) => ilikeContains(column, term)).join(",");
+  return columns.map((column) => containsFilter(column, term)).join(",");
 }
 
 /**
@@ -202,7 +256,7 @@ export function allTermsFilters(
   query: string,
 ): string[] {
   return tokenizeSearchQuery(query).map((term) =>
-    orIlikeContains(columns, term),
+    orContainsFilter(columns, term),
   );
 }
 
@@ -223,6 +277,6 @@ export function anyTermFilter(
   query: string,
 ): string {
   return tokenizeSearchQuery(query)
-    .flatMap((term) => columns.map((column) => ilikeContains(column, term)))
+    .flatMap((term) => columns.map((column) => containsFilter(column, term)))
     .join(",");
 }
