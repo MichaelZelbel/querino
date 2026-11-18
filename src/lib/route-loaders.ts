@@ -26,9 +26,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchPublicPost } from "@/hooks/usePublicBlog";
 import type { BlogPost } from "@/types/blog";
 import {
+  ARTIFACT_LIST_COLUMNS,
   artifactDetailSelect,
   type ArtifactListTable,
 } from "@/lib/artifactListColumns";
+import {
+  cutProfileList,
+  PROFILE_LIST_LIMIT,
+  PROFILE_PUBLIC_COLUMN,
+} from "@/lib/profileLists";
+import type { Prompt } from "@/types/prompt";
+import type { Skill } from "@/types/skill";
+import type { Workflow } from "@/types/workflow";
+import type { PromptKit } from "@/types/promptKit";
 import { isUuid } from "@/lib/uuidRoute";
 
 export interface LoadedArtefact {
@@ -239,16 +249,82 @@ export async function loadBlogPost(
   }
 }
 
-/** The public profile page keys off display_name, the way UserProfile does. */
-export async function loadProfile(username: string) {
-  if (!username) return null;
+export interface PublicProfile {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  website: string | null;
+  twitter: string | null;
+  github: string | null;
+}
+
+export interface ProfilePageData {
+  profile: PublicProfile;
+  prompts: Prompt[];
+  skills: Skill[];
+  workflows: Workflow[];
+  promptKits: PromptKit[];
+  /** Which lists were cut at PROFILE_LIST_LIMIT. */
+  truncated: Record<"prompts" | "skills" | "workflows" | "promptKits", boolean>;
+}
+
+async function loadProfileList(table: ArtifactListTable, authorId: string) {
   const { data, error } = await supabase
+    .from(table)
+    .select(ARTIFACT_LIST_COLUMNS[table].join(", "))
+    .eq("author_id", authorId)
+    // The column differs per table, which .eq()'s per-table column type
+    // cannot follow across a union of tables; .filter() takes it as text.
+    .filter(PROFILE_PUBLIC_COLUMN[table], "eq", true)
+    .order("created_at", { ascending: false })
+    // Timestamps can tie: the key makes the cut at the limit the same rows on
+    // the server and in the browser (listOrder.ts).
+    .order("id", { ascending: true })
+    .limit(PROFILE_LIST_LIMIT + 1);
+  return cutProfileList(error ? null : data);
+}
+
+/**
+ * The public profile page, keyed off display_name: the profile and the newest
+ * public artifacts of all four kinds, so the first response already shows the
+ * person and their work. The page makes no fetch of its own. Null when no
+ * profile has that name (the page's "Creator Not Found").
+ */
+export async function loadProfile(
+  username: string,
+): Promise<ProfilePageData | null> {
+  if (!username) return null;
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("id, display_name, avatar_url, bio, website, twitter, github")
     .eq("display_name", username)
     .maybeSingle();
-  if (error || !data) return null;
-  return data;
+  if (error || !profile) return null;
+
+  const [prompts, skills, workflows, promptKits] = await Promise.all([
+    loadProfileList("prompts", profile.id),
+    loadProfileList("skills", profile.id),
+    loadProfileList("workflows", profile.id),
+    loadProfileList("prompt_kits", profile.id),
+  ]);
+  // The column lists are built at run time, so the client cannot type the
+  // rows from them. Prompt also promises non-null slug, ratings, counts,
+  // is_public and created_at, which the prompts table allows NULL on; widening
+  // it is recorded as a migration risk (migration/migration-risks.md).
+  return {
+    profile,
+    prompts: prompts.items as unknown as Prompt[],
+    skills: skills.items as unknown as Skill[],
+    workflows: workflows.items as unknown as Workflow[],
+    promptKits: promptKits.items as unknown as PromptKit[],
+    truncated: {
+      prompts: prompts.truncated,
+      skills: skills.truncated,
+      workflows: workflows.truncated,
+      promptKits: promptKits.truncated,
+    },
+  };
 }
 
 /** Blog taxonomy pages. Both key off slug and both are public. */

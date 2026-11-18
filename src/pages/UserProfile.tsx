@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -11,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
+import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import {
   Globe,
   Twitter,
@@ -19,22 +19,10 @@ import {
   BookOpen,
   Workflow,
   Activity,
+  Package,
 } from "lucide-react";
-import type { Prompt } from "@/types/prompt";
-import type { Skill } from "@/types/skill";
-import type { Workflow as WorkflowType } from "@/types/workflow";
-import { ARTIFACT_LIST_COLUMNS } from "@/lib/artifactListColumns";
-
-/** How many artifacts of each kind a profile page shows. */
-const PROFILE_LIST_LIMIT = 60;
-
-// What PromptCard / SkillCard / WorkflowCard and their clone buttons read:
-// the columns every artifact list asks for (artifactListColumns.ts). The
-// profile kept its own copy, which lacked a workflow's filename and scope, so
-// a workflow cloned from a profile card lost both (2026-10-07).
-const PROMPT_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.prompts.join(", ");
-const SKILL_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.skills.join(", ");
-const WORKFLOW_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.workflows.join(", ");
+import type { ProfilePageData } from "@/lib/route-loaders";
+import { PROFILE_LIST_LIMIT } from "@/lib/profileLists";
 
 function MoreNote({ kind }: { kind: string }) {
   return (
@@ -48,161 +36,45 @@ function MoreNote({ kind }: { kind: string }) {
   );
 }
 
-interface PublicProfile {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  website: string | null;
-  twitter: string | null;
-  github: string | null;
-}
-
-export default function UserProfile() {
-  const { username } = useParams<{ username: string }>();
-  const { user } = useAuthContext();
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [workflows, setWorkflows] = useState<WorkflowType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [activeTab, setActiveTab] = useState("prompts");
-  // Which lists were cut at PROFILE_LIST_LIMIT.
-  const [truncated, setTruncated] = useState({
-    prompts: false,
-    skills: false,
-    workflows: false,
-  });
-
-  useEffect(() => {
-    async function fetchProfile() {
-      if (!username) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Find user by display_name using the public_profiles view (no sensitive fields)
-        const { data: profileData, error: profileError } = (await supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url, bio, website, twitter, github")
-          // Match the display name exactly. Interpolating the URL segment into a
-          // PostgREST filter string would let a comma or parenthesis in a username
-          // rewrite the filter, and route-loaders.ts and UserActivity.tsx both look
-          // the profile up with the same exact match.
-          .eq("display_name", username)
-          .maybeSingle()) as any;
-
-        if (profileError || !profileData) {
-          setNotFound(true);
-          setLoading(false);
-          return;
-        }
-
-        setProfile(profileData);
-
-        // Fetch published prompts, skills, workflows in parallel. Only the
-        // columns the cards (and their clone buttons) read: select("*") also
-        // downloaded every row's embedding vector and search index, with no
-        // limit. One row past the limit is asked for to know there are more.
-        const [promptsRes, skillsRes, workflowsRes] = await Promise.all([
-          supabase
-            .from("prompts")
-            .select(PROMPT_CARD_COLUMNS)
-            .eq("author_id", profileData.id)
-            .eq("is_public", true)
-            .order("created_at", { ascending: false })
-            .limit(PROFILE_LIST_LIMIT + 1),
-          supabase
-            .from("skills")
-            .select(SKILL_CARD_COLUMNS)
-            .eq("author_id", profileData.id)
-            .eq("published", true)
-            .order("created_at", { ascending: false })
-            .limit(PROFILE_LIST_LIMIT + 1) as any,
-          supabase
-            .from("workflows")
-            .select(WORKFLOW_CARD_COLUMNS)
-            .eq("author_id", profileData.id)
-            .eq("published", true)
-            .order("created_at", { ascending: false })
-            .limit(PROFILE_LIST_LIMIT + 1) as any,
-        ]);
-
-        const promptRows = promptsRes.data ?? [];
-        const skillRows = skillsRes.data ?? [];
-        const workflowRows = workflowsRes.data ?? [];
-        setTruncated({
-          prompts: promptRows.length > PROFILE_LIST_LIMIT,
-          skills: skillRows.length > PROFILE_LIST_LIMIT,
-          workflows: workflowRows.length > PROFILE_LIST_LIMIT,
-        });
-
-        // The Prompt type promises non-null slug, ratings, counts, is_public and
-        // created_at; the prompts table allows NULL on all six. Widening Prompt to
-        // match costs 25 further strict errors and a product decision about what a
-        // prompt without a slug should render, so it is recorded as a migration risk
-        // rather than decided here. See migration/migration-risks.md.
-        // The column list is built at run time, so the client cannot type
-        // the rows from it.
-        setPrompts(
-          promptRows.slice(0, PROFILE_LIST_LIMIT) as unknown as Prompt[],
-        );
-        setSkills(skillRows.slice(0, PROFILE_LIST_LIMIT));
-        setWorkflows(workflowRows.slice(0, PROFILE_LIST_LIMIT));
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProfile();
-  }, [username]);
-
-  const getInitials = () => {
-    if (profile?.display_name) {
-      return profile.display_name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return "U";
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-12">
-          <div className="container mx-auto max-w-5xl px-4">
-            <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
-              <Skeleton className="h-24 w-24 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-96 max-w-full" />
-                <Skeleton className="h-4 w-64" />
-              </div>
-            </div>
-            <Skeleton className="h-10 w-full mb-6" />
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-64" />
-              ))}
+/** Shown while another profile loads, so the previous one never stays on screen. */
+export function UserProfileSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-12">
+        <div className="container mx-auto max-w-5xl px-4">
+          <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-96 max-w-full" />
+              <Skeleton className="h-4 w-64" />
             </div>
           </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+          <Skeleton className="h-10 w-full mb-6" />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-64" />
+            ))}
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
-  if (notFound || !profile) {
+export default function UserProfile({
+  username,
+  data,
+}: {
+  username: string;
+  data: ProfilePageData | null;
+}) {
+  const { user } = useAuthContext();
+  const [activeTab, setActiveTab] = useState("prompts");
+
+  if (!data) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <Header />
@@ -224,6 +96,20 @@ export default function UserProfile() {
       </div>
     );
   }
+
+  const { profile, prompts, skills, workflows, promptKits, truncated } = data;
+
+  const getInitials = () => {
+    if (profile.display_name) {
+      return profile.display_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "U";
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -293,7 +179,7 @@ export default function UserProfile() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link to={`/u/${encodeURIComponent(username || "")}/activity`}>
+              <Link to={`/u/${encodeURIComponent(username)}/activity`}>
                 <Button variant="outline" className="gap-2">
                   <Activity className="h-4 w-4" />
                   Activity
@@ -308,7 +194,7 @@ export default function UserProfile() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="prompts" className="gap-2">
                 <Sparkles className="h-4 w-4" />
                 Prompts ({prompts.length}
@@ -323,6 +209,11 @@ export default function UserProfile() {
                 <Workflow className="h-4 w-4" />
                 Workflows ({workflows.length}
                 {truncated.workflows ? "+" : ""})
+              </TabsTrigger>
+              <TabsTrigger value="promptKits" className="gap-2">
+                <Package className="h-4 w-4" />
+                Prompt Kits ({promptKits.length}
+                {truncated.promptKits ? "+" : ""})
               </TabsTrigger>
             </TabsList>
 
@@ -391,6 +282,28 @@ export default function UserProfile() {
                 </div>
               )}
               {truncated.workflows && <MoreNote kind="workflows" />}
+            </TabsContent>
+
+            <TabsContent value="promptKits">
+              {promptKits.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    This creator has not published any prompt kits yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {promptKits.map((kit) => (
+                    <PromptKitCard
+                      key={kit.id}
+                      kit={kit}
+                      currentUserId={user?.id}
+                    />
+                  ))}
+                </div>
+              )}
+              {truncated.promptKits && <MoreNote kind="prompt kits" />}
             </TabsContent>
           </Tabs>
         </div>
