@@ -30,6 +30,7 @@ import {
   type ArtifactListTable,
 } from "@/lib/artifactListColumns";
 import { isUuid } from "@/lib/uuidRoute";
+import { collectPublicIndex, type PublicIndexEntry } from "@/lib/publicIndex";
 
 export interface LoadedArtefact {
   id: string;
@@ -169,21 +170,16 @@ export const loadPromptKit = (slug: string) => loadBySlug("prompt_kits", slug);
  * and the sitemap cannot disagree about what a logged-out visitor may open. Paged for
  * the same reason the sitemap is: PostgREST stops at 1000 rows without saying so.
  */
-export interface PublicIndexEntry {
-  slug: string;
-  title: string;
-  description: string | null;
-}
+export type { PublicIndexEntry };
 
-const INDEX_PAGE = 1000;
-
-async function loadPublicIndex(
+// The paging loop and its one retry on a transient failure live in
+// publicIndex.ts, where the unit tests can reach them without this client.
+function loadPublicIndex(
   table: "prompts" | "skills" | "workflows" | "prompt_kits",
   publicColumn: "is_public" | "published",
 ): Promise<PublicIndexEntry[]> {
-  const entries: PublicIndexEntry[] = [];
-  for (let from = 0; ; from += INDEX_PAGE) {
-    const { data, error } = await supabase
+  return collectPublicIndex(table, (from, to) =>
+    supabase
       .from(table)
       .select("slug, title, description")
       // The column differs per table, which .eq()'s per-table column type
@@ -193,27 +189,8 @@ async function loadPublicIndex(
       // Titles repeat. The key keeps a list longer than one page from showing
       // a tied row twice and another not at all (listOrder.ts).
       .order("id", { ascending: true })
-      .range(from, from + INDEX_PAGE - 1);
-    // A thrown error reaches the router's error boundary and answers 500, which a
-    // crawler retries. A short list would be taken at its word.
-    if (error)
-      throw new Error(`Index query for ${table} failed: ${error.message}`);
-    const page = (data ?? []) as Array<{
-      slug: string | null;
-      title: string | null;
-      description: string | null;
-    }>;
-    for (const row of page) {
-      if (!row.slug || !row.title) continue;
-      entries.push({
-        slug: row.slug,
-        title: row.title,
-        description: row.description,
-      });
-    }
-    if (page.length < INDEX_PAGE) break;
-  }
-  return entries;
+      .range(from, to),
+  );
 }
 
 export const loadPromptIndex = () => loadPublicIndex("prompts", "is_public");
