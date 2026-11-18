@@ -1,0 +1,85 @@
+# The bug report form readers see under New issue. GitHub issue forms syntax:
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms
+#
+# The label `needs-owner` is there on purpose (fail-closed): the software factory builds every open
+# issue that does not carry it, so a raw report from the public never reaches the factory. The planner
+# rewrites a report into a ticket and lifts the label.
+name: Something is broken
+description: Something in Querino does not work as it should.
+labels: ["bug", "needs-owner"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you start:
+
+        - Everything you write here is public. Leave out private prompts you do not want others to read, and take API keys, passwords and tokens out of anything you paste, writing `REMOVED` in their place.
+        - A problem someone could misuse goes to support@querino.ai, never here.
+        - An idea for a new feature goes to [Ideas](https://github.com/MichaelZelbel/querino/discussions/categories/ideas), where others can vote for it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Tell it the way you would tell a friend. One problem per report. You can drag a screenshot in here too.
+    validations:
+      required: true
+
+  - type: textarea
+    id: just-before
+    attributes:
+      label: What did you do just before?
+      description: The steps that led to it, one per line. Say whether it happens again when you do the same thing.
+      placeholder: |
+        1. I opened one of my prompts.
+        2. I clicked Save.
+        3. A red message appeared.
+        It happens every time.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      options:
+        - querino.ai in the browser
+        - Through Querino's MCP server in an AI assistant such as Claude, ChatGPT or Cursor
+        - GitHub sync
+        - My own copy of Querino
+        - Somewhere else
+    validations:
+      required: true
+
+  - type: input
+    id: page-address
+    attributes:
+      label: The page address
+      description: Copy it from the address bar, if the problem happened on a page.
+      placeholder: "https://querino.ai/..."
+
+  - type: input
+    id: browser-device
+    attributes:
+      label: Which browser and device?
+      placeholder: "For example: Chrome on Windows 11, or Safari on an iPhone"
+
+  - type: textarea
+    id: error-message
+    attributes:
+      label: The exact error message
+      description: Copy and paste it as text, word for word. If there was none, leave this empty.
+      render: text
+
+  - type: checkboxes
+    id: private-removed
+    attributes:
+      label: Before you send it
+      options:
+        - label: I took API keys, passwords and tokens out of everything I pasted.
+          required: true
