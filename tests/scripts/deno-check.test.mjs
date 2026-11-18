@@ -158,6 +158,31 @@ test("the CLI refuses to count when a module cannot be resolved", () => {
   assert.doesNotMatch(run.stdout, /fell|deno check:/);
 });
 
+test("the CLI refuses to count while an import floats", () => {
+  const dir = fixture("floating", {
+    "_shared/nested/client.ts":
+      'export { createClient } from "https://esm.sh/@supabase/supabase-js@2";\n',
+    "a/index.ts": 'import { z } from "https://esm.sh/zod";\nexport { z };\n',
+    "b/deno.json": JSON.stringify({ imports: { x: "npm:x@2" } }),
+    "b/index.ts": 'import { x } from "x";\nexport { x };\n',
+    "pinned/index.ts":
+      'import { z } from "https://esm.sh/zod@3.23.8";\nexport { z };\n',
+  });
+  const run = spawnSync(process.execPath, [SCRIPT, "--dir", dir], {
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 2, run.stdout + run.stderr);
+  assert.match(
+    run.stderr,
+    /_shared\/nested\/client\.ts {2}https:\/\/esm\.sh\/@supabase\/supabase-js@2$/m,
+  );
+  assert.match(run.stderr, /a\/index\.ts {2}https:\/\/esm\.sh\/zod$/m);
+  assert.match(run.stderr, /b\/deno\.json {2}npm:x@2$/m);
+  assert.doesNotMatch(run.stderr, /zod@3\.23\.8/);
+  assert.match(run.stderr, /Pin each one to an exact release/);
+  assert.doesNotMatch(run.stdout, /deno check:/);
+});
+
 test("the one known unloadable module is ignored, any other is not", () => {
   const [specifier] = KNOWN_UNLOADABLE;
   const entry = "file:///functions/a/index.ts";
