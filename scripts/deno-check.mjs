@@ -19,9 +19,30 @@
 // them is a separate, ordinary piece of work that this makes visible and
 // keeps finished.
 //
+// A count is only worth comparing when it is the same for the same code
+// (issue #12). On 2026-11-18 CI counted 53 on main and 9 on a pull request
+// that touched no edge function, 22 minutes apart, and the ratchet asked to
+// bank the 9. Six files imported supabase-js@2, a range that every run on an
+// empty Deno cache resolved again, and 2.119.1 was published between the two
+// runs. When a remote module's type file does not load, `deno check` says
+// nothing and exits 0, so the errors that type file would have produced simply
+// vanish. Three things follow from that:
+//
+//   - every remote import names an exact release, and this script refuses to
+//     run while one does not (scripts/floating-imports.mjs);
+//   - each function with its own deno.json is checked with that config, as it
+//     is deployed, so its import map applies. Checked from the repository root
+//     instead, mcp-server's and generate-slug's mapped imports did not resolve
+//     and were counted as type errors;
+//   - a module that could not be resolved, loaded or typed is a failure (exit
+//     2), never a count: a TS2307 in the output, or a hole in the module graph
+//     that `deno info` reports for an entry point.
+//
 // Usage:
 //   node scripts/deno-check.mjs            check against the baseline
 //   node scripts/deno-check.mjs --update   record today's counts
+//   node scripts/deno-check.mjs --dir <functions>   measure another folder
+//                                          (the tests' fixtures)
 //
 // Deno is a devDependency, so `bun install` provides it on every machine and
 // in CI. $DENO_BIN overrides it if you want a different one.
@@ -29,15 +50,24 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, join, relative, resolve } from "node:path";
+import { findFloatingImports } from "./floating-imports.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const FUNCTIONS = join(ROOT, "supabase", "functions");
 const BASELINE_FILE = join(ROOT, "scripts", "deno-check-baseline.json");
 
-function denoBinary() {
+// esm.sh rewrote an extensionless path in supabase-js@2.57.2's
+// dist/module/lib/types.d.ts, and this module answers "Module not found" on
+// every run: a fixed hole, not drift. Only ensure-token-allowance reaches it,
+// and closing it means upgrading that function's supabase-js at runtime. Any
+// other module that fails to load still stops the count.
+export const KNOWN_UNLOADABLE = new Set([
+  "https://esm.sh/@supabase/storage-js@2.99.1/dist/module/StorageClient",
+]);
+
+export function denoBinary() {
   if (process.env.DENO_BIN) return process.env.DENO_BIN;
 
   // Deno is a devDependency, so the install puts a real binary here on every
@@ -86,155 +116,336 @@ function denoBinary() {
   process.exit(2);
 }
 
-const entryPoints = readdirSync(FUNCTIONS, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && !d.name.startsWith("_"))
-  .map((d) => join(FUNCTIONS, d.name, "index.ts"))
-  .filter((p) => existsSync(p))
-  .sort();
-
-if (entryPoints.length === 0) {
-  console.error(`No edge functions found under ${FUNCTIONS}`);
-  process.exit(2);
+// Deno prints each diagnostic as a `TSnnnn [ERROR]: message` line, followed
+// by the source excerpt and an `at file:///...:L:C` line. The tally is Deno's
+// own count, for the cross-check: `Found N errors.`, except that with exactly
+// one error Deno prints only `error: Type checking failed.`. A non-zero exit
+// with neither is a run that never got to type checking (`tally: null`).
+export function parseCheckOutput(text, status) {
+  const clean = text.replace(/\x1b\[[0-9;]*m/g, "");
+  const diagnostics = [];
+  let pending = null;
+  for (const line of clean.split(/\r?\n/)) {
+    const head = /^(TS\d+) \[ERROR\]: (.*)$/.exec(line);
+    if (head) {
+      pending = { code: head[1], message: head[2] };
+      continue;
+    }
+    const at = /^\s*at (file:\/\/\/.+?:\d+:\d+)\s*$/.exec(line);
+    if (at && pending) {
+      diagnostics.push({ ...pending, location: at[1] });
+      pending = null;
+    }
+  }
+  const found = /Found (\d+) errors?\./.exec(clean);
+  let tally = null;
+  if (found) tally = Number(found[1]);
+  else if (/error: Type checking failed\./.test(clean)) tally = 1;
+  else if (status === 0) tally = 0;
+  return { diagnostics, tally, clean };
 }
 
-const deno = denoBinary();
-const result = spawnSync(deno, ["check", ...entryPoints], {
-  cwd: ROOT,
-  encoding: "utf8",
-  maxBuffer: 64 * 1024 * 1024,
-  shell: deno === "deno",
-});
+const UNTYPED = new Set(["JavaScript", "Mjs", "Cjs", "Jsx"]);
 
-const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-
-if (result.error) {
-  console.error(`Could not run \`${deno} check\`: ${result.error.message}`);
-  process.exit(2);
+// What `deno info --json` shows for a module `deno check` could not see. It
+// exits 0 in every one of these cases, and `deno check` reports nothing for
+// the last two, so this is the only place they surface:
+//   - an import of one of our own files that did not resolve (an unmapped
+//     bare specifier);
+//   - a module in the graph, at any depth, that failed to load (a remote 404
+//     or timeout, a missing local file, a type file that is gone);
+//   - a remote JavaScript module we import that comes with no types at all.
+export function graphProblems(info, { known = KNOWN_UNLOADABLE } = {}) {
+  const problems = [];
+  const bySpecifier = new Map(info.modules.map((m) => [m.specifier, m]));
+  for (const m of info.modules) {
+    if (m.error && !known.has(m.specifier)) {
+      problems.push(`${m.specifier}: ${m.error}`);
+    }
+    if (!m.specifier.startsWith("file:")) continue;
+    for (const dep of m.dependencies ?? []) {
+      if (dep.code?.error) problems.push(`${dep.specifier}: ${dep.code.error}`);
+      if (dep.type?.error) problems.push(`${dep.specifier}: ${dep.type.error}`);
+      const target = bySpecifier.get(dep.code?.specifier);
+      if (
+        target &&
+        !target.specifier.startsWith("file:") &&
+        UNTYPED.has(target.mediaType) &&
+        !target.typesDependency &&
+        !dep.type
+      ) {
+        problems.push(
+          `${target.specifier}: JavaScript with no type definitions, so nothing that uses it is type checked`,
+        );
+      }
+    }
+  }
+  return problems;
 }
 
-// Deno prints each diagnostic ending with `at file:///.../<function>/index.ts:L:C`,
-// so the function each error belongs to is read off that line. Errors inside a
-// _shared module are attributed to _shared, where they belong.
-const perFunction = {};
-let total = 0;
-
-const ansi = /\[[0-9;]*m/g;
-const clean = output.replace(ansi, "");
-
-for (const line of clean.split(/\r?\n/)) {
-  const at = /^\s*at file:\/\/\/(.+?):\d+:\d+\s*$/.exec(line);
-  if (!at) continue;
-  const path = at[1].replaceAll("\\", "/");
-  const m = /supabase\/functions\/([^/]+)\//.exec(path);
-  if (!m) continue;
-  const name = m[1];
-  perFunction[name] = (perFunction[name] ?? 0) + 1;
-  total++;
+function functionOf(location, functionsDir) {
+  const file = fileURLToPath(location.replace(/:\d+:\d+$/, ""));
+  const rel = relative(functionsDir, file).replaceAll("\\", "/");
+  return rel.startsWith("..") ? file : rel.split("/")[0];
 }
 
-// Cross-check against Deno's own tally, so a change in its output format shows
-// up as a loud mismatch rather than as a silently passing ratchet.
-const reported = /Found (\d+) errors?\./.exec(clean);
+// Runs `deno check` the way each function is deployed, then `deno info` for
+// every entry point. `problems` lists everything that makes the count
+// meaningless; when it is not empty, nothing else in the result may be used.
+export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
+  const names = readdirSync(functionsDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith("_"))
+    .map((d) => d.name)
+    .filter((name) => existsSync(join(functionsDir, name, "index.ts")))
+    .sort();
+  const entryPoints = names.map((name) => join(functionsDir, name, "index.ts"));
 
-// A non-zero exit with no tally is a run that never got to type checking:
-// on 2026-09-11 CI failed with "Type errors fell from 71 to 0. Bank it"
-// because esm.sh answered 408 while Deno fetched a type file, and the same
-// thing happened twice on a developer machine on 2026-09-16. Zero locations
-// and no "Found N errors" line meant "nothing wrong" to the code below. It
-// means "nothing was checked", and that is neither a pass nor a bankable
-// number.
-if (!reported && result.status !== 0) {
-  console.error(
-    `\`${deno} check\` exited with ${result.status} before reporting a tally; nothing was type checked. Run it again.\n`,
-  );
-  console.error(clean.slice(0, 4000));
-  process.exit(2);
+  // Functions without a deno.json are checked together, from the repository
+  // root and without --config, as they always were. --no-lock, because with
+  // --config Deno would otherwise write a deno.lock next to that config.
+  const groups = [{ config: [], names: [] }];
+  for (const name of names) {
+    const config = join(functionsDir, name, "deno.json");
+    if (existsSync(config)) {
+      groups.push({ config: ["--config", config], names: [name] });
+    } else {
+      groups[0].names.push(name);
+    }
+  }
+
+  const run = (args) =>
+    spawnSync(deno, args, {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      shell: deno === "deno",
+      env: { ...process.env, NO_COLOR: "1" },
+    });
+
+  const problems = [];
+  const diagnostics = new Map();
+  for (const group of groups.filter((g) => g.names.length > 0)) {
+    const entries = group.names.map((name) =>
+      join(functionsDir, name, "index.ts"),
+    );
+    const result = run([
+      "check",
+      "--no-lock",
+      ...group.config,
+      ...extraArgs,
+      ...entries,
+    ]);
+    const label = group.config.length ? group.names[0] : "deno check";
+    if (result.error) {
+      problems.push(
+        `${label}: could not run \`${deno} check\`: ${result.error.message}`,
+      );
+      continue;
+    }
+    const {
+      diagnostics: found,
+      tally,
+      clean,
+    } = parseCheckOutput(
+      `${result.stdout ?? ""}\n${result.stderr ?? ""}`,
+      result.status,
+    );
+    // A non-zero exit with no tally is a run that never got to type checking:
+    // on 2026-09-11 CI failed with "Type errors fell from 71 to 0. Bank it"
+    // because esm.sh answered 408 while Deno fetched a type file, and the same
+    // thing happened twice on a developer machine on 2026-09-16. Zero locations
+    // and no "Found N errors" line meant "nothing wrong" to the code below. It
+    // means "nothing was checked", and that is neither a pass nor a bankable
+    // number.
+    if (tally === null) {
+      problems.push(
+        `${label}: \`deno check\` exited with ${result.status} before reporting a tally; nothing was type checked.\n${clean.slice(0, 4000)}`,
+      );
+      continue;
+    }
+    // Cross-check against Deno's own tally, so a change in its output format
+    // shows up as a loud mismatch rather than as a silently passing ratchet.
+    if (tally !== found.length) {
+      problems.push(
+        `${label}: parsed ${plural(found.length, "error location")} but Deno reported ${tally}. ` +
+          `The output format has probably changed. Fix this script before trusting it.\n${clean.slice(0, 4000)}`,
+      );
+      continue;
+    }
+    for (const d of found) {
+      const fn = functionOf(d.location, functionsDir);
+      if (d.code === "TS2307") {
+        problems.push(`${fn}: ${d.message} (${d.location})`);
+      }
+      // mcp-server imports _shared modules the first group also checks, so
+      // the same diagnostic can come from two groups. It is one error.
+      diagnostics.set(`${d.code} ${d.location} ${d.message}`, { ...d, fn });
+    }
+  }
+
+  for (const group of groups) {
+    for (const name of group.names) {
+      const entry = join(functionsDir, name, "index.ts");
+      const result = run([
+        "info",
+        "--json",
+        "--no-lock",
+        ...group.config,
+        ...extraArgs,
+        entry,
+      ]);
+      let info;
+      try {
+        info = JSON.parse(result.stdout);
+      } catch {
+        problems.push(
+          `${name}: \`deno info\` gave no module graph.\n${(result.stderr ?? "").slice(0, 2000)}`,
+        );
+        continue;
+      }
+      for (const problem of graphProblems(info)) {
+        problems.push(`${name}: ${problem}`);
+      }
+    }
+  }
+
+  const perFunction = {};
+  for (const { fn } of diagnostics.values()) {
+    perFunction[fn] = (perFunction[fn] ?? 0) + 1;
+  }
+
+  return {
+    entryPoints,
+    perFunction,
+    total: diagnostics.size,
+    diagnostics: [...diagnostics.values()],
+    problems: [...new Set(problems)],
+  };
 }
 
-const denoTotal = reported ? Number(reported[1]) : 0;
-
-if (denoTotal !== total) {
-  console.error(
-    `Parsed ${total} error location${total === 1 ? "" : "s"} but Deno reported ${denoTotal}.`,
-  );
-  console.error(
-    "The output format has probably changed. Fix this script before trusting it.\n",
-  );
-  console.error(clean.slice(0, 4000));
-  process.exit(2);
+function plural(n, word) {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
-const baseline = existsSync(BASELINE_FILE)
-  ? JSON.parse(readFileSync(BASELINE_FILE, "utf8"))
-  : null;
+function main() {
+  const args = process.argv.slice(2);
+  const dirAt = args.indexOf("--dir");
+  const functionsDir =
+    dirAt !== -1
+      ? resolve(args[dirAt + 1])
+      : join(ROOT, "supabase", "functions");
+  const cwd = dirAt !== -1 ? dirname(functionsDir) : ROOT;
 
-if (process.argv.includes("--update")) {
-  if (baseline && total > baseline.total) {
+  if (!existsSync(functionsDir)) {
+    console.error(`No edge functions found under ${functionsDir}`);
+    process.exit(2);
+  }
+
+  const floating = findFloatingImports(functionsDir);
+  if (floating.length > 0) {
     console.error(
-      `Refusing to raise the baseline from ${baseline.total} to ${total}. The count may only go down.`,
+      "These imports name a version range, so the types behind them change without the code changing:\n",
+    );
+    for (const line of floating) console.error(`  ${line}`);
+    console.error(
+      "\nPin each one to an exact release (supabase-js@2.119.0, not @2). Until then the count is not comparable with the baseline.",
+    );
+    process.exit(2);
+  }
+
+  const { entryPoints, perFunction, total, diagnostics, problems } = measure({
+    functionsDir,
+    cwd,
+    deno: denoBinary(),
+  });
+
+  if (entryPoints.length === 0) {
+    console.error(`No edge functions found under ${functionsDir}`);
+    process.exit(2);
+  }
+
+  if (problems.length > 0) {
+    console.error(
+      "Some modules could not be resolved, loaded or type checked:\n",
+    );
+    for (const problem of problems) console.error(`  ${problem}`);
+    console.error(
+      "\nNothing was counted, so this is not a lower count. Fix the import, or run it again if a download failed.",
+    );
+    process.exit(2);
+  }
+
+  const baseline = existsSync(BASELINE_FILE)
+    ? JSON.parse(readFileSync(BASELINE_FILE, "utf8"))
+    : null;
+
+  if (args.includes("--update")) {
+    if (baseline && total > baseline.total) {
+      console.error(
+        `Refusing to raise the baseline from ${baseline.total} to ${total}. The count may only go down.`,
+      );
+      process.exit(1);
+    }
+    writeFileSync(
+      BASELINE_FILE,
+      JSON.stringify(
+        {
+          note: "Type errors per edge function under `deno check`. May be lowered, never raised. See scripts/deno-check.mjs.",
+          total,
+          perFunction: Object.fromEntries(
+            Object.entries(perFunction).sort(([a], [b]) => a.localeCompare(b)),
+          ),
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    console.log(`Baseline recorded: ${plural(total, "type error")}.`);
+    process.exit(0);
+  }
+
+  if (!baseline) {
+    console.error(
+      "No baseline yet. Record one:\n\n  node scripts/deno-check.mjs --update\n",
     );
     process.exit(1);
   }
-  writeFileSync(
-    BASELINE_FILE,
-    JSON.stringify(
-      {
-        note: "Type errors per edge function under `deno check`. May be lowered, never raised. See scripts/deno-check.mjs.",
-        total,
-        perFunction: Object.fromEntries(
-          Object.entries(perFunction).sort(([a], [b]) => a.localeCompare(b)),
-        ),
-      },
-      null,
-      2,
-    ) + "\n",
-  );
-  console.log(
-    `Baseline recorded: ${total} type error${total === 1 ? "" : "s"}.`,
-  );
-  process.exit(0);
-}
 
-if (!baseline) {
-  console.error(
-    "No baseline yet. Record one:\n\n  node scripts/deno-check.mjs --update\n",
-  );
-  process.exit(1);
-}
+  const worse = Object.entries(perFunction)
+    .map(([name, count]) => [name, count, baseline.perFunction?.[name] ?? 0])
+    .filter(([, now, before]) => now > before);
 
-const worse = Object.entries(perFunction)
-  .map(([name, count]) => [name, count, baseline.perFunction?.[name] ?? 0])
-  .filter(([, now, before]) => now > before);
-
-if (worse.length > 0) {
-  console.error("Edge functions gained type errors:\n");
-  for (const [name, now, before] of worse) {
-    console.error(`  ${name}  ${before} -> ${now}`);
+  if (worse.length > 0) {
+    console.error("Edge functions gained type errors:\n");
+    for (const [name, now, before] of worse) {
+      console.error(`  ${name}  ${before} -> ${now}`);
+    }
+    console.error("\nThe relevant diagnostics:\n");
+    console.error(
+      diagnostics
+        .filter((d) => worse.some(([name]) => name === d.fn))
+        .slice(0, 30)
+        .map((d) => `${d.code} [ERROR]: ${d.message}\n    at ${d.location}`)
+        .join("\n"),
+    );
+    process.exit(1);
   }
-  console.error("\nThe relevant diagnostics:\n");
-  console.error(
-    clean
-      .split(/\r?\n/)
-      .filter((l) => /\[ERROR\]|at file:/.test(l))
-      .filter(
-        (l) =>
-          worse.some(([name]) => l.includes(`/${name}/`)) ||
-          /\[ERROR\]/.test(l),
-      )
-      .slice(0, 60)
-      .join("\n"),
-  );
-  process.exit(1);
-}
 
-if (total < baseline.total) {
+  if (total < baseline.total) {
+    console.log(`Type errors fell from ${baseline.total} to ${total}:\n`);
+    for (const [name, before] of Object.entries(baseline.perFunction ?? {})) {
+      const now = perFunction[name] ?? 0;
+      if (now < before) console.log(`  ${name}  ${before} -> ${now}`);
+    }
+    console.log("\nIf the code behind each drop changed, bank it:\n");
+    console.log("  node scripts/deno-check.mjs --update\n");
+    process.exit(1);
+  }
+
   console.log(
-    `Type errors fell from ${baseline.total} to ${total}. Bank it:\n`,
+    `deno check: ${plural(total, "type error")} across ${entryPoints.length} edge functions, none of them new.`,
   );
-  console.log("  node scripts/deno-check.mjs --update\n");
-  process.exit(1);
 }
 
-console.log(
-  `deno check: ${total} type error${total === 1 ? "" : "s"} across ${entryPoints.length} edge functions, none of them new.`,
-);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
+  main();

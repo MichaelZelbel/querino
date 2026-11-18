@@ -17,7 +17,7 @@
     "test:security": "playwright test --config=playwright.security.config.ts",
     "test:unit": "deno test --config=supabase/functions/deno.json supabase/functions/_shared/",
     "test:web": "deno test --config=tests/web/deno.json tests/web/",
-    "test:scripts": "node --test tests/scripts/check-migration-grants.test.mjs tests/scripts/factory-trust.test.mjs",
+    "test:scripts": "node --test tests/scripts/check-migration-grants.test.mjs tests/scripts/factory-trust.test.mjs tests/scripts/floating-imports.test.mjs tests/scripts/deno-check.test.mjs",
     "preview": "vite preview",
     "format": "prettier --write .",
     "db:push": "npm run check:migrations && npm run check:grants && npx supabase db push"
