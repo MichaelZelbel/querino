@@ -166,7 +166,7 @@ export const loadWorkflow = (slug: string) => loadBySlug("workflows", slug);
 export const loadPromptKit = (slug: string) => loadBySlug("prompt_kits", slug);
 
 /**
- * The plain lists behind /prompts, /skills and /workflows.
+ * The plain lists behind /prompts, /skills, /workflows and /prompt-kits.
  *
  * Until these existed no ordinary link led to any public artefact: the home page and
  * /discover fill their cards from the browser, so a crawler that does not run scripts
@@ -186,7 +186,7 @@ export interface PublicIndexEntry {
 const INDEX_PAGE = 1000;
 
 async function loadPublicIndex(
-  table: "prompts" | "skills" | "workflows",
+  table: "prompts" | "skills" | "workflows" | "prompt_kits",
 ): Promise<PublicIndexEntry[]> {
   const entries: PublicIndexEntry[] = [];
   for (let from = 0; ; from += INDEX_PAGE) {
@@ -226,6 +226,7 @@ async function loadPublicIndex(
 export const loadPromptIndex = () => loadPublicIndex("prompts");
 export const loadSkillIndex = () => loadPublicIndex("skills");
 export const loadWorkflowIndex = () => loadPublicIndex("workflows");
+export const loadPromptKitIndex = () => loadPublicIndex("prompt_kits");
 
 export type LoadedBlogPost = BlogPost;
 
