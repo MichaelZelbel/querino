@@ -44,10 +44,20 @@ const STATE = path.join(ROOT, "harness", ".results", "test-copy");
 const WORKDIR = STATE; // the CLI's --workdir: it holds the generated supabase/ folder
 const STATE_FILE = path.join(STATE, "state.json");
 const HOME = os.homedir();
-const CACHE = path.join(process.env.XDG_CACHE_HOME || path.join(HOME, ".cache"), "querino-test-copy");
+const CACHE = path.join(
+  process.env.XDG_CACHE_HOME || path.join(HOME, ".cache"),
+  "querino-test-copy",
+);
 const REGISTRY = path.join(CACHE, "stacks");
-const OPENROUTER_KEY_FILE = path.join(HOME, ".config", "querino-test-copy", "openrouter.key");
-const ACCOUNTS = JSON.parse(fs.readFileSync(path.join(HERE, "accounts.json"), "utf8")).accounts;
+const OPENROUTER_KEY_FILE = path.join(
+  HOME,
+  ".config",
+  "querino-test-copy",
+  "openrouter.key",
+);
+const ACCOUNTS = JSON.parse(
+  fs.readFileSync(path.join(HERE, "accounts.json"), "utf8"),
+).accounts;
 const PROJECT_ID = projectIdFor(ROOT);
 const LABEL = "com.supabase.cli.project";
 
@@ -73,18 +83,30 @@ function fail(msg) {
 function childEnv(extra = {}) {
   const env = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (/^(SUPABASE_|VITE_SUPABASE_|OPENROUTER|OPENAI|LOVABLE_API|RESEND|QTC_)/i.test(k)) continue;
+    if (
+      /^(SUPABASE_|VITE_SUPABASE_|OPENROUTER|OPENAI|LOVABLE_API|RESEND|QTC_)/i.test(
+        k,
+      )
+    )
+      continue;
     env[k] = v;
   }
   if (!env.DOCKER_HOST) {
-    const sock = path.join(process.env.XDG_RUNTIME_DIR || `/run/user/${os.userInfo().uid}`, "docker.sock");
+    const sock = path.join(
+      process.env.XDG_RUNTIME_DIR || `/run/user/${os.userInfo().uid}`,
+      "docker.sock",
+    );
     if (fs.existsSync(sock)) env.DOCKER_HOST = `unix://${sock}`;
   }
   env.DO_NOT_TRACK = "1";
   return { ...env, ...extra };
 }
 
-function run(cmd, args, { input, env, quiet = false, allowFail = false, timeout = 15 * 60_000 } = {}) {
+function run(
+  cmd,
+  args,
+  { input, env, quiet = false, allowFail = false, timeout = 15 * 60_000 } = {},
+) {
   const res = spawnSync(cmd, args, {
     input,
     env: env ?? childEnv(),
@@ -111,8 +133,21 @@ function docker(args, opts = {}) {
 
 function psql(sql, { allowFail = false } = {}) {
   return docker(
-    ["exec", "-i", `supabase_db_${PROJECT_ID}`, "psql", "-U", "supabase_admin", "-d", "postgres",
-      "-v", "ON_ERROR_STOP=1", "-X", "-q", "-At"],
+    [
+      "exec",
+      "-i",
+      `supabase_db_${PROJECT_ID}`,
+      "psql",
+      "-U",
+      "supabase_admin",
+      "-d",
+      "postgres",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-X",
+      "-q",
+      "-At",
+    ],
     { input: sql, allowFail },
   );
 }
@@ -139,7 +174,10 @@ async function supabaseCommand() {
   if (!res.ok) fail(`download of ${url} answered ${res.status}`);
   const body = Buffer.from(await res.arrayBuffer());
   const sum = createHash("sha256").update(body).digest("hex");
-  if (sum !== CLI_SHA256[platform]) fail(`the CLI download's checksum is ${sum}, expected ${CLI_SHA256[platform]}`);
+  if (sum !== CLI_SHA256[platform])
+    fail(
+      `the CLI download's checksum is ${sum}, expected ${CLI_SHA256[platform]}`,
+    );
 
   // Unpack beside the final folder and rename it into place: a second lap
   // doing the same at the same moment loses the rename and uses the winner's.
@@ -169,7 +207,9 @@ function portFree(port) {
   return new Promise((resolve) => {
     const srv = net.createServer();
     srv.once("error", () => resolve(false));
-    srv.listen({ port, host: "0.0.0.0", exclusive: true }, () => srv.close(() => resolve(true)));
+    srv.listen({ port, host: "0.0.0.0", exclusive: true }, () =>
+      srv.close(() => resolve(true)),
+    );
   });
 }
 
@@ -190,7 +230,9 @@ function registryEntries() {
 
 async function choosePorts() {
   const claimed = new Set(
-    registryEntries().filter((e) => e.projectId !== PROJECT_ID).map((e) => e.ports?.api),
+    registryEntries()
+      .filter((e) => e.projectId !== PROJECT_ID)
+      .map((e) => e.ports?.api),
   );
   for (let attempt = 0; attempt < 50; attempt++) {
     const base = portBlockFor(ROOT, attempt);
@@ -210,26 +252,48 @@ function buildWorkdir(ports, secrets) {
   fs.mkdirSync(path.join(out, "migrations"), { recursive: true });
 
   const src = path.join(ROOT, "supabase", "migrations");
-  let urls = 0, keys = 0, refs = 0;
-  const files = fs.readdirSync(src).filter((f) => f.endsWith(".sql")).sort();
+  let urls = 0,
+    keys = 0,
+    refs = 0;
+  const files = fs
+    .readdirSync(src)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
   for (const f of files) {
     const r = rewriteMigration(fs.readFileSync(path.join(src, f), "utf8"));
     const left = liveReferences(r.sql);
-    if (left.length) fail(`${f} still names the live project after the rewrite (${left.join(", ")})`);
-    urls += r.urls; keys += r.keys; refs += r.refs;
+    if (left.length)
+      fail(
+        `${f} still names the live project after the rewrite (${left.join(", ")})`,
+      );
+    urls += r.urls;
+    keys += r.keys;
+    refs += r.refs;
     fs.writeFileSync(path.join(out, "migrations", f), r.sql);
   }
-  log(`${files.length} migrations copied; pointed ${urls} live addresses at the local gateway, replaced ${keys} live keys and ${refs} other mentions of the live project`);
+  log(
+    `${files.length} migrations copied; pointed ${urls} live addresses at the local gateway, replaced ${keys} live keys and ${refs} other mentions of the live project`,
+  );
 
-  fs.cpSync(path.join(ROOT, "supabase", "functions"), path.join(out, "functions"), { recursive: true });
+  fs.cpSync(
+    path.join(ROOT, "supabase", "functions"),
+    path.join(out, "functions"),
+    { recursive: true },
+  );
 
-  const toml = renderConfig(fs.readFileSync(path.join(ROOT, "supabase", "config.toml"), "utf8"), {
-    projectId: PROJECT_ID,
-    ports,
-    secrets,
-  });
+  const toml = renderConfig(
+    fs.readFileSync(path.join(ROOT, "supabase", "config.toml"), "utf8"),
+    {
+      projectId: PROJECT_ID,
+      ports,
+      secrets,
+    },
+  );
   const left = liveReferences(toml);
-  if (left.length) fail(`the generated config.toml names the live project (${left.join(", ")})`);
+  if (left.length)
+    fail(
+      `the generated config.toml names the live project (${left.join(", ")})`,
+    );
   fs.writeFileSync(path.join(out, "config.toml"), toml);
 }
 
@@ -246,27 +310,56 @@ function readSecret(name) {
 // ── Inspecting the stack ─────────────────────────────────────────────────────
 
 function containersOf(projectId) {
-  return docker(["ps", "-a", "--filter", `label=${LABEL}=${projectId}`, "--format", "{{.Names}}"], { allowFail: true })
-    .stdout.split("\n").filter(Boolean);
+  return docker(
+    [
+      "ps",
+      "-a",
+      "--filter",
+      `label=${LABEL}=${projectId}`,
+      "--format",
+      "{{.Names}}",
+    ],
+    { allowFail: true },
+  )
+    .stdout.split("\n")
+    .filter(Boolean);
 }
 function volumesOf(projectId) {
-  const byLabel = docker(["volume", "ls", "-q", "--filter", `label=${LABEL}=${projectId}`], { allowFail: true })
-    .stdout.split("\n").filter(Boolean);
+  const byLabel = docker(
+    ["volume", "ls", "-q", "--filter", `label=${LABEL}=${projectId}`],
+    { allowFail: true },
+  )
+    .stdout.split("\n")
+    .filter(Boolean);
   const byName = docker(["volume", "ls", "-q"], { allowFail: true })
-    .stdout.split("\n").filter((v) => v.startsWith("supabase_") && v.endsWith(`_${projectId}`));
+    .stdout.split("\n")
+    .filter((v) => v.startsWith("supabase_") && v.endsWith(`_${projectId}`));
   return [...new Set([...byLabel, ...byName])];
 }
 function networksOf(projectId) {
   return docker(["network", "ls", "--format", "{{.Name}}"], { allowFail: true })
-    .stdout.split("\n").filter((n) => n === `supabase_network_${projectId}`);
+    .stdout.split("\n")
+    .filter((n) => n === `supabase_network_${projectId}`);
 }
 function running() {
-  const out = docker(["ps", "--filter", `label=${LABEL}=${PROJECT_ID}`, "--format", "{{.Names}}"], { allowFail: true });
+  const out = docker(
+    [
+      "ps",
+      "--filter",
+      `label=${LABEL}=${PROJECT_ID}`,
+      "--format",
+      "{{.Names}}",
+    ],
+    { allowFail: true },
+  );
   return out.stdout.split("\n").filter(Boolean);
 }
 
 async function statusEnv() {
-  const res = await supabase(["status", "--workdir", WORKDIR, "-o", "env"], { quiet: true, allowFail: true });
+  const res = await supabase(["status", "--workdir", WORKDIR, "-o", "env"], {
+    quiet: true,
+    allowFail: true,
+  });
   if (res.status !== 0) return null;
   const vars = {};
   for (const line of res.stdout.split("\n")) {
@@ -320,9 +413,15 @@ async function waitFor(what, fn, seconds) {
 }
 
 async function up() {
-  if (!fs.existsSync(path.join(ROOT, "supabase", "migrations"))) fail(`${ROOT} is not a Querino checkout`);
-  if (docker(["info", "--format", "{{.ServerVersion}}"], { allowFail: true }).status !== 0) {
-    fail("Docker does not answer. In the factory account, DOCKER_HOST comes from ~/.factory-env.");
+  if (!fs.existsSync(path.join(ROOT, "supabase", "migrations")))
+    fail(`${ROOT} is not a Querino checkout`);
+  if (
+    docker(["info", "--format", "{{.ServerVersion}}"], { allowFail: true })
+      .status !== 0
+  ) {
+    fail(
+      "Docker does not answer. In the factory account, DOCKER_HOST comes from ~/.factory-env.",
+    );
   }
 
   if (running().length && fs.existsSync(STATE_FILE)) {
@@ -347,9 +446,19 @@ async function up() {
   fs.mkdirSync(REGISTRY, { recursive: true });
 
   const ports = await choosePorts();
-  const entry = { projectId: PROJECT_ID, root: ROOT, ports, startedAt: new Date().toISOString() };
-  fs.writeFileSync(path.join(REGISTRY, `${PROJECT_ID}.json`), JSON.stringify(entry, null, 2));
-  log(`ports ${ports.api} (API) and ${ports.db} (database), block ${ports.api}-${ports.inspector}`);
+  const entry = {
+    projectId: PROJECT_ID,
+    root: ROOT,
+    ports,
+    startedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(
+    path.join(REGISTRY, `${PROJECT_ID}.json`),
+    JSON.stringify(entry, null, 2),
+  );
+  log(
+    `ports ${ports.api} (API) and ${ports.db} (database), block ${ports.api}-${ports.inspector}`,
+  );
 
   const internalSecret = randomBytes(32).toString("hex");
   writeSecret("internal-job-secret", internalSecret);
@@ -368,14 +477,23 @@ async function up() {
       ai = true;
     }
   }
-  log(ai ? `AI on: the OpenRouter key from ${OPENROUTER_KEY_FILE}` : `AI off: no ${OPENROUTER_KEY_FILE}, so the AI features fail closed`);
+  log(
+    ai
+      ? `AI on: the OpenRouter key from ${OPENROUTER_KEY_FILE}`
+      : `AI off: no ${OPENROUTER_KEY_FILE}, so the AI features fail closed`,
+  );
 
   buildWorkdir(ports, secrets);
 
   log(`starting the stack (without ${EXCLUDED_SERVICES.join(", ")})`);
   const start = await supabase(
     ["start", "--workdir", WORKDIR, "-x", EXCLUDED_SERVICES.join(",")],
-    { env: childEnv(extraEnv), quiet: true, allowFail: true, timeout: 20 * 60_000 },
+    {
+      env: childEnv(extraEnv),
+      quiet: true,
+      allowFail: true,
+      timeout: 20 * 60_000,
+    },
   );
   if (start.status !== 0) {
     process.stderr.write(start.stdout.slice(-4000) + start.stderr.slice(-4000));
@@ -420,7 +538,10 @@ async function up() {
         user_metadata: { full_name: a.display_name },
       }),
     });
-    if (!res.ok) fail(`creating ${a.email} answered ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    if (!res.ok)
+      fail(
+        `creating ${a.email} answered ${res.status}: ${(await res.text()).slice(0, 300)}`,
+      );
   }
 
   log("seeding prompts, skills, workflows, a prompt kit and a collection");
@@ -433,19 +554,39 @@ async function up() {
   psql(`insert into public.mcp_api_tokens (user_id, name, token_hash, token_prefix)
         values (${sqlLiteral(author.id)}, 'test copy', ${sqlLiteral(createHash("sha256").update(token).digest("hex"))}, ${sqlLiteral(token.slice(0, 16))});`);
 
-  await waitFor("the REST API with the visitor key", async () => {
-    const r = await fetch(`${keys.API_URL}/rest/v1/prompts?select=id&is_public=eq.true`, {
-      headers: { apikey: keys.ANON_KEY },
-    });
-    const rows = r.ok ? await r.json() : [];
-    return rows.length >= 4 || `${r.status}, ${rows.length} public prompts`;
-  }, 60);
-  await waitFor("the edge functions (llm-models)", async () => {
-    const r = await fetch(`${keys.API_URL}/functions/v1/llm-models`, { headers: { apikey: keys.ANON_KEY } });
-    return r.status === 200 || r.status;
-  }, 120);
+  await waitFor(
+    "the REST API with the visitor key",
+    async () => {
+      const r = await fetch(
+        `${keys.API_URL}/rest/v1/prompts?select=id&is_public=eq.true`,
+        {
+          headers: { apikey: keys.ANON_KEY },
+        },
+      );
+      const rows = r.ok ? await r.json() : [];
+      return rows.length >= 4 || `${r.status}, ${rows.length} public prompts`;
+    },
+    60,
+  );
+  await waitFor(
+    "the edge functions (llm-models)",
+    async () => {
+      const r = await fetch(`${keys.API_URL}/functions/v1/llm-models`, {
+        headers: { apikey: keys.ANON_KEY },
+      });
+      return r.status === 200 || r.status;
+    },
+    120,
+  );
 
-  const state = { projectId: PROJECT_ID, root: ROOT, ports, ai, cli: CLI_VERSION, upAt: new Date().toISOString() };
+  const state = {
+    projectId: PROJECT_ID,
+    root: ROOT,
+    ports,
+    ai,
+    cli: CLI_VERSION,
+    upAt: new Date().toISOString(),
+  };
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
   log(`up in ${((Date.now() - started) / 1000).toFixed(0)}s: ${keys.API_URL}`);
   process.stdout.write(exportsFor(state, keys) + "\n");
@@ -472,37 +613,53 @@ function verifyNoLiveProject() {
   if (out) {
     fail(`the copy can still reach the live project:\n${out}`);
   }
-  const jobs = psql(`select count(*) from cron.job where command ilike '%net.http_%';`).stdout.trim();
-  log(`checked: ${jobs} scheduled jobs call the copy's own functions, none names the live project`);
+  const jobs = psql(
+    `select count(*) from cron.job where command ilike '%net.http_%';`,
+  ).stdout.trim();
+  log(
+    `checked: ${jobs} scheduled jobs call the copy's own functions, none names the live project`,
+  );
 }
 
 // ── down, status, list, prune ────────────────────────────────────────────────
 
 async function removeStack(projectId, { workdir } = {}) {
   const args = ["stop", "--no-backup"];
-  if (workdir && fs.existsSync(path.join(workdir, "supabase", "config.toml"))) args.push("--workdir", workdir);
+  if (workdir && fs.existsSync(path.join(workdir, "supabase", "config.toml")))
+    args.push("--workdir", workdir);
   else args.push("--project-id", projectId);
   await supabase(args, { quiet: true, allowFail: true, timeout: 5 * 60_000 });
 
   // What `supabase stop` left, removed by its labels and names.
   const containers = containersOf(projectId);
-  if (containers.length) docker(["rm", "-f", "-v", ...containers], { allowFail: true });
+  if (containers.length)
+    docker(["rm", "-f", "-v", ...containers], { allowFail: true });
   const volumes = volumesOf(projectId);
-  if (volumes.length) docker(["volume", "rm", "-f", ...volumes], { allowFail: true });
+  if (volumes.length)
+    docker(["volume", "rm", "-f", ...volumes], { allowFail: true });
   const networks = networksOf(projectId);
-  if (networks.length) docker(["network", "rm", ...networks], { allowFail: true });
+  if (networks.length)
+    docker(["network", "rm", ...networks], { allowFail: true });
 
-  const left = [...containersOf(projectId), ...volumesOf(projectId), ...networksOf(projectId)];
+  const left = [
+    ...containersOf(projectId),
+    ...volumesOf(projectId),
+    ...networksOf(projectId),
+  ];
   fs.rmSync(path.join(REGISTRY, `${projectId}.json`), { force: true });
   return left;
 }
 
 async function down({ quietIfNothing = false } = {}) {
-  const had = containersOf(PROJECT_ID).length + volumesOf(PROJECT_ID).length + networksOf(PROJECT_ID).length;
+  const had =
+    containersOf(PROJECT_ID).length +
+    volumesOf(PROJECT_ID).length +
+    networksOf(PROJECT_ID).length;
   const left = await removeStack(PROJECT_ID, { workdir: WORKDIR });
   fs.rmSync(STATE, { recursive: true, force: true });
   if (left.length) fail(`still there after down: ${left.join(", ")}`);
-  if (!quietIfNothing || had) log(`down: ${PROJECT_ID} removed (no container, volume or network left)`);
+  if (!quietIfNothing || had)
+    log(`down: ${PROJECT_ID} removed (no container, volume or network left)`);
 }
 
 async function status() {
@@ -511,10 +668,14 @@ async function status() {
     process.stdout.write(`down: ${PROJECT_ID} (${ROOT})\n`);
     process.exit(3);
   }
-  const state = fs.existsSync(STATE_FILE) ? JSON.parse(fs.readFileSync(STATE_FILE, "utf8")) : null;
+  const state = fs.existsSync(STATE_FILE)
+    ? JSON.parse(fs.readFileSync(STATE_FILE, "utf8"))
+    : null;
   process.stdout.write(
     `up: ${PROJECT_ID}, ${names.length} containers` +
-      (state ? `, API http://127.0.0.1:${state.ports.api}, AI ${state.ai ? "on" : "off"}, since ${state.upAt}` : "") +
+      (state
+        ? `, API http://127.0.0.1:${state.ports.api}, AI ${state.ai ? "on" : "off"}, since ${state.upAt}`
+        : "") +
       "\n",
   );
 }
@@ -527,15 +688,32 @@ async function status() {
  */
 function stacksOnMachine() {
   const fromWorkdir = new Map();
-  const ps = docker(["ps", "-a", "--format", `{{.Label "${LABEL}"}}|{{.Label "com.supabase.cli.workdir"}}`], { allowFail: true });
+  const ps = docker(
+    [
+      "ps",
+      "-a",
+      "--format",
+      `{{.Label "${LABEL}"}}|{{.Label "com.supabase.cli.workdir"}}`,
+    ],
+    { allowFail: true },
+  );
   for (const line of ps.stdout.split("\n")) {
     const [id, workdir] = line.split("|");
     if (!id?.startsWith("querino-tc-")) continue;
     const suffix = path.join("harness", ".results", "test-copy");
-    fromWorkdir.set(id, workdir && workdir.endsWith(suffix) ? workdir.slice(0, -suffix.length - 1) : null);
+    fromWorkdir.set(
+      id,
+      workdir && workdir.endsWith(suffix)
+        ? workdir.slice(0, -suffix.length - 1)
+        : null,
+    );
   }
-  const fromVolumes = docker(["volume", "ls", "--format", `{{.Label "${LABEL}"}}`], { allowFail: true })
-    .stdout.split("\n").filter((p) => p.startsWith("querino-tc-"));
+  const fromVolumes = docker(
+    ["volume", "ls", "--format", `{{.Label "${LABEL}"}}`],
+    { allowFail: true },
+  )
+    .stdout.split("\n")
+    .filter((p) => p.startsWith("querino-tc-"));
   const reg = new Map(registryEntries().map((e) => [e.projectId, e]));
   const ids = new Set([...fromWorkdir.keys(), ...fromVolumes, ...reg.keys()]);
   return [...ids].sort().map((id) => ({
@@ -569,7 +747,8 @@ async function prune({ onlyKnownGone = false } = {}) {
     if (s.root && fs.existsSync(s.root)) continue;
     if (!s.root && onlyKnownGone) continue;
     const left = await removeStack(s.projectId);
-    if (left.length) log(`could not remove all of ${s.projectId}: ${left.join(", ")}`);
+    if (left.length)
+      log(`could not remove all of ${s.projectId}: ${left.join(", ")}`);
     else removed += 1;
     log(`pruned ${s.projectId} (${s.root ?? "checkout unknown"})`);
   }
@@ -582,10 +761,13 @@ const command = process.argv[2];
 const commands = {
   up,
   env: async () => {
-    if (!running().length || !fs.existsSync(STATE_FILE)) fail(`${PROJECT_ID} is not up; run harness/test-copy.sh up`);
+    if (!running().length || !fs.existsSync(STATE_FILE))
+      fail(`${PROJECT_ID} is not up; run harness/test-copy.sh up`);
     const keys = await statusEnv();
     if (!keys) fail("supabase status did not report the copy's keys");
-    process.stdout.write(exportsFor(JSON.parse(fs.readFileSync(STATE_FILE, "utf8")), keys) + "\n");
+    process.stdout.write(
+      exportsFor(JSON.parse(fs.readFileSync(STATE_FILE, "utf8")), keys) + "\n",
+    );
   },
   down: () => down(),
   status,
@@ -593,7 +775,9 @@ const commands = {
   prune: () => prune(),
 };
 if (!commands[command]) {
-  process.stderr.write("usage: harness/test-copy.sh up|env|down|status|list|prune\n");
+  process.stderr.write(
+    "usage: harness/test-copy.sh up|env|down|status|list|prune\n",
+  );
   process.exit(2);
 }
 await commands[command]();

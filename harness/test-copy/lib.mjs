@@ -29,8 +29,10 @@ export const KEY_STAND_IN = "test-copy-no-live-key";
  */
 export const CLI_VERSION = "2.122.1";
 export const CLI_SHA256 = {
-  "linux-x64": "3e54b98e5ead7be0a3b0753526833d4cc9a55304e4d57da0d72f1efc342738ea",
-  "linux-arm64": "f672614c2cb876b37d63a28d9ab4442406cdcae9843e15ddc7a4a1538785b30f",
+  "linux-x64":
+    "3e54b98e5ead7be0a3b0753526833d4cc9a55304e4d57da0d72f1efc342738ea",
+  "linux-arm64":
+    "f672614c2cb876b37d63a28d9ab4442406cdcae9843e15ddc7a4a1538785b30f",
 };
 export const CLI_ASSET = {
   "linux-x64": `supabase_${CLI_VERSION}_linux_amd64.tar.gz`,
@@ -102,10 +104,14 @@ export function portsFor(base) {
 
 function b64urlDecode(part) {
   const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
-  return Buffer.from(b64 + "=".repeat((4 - (b64.length % 4)) % 4), "base64").toString("utf8");
+  return Buffer.from(
+    b64 + "=".repeat((4 - (b64.length % 4)) % 4),
+    "base64",
+  ).toString("utf8");
 }
 
-const JWT_RE = /eyJ[A-Za-z0-9_-]{5,}\.eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{10,}/g;
+const JWT_RE =
+  /eyJ[A-Za-z0-9_-]{5,}\.eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{10,}/g;
 
 /** The project ref a Supabase JWT was issued for, or null. */
 export function jwtRef(token) {
@@ -133,7 +139,10 @@ export function jwtRef(token) {
  * seconds the moment its migration is applied, and pg_net would send that
  * request long before any clean-up afterwards could remove it.
  */
-export function rewriteMigration(sql, { liveRef = LIVE_REF, gateway = LOCAL_GATEWAY } = {}) {
+export function rewriteMigration(
+  sql,
+  { liveRef = LIVE_REF, gateway = LOCAL_GATEWAY } = {},
+) {
   let urls = 0;
   let keys = 0;
   let refs = 0;
@@ -157,9 +166,11 @@ export function rewriteMigration(sql, { liveRef = LIVE_REF, gateway = LOCAL_GATE
 /** Every way `text` still names the live project: its ref, or a key issued for it. */
 export function liveReferences(text, liveRef = LIVE_REF) {
   const found = [];
-  if (text.toLowerCase().includes(liveRef.toLowerCase())) found.push(`the ref ${liveRef}`);
+  if (text.toLowerCase().includes(liveRef.toLowerCase()))
+    found.push(`the ref ${liveRef}`);
   for (const token of text.match(JWT_RE) ?? []) {
-    if (jwtRef(token) === liveRef) found.push("a key issued for the live project");
+    if (jwtRef(token) === liveRef)
+      found.push("a key issued for the live project");
   }
   return found;
 }
@@ -200,8 +211,12 @@ export function setTomlKeys(toml, settings) {
   for (const [table, keys] of Object.entries(settings)) {
     for (const [key, value] of Object.entries(keys)) {
       const line = `${key} = ${tomlValue(value)}`;
-      const keyRe = new RegExp(`^\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`);
-      const at = lines.findIndex((l, i) => tableOf[i] === table && keyRe.test(l));
+      const keyRe = new RegExp(
+        `^\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`,
+      );
+      const at = lines.findIndex(
+        (l, i) => tableOf[i] === table && keyRe.test(l),
+      );
       if (at >= 0) {
         replace.set(at, line);
       } else if (headerAt.has(table)) {
@@ -259,11 +274,18 @@ export function renderConfig(repoToml, { projectId, ports, secrets = {} }) {
     auth: {
       enabled: true,
       site_url: "http://127.0.0.1:8080",
-      additional_redirect_urls: ["http://127.0.0.1:8080", "http://localhost:8080"],
+      additional_redirect_urls: [
+        "http://127.0.0.1:8080",
+        "http://localhost:8080",
+      ],
       enable_signup: true,
     },
     "auth.email": { enable_signup: true, enable_confirmations: false },
-    edge_runtime: { enabled: true, policy: "per_worker", inspector_port: ports.inspector },
+    edge_runtime: {
+      enabled: true,
+      policy: "per_worker",
+      inspector_port: ports.inspector,
+    },
   };
   if (Object.keys(secrets).length) settings["edge_runtime.secrets"] = secrets;
   return setTomlKeys(repoToml, settings);
@@ -279,7 +301,8 @@ export function shellExports(vars) {
   return Object.entries(vars)
     .filter(([, v]) => v !== undefined && v !== null)
     .map(([k, v]) => {
-      if (!/^[A-Z_][A-Z0-9_]*$/.test(k)) throw new Error(`not a shell variable name: ${k}`);
+      if (!/^[A-Z_][A-Z0-9_]*$/.test(k))
+        throw new Error(`not a shell variable name: ${k}`);
       return `export ${k}=${shellQuote(v)}`;
     })
     .join("\n");
