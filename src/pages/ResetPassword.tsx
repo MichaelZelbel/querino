@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { AlertTriangle, KeyRound, Loader2, Mail } from "lucide-react";
+import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
 import {
   newPasswordProblem,
   PASSWORD_HINT,
@@ -33,7 +33,6 @@ import {
   resetLinkState,
   type ResetLinkState,
 } from "@/components/auth/resetLinkState";
-import { siteOrigin } from "@/config/site";
 
 const resetSchema = z
   .object({
@@ -51,82 +50,12 @@ const resetSchema = z
 
 type ResetFormValues = z.infer<typeof resetSchema>;
 
-const requestSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
-
-type RequestFormValues = z.infer<typeof requestSchema>;
-
-/** Asks Supabase to mail a recovery link that leads back to this page. */
-function RequestResetLinkForm() {
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const form = useForm<RequestFormValues>({
-    resolver: zodResolver(requestSchema),
-    defaultValues: { email: "" },
-  });
-
-  const onSubmit = async ({ email }: RequestFormValues) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteOrigin()}/reset-password`,
-    });
-    if (error) {
-      toast.error(error.message || "Could not send the reset link");
-      return;
-    }
-    setSentTo(email);
-  };
-
-  if (sentTo) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        If an account exists for <strong>{sentTo}</strong>, a reset link is on
-        its way. Open it from the mail and you come back here to choose a new
-        password.
-      </p>
-    );
-  }
-
+/** Recovery links are requested from "Forgot password?" on the sign-in form. */
+function RequestResetLinkButton() {
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button
-          type="submit"
-          className="w-full gap-2"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Mail className="h-4 w-4" />
-          )}
-          Send me a reset link
-        </Button>
-        <Link
-          to="/auth"
-          className="block text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Back to sign in
-        </Link>
-      </form>
-    </Form>
+    <Button asChild className="w-full">
+      <Link to="/auth">Go to sign in</Link>
+    </Button>
   );
 }
 
@@ -216,12 +145,13 @@ export default function ResetPassword() {
                 </div>
                 <CardDescription>
                   Password reset links can only be used once, and they stop
-                  working after a while. Enter your email to get a new one, and
-                  open it from the mail straight away.
+                  working after a while. To get a new one, go to sign in, enter
+                  your email and choose &quot;Forgot password?&quot;. Open the
+                  new link from the mail straight away.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RequestResetLinkForm />
+                <RequestResetLinkButton />
               </CardContent>
             </Card>
           )}
@@ -234,13 +164,14 @@ export default function ResetPassword() {
                   <CardTitle>Reset your password</CardTitle>
                 </div>
                 <CardDescription>
-                  Enter the email address of your account and we will mail you a
-                  link. The link brings you back to this page, where you choose
+                  To get a reset link, go to sign in, enter the email address of
+                  your account and choose &quot;Forgot password?&quot;. We mail
+                  you a link that brings you back to this page, where you choose
                   a new password.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RequestResetLinkForm />
+                <RequestResetLinkButton />
               </CardContent>
             </Card>
           )}
