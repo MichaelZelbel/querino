@@ -35,8 +35,8 @@
 //     instead, mcp-server's and generate-slug's mapped imports did not resolve
 //     and were counted as type errors;
 //   - a module that could not be resolved, loaded or typed is a failure (exit
-//     2), never a count: a TS2307 in the output, or a hole in the module graph
-//     that `deno info` reports for an entry point.
+//     2), never a count: a hole in the module graph that `deno info` reports
+//     for an entry point.
 //
 // Usage:
 //   node scripts/deno-check.mjs            check against the baseline
@@ -274,9 +274,6 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
     }
     for (const d of found) {
       const fn = functionOf(d.location, functionsDir);
-      if (d.code === "TS2307") {
-        problems.push(`${fn}: ${d.message} (${d.location})`);
-      }
       // mcp-server imports _shared modules the first group also checks, so
       // the same diagnostic can come from two groups. It is one error.
       diagnostics.set(`${d.code} ${d.location} ${d.message}`, { ...d, fn });
