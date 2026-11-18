@@ -1,0 +1,40 @@
+{
+  "description": "Project scenario/environment data for shared runtime verification. Producer input flags require final integration mapping; this file executes nothing.",
+  "scenarios": "harness/END-TO-END.md",
+  "holdout": ".factory/holdout/HOLDOUT.md",
+  "driver": "http",
+  "http": {
+    "start": "bun run dev --port $PORT --strictPort --host 127.0.0.1",
+    "health_path": "/",
+    "health_contains": "Querino",
+    "boot_timeout_s": 60,
+    "env": {
+      "VITE_SUPABASE_URL": "https://zvuwkffneqxqsihlnfsd.supabase.co",
+      "VITE_SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXdrZmZuZXF4cXNpaGxuZnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzY4MzEsImV4cCI6MjA4MDM1MjgzMX0.dpFIy0U_FO8Spj7V9jgKqjGUoakwFVCfNJ_8HuaYFTc"
+    }
+  },
+  "cli": {
+    "invoke": "",
+    "smoke_args": "--version",
+    "smoke_contains": ""
+  },
+  "library": {
+    "import_check": ""
+  },
+  "browser": {
+    "install_check": "",
+    "install_hint": ""
+  },
+  "requirements": {
+    "fresh_environment_per": [
+      "runtime",
+      "holdout",
+      "retry",
+      "mutation"
+    ],
+    "fresh_database": false,
+    "assertion_evidence_required": true,
+    "cleanup": "Owned process and environment cleanup must be verified by the producer",
+    "data": "Reads the live project as a visitor; no staging copy yet (MISSION.md, Q1)"
+  }
+}

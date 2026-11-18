@@ -1,0 +1,8 @@
+{
+  "static": "bash -c \"bun install --frozen-lockfile && npm run check && npx tsc --noEmit -p tsconfig.json\"",
+  "unit": "bash -c \"bun run test:unit && bun run test:web && npm run test:scripts\"",
+  "unit_count_pattern": "(\\d+) passed \\| 0 failed",
+  "required_checks": "required",
+  "protected_paths": "MISSION.md,FACTORY.md,FACTORY_RULES.md,harness/**,.factory/**,factory/**,.claude/settings.json,.ignore,engineering.md,CLAUDE.md,AGENTS.md,.github/**,.githooks/**,.archon/sdlc/policy/**,tests/security/**,scripts/deno-check-baseline.json,scripts/lint-ceiling.json,scripts/check-migrations.mjs,scripts/check-migration-grants.mjs,scripts/deno-check.mjs,scripts/lint-ratchet.mjs,scripts/factory-trust.mjs",
+  "description": "Ordinary project checks only. Configure real commands. Runtime environment and scenarios are separate inputs. required_checks names the CI checks a merge needs (comma-separated, or \"none\"); the merge queue reads it where GitHub cannot report branch protection, as on free private repositories. protected_paths lists root-anchored path patterns (* within a segment, ** across segments) that only a human may change; the merge queue holds any pull request that touches one."
+}
