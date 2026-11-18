@@ -54,6 +54,18 @@ export const ARTIFACT_LIST_COLUMNS: Record<ArtifactListTable, string[]> = {
 };
 
 /**
+ * The column that makes a row public, the one anon's read policy keys on:
+ * prompts say `is_public`, the other three `published`. Every list of what the
+ * public sees filters on it (the list hooks, the plain indexes, the profile).
+ */
+export const ARTIFACT_PUBLIC_COLUMN = {
+  prompts: "is_public",
+  skills: "published",
+  workflows: "published",
+  prompt_kits: "published",
+} as const satisfies Record<ArtifactListTable, "is_public" | "published">;
+
+/**
  * A detail page reads every column a list does: the server loader writes
  * whatever it returns into the HTML as the router's page data, so a column
  * nobody reads costs every visitor. Since 2026-10-07 the route loader is the

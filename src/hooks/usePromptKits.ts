@@ -13,6 +13,5 @@ export const usePromptKits = createArtifactListHook<
   table: "prompt_kits",
   queryKey: ["prompt_kits"],
   semanticType: "prompt_kit",
-  publicColumn: "published",
   browseOrder: artifactBrowseOrder,
 });

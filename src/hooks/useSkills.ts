@@ -13,6 +13,5 @@ export const useSkills = createArtifactListHook<
   table: "skills",
   queryKey: ["skills"],
   semanticType: "skill",
-  publicColumn: "published",
   browseOrder: artifactBrowseOrder,
 });

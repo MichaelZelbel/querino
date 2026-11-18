@@ -26,15 +26,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchPublicPost } from "@/hooks/usePublicBlog";
 import type { BlogPost } from "@/types/blog";
 import {
-  ARTIFACT_LIST_COLUMNS,
+  ARTIFACT_PUBLIC_COLUMN,
   artifactDetailSelect,
   type ArtifactListTable,
 } from "@/lib/artifactListColumns";
-import {
-  cutProfileList,
-  PROFILE_LIST_LIMIT,
-  PROFILE_PUBLIC_COLUMN,
-} from "@/lib/profileLists";
+import { cutProfileList, profileListQuery } from "@/lib/profileLists";
 import type { Prompt } from "@/types/prompt";
 import type { Skill } from "@/types/skill";
 import type { Workflow } from "@/types/workflow";
@@ -189,7 +185,6 @@ const INDEX_PAGE = 1000;
 
 async function loadPublicIndex(
   table: "prompts" | "skills" | "workflows",
-  publicColumn: "is_public" | "published",
 ): Promise<PublicIndexEntry[]> {
   const entries: PublicIndexEntry[] = [];
   for (let from = 0; ; from += INDEX_PAGE) {
@@ -198,7 +193,7 @@ async function loadPublicIndex(
       .select("slug, title, description")
       // The column differs per table, which .eq()'s per-table column type
       // cannot follow across a union of tables; .filter() takes it as text.
-      .filter(publicColumn, "eq", true)
+      .filter(ARTIFACT_PUBLIC_COLUMN[table], "eq", true)
       .order("title", { ascending: true })
       // Titles repeat. The key keeps a list longer than one page from showing
       // a tied row twice and another not at all (listOrder.ts).
@@ -226,10 +221,9 @@ async function loadPublicIndex(
   return entries;
 }
 
-export const loadPromptIndex = () => loadPublicIndex("prompts", "is_public");
-export const loadSkillIndex = () => loadPublicIndex("skills", "published");
-export const loadWorkflowIndex = () =>
-  loadPublicIndex("workflows", "published");
+export const loadPromptIndex = () => loadPublicIndex("prompts");
+export const loadSkillIndex = () => loadPublicIndex("skills");
+export const loadWorkflowIndex = () => loadPublicIndex("workflows");
 
 export type LoadedBlogPost = BlogPost;
 
@@ -270,26 +264,22 @@ export interface ProfilePageData {
 }
 
 async function loadProfileList(table: ArtifactListTable, authorId: string) {
-  const { data, error } = await supabase
-    .from(table)
-    .select(ARTIFACT_LIST_COLUMNS[table].join(", "))
-    .eq("author_id", authorId)
-    // The column differs per table, which .eq()'s per-table column type
-    // cannot follow across a union of tables; .filter() takes it as text.
-    .filter(PROFILE_PUBLIC_COLUMN[table], "eq", true)
-    .order("created_at", { ascending: false })
-    // Timestamps can tie: the key makes the cut at the limit the same rows on
-    // the server and in the browser (listOrder.ts).
-    .order("id", { ascending: true })
-    .limit(PROFILE_LIST_LIMIT + 1);
-  return cutProfileList(error ? null : data);
+  const { data, error } = await profileListQuery(
+    supabase.from(table),
+    table,
+    authorId,
+  );
+  if (error) throw queryFailed(table, error.message);
+  return cutProfileList(data ?? []);
 }
 
 /**
  * The public profile page, keyed off display_name: the profile and the newest
  * public artifacts of all four kinds, so the first response already shows the
  * person and their work. The page makes no fetch of its own. Null when no
- * profile has that name (the page's "Creator Not Found").
+ * profile has that name (the page's "Creator Not Found"); a database error
+ * throws, like the artefact loaders, so a creator never shows as missing or
+ * empty because a query failed.
  */
 export async function loadProfile(
   username: string,
@@ -300,7 +290,8 @@ export async function loadProfile(
     .select("id, display_name, avatar_url, bio, website, twitter, github")
     .eq("display_name", username)
     .maybeSingle();
-  if (error || !profile) return null;
+  if (error) throw queryFailed("profiles", error.message);
+  if (!profile) return null;
 
   const [prompts, skills, workflows, promptKits] = await Promise.all([
     loadProfileList("prompts", profile.id),

@@ -32,7 +32,6 @@ const usePromptList = createArtifactListHook<PromptWithAuthor>({
   table: "prompts",
   queryKey: ["prompts", "search", "hybrid"],
   semanticType: "prompt",
-  publicColumn: "is_public",
   browseOrder: promptBrowseOrder,
   searchCap: SEARCH_RESULT_CAP,
 });
