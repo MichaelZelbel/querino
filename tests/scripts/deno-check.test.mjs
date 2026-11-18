@@ -8,7 +8,13 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +23,7 @@ import {
   denoBinary,
   graphProblems,
   measure,
+  resolutionDrift,
 } from "../../scripts/deno-check.mjs";
 
 const SCRIPT = join(
@@ -40,6 +47,10 @@ const server = require("node:http").createServer((req, res) => {
   if (req.url === "/typed.d.ts")
     return send({ "content-type": "application/typescript" },
       "export declare function add(a: number, b: number): number;\\n");
+  if (req.url === "/latest.js") {
+    res.writeHead(302, { location: base + "/typed.js" });
+    return res.end();
+  }
   if (req.url === "/types-gone.js")
     return send({ ...javascript, "x-typescript-types": base + "/gone.d.ts" }, js);
   res.writeHead(404);
@@ -211,4 +222,121 @@ test("the one known unloadable module is ignored, any other is not", () => {
   assert.deepEqual(graphProblems(info, { known: new Set() }), [
     `${specifier}: Module not found "${specifier}".`,
   ]);
+});
+
+const FALLTHROUGH =
+  "export function f(x: number): number {\n  let y = 0;\n  switch (x) {\n    case 1:\n      y = 1;\n    case 2:\n      y = 2;\n      break;\n  }\n  return y;\n}\n";
+const SHARED = JSON.stringify({
+  compilerOptions: { noFallthroughCasesInSwitch: true },
+});
+
+// Deno does not report a switch fallthrough by default, so each count of 1
+// here comes from the shared deno.json's option.
+test("the shared deno.json's compiler options apply to every function, and a function's own deno.json must repeat them", () => {
+  const strict = measureFixture(
+    fixture("shared-config", {
+      "deno.json": SHARED,
+      "plain/index.ts": FALLTHROUGH,
+      "mapped/deno.json": JSON.stringify({
+        compilerOptions: { noFallthroughCasesInSwitch: true },
+        imports: {},
+      }),
+      "mapped/index.ts": FALLTHROUGH,
+    }),
+  );
+  assert.deepEqual(strict.problems, []);
+  assert.deepEqual(strict.perFunction, { plain: 1, mapped: 1 });
+
+  const weak = measureFixture(
+    fixture("weak-config", {
+      "deno.json": SHARED,
+      "weak/deno.json": JSON.stringify({ imports: {} }),
+      "weak/index.ts": FALLTHROUGH,
+    }),
+  );
+  assert.match(
+    weak.problems.join("\n"),
+    /^weak: deno\.json does not set "noFallthroughCasesInSwitch": true/m,
+  );
+});
+
+test("every resolution in the module graph is recorded, and a different one is drift", () => {
+  const { problems, resolved } = measureFixture(
+    fixture("redirect", {
+      "a/index.ts": `import { add } from "http://${host}/latest.js";\nexport const n: number = add(1, 2);\n`,
+    }),
+  );
+  assert.deepEqual(problems, []);
+  const from = `http://${host}/latest.js`;
+  assert.deepEqual(resolved.redirects, { [from]: `http://${host}/typed.js` });
+
+  assert.deepEqual(resolutionDrift(resolved, resolved), []);
+  assert.deepEqual(resolutionDrift(resolved, { redirects: {}, packages: [] }), [
+    `${from} resolved to http://${host}/typed.js, which scripts/deno-check-graph.json does not record`,
+  ]);
+  assert.deepEqual(
+    resolutionDrift(resolved, {
+      redirects: { [from]: `http://${host}/untyped.js` },
+      packages: [],
+    }),
+    [
+      `${from} now resolves to http://${host}/typed.js; recorded http://${host}/untyped.js`,
+    ],
+  );
+});
+
+test("a package version the record does not hold is drift; one it no longer reaches is not", () => {
+  assert.deepEqual(
+    resolutionDrift(
+      { redirects: {}, packages: ["yargs@17.7.4"] },
+      { redirects: {}, packages: ["yargs@17.7.3", "tslib@2.8.1"] },
+    ),
+    ["yargs@17.7.4 is resolved but not recorded"],
+  );
+});
+
+test("the CLI records the module graph with --update and refuses to count when it resolves differently", () => {
+  const dir = fixture("cli-graph", {
+    "a/index.ts": `import { add } from "http://${host}/latest.js";\nexport const n: number = add(1, 2);\n`,
+  });
+  const graphFile = join(dirname(dir), "scripts", "deno-check-graph.json");
+  const from = `http://${host}/latest.js`;
+  const cli = (...extra) =>
+    spawnSync(
+      process.execPath,
+      [SCRIPT, "--dir", dir, `--allow-import=${host}`, ...extra],
+      { encoding: "utf8" },
+    );
+
+  const unrecorded = cli();
+  assert.equal(unrecorded.status, 2, unrecorded.stdout + unrecorded.stderr);
+  assert.match(unrecorded.stderr, /have not been recorded/);
+  assert.doesNotMatch(unrecorded.stdout, /deno check:/);
+
+  const update = cli("--update");
+  assert.equal(update.status, 0, update.stdout + update.stderr);
+  const recorded = JSON.parse(readFileSync(graphFile, "utf8"));
+  assert.deepEqual(recorded.redirects, { [from]: `http://${host}/typed.js` });
+
+  const same = cli();
+  assert.equal(same.status, 0, same.stdout + same.stderr);
+  assert.match(same.stdout, /deno check: 0 type errors/);
+
+  writeFileSync(
+    graphFile,
+    JSON.stringify({
+      ...recorded,
+      redirects: { [from]: `http://${host}/untyped.js` },
+    }),
+  );
+  const drifted = cli();
+  assert.equal(drifted.status, 2, drifted.stdout + drifted.stderr);
+  assert.match(drifted.stderr, /resolved to a different release/);
+  assert.match(
+    drifted.stderr,
+    new RegExp(
+      `${from} now resolves to http://${host}/typed\\.js; recorded http://${host}/untyped\\.js`,
+    ),
+  );
+  assert.doesNotMatch(drifted.stdout, /deno check:/);
 });

@@ -26,37 +26,54 @@
 // empty Deno cache resolved again, and 2.119.1 was published between the two
 // runs. When a remote module's type file does not load, `deno check` says
 // nothing and exits 0, so the errors that type file would have produced simply
-// vanish. Three things follow from that:
+// vanish. Four things follow from that:
 //
 //   - every remote import names an exact release, and this script refuses to
 //     run while one does not (scripts/floating-imports.mjs);
-//   - each function with its own deno.json is checked with that config, as it
-//     is deployed, so its import map applies. Checked from the repository root
-//     instead, mcp-server's and generate-slug's mapped imports did not resolve
-//     and were counted as type errors;
+//   - each function is checked with the config it is deployed with, plus the
+//     strict compiler options of supabase/functions/deno.json (issue #24). A
+//     function with its own deno.json deploys with that file, so it is checked
+//     with it, its import map applies, and it must repeat every shared
+//     compiler option or this script fails. The others deploy with no config
+//     and are checked with supabase/functions/deno.json, which adds only
+//     compiler options. Deploying never reads compiler options;
 //   - a module that could not be resolved, loaded or typed is a failure (exit
 //     2), never a count: a hole in the module graph that `deno info` reports
-//     for an entry point.
+//     for an entry point;
+//   - every version the module graph resolved on its own, below the imports
+//     the code names, is recorded in scripts/deno-check-graph.json: each
+//     esm.sh redirect (supabase-js@2.119.0 imports ws@^8.18.0, which esm.sh
+//     answers with whatever release is newest) and each npm or jsr package
+//     version. A run that resolves differently is a failure (exit 2), never a
+//     count. Deno's lockfile cannot do this: it records no esm.sh module.
 //
 // Usage:
 //   node scripts/deno-check.mjs            check against the baseline
 //   node scripts/deno-check.mjs --update   record today's counts
 //   node scripts/deno-check.mjs --dir <functions>   measure another folder
-//                                          (the tests' fixtures)
+//                                          (the tests' fixtures); its baseline
+//                                          and graph record live in
+//                                          <functions>/../scripts/
+//   --allow-import=<host>                  passed to deno (the tests' server)
 //
 // Deno is a devDependency, so `bun install` provides it on every machine and
 // in CI. $DENO_BIN overrides it if you want a different one.
 
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+} from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join, relative, resolve } from "node:path";
 import { findFloatingImports } from "./floating-imports.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const BASELINE_FILE = join(ROOT, "scripts", "deno-check-baseline.json");
 
 // esm.sh rewrote an extensionless path in supabase-js@2.57.2's
 // dist/module/lib/types.d.ts, and this module answers "Module not found" on
@@ -183,6 +200,42 @@ export function graphProblems(info, { known = KNOWN_UNLOADABLE } = {}) {
   return problems;
 }
 
+// Every version this module graph resolved that the code does not name: the
+// redirects a server chose (a ranged esm.sh URL to an exact one) and the npm
+// and jsr package versions Deno picked.
+export function graphResolutions(info) {
+  return {
+    redirects: { ...info.redirects },
+    packages: [
+      ...new Set([
+        ...Object.keys(info.npmPackages ?? {}),
+        ...Object.values(info.packages ?? {}),
+      ]),
+    ].sort(),
+  };
+}
+
+// What this run resolved that the record does not hold. A recorded entry this
+// run did not reach is not drift; --update drops it.
+export function resolutionDrift(resolved, recorded) {
+  const drift = [];
+  for (const [from, to] of Object.entries(resolved.redirects)) {
+    const before = recorded.redirects?.[from];
+    if (before === undefined) {
+      drift.push(
+        `${from} resolved to ${to}, which scripts/deno-check-graph.json does not record`,
+      );
+    } else if (before !== to) {
+      drift.push(`${from} now resolves to ${to}; recorded ${before}`);
+    }
+  }
+  const packages = new Set(recorded.packages ?? []);
+  for (const id of resolved.packages) {
+    if (!packages.has(id)) drift.push(`${id} is resolved but not recorded`);
+  }
+  return drift;
+}
+
 function functionOf(location, functionsDir) {
   const file = fileURLToPath(location.replace(/:\d+:\d+$/, ""));
   const rel = relative(functionsDir, file).replaceAll("\\", "/");
@@ -200,16 +253,38 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
     .sort();
   const entryPoints = names.map((name) => join(functionsDir, name, "index.ts"));
 
-  // Functions without a deno.json are checked together, from the repository
-  // root and without --config, as they always were. --no-lock, because with
-  // --config Deno would otherwise write a deno.lock next to that config.
-  const groups = [{ config: [], names: [] }];
+  // Functions without a deno.json deploy with no config and are checked
+  // together with the shared deno.json, which adds only compiler options. A
+  // function with its own deno.json deploys with it, so it is checked with
+  // it, and that file must repeat the shared compiler options: Deno does not
+  // merge a parent deno.json into one passed with --config. --no-lock, because
+  // with --config Deno would otherwise write a deno.lock next to that config.
+  const sharedConfig = join(functionsDir, "deno.json");
+  const sharedOptions = existsSync(sharedConfig)
+    ? (readJson(sharedConfig).compilerOptions ?? {})
+    : {};
+  const groups = [
+    {
+      shared: true,
+      config: existsSync(sharedConfig) ? ["--config", sharedConfig] : [],
+      names: [],
+    },
+  ];
+  const problems = [];
   for (const name of names) {
     const config = join(functionsDir, name, "deno.json");
-    if (existsSync(config)) {
-      groups.push({ config: ["--config", config], names: [name] });
-    } else {
+    if (!existsSync(config)) {
       groups[0].names.push(name);
+      continue;
+    }
+    groups.push({ shared: false, config: ["--config", config], names: [name] });
+    const own = readJson(config).compilerOptions ?? {};
+    for (const [key, value] of Object.entries(sharedOptions)) {
+      if (own[key] !== value) {
+        problems.push(
+          `${name}: deno.json does not set "${key}": ${JSON.stringify(value)} as the shared deno.json does, so this function is checked with weaker options`,
+        );
+      }
     }
   }
 
@@ -222,7 +297,6 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
       env: { ...process.env, NO_COLOR: "1" },
     });
 
-  const problems = [];
   const diagnostics = new Map();
   for (const group of groups.filter((g) => g.names.length > 0)) {
     const entries = group.names.map((name) =>
@@ -235,7 +309,7 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
       ...extraArgs,
       ...entries,
     ]);
-    const label = group.config.length ? group.names[0] : "deno check";
+    const label = group.shared ? "deno check" : group.names[0];
     if (result.error) {
       problems.push(
         `${label}: could not run \`${deno} check\`: ${result.error.message}`,
@@ -280,6 +354,7 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
     }
   }
 
+  const resolved = { redirects: {}, packages: new Set() };
   for (const group of groups) {
     for (const name of group.names) {
       const entry = join(functionsDir, name, "index.ts");
@@ -303,6 +378,9 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
       for (const problem of graphProblems(info)) {
         problems.push(`${name}: ${problem}`);
       }
+      const { redirects, packages } = graphResolutions(info);
+      Object.assign(resolved.redirects, redirects);
+      for (const id of packages) resolved.packages.add(id);
     }
   }
 
@@ -317,7 +395,23 @@ export function measure({ functionsDir, cwd, deno, extraArgs = [] }) {
     total: diagnostics.size,
     diagnostics: [...diagnostics.values()],
     problems: [...new Set(problems)],
+    resolved: {
+      redirects: Object.fromEntries(
+        Object.entries(resolved.redirects).sort(([a], [b]) =>
+          a.localeCompare(b),
+        ),
+      ),
+      packages: [...resolved.packages].sort(),
+    },
   };
+}
+
+function readJson(path) {
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+
+function writeJson(path, value) {
+  writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
 }
 
 function plural(n, word) {
@@ -332,6 +426,8 @@ function main() {
       ? resolve(args[dirAt + 1])
       : join(ROOT, "supabase", "functions");
   const cwd = dirAt !== -1 ? dirname(functionsDir) : ROOT;
+  const baselineFile = join(cwd, "scripts", "deno-check-baseline.json");
+  const graphFile = join(cwd, "scripts", "deno-check-graph.json");
 
   if (!existsSync(functionsDir)) {
     console.error(`No edge functions found under ${functionsDir}`);
@@ -350,11 +446,13 @@ function main() {
     process.exit(2);
   }
 
-  const { entryPoints, perFunction, total, diagnostics, problems } = measure({
-    functionsDir,
-    cwd,
-    deno: denoBinary(),
-  });
+  const { entryPoints, perFunction, total, diagnostics, problems, resolved } =
+    measure({
+      functionsDir,
+      cwd,
+      deno: denoBinary(),
+      extraArgs: args.filter((arg) => arg.startsWith("--allow-import=")),
+    });
 
   if (entryPoints.length === 0) {
     console.error(`No edge functions found under ${functionsDir}`);
@@ -363,18 +461,36 @@ function main() {
 
   if (problems.length > 0) {
     console.error(
-      "Some modules could not be resolved, loaded or type checked:\n",
+      "Some functions could not be checked as they are deployed, or some modules could not be resolved, loaded or type checked:\n",
     );
     for (const problem of problems) console.error(`  ${problem}`);
     console.error(
-      "\nNothing was counted, so this is not a lower count. Fix the import, or run it again if a download failed.",
+      "\nNothing was counted, so this is not a lower count. Fix the import or the deno.json, or run it again if a download failed.",
     );
     process.exit(2);
   }
 
-  const baseline = existsSync(BASELINE_FILE)
-    ? JSON.parse(readFileSync(BASELINE_FILE, "utf8"))
-    : null;
+  if (!args.includes("--update")) {
+    if (!existsSync(graphFile)) {
+      console.error(
+        "The versions the module graph resolves have not been recorded. Record them:\n\n  node scripts/deno-check.mjs --update\n",
+      );
+      process.exit(2);
+    }
+    const drift = resolutionDrift(resolved, readJson(graphFile));
+    if (drift.length > 0) {
+      console.error(
+        "These imports resolved to a different release than scripts/deno-check-graph.json records, so the types behind them may have changed without the code changing:\n",
+      );
+      for (const line of drift) console.error(`  ${line}`);
+      console.error(
+        "\nNothing was counted. If the new release is intended, record it with\n\n  node scripts/deno-check.mjs --update\n\nwhich still refuses to raise the count.",
+      );
+      process.exit(2);
+    }
+  }
+
+  const baseline = existsSync(baselineFile) ? readJson(baselineFile) : null;
 
   if (args.includes("--update")) {
     if (baseline && total > baseline.total) {
@@ -383,20 +499,18 @@ function main() {
       );
       process.exit(1);
     }
-    writeFileSync(
-      BASELINE_FILE,
-      JSON.stringify(
-        {
-          note: "Type errors per edge function under `deno check`. May be lowered, never raised. See scripts/deno-check.mjs.",
-          total,
-          perFunction: Object.fromEntries(
-            Object.entries(perFunction).sort(([a], [b]) => a.localeCompare(b)),
-          ),
-        },
-        null,
-        2,
-      ) + "\n",
-    );
+    mkdirSync(dirname(baselineFile), { recursive: true });
+    writeJson(baselineFile, {
+      note: "Type errors per edge function under `deno check`. May be lowered, never raised. See scripts/deno-check.mjs.",
+      total,
+      perFunction: Object.fromEntries(
+        Object.entries(perFunction).sort(([a], [b]) => a.localeCompare(b)),
+      ),
+    });
+    writeJson(graphFile, {
+      note: "Every version the edge functions' module graph resolved when the baseline was recorded, below the imports the code names. A run that resolves differently does not count. See scripts/deno-check.mjs.",
+      ...resolved,
+    });
     console.log(`Baseline recorded: ${plural(total, "type error")}.`);
     process.exit(0);
   }

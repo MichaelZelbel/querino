@@ -7,6 +7,8 @@
 // bank 9. A count is only comparable when every remote import names an exact
 // version, so scripts/deno-check.mjs refuses to count while one does not. That
 // covers the import maps in each function's deno.json as well as the sources.
+// It covers only the imports the code names; what those modules resolve below
+// them is held by scripts/deno-check-graph.json.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
