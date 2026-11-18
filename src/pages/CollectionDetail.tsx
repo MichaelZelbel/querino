@@ -43,6 +43,7 @@ import { Footer } from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { CommentsSection } from "@/components/comments";
 import { itemTypeLabel } from "@/components/activity/activityLabels";
+import type { CollectionWithOwner } from "@/types/collection";
 
 // A collection holds prompts, skills, workflows and prompt kits. They are different
 // types, but this view reads only the fields all four share. Naming that shape stops
@@ -50,7 +51,45 @@ import { itemTypeLabel } from "@/components/activity/activityLabels";
 type CollectionItemData =
   { id: string; title: string; description: string | null } | null | undefined;
 
-export default function CollectionDetail() {
+/** Shown while the collection loads, and while a signed-in visitor's private collection is asked for again. */
+export function CollectionDetailSkeleton() {
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+      <main className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+/** The route's not-found view: an unknown or malformed collection address (HTTP 404). */
+export function CollectionNotFound() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+      <main className="flex-1 flex flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold">Collection not found</h1>
+        <p className="text-muted-foreground">
+          This collection does not exist, or it is private.
+        </p>
+        <Button onClick={() => navigate("/collections")}>
+          Back to Collections
+        </Button>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+export default function CollectionDetail({
+  initial,
+}: {
+  /** The route loader's row, which the page shows from its first render. */
+  initial?: CollectionWithOwner;
+}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -58,6 +97,7 @@ export default function CollectionDetail() {
 
   const { data: collection, isLoading: loadingCollection } = useCollection(
     id || "",
+    initial,
   );
   const { data: items, isLoading: loadingItems } = useCollectionItems(id || "");
   // Items are resolved by id, whatever their visibility. Looking them up in the
@@ -150,30 +190,12 @@ export default function CollectionDetail() {
   };
 
   if (loadingCollection || loadingItems) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </main>
-        <Footer />
-      </div>
-    );
+    return <CollectionDetailSkeleton />;
   }
 
+  // Deleted or made private while the page was open.
   if (!collection) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <main className="flex-1 flex flex-col items-center justify-center gap-4">
-          <h1 className="text-2xl font-bold">Collection not found</h1>
-          <Button onClick={() => navigate("/collections")}>
-            Back to Collections
-          </Button>
-        </main>
-        <Footer />
-      </div>
-    );
+    return <CollectionNotFound />;
   }
 
   // A profile page exists only for a named owner; an unnamed one gets no link.

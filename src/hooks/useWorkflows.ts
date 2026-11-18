@@ -13,6 +13,5 @@ export const useWorkflows = createArtifactListHook<
   table: "workflows",
   queryKey: ["workflows"],
   semanticType: "workflow",
-  publicColumn: "published",
   browseOrder: artifactBrowseOrder,
 });

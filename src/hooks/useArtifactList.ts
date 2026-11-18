@@ -5,6 +5,7 @@ import { mergeWithSemanticDetailed } from "./useSemanticMerge";
 import { hasArtifactListScope } from "@/lib/artifactListScope";
 import { withPartialMatch } from "@/lib/searchFallback";
 import {
+  ARTIFACT_PUBLIC_COLUMN,
   artifactListSelect,
   type ArtifactListTable,
 } from "@/lib/artifactListColumns";
@@ -14,7 +15,7 @@ export type ArtifactSortOption = BrowseSort;
 
 export interface ArtifactListOptions {
   searchQuery?: string;
-  /** The public catalogue (the table's own public column, see the config). */
+  /** The public catalogue (the table's own public column, ARTIFACT_PUBLIC_COLUMN). */
   published?: boolean;
   authorId?: string;
   teamId?: string;
@@ -38,8 +39,6 @@ interface ArtifactListConfig {
   queryKey: readonly string[];
   /** Semantic-search RPC family (see useSemanticMerge) */
   semanticType: "prompt" | "skill" | "workflow" | "prompt_kit";
-  /** The column that makes a row public: prompts say is_public. */
-  publicColumn: "is_public" | "published";
   /** Browse orders, each ending in the primary key (listOrder.ts). */
   browseOrder: (sort: ArtifactSortOption) => OrderTerm[];
   /** Most keyword matches a search asks for. Defaults to the page size. */
@@ -137,7 +136,7 @@ export function createArtifactListHook<T extends { id: string }>(
             artifactListSelect(config.table),
           );
           if (published !== undefined) {
-            q = q.eq(config.publicColumn, published);
+            q = q.eq(ARTIFACT_PUBLIC_COLUMN[config.table], published);
           }
           if (category && category !== "all") {
             q = q.eq("category", category);

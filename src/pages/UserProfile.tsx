@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, type ReactNode } from "react";
+import { Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -11,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { SkillCard } from "@/components/skills/SkillCard";
 import { WorkflowCard } from "@/components/workflows/WorkflowCard";
+import { PromptKitCard } from "@/components/promptKits/PromptKitCard";
 import {
   Globe,
   Twitter,
@@ -19,152 +19,174 @@ import {
   BookOpen,
   Workflow,
   Activity,
+  Package,
 } from "lucide-react";
-import type { Prompt } from "@/types/prompt";
-import type { Skill } from "@/types/skill";
-import type { Workflow as WorkflowType } from "@/types/workflow";
-import { ARTIFACT_LIST_COLUMNS } from "@/lib/artifactListColumns";
+import { toast } from "sonner";
+import {
+  loadProfileListPage,
+  type ProfileListRow,
+  type ProfilePageData,
+} from "@/lib/route-loaders";
+import type { ArtifactListTable } from "@/lib/artifactListColumns";
+import {
+  appendProfilePage,
+  hasMoreInProfileList,
+  type ProfileList,
+} from "@/lib/profileLists";
 
-/** How many artifacts of each kind a profile page shows. */
-const PROFILE_LIST_LIMIT = 60;
+/**
+ * One profile list: the loader's first page, then each page "Load more"
+ * brings, until every public item of the person is shown.
+ */
+function useProfileList<Table extends ArtifactListTable>(
+  table: Table,
+  authorId: string,
+  first: ProfileList<ProfileListRow[Table]>,
+) {
+  const [list, setList] = useState(first);
+  const [loading, setLoading] = useState(false);
+  // The loader ran again (a sign-in, say): start over from its new first page.
+  const [shownFirst, setShownFirst] = useState(first);
+  if (shownFirst !== first) {
+    setShownFirst(first);
+    setList(first);
+  }
 
-// What PromptCard / SkillCard / WorkflowCard and their clone buttons read:
-// the columns every artifact list asks for (artifactListColumns.ts). The
-// profile kept its own copy, which lacked a workflow's filename and scope, so
-// a workflow cloned from a profile card lost both (2026-10-07).
-const PROMPT_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.prompts.join(", ");
-const SKILL_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.skills.join(", ");
-const WORKFLOW_CARD_COLUMNS = ARTIFACT_LIST_COLUMNS.workflows.join(", ");
+  const loadMore = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const page = await loadProfileListPage(
+        table,
+        authorId,
+        list.items.length,
+      );
+      setList((current) => appendProfilePage(current, page));
+    } catch {
+      toast.error("Could not load more. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-function MoreNote({ kind }: { kind: string }) {
+  return { list, loading, loadMore, hasMore: hasMoreInProfileList(list) };
+}
+
+function ProfileListTab<T extends { id: string }>({
+  list,
+  hasMore,
+  loading,
+  loadMore,
+  kind,
+  icon,
+  renderItem,
+}: {
+  list: ProfileList<T>;
+  hasMore: boolean;
+  loading: boolean;
+  loadMore: () => void;
+  kind: string;
+  icon: ReactNode;
+  renderItem: (item: T) => ReactNode;
+}) {
+  if (list.items.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        {icon}
+        <p className="text-muted-foreground">
+          This creator has not published any {kind} yet.
+        </p>
+      </div>
+    );
+  }
   return (
-    <p className="mt-6 text-center text-sm text-muted-foreground">
-      Showing the {PROFILE_LIST_LIMIT} newest {kind}. Find the rest on{" "}
-      <Link to="/discover" className="text-primary hover:underline">
-        Discover
-      </Link>
-      .
-    </p>
+    <>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {list.items.map(renderItem)}
+      </div>
+      {hasMore && (
+        <div className="mt-8 flex flex-col items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            Showing {list.items.length} of {list.total} {kind}
+          </p>
+          <Button variant="outline" onClick={loadMore} disabled={loading}>
+            {loading ? "Loading…" : "Load more"}
+          </Button>
+        </div>
+      )}
+    </>
   );
 }
 
-interface PublicProfile {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  website: string | null;
-  twitter: string | null;
-  github: string | null;
+/** The route's not-found view: no profile has this name (HTTP 404). */
+export function UserProfileNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-20">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+          <h1 className="mb-4 text-display-md font-bold text-foreground">
+            Creator Not Found
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground">
+            The creator you're looking for doesn't exist or hasn't published
+            anything yet.
+          </p>
+          <Link to="/discover">
+            <Button>Browse Discover</Button>
+          </Link>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 }
 
-export default function UserProfile() {
-  const { username } = useParams<{ username: string }>();
+/** Shown while another profile loads, so the previous one never stays on screen. */
+export function UserProfileSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-12">
+        <div className="container mx-auto max-w-5xl px-4">
+          <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-96 max-w-full" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full mb-6" />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-64" />
+            ))}
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+export default function UserProfile({
+  username,
+  data,
+}: {
+  username: string;
+  data: ProfilePageData;
+}) {
   const { user } = useAuthContext();
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [workflows, setWorkflows] = useState<WorkflowType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState("prompts");
-  // Which lists were cut at PROFILE_LIST_LIMIT.
-  const [truncated, setTruncated] = useState({
-    prompts: false,
-    skills: false,
-    workflows: false,
-  });
-
-  useEffect(() => {
-    async function fetchProfile() {
-      if (!username) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Find user by display_name using the public_profiles view (no sensitive fields)
-        const { data: profileData, error: profileError } = (await supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url, bio, website, twitter, github")
-          // Match the display name exactly. Interpolating the URL segment into a
-          // PostgREST filter string would let a comma or parenthesis in a username
-          // rewrite the filter, and route-loaders.ts and UserActivity.tsx both look
-          // the profile up with the same exact match.
-          .eq("display_name", username)
-          .maybeSingle()) as any;
-
-        if (profileError || !profileData) {
-          setNotFound(true);
-          setLoading(false);
-          return;
-        }
-
-        setProfile(profileData);
-
-        // Fetch published prompts, skills, workflows in parallel. Only the
-        // columns the cards (and their clone buttons) read: select("*") also
-        // downloaded every row's embedding vector and search index, with no
-        // limit. One row past the limit is asked for to know there are more.
-        const [promptsRes, skillsRes, workflowsRes] = await Promise.all([
-          supabase
-            .from("prompts")
-            .select(PROMPT_CARD_COLUMNS)
-            .eq("author_id", profileData.id)
-            .eq("is_public", true)
-            .order("created_at", { ascending: false })
-            .limit(PROFILE_LIST_LIMIT + 1),
-          supabase
-            .from("skills")
-            .select(SKILL_CARD_COLUMNS)
-            .eq("author_id", profileData.id)
-            .eq("published", true)
-            .order("created_at", { ascending: false })
-            .limit(PROFILE_LIST_LIMIT + 1) as any,
-          supabase
-            .from("workflows")
-            .select(WORKFLOW_CARD_COLUMNS)
-            .eq("author_id", profileData.id)
-            .eq("published", true)
-            .order("created_at", { ascending: false })
-            .limit(PROFILE_LIST_LIMIT + 1) as any,
-        ]);
-
-        const promptRows = promptsRes.data ?? [];
-        const skillRows = skillsRes.data ?? [];
-        const workflowRows = workflowsRes.data ?? [];
-        setTruncated({
-          prompts: promptRows.length > PROFILE_LIST_LIMIT,
-          skills: skillRows.length > PROFILE_LIST_LIMIT,
-          workflows: workflowRows.length > PROFILE_LIST_LIMIT,
-        });
-
-        // The Prompt type promises non-null slug, ratings, counts, is_public and
-        // created_at; the prompts table allows NULL on all six. Widening Prompt to
-        // match costs 25 further strict errors and a product decision about what a
-        // prompt without a slug should render, so it is recorded as a migration risk
-        // rather than decided here. See migration/migration-risks.md.
-        // The column list is built at run time, so the client cannot type
-        // the rows from it.
-        setPrompts(
-          promptRows.slice(0, PROFILE_LIST_LIMIT) as unknown as Prompt[],
-        );
-        setSkills(skillRows.slice(0, PROFILE_LIST_LIMIT));
-        setWorkflows(workflowRows.slice(0, PROFILE_LIST_LIMIT));
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProfile();
-  }, [username]);
+  const { profile } = data;
+  const prompts = useProfileList("prompts", profile.id, data.prompts);
+  const skills = useProfileList("skills", profile.id, data.skills);
+  const workflows = useProfileList("workflows", profile.id, data.workflows);
+  const promptKits = useProfileList("prompt_kits", profile.id, data.promptKits);
 
   const getInitials = () => {
-    if (profile?.display_name) {
+    if (profile.display_name) {
       return profile.display_name
         .split(" ")
         .map((n) => n[0])
@@ -174,56 +196,6 @@ export default function UserProfile() {
     }
     return "U";
   };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-12">
-          <div className="container mx-auto max-w-5xl px-4">
-            <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
-              <Skeleton className="h-24 w-24 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-96 max-w-full" />
-                <Skeleton className="h-4 w-64" />
-              </div>
-            </div>
-            <Skeleton className="h-10 w-full mb-6" />
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-64" />
-              ))}
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notFound || !profile) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Creator Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The creator you're looking for doesn't exist or hasn't published
-              anything yet.
-            </p>
-            <Link to="/discover">
-              <Button>Browse Discover</Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -293,7 +265,7 @@ export default function UserProfile() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link to={`/u/${encodeURIComponent(username || "")}/activity`}>
+              <Link to={`/u/${encodeURIComponent(username)}/activity`}>
                 <Button variant="outline" className="gap-2">
                   <Activity className="h-4 w-4" />
                   Activity
@@ -308,89 +280,92 @@ export default function UserProfile() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="prompts" className="gap-2">
                 <Sparkles className="h-4 w-4" />
-                Prompts ({prompts.length}
-                {truncated.prompts ? "+" : ""})
+                Prompts ({prompts.list.total})
               </TabsTrigger>
               <TabsTrigger value="skills" className="gap-2">
                 <BookOpen className="h-4 w-4" />
-                Skills ({skills.length}
-                {truncated.skills ? "+" : ""})
+                Skills ({skills.list.total})
               </TabsTrigger>
               <TabsTrigger value="workflows" className="gap-2">
                 <Workflow className="h-4 w-4" />
-                Workflows ({workflows.length}
-                {truncated.workflows ? "+" : ""})
+                Workflows ({workflows.list.total})
+              </TabsTrigger>
+              <TabsTrigger value="promptKits" className="gap-2">
+                <Package className="h-4 w-4" />
+                Prompt Kits ({promptKits.list.total})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="prompts">
-              {prompts.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...prompts}
+                kind="prompts"
+                icon={
                   <Sparkles className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any prompts yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {prompts.map((prompt) => (
-                    <PromptCard
-                      key={prompt.id}
-                      prompt={prompt}
-                      currentUserId={user?.id}
-                      showAuthorInfo={false}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.prompts && <MoreNote kind="prompts" />}
+                }
+                renderItem={(prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    currentUserId={user?.id}
+                    showAuthorInfo={false}
+                  />
+                )}
+              />
             </TabsContent>
 
             <TabsContent value="skills">
-              {skills.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...skills}
+                kind="skills"
+                icon={
                   <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any skills yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {skills.map((skill) => (
-                    <SkillCard
-                      key={skill.id}
-                      skill={skill}
-                      currentUserId={user?.id}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.skills && <MoreNote kind="skills" />}
+                }
+                renderItem={(skill) => (
+                  <SkillCard
+                    key={skill.id}
+                    skill={skill}
+                    currentUserId={user?.id}
+                  />
+                )}
+              />
             </TabsContent>
 
             <TabsContent value="workflows">
-              {workflows.length === 0 ? (
-                <div className="py-12 text-center">
+              <ProfileListTab
+                {...workflows}
+                kind="workflows"
+                icon={
                   <Workflow className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    This creator has not published any workflows yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {workflows.map((workflow) => (
-                    <WorkflowCard
-                      key={workflow.id}
-                      workflow={workflow}
-                      currentUserId={user?.id}
-                    />
-                  ))}
-                </div>
-              )}
-              {truncated.workflows && <MoreNote kind="workflows" />}
+                }
+                renderItem={(workflow) => (
+                  <WorkflowCard
+                    key={workflow.id}
+                    workflow={workflow}
+                    currentUserId={user?.id}
+                  />
+                )}
+              />
+            </TabsContent>
+
+            <TabsContent value="promptKits">
+              <ProfileListTab
+                {...promptKits}
+                kind="prompt kits"
+                icon={
+                  <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                }
+                renderItem={(kit) => (
+                  <PromptKitCard
+                    key={kit.id}
+                    kit={kit}
+                    currentUserId={user?.id}
+                  />
+                )}
+              />
             </TabsContent>
           </Tabs>
         </div>
