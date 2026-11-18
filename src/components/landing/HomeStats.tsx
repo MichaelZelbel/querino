@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Copy, Layers, Code } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ARTIFACT_TABLES, publicCountQuery } from "@/lib/publicArtifacts";
 
 interface HomeStatsData {
   publicPrompts: number | null;
@@ -54,24 +55,11 @@ export function HomeStats() {
     async function fetchStats() {
       try {
         const [promptsResult, skillsResult, workflowsResult, kitsResult] =
-          await Promise.all([
-            supabase
-              .from("prompts")
-              .select("id", { count: "exact", head: true })
-              .eq("is_public", true),
-            supabase
-              .from("skills")
-              .select("id", { count: "exact", head: true })
-              .eq("published", true),
-            supabase
-              .from("workflows")
-              .select("id", { count: "exact", head: true })
-              .eq("published", true),
-            supabase
-              .from("prompt_kits")
-              .select("id", { count: "exact", head: true })
-              .eq("published", true),
-          ]);
+          await Promise.all(
+            ARTIFACT_TABLES.map((table) =>
+              publicCountQuery(supabase.from(table), table),
+            ),
+          );
 
         const promptsCount = promptsResult.count ?? 0;
         const skillsCount = skillsResult.count ?? 0;
