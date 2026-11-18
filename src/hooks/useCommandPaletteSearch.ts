@@ -4,12 +4,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { allTermsFilters, ownedByUserOrTeams } from "@/lib/postgrestFilter";
-import type { ArtifactListTable } from "@/lib/artifactListColumns";
-import {
-  isPublicRow,
-  paletteSelect,
-  publicPromptSearchQuery,
-} from "@/lib/publicArtifacts";
+import { ARTIFACT_PUBLIC_COLUMN } from "@/lib/artifactListColumns";
+import { publicPromptSearchQuery } from "@/lib/publicArtifacts";
 
 export type ArtefactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -38,23 +34,10 @@ function withAllTerms<T extends { or(filters: string): T }>(
   );
 }
 
-const PALETTE_TABLES: { table: ArtifactListTable; type: ArtefactType }[] = [
-  { table: "prompts", type: "prompt" },
-  { table: "skills", type: "skill" },
-  { table: "workflows", type: "workflow" },
-  { table: "prompt_kits", type: "prompt_kit" },
-];
-
-/** A row as paletteSelect reads it. */
-interface PaletteRow {
-  id: string;
-  slug: string | null;
-  title: string;
-  description: string | null;
-  team_id: string | null;
-  is_public?: boolean | null;
-  published?: boolean | null;
-}
+const PROMPTS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.prompts;
+const SKILLS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.skills;
+const WORKFLOWS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.workflows;
+const KITS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.prompt_kits;
 
 export interface SearchResult {
   id: string;
@@ -131,31 +114,86 @@ export function useCommandPaletteSearch(query: string) {
         // The four tables are independent, so they are asked at once rather
         // than one after another: four round trips in a row outlasted the
         // 200 ms debounce on every search.
-        const answers = await Promise.all(
-          PALETTE_TABLES.map(({ table }) =>
-            scoped(supabase.from(table).select(paletteSelect(table)).limit(10)),
+        const [prompts, skills, workflows, kits] = await Promise.all([
+          scoped(
+            supabase
+              .from("prompts")
+              .select(
+                `id, title, description, ${PROMPTS_PUBLIC}, team_id` as const,
+              )
+              .limit(10),
           ),
-        );
+          scoped(
+            supabase
+              .from("skills")
+              .select(
+                `id, title, description, ${SKILLS_PUBLIC}, team_id` as const,
+              )
+              .limit(10),
+          ),
+          scoped(
+            supabase
+              .from("workflows")
+              .select(
+                `id, title, description, ${WORKFLOWS_PUBLIC}, team_id` as const,
+              )
+              .limit(10),
+          ),
+          scoped(
+            // Prompt kit routes use the slug, so it is exposed as the id.
+            supabase
+              .from("prompt_kits")
+              .select(
+                `id, slug, title, description, ${KITS_PUBLIC}, team_id` as const,
+              )
+              .limit(10),
+          ),
+        ]);
         if (cancelled) return;
 
-        const failed = answers.find((r) => r.error);
+        const failed = [prompts, skills, workflows, kits].find((r) => r.error);
         if (failed?.error) throw failed.error;
 
         const teamName = (teamId: string | null) =>
           teams.find((t) => t.id === teamId)?.name;
-        const results: SearchResult[] = PALETTE_TABLES.flatMap(
-          ({ table, type }, i) =>
-            ((answers[i].data ?? []) as unknown as PaletteRow[]).map((row) => ({
-              // Prompt kit routes use the slug, so it is exposed as the id.
-              id: table === "prompt_kits" ? row.slug || row.id : row.id,
-              title: row.title,
-              type,
-              description: row.description,
-              isPublic: isPublicRow(table, row),
-              teamId: row.team_id,
-              teamName: teamName(row.team_id),
-            })),
-        );
+        const results: SearchResult[] = [
+          ...(prompts.data ?? []).map((p) => ({
+            id: p.id,
+            title: p.title,
+            type: "prompt" as const,
+            description: p.description,
+            isPublic: p[PROMPTS_PUBLIC],
+            teamId: p.team_id,
+            teamName: teamName(p.team_id),
+          })),
+          ...(skills.data ?? []).map((s) => ({
+            id: s.id,
+            title: s.title,
+            type: "skill" as const,
+            description: s.description,
+            isPublic: s[SKILLS_PUBLIC],
+            teamId: s.team_id,
+            teamName: teamName(s.team_id),
+          })),
+          ...(workflows.data ?? []).map((w) => ({
+            id: w.id,
+            title: w.title,
+            type: "workflow" as const,
+            description: w.description,
+            isPublic: w[WORKFLOWS_PUBLIC],
+            teamId: w.team_id,
+            teamName: teamName(w.team_id),
+          })),
+          ...(kits.data ?? []).map((k) => ({
+            id: k.slug || k.id,
+            title: k.title,
+            type: "prompt_kit" as const,
+            description: k.description,
+            isPublic: k[KITS_PUBLIC],
+            teamId: k.team_id,
+            teamName: teamName(k.team_id),
+          })),
+        ];
 
         setArtefacts(results.slice(0, 12));
       } catch (err) {

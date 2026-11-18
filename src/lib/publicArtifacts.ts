@@ -93,16 +93,3 @@ export function publicPromptSearchQuery<Q extends PublicFilters<Q>>(
     .order("rating_avg", { ascending: false })
     .limit(8);
 }
-
-/** The columns the palette shows for one of the user's own artifacts. */
-export function paletteSelect(table: ArtifactListTable): string {
-  return `id, slug, title, description, ${ARTIFACT_PUBLIC_COLUMN[table]}, team_id`;
-}
-
-/** Whether a row read with paletteSelect is public. */
-export function isPublicRow(
-  table: ArtifactListTable,
-  row: Partial<Record<"is_public" | "published", boolean | null>>,
-): boolean | null {
-  return row[ARTIFACT_PUBLIC_COLUMN[table]] ?? null;
-}

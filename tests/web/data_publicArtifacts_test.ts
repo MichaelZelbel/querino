@@ -1,8 +1,6 @@
 import { assertEquals } from "@std/assert";
 import {
   ARTIFACT_TABLES,
-  isPublicRow,
-  paletteSelect,
   publicCountQuery,
   publicPromptSearchQuery,
   sitemapPageQuery,
@@ -105,16 +103,4 @@ Deno.test("the palette offers only public prompts from everyone", () => {
     ["order", "rating_avg", { ascending: false }],
     ["limit", 8],
   ]);
-});
-
-Deno.test("the palette reads each table's own public column", () => {
-  for (const table of ARTIFACT_TABLES) {
-    const column = PUBLIC_COLUMN[table];
-    assertEquals(
-      paletteSelect(table),
-      `id, slug, title, description, ${column}, team_id`,
-    );
-    assertEquals(isPublicRow(table, { [column]: true }), true, table);
-    assertEquals(isPublicRow(table, { [column]: false }), false, table);
-  }
 });
