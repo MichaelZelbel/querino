@@ -1,4 +1,11 @@
 {
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true
+  },
   "imports": {
     "hono": "jsr:@hono/hono@4.13.19",
     "mcp-lite": "npm:mcp-lite@0.10.0",
