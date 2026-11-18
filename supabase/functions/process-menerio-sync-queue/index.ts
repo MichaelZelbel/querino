@@ -4,7 +4,7 @@
 // client, sends users' artifacts to their Menerio hosts with their stored API
 // keys, and deletes completed queue rows (see _shared/internalAuth.ts).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { requireMachineCaller } from "../_shared/internalAuth.ts";
 import { publicUrlFor, tableFor } from "../_shared/artifactRoutes.ts";
 import { assertMenerioBaseUrl } from "../_shared/menerioUrl.ts";

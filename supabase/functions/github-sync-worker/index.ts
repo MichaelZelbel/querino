@@ -6,7 +6,7 @@
 // client and pushes users' artifacts with their stored GitHub tokens, so the
 // caller has to prove it is one of our jobs (see _shared/internalAuth.ts).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { requireMachineCaller } from "../_shared/internalAuth.ts";
 // Paths and file bodies are shared with the manual github-sync function, so
 // the two can never disagree about which files are theirs.
