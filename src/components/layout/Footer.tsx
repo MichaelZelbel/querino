@@ -60,6 +60,12 @@ export function Footer() {
                 All Workflows
               </Link>
               <Link
+                to="/prompt-kits"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                All Prompt Kits
+              </Link>
+              <Link
                 to="/library"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
