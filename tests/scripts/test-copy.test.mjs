@@ -4,7 +4,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -244,4 +246,109 @@ test("a taken port is told apart from any other start failure", () => {
     false,
   );
   assert.equal(isPortClash("error running container: exit 1"), false);
+});
+
+// harness/test-copy.sh dev, run for real with stand-ins for `node <cli> up|env`
+// and for `bun`, in a throwaway checkout: the app must never start unless it
+// talks to this checkout's own copy. Needs bash, so not on Windows.
+const LIVE_URL = `https://${LIVE_REF}.supabase.co`;
+function runDev({ envFails = false, envUrl = "", stateApi = null }) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "qtc-dev-"));
+  try {
+    fs.mkdirSync(path.join(tmp, "harness", "test-copy"), { recursive: true });
+    fs.mkdirSync(path.join(tmp, "bin"));
+    fs.copyFileSync(
+      path.join(ROOT, "harness", "test-copy.sh"),
+      path.join(tmp, "harness", "test-copy.sh"),
+    );
+    fs.writeFileSync(path.join(tmp, "harness", "test-copy", "cli.mjs"), "");
+    if (stateApi) {
+      fs.mkdirSync(path.join(tmp, "harness", ".results", "test-copy"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(tmp, "harness", ".results", "test-copy", "state.json"),
+        JSON.stringify({ ports: { api: stateApi } }),
+      );
+    }
+    const shim = (name, body) => {
+      fs.writeFileSync(path.join(tmp, "bin", name), `#!/bin/bash\n${body}\n`, {
+        mode: 0o755,
+      });
+    };
+    shim(
+      "node",
+      [
+        'case "$2" in',
+        "  up) exit 0 ;;",
+        `  env) ${envFails ? "exit 1" : `echo "export VITE_SUPABASE_URL='${envUrl}'"; exit 0`} ;;`,
+        "esac",
+        'exec "$REAL_NODE" "$@"',
+      ].join("\n"),
+    );
+    shim("bun", `touch "${path.join(tmp, "app-started")}"`);
+    const res = spawnSync(
+      "bash",
+      [path.join(tmp, "harness", "test-copy.sh"), "dev", "45678"],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: `${path.join(tmp, "bin")}${path.delimiter}${process.env.PATH}`,
+          REAL_NODE: process.execPath,
+          VITE_SUPABASE_URL: LIVE_URL,
+        },
+      },
+    );
+    return {
+      status: res.status,
+      stderr: res.stderr,
+      appStarted: fs.existsSync(path.join(tmp, "app-started")),
+    };
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+const noBash = process.platform === "win32";
+
+test(
+  "dev: a failing env with a live URL already set stops before the app",
+  { skip: noBash },
+  () => {
+    const r = runDev({ envFails: true });
+    assert.notEqual(r.status, 0);
+    assert.equal(r.appStarted, false);
+    assert.match(r.stderr, /could not read the test copy's settings/);
+  },
+);
+
+test("dev: a live URL from env stops before the app", { skip: noBash }, () => {
+  const r = runDev({ envUrl: LIVE_URL, stateApi: 21000 });
+  assert.notEqual(r.status, 0);
+  assert.equal(r.appStarted, false);
+  assert.match(r.stderr, /not to the test copy/);
+});
+
+test(
+  "dev: a local URL that is not this checkout's copy stops before the app",
+  { skip: noBash },
+  () => {
+    assert.equal(
+      runDev({ envUrl: "http://127.0.0.1:21000" }).appStarted,
+      false,
+    );
+    const r = runDev({ envUrl: "http://127.0.0.1:21000", stateApi: 22000 });
+    assert.notEqual(r.status, 0);
+    assert.equal(r.appStarted, false);
+    assert.match(
+      r.stderr,
+      /this checkout's test copy is at http:\/\/127\.0\.0\.1:22000/,
+    );
+  },
+);
+
+test("dev: the copy's own address starts the app", { skip: noBash }, () => {
+  const r = runDev({ envUrl: "http://127.0.0.1:21000", stateApi: 21000 });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.appStarted, true);
 });

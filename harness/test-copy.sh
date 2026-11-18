@@ -41,7 +41,28 @@ case "${1:-}" in
       port="$(node -e 'const s=require("net").createServer();s.listen(0,"127.0.0.1",()=>{console.log(s.address().port);s.close()})')"
     fi
     with_lock node "$CLI" up >/dev/null
-    eval "$(node "$CLI" env)"
+    # `eval "$(...)"` would ignore a failing env even under set -e, and a live
+    # VITE_SUPABASE_URL already in the environment would then start the app on
+    # the live project. So the output is taken first and a failure stops here.
+    if ! exports="$(node "$CLI" env)"; then
+      echo "[test-copy] FAILED: could not read the test copy's settings, so the app is not started." >&2
+      exit 1
+    fi
+    eval "$exports"
+    # The last word before the app starts: it must talk to this checkout's own
+    # copy, whose address comes from the copy's state file, not from the exports.
+    own="$(node -e 'try { const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log("http://127.0.0.1:" + s.ports.api); } catch { }' "$ROOT/harness/.results/test-copy/state.json")"
+    case "${VITE_SUPABASE_URL:-}" in
+      http://127.0.0.1:*) ;;
+      *)
+        echo "[test-copy] FAILED: the app would talk to ${VITE_SUPABASE_URL:-nothing}, not to the test copy, so it is not started." >&2
+        exit 1
+        ;;
+    esac
+    if [ -z "$own" ] || [ "$VITE_SUPABASE_URL" != "$own" ]; then
+      echo "[test-copy] FAILED: the app would talk to $VITE_SUPABASE_URL, but this checkout's test copy is at ${own:-an unknown address}, so it is not started." >&2
+      exit 1
+    fi
     echo "[test-copy] the app on http://127.0.0.1:$port talks to the test copy at $VITE_SUPABASE_URL" >&2
     cd "$ROOT"
     exec bun run dev --port "$port" --strictPort --host 127.0.0.1
