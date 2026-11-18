@@ -24,11 +24,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
+import { AlertTriangle, KeyRound, Loader2, Mail } from "lucide-react";
 import {
   newPasswordProblem,
   PASSWORD_HINT,
 } from "@/components/auth/passwordRules";
+import {
+  resetLinkState,
+  type ResetLinkState,
+} from "@/components/auth/resetLinkState";
+import { sendPasswordResetLink } from "@/components/auth/sendPasswordResetLink";
 
 const resetSchema = z
   .object({
@@ -46,6 +51,97 @@ const resetSchema = z
 
 type ResetFormValues = z.infer<typeof resetSchema>;
 
+const requestSchema = z.object({
+  email: z.string().trim().email("Enter the email address of your account"),
+});
+
+type RequestFormValues = z.infer<typeof requestSchema>;
+
+/** Mails a recovery link that leads back to this page. */
+function RequestResetLinkForm() {
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const form = useForm<RequestFormValues>({
+    resolver: zodResolver(requestSchema),
+    defaultValues: { email: "" },
+  });
+
+  const onSubmit = async ({ email }: RequestFormValues) => {
+    try {
+      const { error } = await sendPasswordResetLink(email);
+      if (error) {
+        toast.error(error.message || "Could not send the reset link");
+        return;
+      }
+      setSentTo(email);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not send the reset link",
+      );
+    }
+  };
+
+  if (sentTo) {
+    return (
+      <div className="space-y-3 text-sm text-muted-foreground" role="status">
+        <p className="flex items-center gap-2 font-medium text-foreground">
+          <Mail className="h-4 w-4 text-primary" />
+          Check your inbox
+        </p>
+        <p>
+          If an account exists for <strong>{sentTo}</strong>, a reset link is on
+          its way. Open it from the mail and you come back to this page to
+          choose a new password.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending
+            </>
+          ) : (
+            "Send me a reset link"
+          )}
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          Remembered it?{" "}
+          <Link to="/auth" className="text-primary hover:underline">
+            Back to sign in
+          </Link>
+        </p>
+      </form>
+    </Form>
+  );
+}
+
 /**
  * The page a password recovery mail links to.
  *
@@ -59,9 +155,7 @@ export default function ResetPassword() {
 
   // Stays "checking" until we know whether the link produced a session, so the expired
   // message never flashes while the token is still being read out of the URL.
-  const [status, setStatus] = useState<"checking" | "ready" | "expired">(
-    "checking",
-  );
+  const [status, setStatus] = useState<"checking" | ResetLinkState>("checking");
 
   const form = useForm<ResetFormValues>({
     resolver: zodResolver(resetSchema),
@@ -70,6 +164,8 @@ export default function ResetPassword() {
 
   useEffect(() => {
     let active = true;
+    // Read before supabase-js clears a link it has turned into a session.
+    const { search, hash } = window.location;
 
     // PASSWORD_RECOVERY fires once supabase has parsed the token out of the URL.
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -87,7 +183,7 @@ export default function ResetPassword() {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setStatus((prev) =>
-        data.session || prev === "ready" ? "ready" : "expired",
+        resetLinkState({ search, hash }, !!data.session || prev === "ready"),
       );
     });
 
@@ -132,14 +228,31 @@ export default function ResetPassword() {
                 </div>
                 <CardDescription>
                   Password reset links can only be used once, and they stop
-                  working after a while. Request a new one and open it from the
-                  mail straight away.
+                  working after a while. Enter your email to get a new one, then
+                  open it from the mail straight away.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link to="/auth">
-                  <Button className="w-full">Back to sign in</Button>
-                </Link>
+                <RequestResetLinkForm />
+              </CardContent>
+            </Card>
+          )}
+
+          {status === "missing" && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  <CardTitle>Reset your password</CardTitle>
+                </div>
+                <CardDescription>
+                  Enter the email address of your account. We mail you a link
+                  that brings you back to this page, where you choose a new
+                  password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RequestResetLinkForm />
               </CardContent>
             </Card>
           )}

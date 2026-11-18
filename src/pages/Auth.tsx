@@ -25,7 +25,7 @@ import {
   getRedirectFromParams,
   clearRedirectPath,
 } from "@/lib/authRedirect";
-import { siteOrigin } from "@/config/site";
+import { sendPasswordResetLink } from "@/components/auth/sendPasswordResetLink";
 import {
   newPasswordProblem,
   PASSWORD_HINT,
@@ -222,10 +222,7 @@ export default function Auth() {
     setErrors((prev) => ({ ...prev, email: undefined }));
     setResetSending(true);
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteOrigin()}/reset-password`,
-      });
+      const { error } = await sendPasswordResetLink(email);
       if (error) {
         toast.error(error.message);
       } else {
