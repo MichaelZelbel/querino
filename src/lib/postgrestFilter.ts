@@ -4,9 +4,10 @@
 export {
   allTermsFilters,
   anyTermFilter,
+  containsFilter,
   escapeFilterValue,
-  ilikeContains,
-  orIlikeContains,
+  escapeRegexLiteral,
+  orContainsFilter,
   ownedByUserOrTeams,
   tokenizeSearchQuery,
 } from "../../supabase/functions/_shared/postgrestFilter.ts";

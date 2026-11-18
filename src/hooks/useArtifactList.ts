@@ -164,13 +164,31 @@ export function createArtifactListHook<T extends { id: string }>(
             config: "simple",
           });
           if (searchCap) request = request.limit(searchCap);
+          // No retries: a refused full-text request has an answer below, and
+          // the firewall's 403 carries no CORS header, so the browser reports
+          // it as a network error that supabase-js would retry three times
+          // with backoff (7.6 seconds, measured) before giving up.
+          request = request.retry(false);
         } else if (limit) {
           const from = (pageParam as number) * limit;
           request = request.range(from, from + limit - 1);
         }
 
         let { data, error } = await request;
-        if (error) throw new Error(error.message);
+        // A search the full-text request could not answer still gets one:
+        // the fragment search below asks the same question word by word.
+        // The case that needs this (issue #16, measured 2026-11-18): the
+        // firewall in front of the project answers a whole query such as
+        // `'; drop table prompts; --` with a 403 before PostgREST sees it
+        // (the browser sees a network error, as the 403 has no CORS header),
+        // while the same words as separate fragment filters pass. If the
+        // fragment search fails too, that error is shown.
+        if (error && isSearching) {
+          console.warn("[artifact-list] full-text search failed:", error);
+          data = [];
+        } else if (error) {
+          throw new Error(error.message);
+        }
 
         // Whole words found nothing: try the words as fragments ("summar").
         if (isSearching && (data ?? []).length === 0) {
