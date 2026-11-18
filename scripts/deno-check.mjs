@@ -51,22 +51,29 @@
 //   node scripts/deno-check.mjs            check against the baseline
 //   node scripts/deno-check.mjs --update   record today's counts
 //   node scripts/deno-check.mjs --dir <functions>   measure another folder
-//                                          (the tests' fixtures)
+//                                          (the tests' fixtures); its baseline
+//                                          and graph record live in
+//                                          <functions>/../scripts/
+//   --allow-import=<host>                  passed to deno (the tests' server)
 //
 // Deno is a devDependency, so `bun install` provides it on every machine and
 // in CI. $DENO_BIN overrides it if you want a different one.
 
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+} from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join, relative, resolve } from "node:path";
 import { findFloatingImports } from "./floating-imports.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const BASELINE_FILE = join(ROOT, "scripts", "deno-check-baseline.json");
-const GRAPH_FILE = join(ROOT, "scripts", "deno-check-graph.json");
 
 // esm.sh rewrote an extensionless path in supabase-js@2.57.2's
 // dist/module/lib/types.d.ts, and this module answers "Module not found" on
@@ -419,6 +426,8 @@ function main() {
       ? resolve(args[dirAt + 1])
       : join(ROOT, "supabase", "functions");
   const cwd = dirAt !== -1 ? dirname(functionsDir) : ROOT;
+  const baselineFile = join(cwd, "scripts", "deno-check-baseline.json");
+  const graphFile = join(cwd, "scripts", "deno-check-graph.json");
 
   if (!existsSync(functionsDir)) {
     console.error(`No edge functions found under ${functionsDir}`);
@@ -442,6 +451,7 @@ function main() {
       functionsDir,
       cwd,
       deno: denoBinary(),
+      extraArgs: args.filter((arg) => arg.startsWith("--allow-import=")),
     });
 
   if (entryPoints.length === 0) {
@@ -461,13 +471,13 @@ function main() {
   }
 
   if (!args.includes("--update")) {
-    if (!existsSync(GRAPH_FILE)) {
+    if (!existsSync(graphFile)) {
       console.error(
         "The versions the module graph resolves have not been recorded. Record them:\n\n  node scripts/deno-check.mjs --update\n",
       );
       process.exit(2);
     }
-    const drift = resolutionDrift(resolved, readJson(GRAPH_FILE));
+    const drift = resolutionDrift(resolved, readJson(graphFile));
     if (drift.length > 0) {
       console.error(
         "These imports resolved to a different release than scripts/deno-check-graph.json records, so the types behind them may have changed without the code changing:\n",
@@ -480,7 +490,7 @@ function main() {
     }
   }
 
-  const baseline = existsSync(BASELINE_FILE) ? readJson(BASELINE_FILE) : null;
+  const baseline = existsSync(baselineFile) ? readJson(baselineFile) : null;
 
   if (args.includes("--update")) {
     if (baseline && total > baseline.total) {
@@ -489,14 +499,15 @@ function main() {
       );
       process.exit(1);
     }
-    writeJson(BASELINE_FILE, {
+    mkdirSync(dirname(baselineFile), { recursive: true });
+    writeJson(baselineFile, {
       note: "Type errors per edge function under `deno check`. May be lowered, never raised. See scripts/deno-check.mjs.",
       total,
       perFunction: Object.fromEntries(
         Object.entries(perFunction).sort(([a], [b]) => a.localeCompare(b)),
       ),
     });
-    writeJson(GRAPH_FILE, {
+    writeJson(graphFile, {
       note: "Every version the edge functions' module graph resolved when the baseline was recorded, below the imports the code names. A run that resolves differently does not count. See scripts/deno-check.mjs.",
       ...resolved,
     });

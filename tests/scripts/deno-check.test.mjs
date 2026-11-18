@@ -8,7 +8,13 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -287,4 +293,50 @@ test("a package version the record does not hold is drift; one it no longer reac
     ),
     ["yargs@17.7.4 is resolved but not recorded"],
   );
+});
+
+test("the CLI records the module graph with --update and refuses to count when it resolves differently", () => {
+  const dir = fixture("cli-graph", {
+    "a/index.ts": `import { add } from "http://${host}/latest.js";\nexport const n: number = add(1, 2);\n`,
+  });
+  const graphFile = join(dirname(dir), "scripts", "deno-check-graph.json");
+  const from = `http://${host}/latest.js`;
+  const cli = (...extra) =>
+    spawnSync(
+      process.execPath,
+      [SCRIPT, "--dir", dir, `--allow-import=${host}`, ...extra],
+      { encoding: "utf8" },
+    );
+
+  const unrecorded = cli();
+  assert.equal(unrecorded.status, 2, unrecorded.stdout + unrecorded.stderr);
+  assert.match(unrecorded.stderr, /have not been recorded/);
+  assert.doesNotMatch(unrecorded.stdout, /deno check:/);
+
+  const update = cli("--update");
+  assert.equal(update.status, 0, update.stdout + update.stderr);
+  const recorded = JSON.parse(readFileSync(graphFile, "utf8"));
+  assert.deepEqual(recorded.redirects, { [from]: `http://${host}/typed.js` });
+
+  const same = cli();
+  assert.equal(same.status, 0, same.stdout + same.stderr);
+  assert.match(same.stdout, /deno check: 0 type errors/);
+
+  writeFileSync(
+    graphFile,
+    JSON.stringify({
+      ...recorded,
+      redirects: { [from]: `http://${host}/untyped.js` },
+    }),
+  );
+  const drifted = cli();
+  assert.equal(drifted.status, 2, drifted.stdout + drifted.stderr);
+  assert.match(drifted.stderr, /resolved to a different release/);
+  assert.match(
+    drifted.stderr,
+    new RegExp(
+      `${from} now resolves to http://${host}/typed\\.js; recorded http://${host}/untyped\\.js`,
+    ),
+  );
+  assert.doesNotMatch(drifted.stdout, /deno check:/);
 });
