@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
+import { AlertTriangle, KeyRound, Loader2, Mail } from "lucide-react";
 import {
   newPasswordProblem,
   PASSWORD_HINT,
@@ -33,6 +33,7 @@ import {
   resetLinkState,
   type ResetLinkState,
 } from "@/components/auth/resetLinkState";
+import { sendPasswordResetLink } from "@/components/auth/sendPasswordResetLink";
 
 const resetSchema = z
   .object({
@@ -50,12 +51,94 @@ const resetSchema = z
 
 type ResetFormValues = z.infer<typeof resetSchema>;
 
-/** Recovery links are requested from "Forgot password?" on the sign-in form. */
-function RequestResetLinkButton() {
+const requestSchema = z.object({
+  email: z.string().trim().email("Enter the email address of your account"),
+});
+
+type RequestFormValues = z.infer<typeof requestSchema>;
+
+/** Mails a recovery link that leads back to this page. */
+function RequestResetLinkForm() {
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const form = useForm<RequestFormValues>({
+    resolver: zodResolver(requestSchema),
+    defaultValues: { email: "" },
+  });
+
+  const onSubmit = async ({ email }: RequestFormValues) => {
+    try {
+      const { error } = await sendPasswordResetLink(email);
+      if (error) {
+        toast.error(error.message || "Could not send the reset link");
+        return;
+      }
+      setSentTo(email);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not send the reset link",
+      );
+    }
+  };
+
+  if (sentTo) {
+    return (
+      <div className="space-y-3 text-sm text-muted-foreground" role="status">
+        <p className="flex items-center gap-2 font-medium text-foreground">
+          <Mail className="h-4 w-4 text-primary" />
+          Check your inbox
+        </p>
+        <p>
+          If an account exists for <strong>{sentTo}</strong>, a reset link is on
+          its way. Open it from the mail and you come back to this page to
+          choose a new password.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <Button asChild className="w-full">
-      <Link to="/auth">Go to sign in</Link>
-    </Button>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending
+            </>
+          ) : (
+            "Send me a reset link"
+          )}
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          Remembered it?{" "}
+          <Link to="/auth" className="text-primary hover:underline">
+            Back to sign in
+          </Link>
+        </p>
+      </form>
+    </Form>
   );
 }
 
@@ -145,13 +228,12 @@ export default function ResetPassword() {
                 </div>
                 <CardDescription>
                   Password reset links can only be used once, and they stop
-                  working after a while. To get a new one, go to sign in, enter
-                  your email and choose &quot;Forgot password?&quot;. Open the
-                  new link from the mail straight away.
+                  working after a while. Enter your email to get a new one, then
+                  open it from the mail straight away.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RequestResetLinkButton />
+                <RequestResetLinkForm />
               </CardContent>
             </Card>
           )}
@@ -164,14 +246,13 @@ export default function ResetPassword() {
                   <CardTitle>Reset your password</CardTitle>
                 </div>
                 <CardDescription>
-                  To get a reset link, go to sign in, enter the email address of
-                  your account and choose &quot;Forgot password?&quot;. We mail
-                  you a link that brings you back to this page, where you choose
-                  a new password.
+                  Enter the email address of your account. We mail you a link
+                  that brings you back to this page, where you choose a new
+                  password.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RequestResetLinkButton />
+                <RequestResetLinkForm />
               </CardContent>
             </Card>
           )}

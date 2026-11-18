@@ -6,7 +6,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeam, useUpdateTeam } from "@/hooks/useTeams";
 import { supabase } from "@/integrations/supabase/client";
-import { siteOrigin } from "@/config/site";
+import { sendPasswordResetLink } from "@/components/auth/sendPasswordResetLink";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import {
@@ -391,11 +391,7 @@ export default function Settings() {
     }
     setSendingReset(true);
     try {
-      // The link has to land on the page that asks for a new password. Pointing it at
-      // /auth only signed the user back in and left the old password in place.
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${siteOrigin()}/reset-password`,
-      });
+      const { error } = await sendPasswordResetLink(user.email);
       if (error) throw error;
       toast.success(`Password reset link sent to ${user.email}`);
     } catch (error) {
