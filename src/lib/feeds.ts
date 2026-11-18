@@ -18,6 +18,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { SITE_ORIGIN } from "@/lib/seo";
+import { sitemapPageQuery, type SitemapTable } from "@/lib/publicArtifacts";
 
 /** How long a crawler may reuse a response. Carried over from the edge function. */
 export const FEED_CACHE_CONTROL = "public, max-age=3600";
@@ -125,23 +126,17 @@ interface SitemapRow {
  * being crawled.
  */
 async function fetchAllRows(
-  table: "blog_posts" | "prompts" | "skills" | "workflows" | "prompt_kits",
-  column: string,
-  value: string | boolean,
+  table: SitemapTable,
 ): Promise<{ data: SitemapRow[] | null; error: { message: string } | null }> {
   const rows: SitemapRow[] = [];
 
   for (let from = 0; ; from += SITEMAP_PAGE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select("slug, updated_at")
-      .eq(column, value as never)
-      .order("updated_at", { ascending: false })
-      // A background job gives many rows the same updated_at in one
-      // transaction. Without a unique last key those tied rows could land on
-      // two pages or on none once there is more than one page (listOrder.ts).
-      .order("id", { ascending: true })
-      .range(from, from + SITEMAP_PAGE - 1);
+    const { data, error } = await sitemapPageQuery(
+      supabase.from(table),
+      table,
+      from,
+      from + SITEMAP_PAGE - 1,
+    );
 
     if (error) return { data: null, error };
     const page = (data ?? []) as SitemapRow[];
@@ -175,11 +170,11 @@ export async function buildSitemap(): Promise<string> {
   // Fetch dynamic content in parallel
   const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all(
     [
-      fetchAllRows("blog_posts", "status", "published"),
-      fetchAllRows("prompts", "is_public", true),
-      fetchAllRows("skills", "published", true),
-      fetchAllRows("workflows", "published", true),
-      fetchAllRows("prompt_kits", "published", true),
+      fetchAllRows("blog_posts"),
+      fetchAllRows("prompts"),
+      fetchAllRows("skills"),
+      fetchAllRows("workflows"),
+      fetchAllRows("prompt_kits"),
     ],
   );
 

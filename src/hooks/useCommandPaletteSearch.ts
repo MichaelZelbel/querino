@@ -4,6 +4,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { allTermsFilters, ownedByUserOrTeams } from "@/lib/postgrestFilter";
+import { ARTIFACT_PUBLIC_COLUMN } from "@/lib/artifactListColumns";
+import { publicPromptSearchQuery } from "@/lib/publicArtifacts";
 
 export type ArtefactType = "prompt" | "skill" | "workflow" | "prompt_kit";
 
@@ -31,6 +33,11 @@ function withAllTerms<T extends { or(filters: string): T }>(
     builder,
   );
 }
+
+const PROMPTS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.prompts;
+const SKILLS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.skills;
+const WORKFLOWS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.workflows;
+const KITS_PUBLIC = ARTIFACT_PUBLIC_COLUMN.prompt_kits;
 
 export interface SearchResult {
   id: string;
@@ -111,26 +118,34 @@ export function useCommandPaletteSearch(query: string) {
           scoped(
             supabase
               .from("prompts")
-              .select("id, title, description, is_public, team_id")
+              .select(
+                `id, title, description, ${PROMPTS_PUBLIC}, team_id` as const,
+              )
               .limit(10),
           ),
           scoped(
             supabase
               .from("skills")
-              .select("id, title, description, published, team_id")
+              .select(
+                `id, title, description, ${SKILLS_PUBLIC}, team_id` as const,
+              )
               .limit(10),
           ),
           scoped(
             supabase
               .from("workflows")
-              .select("id, title, description, published, team_id")
+              .select(
+                `id, title, description, ${WORKFLOWS_PUBLIC}, team_id` as const,
+              )
               .limit(10),
           ),
           scoped(
             // Prompt kit routes use the slug, so it is exposed as the id.
             supabase
               .from("prompt_kits")
-              .select("id, slug, title, description, published, team_id")
+              .select(
+                `id, slug, title, description, ${KITS_PUBLIC}, team_id` as const,
+              )
               .limit(10),
           ),
         ]);
@@ -147,7 +162,7 @@ export function useCommandPaletteSearch(query: string) {
             title: p.title,
             type: "prompt" as const,
             description: p.description,
-            isPublic: p.is_public,
+            isPublic: p[PROMPTS_PUBLIC],
             teamId: p.team_id,
             teamName: teamName(p.team_id),
           })),
@@ -156,7 +171,7 @@ export function useCommandPaletteSearch(query: string) {
             title: s.title,
             type: "skill" as const,
             description: s.description,
-            isPublic: s.published,
+            isPublic: s[SKILLS_PUBLIC],
             teamId: s.team_id,
             teamName: teamName(s.team_id),
           })),
@@ -165,7 +180,7 @@ export function useCommandPaletteSearch(query: string) {
             title: w.title,
             type: "workflow" as const,
             description: w.description,
-            isPublic: w.published,
+            isPublic: w[WORKFLOWS_PUBLIC],
             teamId: w.team_id,
             teamName: teamName(w.team_id),
           })),
@@ -174,7 +189,7 @@ export function useCommandPaletteSearch(query: string) {
             title: k.title,
             type: "prompt_kit" as const,
             description: k.description,
-            isPublic: k.published,
+            isPublic: k[KITS_PUBLIC],
             teamId: k.team_id,
             teamName: teamName(k.team_id),
           })),
@@ -210,17 +225,11 @@ export function useCommandPaletteSearch(query: string) {
 
     const searchPublic = async () => {
       try {
-        const publicQuery = withAllTerms(
-          supabase
-            .from("prompts")
-            .select("id, title, description")
-            .eq("is_public", true),
-          SEARCH_COLUMNS,
+        const { data, error: publicError } = await publicPromptSearchQuery(
+          supabase.from("prompts").select("id, title, description"),
           debouncedQuery,
+          SEARCH_COLUMNS,
         );
-        const { data, error: publicError } = await publicQuery
-          .order("rating_avg", { ascending: false })
-          .limit(8);
         if (cancelled) return;
         if (publicError) throw publicError;
 

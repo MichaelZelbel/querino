@@ -1,0 +1,95 @@
+/**
+ * The queries for what the public sees, made outside the list hooks: the home
+ * page's counts, the sitemap and the command palette.
+ *
+ * Each takes its column from ARTIFACT_PUBLIC_COLUMN. These readers used to
+ * spell `is_public` and `published` out by hand, and a copy that drifted would
+ * count, list or offer a private row. Kept apart from the readers, which need
+ * the Supabase client, so a test can see every one of them filter.
+ */
+import {
+  ARTIFACT_PUBLIC_COLUMN,
+  type ArtifactListTable,
+} from "@/lib/artifactListColumns.ts";
+import { allTermsFilters } from "@/lib/postgrestFilter.ts";
+
+export const ARTIFACT_TABLES = [
+  "prompts",
+  "skills",
+  "workflows",
+  "prompt_kits",
+] as const satisfies readonly ArtifactListTable[];
+
+/** The part of a PostgREST filter builder these queries use. */
+export interface PublicFilters<Q> {
+  filter(column: string, operator: "eq", value: boolean | string): Q;
+  or(filters: string): Q;
+  order(column: string, options: { ascending: boolean }): Q;
+  range(from: number, to: number): Q;
+  limit(count: number): Q;
+}
+
+/** The part of `supabase.from(table)` these queries use. */
+export interface PublicSource<Q> {
+  select(columns: string, options?: { count: "exact"; head: true }): Q;
+}
+
+/**
+ * Only the rows a logged-out visitor may open. The filter is explicit, not
+ * left to row-level security: a signed-in owner can read their own drafts.
+ */
+export function onlyPublic<Q extends PublicFilters<Q>>(
+  query: Q,
+  table: ArtifactListTable,
+): Q {
+  return query.filter(ARTIFACT_PUBLIC_COLUMN[table], "eq", true);
+}
+
+/** How many public rows a table holds, without downloading them. */
+export function publicCountQuery<Q extends PublicFilters<Q>>(
+  from: PublicSource<Q>,
+  table: ArtifactListTable,
+): Q {
+  return onlyPublic(from.select("id", { count: "exact", head: true }), table);
+}
+
+export type SitemapTable = ArtifactListTable | "blog_posts";
+
+/** One page of the sitemap's rows of one table: the public ones, newest first. */
+export function sitemapPageQuery<Q extends PublicFilters<Q>>(
+  from: PublicSource<Q>,
+  table: SitemapTable,
+  start: number,
+  end: number,
+): Q {
+  const rows = from.select("slug, updated_at");
+  const published =
+    table === "blog_posts"
+      ? rows.filter("status", "eq", "published")
+      : onlyPublic(rows, table);
+  return (
+    published
+      .order("updated_at", { ascending: false })
+      // A background job gives many rows the same updated_at in one
+      // transaction. Without a unique last key those tied rows could land on
+      // two pages or on none once there is more than one page (listOrder.ts).
+      .order("id", { ascending: true })
+      .range(start, end)
+  );
+}
+
+/**
+ * The palette's search of everyone's public prompts, on a select of the
+ * prompts table: every word of `query` somewhere in `columns`, best rated
+ * first.
+ */
+export function publicPromptSearchQuery<Q extends PublicFilters<Q>>(
+  prompts: Q,
+  query: string,
+  columns: readonly string[],
+): Q {
+  return allTermsFilters(columns, query)
+    .reduce((acc, filter) => acc.or(filter), onlyPublic(prompts, "prompts"))
+    .order("rating_avg", { ascending: false })
+    .limit(8);
+}

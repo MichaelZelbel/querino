@@ -56,7 +56,9 @@ export const ARTIFACT_LIST_COLUMNS: Record<ArtifactListTable, string[]> = {
 /**
  * The column that makes a row public, the one anon's read policy keys on:
  * prompts say `is_public`, the other three `published`. Every list of what the
- * public sees filters on it (the list hooks, the plain indexes, the profile).
+ * public sees filters on it (the list hooks, the plain indexes, the profile,
+ * and through publicArtifacts.ts the home page counts, the sitemap and the
+ * command palette).
  */
 export const ARTIFACT_PUBLIC_COLUMN = {
   prompts: "is_public",
