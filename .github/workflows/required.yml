@@ -1,0 +1,57 @@
+name: required
+# The one check main requires: nothing reaches main except through a pull request whose
+# `required` check passed. That check name is what the main-branch rules name.
+#
+# There is no test job in this file: the checks in ci.yml (Checks, Build, Security suite) are the suite, and
+# the gate waits for every other check on the commit. A review does not change the code, so a
+# pull_request_review event only runs the gate again.
+#
+# Job `required` asks the two questions in .github/workflows/required-gate.mjs (the same file as in
+# MichaelZelbel/godspeed-mission-control, where it is maintained): every other check on this commit
+# passed, and on a pull request a reviewer listed in the repository variable REQUIRED_REVIEWERS
+# approved this commit, or Archon's review verdict from a login in .archon/sdlc/policy/maintainers.json
+# says ready for it, or the pull request is the factory builder App's own.
+# Everything here only reads. The gate lives inside .github/workflows/ on purpose: only a key with
+# GitHub's `workflows` permission may change files there.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+  actions: read
+  pull-requests: read
+  statuses: read
+  # the pull request's conversation comments, where Archon publishes its review verdict
+  issues: read
+jobs:
+  required:
+    name: required
+    if: always()
+    runs-on: ubuntu-latest
+    # covers the Security suite: up to 15 minutes waiting for its lock, then 20 or more running
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.19.0' }
+      - name: The gate proves itself
+        run: |
+          node .github/workflows/required-gate.mjs --self-test
+          node .github/workflows/required-on-verdict.mjs --self-test
+      - name: Every other check on this commit passed, and the pull request was reviewed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REQUIRED_REVIEWERS: ${{ vars.REQUIRED_REVIEWERS }}
+        run: node .github/workflows/required-gate.mjs
