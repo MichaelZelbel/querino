@@ -1,0 +1,36 @@
+name: factory-trust
+# The software factory builds every open issue or pull request that is not labelled `needs-owner`,
+# and this repository is public. This workflow parks what strangers open and neutralises what they
+# write in the voice of a decision (scripts/factory-trust.mjs holds the rules).
+# SECURITY: pull_request_target and the comment events run with write access and the default branch's
+# code. Nothing here ever checks out or runs the pull request's own code: the checkout takes the
+# default branch (no ref) and keeps no credentials.
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request_target:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
+  pull_request_review:
+    types: [submitted, edited]
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  trust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.19.0' }
+      - name: Park, neutralise or answer what an account that may not decide wrote
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/factory-trust.mjs
