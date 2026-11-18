@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCreateCollection } from "@/hooks/useCollections";
@@ -87,7 +87,9 @@ export default function CollectionNew() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Create New Collection</CardTitle>
+            <h1 className="text-xl font-semibold leading-none tracking-tight">
+              Create New Collection
+            </h1>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
