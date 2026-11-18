@@ -7,7 +7,7 @@ import { useUserActivityFeed } from "@/hooks/useActivityEvents";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { findProfileByName } from "@/lib/route-loaders";
 
 export default function UserActivity() {
   const { username } = useParams<{ username: string }>();
@@ -16,18 +16,11 @@ export default function UserActivity() {
   // Fetch user profile by display_name
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile-by-username", username],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, bio, website, twitter, github")
-        // enabled: !!username below is what guarantees this is set.
-        .eq("display_name", username!)
-        // Zero rows is the normal not-found path; single() treated it as an error.
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
+    // The same lookup as the profile page: an address in other letter case
+    // than the stored name finds that profile too (#25). This page is noindex,
+    // so it shows the profile instead of sending the address on.
+    // enabled: !!username below is what guarantees username is set.
+    queryFn: async () => (await findProfileByName(username!))?.profile ?? null,
     enabled: !!username,
   });
 
@@ -72,7 +65,7 @@ export default function UserActivity() {
         <div className="max-w-3xl mx-auto">
           {/* Back Link */}
           <Link
-            to={`/u/${encodeURIComponent(username || "")}`}
+            to={`/u/${encodeURIComponent(profile.display_name || username || "")}`}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

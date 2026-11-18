@@ -38,6 +38,10 @@ import type { Skill } from "@/types/skill";
 import type { Workflow } from "@/types/workflow";
 import type { PromptKit } from "@/types/promptKit";
 import { isUuid } from "@/lib/uuidRoute";
+import {
+  caseInsensitiveNamePattern,
+  pickNameIgnoringCase,
+} from "@/lib/profileName";
 import { collectPublicIndex, type PublicIndexEntry } from "@/lib/publicIndex";
 
 export interface LoadedArtefact {
@@ -276,24 +280,72 @@ export async function loadProfileListPage<Table extends ArtifactListTable>(
   return { items, total: count ?? offset + items.length };
 }
 
+const PROFILE_COLUMNS =
+  "id, display_name, avatar_url, bio, website, twitter, github";
+
+/**
+ * The profile a /u/<name> address names: the one whose display_name is
+ * exactly `name`, else the one whose name differs from it only in letter case
+ * (`exact: false`), else null. The rules, and what the database allows, are
+ * in profileName.ts. A database error throws.
+ */
+export async function findProfileByName(
+  name: string,
+): Promise<{ profile: PublicProfile; exact: boolean } | null> {
+  const { data: exact, error } = await supabase
+    .from("profiles")
+    .select(PROFILE_COLUMNS)
+    .eq("display_name", name)
+    .maybeSingle();
+  if (error) throw queryFailed("profiles", error.message);
+  if (exact) return { profile: exact, exact: true };
+
+  // The unique index on lower(display_name) allows one row here; a few more
+  // are asked for so that pickNameIgnoringCase, not the limit, decides.
+  const { data: candidates, error: ciError } = await supabase
+    .from("profiles")
+    .select(PROFILE_COLUMNS)
+    .ilike("display_name", caseInsensitiveNamePattern(name))
+    // Anon may read only the page's own columns (not created_at), so the
+    // fixed order is the id's.
+    .order("id", { ascending: true })
+    .limit(10);
+  if (ciError) throw queryFailed("profiles", ciError.message);
+  const rows = candidates ?? [];
+  const stored = pickNameIgnoringCase(
+    name,
+    rows.map((row) => row.display_name),
+  );
+  if (stored === null) return null;
+  const profile = rows.find((row) => row.display_name === stored);
+  return profile ? { profile, exact: stored === name } : null;
+}
+
 /**
  * The public profile page, keyed off display_name: the profile and the first
  * page of its public artifacts of all four kinds, so the first response
  * already shows the person and their work. The page makes no fetch of its own
- * until a visitor asks for more. No profile with that name is notFound()
+ * until a visitor asks for more. An address that spells an existing name in
+ * other letter case is a 301 to the stored spelling (#25). No profile with
+ * that name in any case is notFound()
  * (HTTP 404, the not-found page, noindex), like an unknown artefact slug; a
  * database error throws, so a creator never shows as missing or empty because
  * a query failed.
  */
 export async function loadProfile(username: string): Promise<ProfilePageData> {
   if (!username) throw notFound();
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, display_name, avatar_url, bio, website, twitter, github")
-    .eq("display_name", username)
-    .maybeSingle();
-  if (error) throw queryFailed("profiles", error.message);
-  if (!profile) throw notFound();
+  const found = await findProfileByName(username);
+  if (!found) throw notFound();
+  const profile = found.profile;
+  // The address spells the name in other letter case: one indexable URL per
+  // person, so send it on to the stored spelling (#25, profileName.ts).
+  if (!found.exact && profile.display_name) {
+    throw redirect({
+      to: "/u/$username",
+      params: { username: profile.display_name },
+      statusCode: 301,
+    });
+  }
 
   const [prompts, skills, workflows, promptKits] = await Promise.all([
     loadProfileListPage("prompts", profile.id),
