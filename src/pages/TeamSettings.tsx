@@ -216,8 +216,9 @@ export default function TeamSettings() {
   if (!team) {
     return (
       <TeamPageShell className="space-y-4">
+        <h1 className="text-3xl font-bold">Team not found</h1>
         <p className="text-muted-foreground">
-          Team not found or you don't have access.
+          It may have been deleted, or you don't have access to it.
         </p>
         <Button asChild variant="outline" className="gap-2">
           <Link to="/library">
@@ -232,6 +233,7 @@ export default function TeamSettings() {
   if (!canManage) {
     return (
       <TeamPageShell className="space-y-4">
+        <h1 className="text-3xl font-bold">{team.name}</h1>
         <p className="text-muted-foreground">
           You don't have permission to manage this team.
         </p>

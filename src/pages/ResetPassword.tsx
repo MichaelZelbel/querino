@@ -14,7 +14,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Form,
@@ -213,18 +212,18 @@ export default function ResetPassword() {
 
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {status === "checking" && (
+          {status === "checking" ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          )}
-
-          {status === "expired" && (
+          ) : status === "expired" ? (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                  <CardTitle>This reset link has expired</CardTitle>
+                  <h1 className="text-xl font-semibold leading-none tracking-tight">
+                    This reset link has expired
+                  </h1>
                 </div>
                 <CardDescription>
                   Password reset links can only be used once, and they stop
@@ -236,14 +235,14 @@ export default function ResetPassword() {
                 <RequestResetLinkForm />
               </CardContent>
             </Card>
-          )}
-
-          {status === "missing" && (
+          ) : status === "missing" ? (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-5 w-5 text-primary" />
-                  <CardTitle>Reset your password</CardTitle>
+                  <h1 className="text-xl font-semibold leading-none tracking-tight">
+                    Reset your password
+                  </h1>
                 </div>
                 <CardDescription>
                   Enter the email address of your account. We mail you a link
@@ -255,14 +254,14 @@ export default function ResetPassword() {
                 <RequestResetLinkForm />
               </CardContent>
             </Card>
-          )}
-
-          {status === "ready" && (
+          ) : (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-5 w-5 text-primary" />
-                  <CardTitle>Choose a new password</CardTitle>
+                  <h1 className="text-xl font-semibold leading-none tracking-tight">
+                    Choose a new password
+                  </h1>
                 </div>
                 <CardDescription>
                   {PASSWORD_HINT} It replaces the old one as soon as you save.
