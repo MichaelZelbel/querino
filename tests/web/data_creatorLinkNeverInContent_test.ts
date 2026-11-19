@@ -15,7 +15,10 @@ const row = {
 
 function assertNoLink(output: string, builder: string) {
   for (const part of ["creator.example", "My Book"]) {
-    assert(!output.includes(part), `${builder} carries the creator link: ${output}`);
+    assert(
+      !output.includes(part),
+      `${builder} carries the creator link: ${output}`,
+    );
   }
 }
 

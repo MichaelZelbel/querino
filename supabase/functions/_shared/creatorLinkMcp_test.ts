@@ -6,9 +6,12 @@ import mcpServerSource from "../mcp-server/index.ts" with { type: "text" };
 // does not read creator_links today. If it ever returns an approved link, it
 // must be a separate field next to the content, never part of it; change this
 // test together with that decision.
-Deno.test("the MCP server never puts a creator link into an item's content", () => {
-  assert(
-    !mcpServerSource.includes("creator_link"),
-    "mcp-server/index.ts mentions creator_link: keep the link out of `content`",
-  );
-});
+Deno.test(
+  "the MCP server never puts a creator link into an item's content",
+  () => {
+    assert(
+      !mcpServerSource.includes("creator_link"),
+      "mcp-server/index.ts mentions creator_link: keep the link out of `content`",
+    );
+  },
+);
