@@ -37,6 +37,23 @@ function webAddress(stored: string): string | null {
   }
 }
 
+/**
+ * The answer for a /go/ path that can never be a creator link, decided on the
+ * raw path before the router sees it; null for every other path.
+ *
+ * A real link is /go/<item-id>. Anything else under /go/ answers the same 404
+ * the route gives an unknown id. Without this, an address-shaped path such as
+ * /go/https://evil.example reached the router, which collapses the double slash
+ * and first answered a 307 to its own /go/https:/evil.example before the 404.
+ * A trailing slash after an id is left to the router, as before.
+ */
+export function unfollowableGoPath(pathname: string): Response | null {
+  if (!pathname.startsWith("/go/")) return null;
+  const rest = pathname.slice("/go/".length);
+  const id = rest.endsWith("/") ? rest.slice(0, -1) : rest;
+  return isUuid(id) ? null : answer(404);
+}
+
 export async function followCreatorLink(
   itemId: string,
   lookup: CreatorLinkLookup,
