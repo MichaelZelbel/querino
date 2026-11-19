@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Link } from "@/lib/router-compat";
 import type { PublicIndexEntry } from "@/lib/route-loaders";
+import { useRestoreScrollBeforePaint } from "@/hooks/useRestoreScrollBeforePaint";
 
 interface ArtifactIndexProps {
   heading: string;
@@ -30,6 +31,8 @@ export default function ArtifactIndex({
   basePath,
   entries,
 }: ArtifactIndexProps) {
+  // Back from an entry paints the list where the visitor left it (#75).
+  useRestoreScrollBeforePaint();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
