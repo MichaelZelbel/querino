@@ -175,7 +175,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 
 ## Found in the 2026-09-30 audit, not yet done
 
-### 21. ⬜ AI Insights tab overlaps text on phones · S · ★★
+### 21. 🟩 AI Insights tab overlaps text on phones · S · ★★
+- **Done (2026-11-19):** below `md` the tab sits in a narrow column of its own beside the page content and sticks to mid-screen only within it, so text wraps before it and it never reaches the header or footer; `scripts/check-insights-tab-overlap.mjs` measures it at 375 and 414 px, light and dark.
 - **Area:** Detail pages (mobile)
 - **Problem:** At 375 px the floating AI Insights tab sits over the right edge of the text.
 - **Acceptance:** At 375 px no text on a prompt, skill or workflow page is covered by the tab.
