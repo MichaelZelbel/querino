@@ -7,11 +7,16 @@ import {
   tokenizeSearchQuery,
 } from "../_shared/postgrestFilter.ts";
 import {
-  authenticateMcpRequest,
   describeMcpBadRequest,
   mcpMethodGate,
   type TokenLookup,
 } from "../_shared/mcpGate.ts";
+import {
+  authenticateMcpRequestWithLimit,
+  callerAddress,
+  hashCallerAddress,
+  type McpAuthFailureStore,
+} from "../_shared/mcpAuthLimit.ts";
 import { editableTeamFilter } from "../_shared/teamScope.ts";
 
 const corsHeaders = {
@@ -50,6 +55,36 @@ const lookupToken: TokenLookup = async (tokenHash) => {
   });
   if (error) return { userId: null, error: error.message };
   return { userId: (data as string | null) ?? null, error: null };
+};
+
+// The failed-sign-in count behind the limit in _shared/mcpAuthLimit.ts.
+const authFailureStore: McpAuthFailureStore = {
+  async read(addressHash) {
+    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await sb
+      .from("mcp_auth_failures")
+      .select("failures, window_started_at")
+      .eq("address_hash", addressHash)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    return {
+      failures: data.failures as number,
+      startedAt: new Date(data.window_started_at as string),
+    };
+  },
+  async record(addressHash, windowSeconds) {
+    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await sb.rpc("record_mcp_auth_failure", {
+      p_address_hash: addressHash,
+      p_window_seconds: windowSeconds,
+    });
+    if (error) throw new Error(error.message);
+  },
 };
 
 /** The response with this server's CORS headers on it. */
@@ -1328,8 +1363,29 @@ const mcpHandler = async (c: any) => {
   // drop it. A lookup that failed is ours: 503, and the client keeps its
   // token and tries again. A transport failure is ours too, below. Until
   // 2026-09-30 the failed lookup was answered 401 as well. The log names the
-  // class only, never token material.
-  const outcome = await authenticateMcpRequest(c.req.raw, lookupToken);
+  // class only, never token material. And a fourth: an address with too many
+  // failed sign-ins is answered 429 with Retry-After before its token is
+  // looked up (_shared/mcpAuthLimit.ts). The address is stored only as an
+  // HMAC keyed with a secret this function already holds.
+  const address = callerAddress(c.req.raw);
+  const outcome = await authenticateMcpRequestWithLimit(
+    c.req.raw,
+    lookupToken,
+    {
+      store: authFailureStore,
+      addressHash: address
+        ? await hashCallerAddress(address, SUPABASE_SERVICE_ROLE_KEY)
+        : null,
+      now: new Date(),
+    },
+  );
+  if (!outcome.ok && outcome.status === 429) {
+    console.warn(`mcp-server auth refused: ${outcome.reason}`);
+    return c.json({ error: outcome.message }, 429, {
+      ...corsHeaders,
+      "Retry-After": String(outcome.retryAfterSeconds),
+    });
+  }
   if (!outcome.ok) {
     if (outcome.reason === "lookup_error") {
       console.error(
