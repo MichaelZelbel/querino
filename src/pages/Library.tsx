@@ -69,6 +69,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { UpsellModal } from "@/components/premium/UpsellModal";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { ARTIFACT_LIST_COLUMNS } from "@/lib/artifactListColumns";
+import { ItemStatsLine } from "@/components/stats/ItemStatsLine";
+import { useOwnItemStats } from "@/hooks/useItemStats";
+import { itemStatsKey, type UsageItemType } from "@/lib/itemStats";
 
 // What the prompt cards, the search box and the bulk actions read. These lists
 // asked for select("*"), which carried every prompt's embedding vector: 3.7 MB
@@ -154,6 +157,17 @@ interface GithubSyncSettings {
 export default function Library() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuthContext();
+  const { data: ownStats, isSuccess: ownStatsLoaded } = useOwnItemStats(!!user);
+  // Only an item's author sees its numbers, so a team item someone else
+  // wrote gets no line. Until the numbers have loaded there is no line either:
+  // a zero is only true once the query has answered.
+  const statsLine = (
+    itemType: UsageItemType,
+    item: { id: string; author_id?: string | null },
+  ) =>
+    ownStatsLoaded && user && item.author_id === user.id ? (
+      <ItemStatsLine summary={ownStats?.get(itemStatsKey(itemType, item.id))} />
+    ) : null;
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
   // Premium is granted through user_roles, which is what usePremiumCheck reads.
   // profiles.plan_type is never written when an admin grants premium.
@@ -1204,6 +1218,7 @@ export default function Library() {
                             isPinned={isPromptPinned(prompt.id)}
                             showMenerioStatus={hasMenerio}
                           />
+                          {statsLine("prompt", prompt)}
                         </SelectableCard>
                       ))}
                     </div>
@@ -1248,6 +1263,7 @@ export default function Library() {
                             currentUserId={user?.id}
                             showMenerioStatus={hasMenerio}
                           />
+                          {statsLine("skill", skill)}
                         </SelectableCard>
                       ))}
                     </div>
@@ -1292,6 +1308,7 @@ export default function Library() {
                             currentUserId={user?.id}
                             showMenerioStatus={hasMenerio}
                           />
+                          {statsLine("workflow", workflow)}
                         </SelectableCard>
                       ))}
                     </div>
@@ -1337,6 +1354,7 @@ export default function Library() {
                             showEditButton
                             currentUserId={user?.id}
                           />
+                          {statsLine("prompt_kit", kit)}
                         </SelectableCard>
                       ))}
                     </div>

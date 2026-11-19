@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { recordItemUse } from "@/lib/itemUsage";
 
 interface SkillCardProps {
   skill: Skill & { author?: SkillAuthor | null };
@@ -50,6 +51,7 @@ export function SkillCard({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(skill.content);
+      recordItemUse("skill", skill.id, "copy");
       setCopied(true);
       toast.success("Skill content copied!");
       setTimeout(() => setCopied(false), 2000);

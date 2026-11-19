@@ -25,13 +25,16 @@ import {
   needsClipboardFallback,
 } from "@/lib/openLLM";
 import { toast } from "sonner";
-import { recordPromptCopy } from "@/lib/promptCopies";
+import { recordItemUse } from "@/lib/itemUsage";
+import type { UsageItemType } from "@/lib/itemStats";
 
 interface SendToLLMButtonsProps {
   title: string;
   content: string;
   /** A saved prompt's id: sending it to a chat counts as copying it. */
   promptId?: string;
+  /** Any other saved item: a send is counted on its author's Stats tab. */
+  item?: { type: UsageItemType; id: string };
   variant?: "full" | "compact";
 }
 
@@ -39,8 +42,11 @@ export function SendToLLMButtons({
   title,
   content,
   promptId,
+  item,
   variant = "full",
 }: SendToLLMButtonsProps) {
+  const counted =
+    item ?? (promptId ? { type: "prompt" as const, id: promptId } : null);
   // Start with no preference and read the stored one after mount. The server
   // has no localStorage, and reading it in the initial state made the server
   // render throw; reading it in an effect also keeps the first client render
@@ -63,7 +69,7 @@ export function SendToLLMButtons({
       // catch that was an unhandled rejection and a button that did nothing.
       try {
         await navigator.clipboard.writeText(fullPrompt);
-        recordPromptCopy(promptId);
+        if (counted) recordItemUse(counted.type, counted.id, llm);
       } catch {
         toast.error(
           "Could not copy the prompt to your clipboard. Copy it from the page instead.",
@@ -78,7 +84,7 @@ export function SendToLLMButtons({
 
     try {
       await openLLM(llm, fullPrompt);
-      recordPromptCopy(promptId);
+      if (counted) recordItemUse(counted.type, counted.id, llm);
     } catch {
       toast.error("Could not open the chat. Please try again.");
       return;

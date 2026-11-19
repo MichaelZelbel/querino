@@ -18,6 +18,7 @@ interface DownloadMarkdownButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
+  onDownloaded?: () => void;
 }
 
 export function DownloadMarkdownButton({
@@ -30,6 +31,7 @@ export function DownloadMarkdownButton({
   variant = "outline",
   size = "lg",
   className,
+  onDownloaded,
 }: DownloadMarkdownButtonProps) {
   const handleDownload = () => {
     try {
@@ -45,6 +47,7 @@ export function DownloadMarkdownButton({
       const filename = `${slugify(title)}.md`;
       downloadMarkdownFile(markdownContent, filename);
       toast.success(`Downloaded ${filename}`);
+      onDownloaded?.();
     } catch (err) {
       console.error("Error downloading markdown:", err);
       toast.error("Failed to download markdown file");
