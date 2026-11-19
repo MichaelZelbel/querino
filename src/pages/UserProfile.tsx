@@ -33,6 +33,7 @@ import {
   hasMoreInProfileList,
   type ProfileList,
 } from "@/lib/profileLists";
+import { USER_LINK_REL } from "@/lib/creatorLink";
 
 /**
  * One profile list: the loader's first page, then each page "Load more"
@@ -232,7 +233,7 @@ export default function UserProfile({
                         : `https://${profile.website}`
                     }
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel={USER_LINK_REL}
                     className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Globe className="h-4 w-4" />
@@ -243,7 +244,7 @@ export default function UserProfile({
                   <a
                     href={`https://x.com/${profile.twitter.replace("@", "")}`}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel={USER_LINK_REL}
                     className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Twitter className="h-4 w-4" />@
@@ -254,7 +255,7 @@ export default function UserProfile({
                   <a
                     href={`https://github.com/${profile.github}`}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel={USER_LINK_REL}
                     className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Github className="h-4 w-4" />

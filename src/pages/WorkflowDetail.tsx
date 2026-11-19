@@ -55,10 +55,13 @@ import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
+import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import type { PublicCreatorLink } from "@/lib/creatorLink";
 import { workflowText } from "@/components/workflows/workflowText";
 
 export interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
+  creator_link?: PublicCreatorLink | null;
 }
 
 // The route loader is the one source of this record (2026-10-07): on the
@@ -427,6 +430,14 @@ export default function WorkflowDetail({
                 </CollapsibleContent>
               </Collapsible>
             </div>
+
+            <CreatorLinkSection
+              itemType="workflow"
+              itemId={workflow.id}
+              link={workflow.creator_link}
+              isAuthor={!!isAuthor}
+              editPath={`/workflows/${workflow.slug}/edit`}
+            />
 
             {/* Modals */}
             <AddToCollectionModal

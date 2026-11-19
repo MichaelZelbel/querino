@@ -147,6 +147,34 @@ Items within collections.
 | sort_order | integer | Display order |
 | created_at | timestamptz | Added timestamp |
 
+### `creator_links`
+
+At most one link per published item to the creator's own project (#46),
+shown under the item in a "From the creator" box and followed through
+`/go/<item-id>`. Migration `20261119120000`.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| item_type | text | prompt, skill, workflow, prompt_kit; unique with item_id |
+| item_id | uuid | The item |
+| url | text | http(s) address, at most 2048 characters |
+| label | text | The name shown, at most 40 characters ('' shows the domain) |
+| status | text | pending, approved, rejected, unreachable |
+| checked_at | timestamptz | When the link check last decided |
+| reason | text | Why it is not shown |
+| click_count | integer | Clicks through /go |
+| created_at, updated_at | timestamptz | Timestamps |
+
+Only `approved` on a public item is ever shown or followed. The author reads,
+removes and adds their own row (row-level security through `is_item_owner`),
+and may write only `url` and `label` (column grants); changing either sets the
+status back to `pending`. anon has no access to the table: it reads a shown
+link through `public_creator_link(item_type, item_id)` and follows one through
+`follow_creator_link(item_id)`, which counts the click and returns the stored
+address. Deleting an item deletes its link (`delete_creator_link` trigger on
+the four artifact tables), and so does deleting the account that owns it.
+
 ---
 
 ## Team Tables

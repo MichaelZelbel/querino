@@ -1,4 +1,4 @@
-import { safeStorage } from "@/lib/safeStorage";
+import { safeStorage } from "@/lib/safeStorage.ts";
 
 export type LLMTarget = "chatgpt" | "claude" | "gemini" | "perplexity";
 

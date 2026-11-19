@@ -81,6 +81,7 @@ import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
+import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
 
 interface SkillFormData {
   title: string;
@@ -848,6 +849,10 @@ export default function SkillEdit() {
                       }
                     />
                   </div>
+
+                  {isArtifactAuthor && skillId && (
+                    <CreatorLinkEditor itemType="skill" itemId={skillId} />
+                  )}
 
                   {/* Change Notes */}
                   {isArtifactAuthor && (

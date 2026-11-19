@@ -85,6 +85,10 @@ import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
+import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
+import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
+import { useOwnCreatorLink } from "@/hooks/useCreatorLink";
+import { creatorLinkPrefill, type CreatorLinkForm } from "@/lib/creatorLink";
 
 interface PromptVersion {
   id: string;
@@ -155,6 +159,12 @@ export default function LibraryPromptEdit() {
 
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
+  const { profile } = useAuthContext();
+  const { data: storedLink, isLoading: storedLinkLoading } = useOwnCreatorLink(
+    "prompt",
+    promptId,
+    isArtifactAuthor,
+  );
 
   const currentForm = {
     title,
@@ -660,6 +670,7 @@ export default function LibraryPromptEdit() {
   const handlePublish = async (data: {
     summary: string;
     exampleOutput: string;
+    link: CreatorLinkForm | null;
   }) => {
     if (busyRef.current || !promptId || !user) return;
     // Publishing saves the form too. It used to write only the visibility and
@@ -733,6 +744,14 @@ export default function LibraryPromptEdit() {
       void invalidateArtifactQueries(queryClient, "prompt");
       setShowPublishModal(false);
       toast.success("Prompt published successfully!");
+      if (isArtifactAuthor) {
+        await saveCreatorLinkAfterPublish(
+          queryClient,
+          "prompt",
+          promptId,
+          data.link,
+        );
+      }
       navigate(`/prompts/${slug}`);
     } catch (err) {
       console.error("Error publishing:", err);
@@ -964,6 +983,7 @@ export default function LibraryPromptEdit() {
                 <Button
                   variant="outline"
                   onClick={() => setShowPublishModal(true)}
+                  disabled={storedLinkLoading}
                   className="gap-2"
                 >
                   <Globe className="h-4 w-4" />
@@ -1320,6 +1340,13 @@ export default function LibraryPromptEdit() {
                         />
                       </div>
 
+                      {isArtifactAuthor && promptId && (
+                        <CreatorLinkEditor
+                          itemType="prompt"
+                          itemId={promptId}
+                        />
+                      )}
+
                       {/* Change Notes */}
                       {isArtifactAuthor && (
                         <div className="space-y-2">
@@ -1368,6 +1395,12 @@ export default function LibraryPromptEdit() {
         isPublishing={isPublishing}
         initialSummary={prompt?.summary ?? ""}
         initialExampleOutput={prompt?.example_output ?? ""}
+        showLink={isArtifactAuthor}
+        initialLink={
+          storedLink
+            ? { url: storedLink.url, label: storedLink.label }
+            : creatorLinkPrefill(profile?.website)
+        }
       />
 
       {/* Full version manager (view / compare / restore) */}

@@ -54,6 +54,9 @@ import {
 } from "@/lib/runCanvasAI";
 import { generateSlug } from "@/hooks/useGenerateSlug";
 import { insertWithUniqueSlug } from "@/lib/uniqueSlugInsert";
+import { CreatorLinkFields } from "@/components/creatorLinks/CreatorLinkFields";
+import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
+import { useNewItemCreatorLink } from "@/components/creatorLinks/useNewItemCreatorLink";
 
 export default function PromptNew() {
   const navigate = useNavigate();
@@ -79,6 +82,7 @@ export default function PromptNew() {
     searchParams.get("tags")?.split(",").filter(Boolean) || [],
   );
   const [isPublic, setIsPublic] = useState(false);
+  const creatorLink = useNewItemCreatorLink();
   const [language, setLanguage] = useState(
     searchParams.get("language") || DEFAULT_LANGUAGE,
   );
@@ -239,6 +243,8 @@ export default function PromptNew() {
 
   const handleCreate = async () => {
     if (!validate() || !user) return;
+    const linkCheck = isPublic ? creatorLink.check() : null;
+    if (linkCheck && !linkCheck.ok) return;
     // Busy from the first click: moderation takes a round trip, and a second
     // click during it used to create the prompt twice.
     if (submittingRef.current) return;
@@ -355,6 +361,14 @@ export default function PromptNew() {
         toast.success("Prompt created successfully!");
       }
 
+      if (linkCheck?.ok && newPrompt?.id) {
+        await saveCreatorLinkAfterPublish(
+          queryClient,
+          "prompt",
+          newPrompt.id,
+          linkCheck.value,
+        );
+      }
       markSaved();
       setCreatedPath(`/prompts/${newPrompt.slug}`);
     } catch (err) {
@@ -656,6 +670,15 @@ export default function PromptNew() {
                       onCheckedChange={setIsPublic}
                     />
                   </div>
+
+                  {isPublic && (
+                    <CreatorLinkFields
+                      value={creatorLink.value}
+                      onChange={creatorLink.onChange}
+                      errors={creatorLink.errors}
+                      idPrefix="new"
+                    />
+                  )}
 
                   {/* Bottom Create Button */}
                   <Button
