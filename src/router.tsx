@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { installAICreditsRefresh } from "@/lib/aiCredits";
+import { keepScrollPositionsInMemory } from "@/lib/consent";
 import { RouteErrorPage } from "@/components/layout/RouteErrorPage";
 
 // Plain query strings, the way the pages were written for (react-router, via
@@ -64,6 +65,8 @@ export const getRouter = () => {
     // hydration error, and the database message on screen (RouteErrorPage).
     defaultErrorComponent: RouteErrorPage,
   });
+  // Must follow createRouter: see keepScrollPositionsInMemory.
+  keepScrollPositionsInMemory();
 
   return router;
 };
