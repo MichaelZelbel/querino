@@ -1,0 +1,13 @@
+checked /prompt-kits/launch-week-prompt-kit 375px light as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px light after open and close: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px light as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px light after open and close: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px dark as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px dark after open and close: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px dark as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px dark after open and close: 7 scroll positions
+FAIL /prompt-kits/launch-week-prompt-kit 375px light as opened column x 339-375, y 400-2202: reaches into the tab's column: <button> "Activity" at page 307,1704 52x17
+FAIL /prompt-kits/launch-week-prompt-kit 375px light after open and close column x 339-375, y 400-2202: reaches into the tab's column: <button> "Activity" at page 307,1704 52x17
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark as opened column x 339-375, y 400-2202: reaches into the tab's column: <button> "Activity" at page 307,1704 52x17
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark after open and close column x 339-375, y 400-2202: reaches into the tab's column: <button> "Activity" at page 307,1704 52x17
+4 overlap(s) in 64 measurements
