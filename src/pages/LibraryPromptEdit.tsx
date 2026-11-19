@@ -160,7 +160,7 @@ export default function LibraryPromptEdit() {
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
   const { profile } = useAuthContext();
-  const { data: storedLink } = useOwnCreatorLink(
+  const { data: storedLink, isLoading: storedLinkLoading } = useOwnCreatorLink(
     "prompt",
     promptId,
     isArtifactAuthor,
@@ -983,6 +983,7 @@ export default function LibraryPromptEdit() {
                 <Button
                   variant="outline"
                   onClick={() => setShowPublishModal(true)}
+                  disabled={storedLinkLoading}
                   className="gap-2"
                 >
                   <Globe className="h-4 w-4" />
