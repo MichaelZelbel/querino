@@ -12,8 +12,6 @@ import {
   type AIClassification,
 } from "./moderationQueue.ts";
 
-const LINK_REASON_CHARS = 300;
-
 export type LinkCheckResult =
   | { reachable: false; reason: string }
   | { reachable: true; classification: AIClassification };
@@ -77,10 +75,10 @@ export function decideLinkOutcome(
       kind: "rejected",
       link: {
         status: "rejected",
-        reason: `${moderationCategoryLabel(c.category)}: ${c.reason}`.slice(
-          0,
-          LINK_REASON_CHARS,
-        ),
+        // The author reads this. The classifier's own reason may quote the
+        // page, and the page may be one the guard was tricked into fetching
+        // (see the DNS rebinding limit in linkFetch.ts), so only the category.
+        reason: moderationCategoryLabel(c.category),
         checked_at,
         check_failures: 0,
       },
@@ -109,21 +107,25 @@ export function decideLinkOutcome(
 
 /**
  * What the classifier reads for one link: its name, judged with the text
- * categories, and the page, judged as a destination. The page text is the
- * third party's, so it is fenced off as data.
+ * categories, and the page, judged as a destination. Everything the page
+ * supplied sits inside the fence, and no field can close it early.
  */
 export function linkClassifierInput(
   label: string,
   page: Extract<LinkPage, { ok: true }>,
 ): string {
   return [
-    `Link name: ${label || "(none)"}`,
-    `Final domain: ${page.finalDomain}`,
-    `Content type: ${page.contentType || "(unknown)"}`,
-    `Page title: ${page.title || "(none)"}`,
-    `Meta description: ${page.description || "(none)"}`,
+    `Link name: ${unfenced(label) || "(none)"}`,
+    `Final domain: ${unfenced(page.finalDomain)}`,
     "<<<PAGE TEXT",
-    page.excerpt || "(no visible text)",
+    `Content type: ${unfenced(page.contentType) || "(unknown)"}`,
+    `Page title: ${unfenced(page.title) || "(none)"}`,
+    `Meta description: ${unfenced(page.description) || "(none)"}`,
+    unfenced(page.excerpt) || "(no visible text)",
     "PAGE TEXT>>>",
   ].join("\n");
+}
+
+function unfenced(text: string): string {
+  return text.replace(/<{3,}/g, "<").replace(/>{3,}/g, ">");
 }

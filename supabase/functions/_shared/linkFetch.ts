@@ -11,8 +11,9 @@
 // Known limit: the guard resolves the name and fetch resolves it again, so a
 // hostile DNS server could answer differently in between (DNS rebinding). Deno
 // gives no way to pin the address of an HTTPS request. What that buys is one
-// GET without credentials whose answer only feeds the classifier and is never
-// shown to anyone.
+// GET without credentials. Its body only feeds the classifier: the author is
+// told the HTTP status at most, and a rejection names only its category
+// (creatorLinkCheck.ts), never the classifier's words about the page.
 //
 // The page is read as text and never executed: the classifier gets its title,
 // meta description and a short excerpt of the visible text.
