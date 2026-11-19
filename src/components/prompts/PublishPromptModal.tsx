@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Globe, Sparkles } from "lucide-react";
+import {
+  CreatorLinkFields,
+  type CreatorLinkErrors,
+} from "@/components/creatorLinks/CreatorLinkFields";
+import { validateCreatorLink, type CreatorLinkForm } from "@/lib/creatorLink";
+
+const NO_LINK: CreatorLinkForm = { url: "", label: "" };
 
 interface PublishPromptModalProps {
   open: boolean;
@@ -18,12 +25,17 @@ interface PublishPromptModalProps {
   onPublish: (data: {
     summary: string;
     exampleOutput: string;
+    /** The validated link, null for none; always null when `showLink` is off. */
+    link: CreatorLinkForm | null;
   }) => Promise<void>;
   isPublishing: boolean;
   /** What the prompt already has. Publishing again with an empty box used to
    *  erase a stored example output. */
   initialSummary?: string;
   initialExampleOutput?: string;
+  /** Only the author has a link; a team editor publishing sees no link block. */
+  showLink?: boolean;
+  initialLink?: CreatorLinkForm;
 }
 
 export function PublishPromptModal({
@@ -33,15 +45,21 @@ export function PublishPromptModal({
   isPublishing,
   initialSummary = "",
   initialExampleOutput = "",
+  showLink = false,
+  initialLink = NO_LINK,
 }: PublishPromptModalProps) {
   const [summary, setSummary] = useState(initialSummary);
   const [exampleOutput, setExampleOutput] = useState(initialExampleOutput);
+  const [link, setLink] = useState<CreatorLinkForm>(initialLink);
+  const [linkErrors, setLinkErrors] = useState<CreatorLinkErrors>({});
 
   // Start from the stored values each time the dialog opens.
   useEffect(() => {
     if (open) {
       setSummary(initialSummary);
       setExampleOutput(initialExampleOutput);
+      setLink(initialLink);
+      setLinkErrors({});
     }
     // Only on opening: the values must not reset while someone types.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,14 +81,21 @@ export function PublishPromptModal({
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const linkResult = showLink ? validateCreatorLink(link) : null;
+    setLinkErrors(linkResult && !linkResult.ok ? linkResult.errors : {});
+    if (Object.keys(newErrors).length > 0 || (linkResult && !linkResult.ok)) {
+      return null;
+    }
+    return { link: linkResult?.ok ? linkResult.value : null };
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    const valid = validate();
+    if (!valid) return;
     await onPublish({
       summary: summary.trim(),
       exampleOutput: exampleOutput.trim(),
+      link: valid.link,
     });
   };
 
@@ -81,6 +106,7 @@ export function PublishPromptModal({
         setSummary("");
         setExampleOutput("");
         setErrors({});
+        setLinkErrors({});
       }
     }
   };
@@ -145,6 +171,15 @@ export function PublishPromptModal({
               {exampleOutput.length}/1000 characters
             </p>
           </div>
+
+          {showLink && (
+            <CreatorLinkFields
+              value={link}
+              onChange={setLink}
+              errors={linkErrors}
+              idPrefix="publish"
+            />
+          )}
 
           {/* Info Box */}
           <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-4">

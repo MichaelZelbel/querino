@@ -49,9 +49,12 @@ import type { Skill, SkillAuthor } from "@/types/skill";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
+import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import type { PublicCreatorLink } from "@/lib/creatorLink";
 
 export interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
+  creator_link?: PublicCreatorLink | null;
 }
 
 // The route loader is the one source of this record (2026-10-07): on the
@@ -373,6 +376,14 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                 </pre>
               </div>
             </div>
+
+            <CreatorLinkSection
+              itemType="skill"
+              itemId={skill.id}
+              link={skill.creator_link}
+              isAuthor={!!isAuthor}
+              editPath={`/skills/${skill.slug}/edit`}
+            />
 
             {/* Modals */}
             <AddToCollectionModal

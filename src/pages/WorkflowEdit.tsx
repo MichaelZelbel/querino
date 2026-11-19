@@ -84,6 +84,7 @@ import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { workflowText } from "@/components/workflows/workflowText";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
+import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
 
 interface WorkflowFormData {
   title: string;
@@ -866,6 +867,13 @@ export default function WorkflowEdit() {
                       }
                     />
                   </div>
+
+                  {isArtifactAuthor && workflowId && (
+                    <CreatorLinkEditor
+                      itemType="workflow"
+                      itemId={workflowId}
+                    />
+                  )}
 
                   {/* Change Notes */}
                   {isArtifactAuthor && (

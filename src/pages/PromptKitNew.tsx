@@ -56,6 +56,9 @@ import {
   promoteDraftSession,
 } from "@/lib/runCanvasAI";
 import { useAICreditsGate } from "@/hooks/useAICreditsGate";
+import { CreatorLinkFields } from "@/components/creatorLinks/CreatorLinkFields";
+import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
+import { useNewItemCreatorLink } from "@/components/creatorLinks/useNewItemCreatorLink";
 
 const DEFAULT_TEMPLATE = `# My Prompt Kit
 
@@ -98,6 +101,7 @@ export default function PromptKitNew() {
     searchParams.get("tags")?.split(",").filter(Boolean) || [],
   );
   const [isPublic, setIsPublic] = useState(false);
+  const creatorLink = useNewItemCreatorLink();
   const [language, setLanguage] = useState(
     searchParams.get("language") || DEFAULT_LANGUAGE,
   );
@@ -253,6 +257,8 @@ export default function PromptKitNew() {
 
   const handleSubmit = async () => {
     if (!user || !validate()) return;
+    const linkCheck = isPublic ? creatorLink.check() : null;
+    if (linkCheck && !linkCheck.ok) return;
     // Busy from the first click: moderation takes a round trip, and a second
     // click during it would create the kit twice.
     if (submittingRef.current) return;
@@ -297,6 +303,14 @@ export default function PromptKitNew() {
         console.error(error);
         toast.error("Failed to create prompt kit");
         return;
+      }
+      if (linkCheck?.ok && newKit?.id) {
+        await saveCreatorLinkAfterPublish(
+          queryClient,
+          "prompt_kit",
+          newKit.id,
+          linkCheck.value,
+        );
       }
       void invalidateArtifactQueries(queryClient, "prompt_kit");
       toast.success("Prompt Kit created!");
@@ -549,6 +563,15 @@ export default function PromptKitNew() {
                       onCheckedChange={setIsPublic}
                     />
                   </div>
+
+                  {isPublic && (
+                    <CreatorLinkFields
+                      value={creatorLink.value}
+                      onChange={creatorLink.onChange}
+                      errors={creatorLink.errors}
+                      idPrefix="new"
+                    />
+                  )}
 
                   <Button
                     onClick={handleSubmit}
