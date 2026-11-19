@@ -34,7 +34,7 @@ import {
   DEFAULT_REDIRECT,
   safeRedirect,
 } from "@/components/auth/authRedirectLogic";
-import { signInNotice } from "@/lib/signInNotice";
+import { signInNotice, signInNoticeLead } from "@/lib/signInNotice";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 
@@ -253,7 +253,7 @@ export default function Auth() {
             <Alert className="border-primary/30 bg-primary/5">
               <Lock className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
-                Sign in to {notice.verb}{" "}
+                {signInNoticeLead(activeTab)} {notice.verb}{" "}
                 <span className="font-medium text-foreground">
                   {notice.object}
                 </span>

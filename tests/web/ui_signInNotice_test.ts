@@ -27,7 +27,7 @@ Deno.test("the four edit addresses read the same way, naming the type", () => {
 
 Deno.test("the other notices keep their meaning", () => {
   const cases: Array<[string, string]> = [
-    ["/dashboard", "Sign in to access your dashboard."],
+    ["/dashboard", "Sign in to access your library."],
     ["/library", "Sign in to access your library."],
     ["/settings", "Sign in to access your settings."],
     ["/activity", "Sign in to access your activity feed."],
@@ -64,7 +64,7 @@ Deno.test("no notice says 'access create' or 'access edit'", () => {
 Deno.test("a query string or hash does not change the notice", () => {
   assertEquals(
     signInNoticeSentence("/dashboard?tab=x"),
-    "Sign in to access your dashboard.",
+    "Sign in to access your library.",
   );
   assertEquals(
     signInNoticeSentence("/skills/a/edit#top"),
@@ -76,4 +76,29 @@ Deno.test("no redirect, or the home page, shows no notice", () => {
   assertEquals(signInNotice(null), null);
   assertEquals(signInNotice(""), null);
   assertEquals(signInNotice("/"), null);
+});
+
+Deno.test(
+  "the Sign Up tab offers to create an account, never to sign in",
+  () => {
+    const cases: Array<[string, string]> = [
+      ["/settings", "Create an account to access your settings."],
+      ["/skills/a/edit", "Create an account to edit this skill."],
+      [
+        "/team/abc/settings",
+        "Create an account to access your team workspace.",
+      ],
+      ["/library/x/versions", "Create an account to access this page."],
+    ];
+    for (const [path, sentence] of cases) {
+      assertEquals(signInNoticeSentence(path, "signup"), sentence, path);
+      assertEquals(/sign in/i.test(sentence), false, path);
+    }
+    assertEquals(signInNoticeSentence("/", "signup"), null);
+    assertEquals(signInNoticeSentence(null, "signup"), null);
+  },
+);
+
+Deno.test("/dashboard says what /library says", () => {
+  assertEquals(signInNotice("/dashboard"), signInNotice("/library"));
 });
