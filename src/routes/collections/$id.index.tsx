@@ -2,7 +2,8 @@ import {
   createFileRoute,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { privateHead } from "@/lib/seo";
+import { pageHead } from "@/lib/seo";
+import { collectionPage } from "@/lib/collectionHead";
 import CollectionDetail, {
   CollectionDetailSkeleton,
   CollectionNotFound,
@@ -21,8 +22,9 @@ export const Route = createFileRoute("/collections/$id/")({
   loader: ({ params, route }) =>
     loadRememberingMiss(route.id, params.id, () => loadCollection(params.id)),
 
-  head: ({ loaderData }) =>
-    privateHead(loaderData ? loaderData.title : "Collection Not Found"),
+  // A public collection gets its own title, description, og tags and canonical,
+  // and is indexable; a private one (the owner's, in the browser) stays noindex.
+  head: ({ loaderData }) => pageHead(collectionPage(loaderData)),
 
   component: RouteComponent,
   notFoundComponent: NotFoundComponent,
