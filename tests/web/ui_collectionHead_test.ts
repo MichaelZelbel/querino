@@ -31,20 +31,23 @@ Deno.test("a public collection without a description names itself", () => {
   }
 });
 
-Deno.test("a private collection and a miss stay noindex, without a canonical", () => {
-  const priv = collectionPage({
-    id: ID,
-    title: "Mine",
-    description: "x",
-    is_public: false,
-  });
-  assertEquals(priv, { title: "Mine", noIndex: true });
-  assertEquals(collectionPage(undefined), {
-    title: "Collection Not Found",
-    noIndex: true,
-  });
-  assertEquals(collectionPage(null), {
-    title: "Collection Not Found",
-    noIndex: true,
-  });
-});
+Deno.test(
+  "a private collection and a miss stay noindex, without a canonical",
+  () => {
+    const priv = collectionPage({
+      id: ID,
+      title: "Mine",
+      description: "x",
+      is_public: false,
+    });
+    assertEquals(priv, { title: "Mine", noIndex: true });
+    assertEquals(collectionPage(undefined), {
+      title: "Collection Not Found",
+      noIndex: true,
+    });
+    assertEquals(collectionPage(null), {
+      title: "Collection Not Found",
+      noIndex: true,
+    });
+  },
+);
