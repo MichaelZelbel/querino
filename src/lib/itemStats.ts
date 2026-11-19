@@ -8,26 +8,29 @@
  * only spare a request it would refuse anyway.
  */
 import type { CreatorLinkItemType } from "@/lib/creatorLink.ts";
-import type { LLMTarget } from "@/lib/openLLM.ts";
+import { LLM_OPTIONS, type LLMTarget } from "@/lib/openLLM.ts";
 
 export type UsageItemType = CreatorLinkItemType;
 
 /** How an item left the page: a copy, a download, or a send to an assistant. */
 export type ItemUseChannel = "copy" | "download" | LLMTarget;
 
+/** The item_stats_daily column that counts sends to one assistant. */
+export type SendsColumn = `sends_${LLMTarget}`;
+
+export function sendsColumn(target: LLMTarget): SendsColumn {
+  return `sends_${target}`;
+}
+
 /** One row of item_stats_daily. `day` is the UTC date, YYYY-MM-DD. */
-export interface ItemStatsDay {
+export type ItemStatsDay = {
   item_type: UsageItemType;
   item_id: string;
   day: string;
   views: number;
   copies: number;
-  sends_chatgpt: number;
-  sends_claude: number;
-  sends_gemini: number;
-  sends_perplexity: number;
   clicks: number;
-}
+} & Record<SendsColumn, number>;
 
 export interface ItemStatsSummary {
   views: number;
@@ -37,6 +40,8 @@ export interface ItemStatsSummary {
   clicks: number;
 }
 
+// A literal, so supabase-js can type the rows; tests/web checks it names
+// every sendsColumn.
 export const ITEM_STATS_COLUMNS =
   "item_type, item_id, day, views, copies, sends_chatgpt, sends_claude, sends_gemini, sends_perplexity, clicks";
 
@@ -89,15 +94,11 @@ export function emptyItemStatsSummary(): ItemStatsSummary {
 function addDay(summary: ItemStatsSummary, row: ItemStatsDay): void {
   summary.views += row.views;
   summary.copies += row.copies;
-  summary.sends.chatgpt += row.sends_chatgpt;
-  summary.sends.claude += row.sends_claude;
-  summary.sends.gemini += row.sends_gemini;
-  summary.sends.perplexity += row.sends_perplexity;
-  summary.sendsTotal +=
-    row.sends_chatgpt +
-    row.sends_claude +
-    row.sends_gemini +
-    row.sends_perplexity;
+  for (const { id } of LLM_OPTIONS) {
+    const sends = row[sendsColumn(id)];
+    summary.sends[id] += sends;
+    summary.sendsTotal += sends;
+  }
   summary.clicks += row.clicks;
 }
 

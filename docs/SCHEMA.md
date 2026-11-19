@@ -208,8 +208,9 @@ artifact tables).
 
 One row per visitor, item, channel (copy, chatgpt, claude, gemini,
 perplexity) and day, so `record_item_use(item_type, item_id, channel)` counts
-a copy, download or send once. `visitor_key` is the HMAC of
-`prompt_copy_events`, under the day's key in `prompt_copy_salts`. No browser
+a copy, download or send once. `visitor_key` is the same
+day-salted HMAC `prompt_copy_events` uses, under the day's key in
+`prompt_copy_salts`; never a user id or an address. No browser
 role can read it; `prune-item-stats` drops it after two days, the day its key
 goes. `record_prompt_copy(prompt_id)` goes through `record_item_use`, and
 `prompts.copies_count` still counts a copy or a send once per visitor, prompt
