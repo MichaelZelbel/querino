@@ -67,7 +67,7 @@ export interface SkillWithAuthor extends Skill {
 export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
   const goBack = useGoBack("/discover?type=skills");
   const { user } = useAuthContext();
-  useRecordItemView("skill", skill.id, skill.author_id);
+  useRecordItemView("skill", skill.id);
   const { cloneSkill, cloning } = useCloneSkill();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   // A change this page makes to the skill re-runs the route's loader.

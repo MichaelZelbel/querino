@@ -1,13 +1,10 @@
 import { assertEquals } from "@std/assert";
 import { LLM_OPTIONS } from "@/lib/openLLM.ts";
 import {
-  BOT_USER_AGENT_PATTERN,
   ITEM_STATS_COLUMNS,
   type ItemStatsDay,
-  isBotUserAgent,
   itemStatsKey,
   sendsColumn,
-  shouldCountView,
   sumItemStats,
   summarizeByItem,
   windowStart,
@@ -39,50 +36,6 @@ function day(
     ...counts,
   };
 }
-
-Deno.test("bot user agents are not counted", () => {
-  for (const bot of [
-    "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-    "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
-    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)",
-    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
-    "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.0.0 Safari/537.36",
-    "curl/8.5.0",
-    "python-requests/2.32.3",
-    "",
-    undefined,
-    null,
-  ]) {
-    assertEquals(isBotUserAgent(bot), true, String(bot));
-  }
-  for (const person of [CHROME, IPHONE, FIREFOX]) {
-    assertEquals(isBotUserAgent(person), false, person);
-  }
-});
-
-Deno.test("the author's own view is not counted", () => {
-  assertEquals(
-    shouldCountView({ userAgent: CHROME, viewerId: "u1", authorId: "u1" }),
-    false,
-  );
-  assertEquals(
-    shouldCountView({ userAgent: CHROME, viewerId: "u2", authorId: "u1" }),
-    true,
-  );
-  assertEquals(
-    shouldCountView({ userAgent: CHROME, viewerId: null, authorId: "u1" }),
-    true,
-  );
-  assertEquals(
-    shouldCountView({
-      userAgent: "Googlebot/2.1",
-      viewerId: null,
-      authorId: "u1",
-    }),
-    false,
-  );
-});
 
 Deno.test("the 7- and 30-day sums take the right daily rows", () => {
   const today = "2026-03-05";
@@ -180,7 +133,7 @@ Deno.test(
 );
 
 Deno.test(
-  "the database keeps the author, bots and downloads out of the counts",
+  "the database keeps the author and downloads out of the counts",
   async () => {
     const sql = await Deno.readTextFile(MIGRATION);
     const authorReturns =
@@ -195,15 +148,6 @@ Deno.test(
       );
       assertEquals(holds(fn(sql, name), publicOnly), true, `${name}: public`);
     }
-
-    assertEquals(
-      holds(
-        fn(sql, "record_item_view"),
-        `IF coalesce(v_agent, '') = '' OR v_agent ~* '${BOT_USER_AGENT_PATTERN}' THEN RETURN;`,
-      ),
-      true,
-      "record_item_view refuses the bots isBotUserAgent refuses",
-    );
 
     assertEquals(
       holds(
@@ -229,3 +173,29 @@ Deno.test(
     );
   },
 );
+
+Deno.test("record_item_view refuses bots and an empty user agent", async () => {
+  const view = fn(await Deno.readTextFile(MIGRATION), "record_item_view");
+  const guard = view.match(
+    /IF coalesce\(v_agent, ''\) = ''\s+OR v_agent ~\* '([^']+)' THEN\s+RETURN;/,
+  );
+  assertEquals(guard !== null, true, "record_item_view has the bot guard");
+  // The pattern is plain alternation, so a JS RegExp with `i` reads it as
+  // Postgres `~*` does.
+  const bot = new RegExp(guard![1], "i");
+  for (const agent of [
+    "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)",
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+    "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.0.0 Safari/537.36",
+    "curl/8.5.0",
+    "python-requests/2.32.3",
+  ]) {
+    assertEquals(bot.test(agent), true, agent);
+  }
+  for (const person of [CHROME, IPHONE, FIREFOX]) {
+    assertEquals(bot.test(person), false, person);
+  }
+});

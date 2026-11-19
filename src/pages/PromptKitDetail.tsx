@@ -73,7 +73,7 @@ export interface KitWithAuthor extends PromptKit {
 export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
   const goBack = useGoBack("/discover?type=kits");
   const { user } = useAuthContext();
-  useRecordItemView("prompt_kit", kit.id, kit.author_id);
+  useRecordItemView("prompt_kit", kit.id);
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { teams } = useWorkspace();
   const { cloneKit, cloning } = useClonePromptKit();

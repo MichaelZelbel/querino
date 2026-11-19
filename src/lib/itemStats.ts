@@ -4,8 +4,7 @@
  * over the last 7 and 30 days from the daily rows of item_stats_daily.
  *
  * Kept free of React and the Supabase client so tests/web can reach it. The
- * database (migration 20261119150000) decides what is counted; the checks here
- * only spare a request it would refuse anyway.
+ * database (migration 20261119150000) decides what is counted.
  */
 import type { CreatorLinkItemType } from "@/lib/creatorLink.ts";
 import { LLM_OPTIONS, type LLMTarget } from "@/lib/openLLM.ts";
@@ -44,30 +43,6 @@ export interface ItemStatsSummary {
 // every sendsColumn.
 export const ITEM_STATS_COLUMNS =
   "item_type, item_id, day, views, copies, sends_chatgpt, sends_claude, sends_gemini, sends_perplexity, clicks";
-
-/**
- * Known bots, matched case-insensitively against the user agent. Written so it
- * means the same as a Postgres `~*` pattern and a JS RegExp with the `i` flag:
- * the migration holds this exact string, and tests/web checks that it does.
- */
-export const BOT_USER_AGENT_PATTERN =
-  "bot|crawl|spider|slurp|headless|lighthouse|facebookexternalhit|embedly|preview|curl|wget|python|httpclient|okhttp|go-http-client|java/|libwww|scrapy|axios|node-fetch|phantomjs|selenium|puppeteer|playwright";
-
-const BOT_USER_AGENT = new RegExp(BOT_USER_AGENT_PATTERN, "i");
-
-/** A missing or empty user agent counts as a bot, as it does in the database. */
-export function isBotUserAgent(userAgent: string | null | undefined): boolean {
-  return !userAgent || BOT_USER_AGENT.test(userAgent);
-}
-
-export function shouldCountView(input: {
-  userAgent: string | null | undefined;
-  viewerId: string | null | undefined;
-  authorId: string | null | undefined;
-}): boolean {
-  if (isBotUserAgent(input.userAgent)) return false;
-  return !(input.viewerId && input.viewerId === input.authorId);
-}
 
 /** The UTC date, which is what Postgres current_date is on Supabase. */
 export function utcDay(date: Date): string {

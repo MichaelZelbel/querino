@@ -8,7 +8,6 @@ import {
   ITEM_STATS_COLUMNS,
   type ItemStatsDay,
   type UsageItemType,
-  shouldCountView,
   sumItemStats,
   summarizeByItem,
   utcDay,
@@ -22,29 +21,23 @@ const untyped = supabase as unknown as SupabaseClient;
 const PAGE = 1000;
 
 /**
- * Counts one page view per item the page shows, once the session is known: an
- * author whose session is still loading would otherwise be counted as a
- * signed-out visitor.
+ * Reports one page view per item the page shows; record_item_view decides
+ * whether it counts. It waits until the session is known, so an author whose
+ * session is still loading is not reported as a signed-out visitor.
  */
 export function useRecordItemView(
   itemType: UsageItemType,
   itemId: string,
-  authorId: string | null | undefined,
 ): void {
   const { user, loading } = useAuthContext();
   const known = !!user || !loading;
-  const viewerId = user?.id ?? null;
   const counted = useRef<string | null>(null);
 
   useEffect(() => {
     if (!known || counted.current === itemId) return;
     counted.current = itemId;
-    if (
-      shouldCountView({ userAgent: navigator.userAgent, viewerId, authorId })
-    ) {
-      recordItemView(itemType, itemId);
-    }
-  }, [known, itemType, itemId, viewerId, authorId]);
+    recordItemView(itemType, itemId);
+  }, [known, itemType, itemId]);
 }
 
 /** One item's numbers for the last 7 and 30 days. Row-level security shows them to the author only. */

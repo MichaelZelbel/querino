@@ -85,7 +85,7 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
   const navigate = useNavigate();
   const goBack = useGoBack("/discover");
   const { user } = useAuthContext();
-  useRecordItemView("prompt", prompt.id, prompt.author_id);
+  useRecordItemView("prompt", prompt.id);
   const { isPromptSaved, toggleSave } = useSavedPrompts();
   const { clonePrompt, cloning } = useClonePrompt();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();

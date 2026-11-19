@@ -78,7 +78,7 @@ export default function WorkflowDetail({
 }) {
   const goBack = useGoBack("/discover?type=workflows");
   const { user } = useAuthContext();
-  useRecordItemView("workflow", workflow.id, workflow.author_id);
+  useRecordItemView("workflow", workflow.id);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   // A change this page makes to the workflow re-runs the route's loader.

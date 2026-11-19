@@ -198,8 +198,7 @@ counts. Only the item's author reads its rows (row-level security through
 `is_item_owner`); anon and every other person read nothing, and no browser
 role writes. Only public items are counted, and never the author's own views,
 copies and sends. `record_item_view(item_type, item_id)` refuses a missing
-user agent and known bots (the pattern is `BOT_USER_AGENT_PATTERN` in
-`src/lib/itemStats.ts`); it keeps no visitor key, so it cannot count a visitor
+user agent and known bots; it keeps no visitor key, so it cannot count a visitor
 once. The cron job `prune-item-stats` drops rows older than 400 days.
 Deleting an item deletes its rows (`delete_item_stats` trigger on the four
 artifact tables).
