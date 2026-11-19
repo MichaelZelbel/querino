@@ -25,11 +25,13 @@ import {
   User,
   Upload,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/lib/router-compat";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
+import { avatarObjectPath, staleAvatarPaths } from "@/lib/avatar";
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -50,6 +52,18 @@ export default function EditProfile() {
   const [website, setWebsite] = useState("");
   const [twitter, setTwitter] = useState("");
   const [github, setGithub] = useState("");
+
+  type ProfileForm = {
+    displayName: string;
+    avatarUrl: string;
+    bio: string;
+    website: string;
+    twitter: string;
+    github: string;
+  };
+  // What the database holds, so a picture change (saved at once) can move the
+  // clean baseline for the picture alone and leave other edits unsaved.
+  const savedFormRef = useRef<ProfileForm | null>(null);
 
   const { isDirty, savedAt, markSaved } = useUnsavedChanges({
     data: { displayName, avatarUrl, bio, website, twitter, github },
@@ -80,7 +94,7 @@ export default function EditProfile() {
 
       // The baseline is passed explicitly: the state of this render is still
       // the empty form, and snapshotting that made every profile dirty on load.
-      const loaded = {
+      const loaded: ProfileForm = {
         displayName: data?.display_name || "",
         avatarUrl: data?.avatar_url || "",
         bio: data?.bio || "",
@@ -96,6 +110,7 @@ export default function EditProfile() {
         setTwitter(loaded.twitter);
         setGithub(loaded.github);
       }
+      savedFormRef.current = loaded;
       markSaved(loaded);
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -130,6 +145,14 @@ export default function EditProfile() {
 
       if (error) throw error;
 
+      savedFormRef.current = {
+        displayName,
+        avatarUrl,
+        bio,
+        website,
+        twitter,
+        github,
+      };
       markSaved();
       // The header reads the profile from the auth context, which otherwise
       // kept the old name and avatar until a reload.
@@ -192,33 +215,97 @@ export default function EditProfile() {
 
     setUploading(true);
     try {
-      // Create a unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const path = avatarObjectPath(user.id, file.name);
 
-      // Upload the file
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, { upsert: true });
+        .upload(path, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL
       const {
         data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(fileName);
+      } = supabase.storage.from("avatars").getPublicUrl(path);
 
-      // Add cache-busting parameter
-      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
-      setAvatarUrl(urlWithCacheBust);
-      toast.success("Avatar uploaded successfully!");
+      // The upload has already replaced the stored file, so the picture is
+      // saved here rather than on "Save": until then the header showed the
+      // old picture next to the new preview (issue #67), and a reload showed
+      // the new file under the old address anyway. The query string makes
+      // every browser fetch the new file instead of its cached copy.
+      await saveAvatarUrl(`${publicUrl}?t=${Date.now()}`);
+      void removeStaleAvatars(path);
+      toast.success("Profile picture updated");
     } catch (err) {
       console.error("Error uploading avatar:", err);
       toast.error("Failed to upload avatar");
     } finally {
       setUploading(false);
+      // The same file chosen again must fire onChange again.
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  const handleAvatarRemove = async () => {
+    if (!user) return;
+    setUploading(true);
+    try {
+      await saveAvatarUrl(null);
+      void removeStaleAvatars(null);
+      toast.success("Profile picture removed");
+    } catch (err) {
+      console.error("Error removing avatar:", err);
+      toast.error("Failed to remove the profile picture");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /**
+   * Store the picture on the profile now, show it everywhere on the page (the
+   * header and its menu read the auth context) and count it as saved, while
+   * any other edit on the form stays unsaved.
+   */
+  async function saveAvatarUrl(url: string | null) {
+    if (!user) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: url, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (error) throw error;
+
+    const value = url ?? "";
+    setAvatarUrl(value);
+    const saved = savedFormRef.current;
+    if (saved) {
+      savedFormRef.current = { ...saved, avatarUrl: value };
+      markSaved(savedFormRef.current);
+    }
+    await refreshProfile();
+  }
+
+  /** Delete the person's stored pictures other than `keepPath`. Best effort:
+   * the profile no longer points at them, so a failure only leaves a file. */
+  async function removeStaleAvatars(keepPath: string | null) {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase.storage
+        .from("avatars")
+        .list(user.id);
+      if (error) throw error;
+      const stale = staleAvatarPaths(
+        user.id,
+        (data ?? []).map((o) => o.name),
+        keepPath,
+      );
+      if (stale.length === 0) return;
+      const { error: removeError } = await supabase.storage
+        .from("avatars")
+        .remove(stale);
+      if (removeError) throw removeError;
+    } catch (err) {
+      console.error("Error removing old avatar files:", err);
+    }
+  }
 
   if (authLoading || loading) {
     return (
@@ -284,18 +371,33 @@ export default function EditProfile() {
                     className="hidden"
                     onChange={handleAvatarUpload}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    <Upload className="h-4 w-4" />
-                    {uploading ? "Uploading..." : "Upload Image"}
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {uploading ? "Uploading..." : "Upload Image"}
+                    </Button>
+                    {avatarUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="gap-2"
+                        onClick={handleAvatarRemove}
+                        disabled={uploading}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remove picture
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    JPEG, PNG, GIF, or WebP. Max 5MB.
+                    JPEG, PNG, GIF, or WebP. Max 5MB. A new or removed picture
+                    is saved at once.
                   </p>
                 </div>
               </div>
