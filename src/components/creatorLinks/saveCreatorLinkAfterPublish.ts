@@ -1,7 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/sonner";
 import { creatorLinkQueryKey, writeCreatorLink } from "@/hooks/useCreatorLink";
-import type { CreatorLinkForm, CreatorLinkItemType } from "@/lib/creatorLink";
+import {
+  creatorLinkErrorText,
+  type CreatorLinkForm,
+  type CreatorLinkItemType,
+} from "@/lib/creatorLink";
 
 /**
  * Saves the link given while publishing or creating an item, after the item
@@ -21,8 +25,11 @@ export async function saveCreatorLinkAfterPublish(
     });
   } catch (error) {
     console.error("Error saving creator link:", error);
+    const refused = creatorLinkErrorText(error);
     toast.warning(
-      "Published, but your link could not be saved. Add it on the Edit page.",
+      refused
+        ? `Published, but your link was not saved. ${refused}`
+        : "Published, but your link could not be saved. Add it on the Edit page.",
     );
   }
 }

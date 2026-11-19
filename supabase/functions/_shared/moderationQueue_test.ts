@@ -173,3 +173,23 @@ Deno.test(
     assertEquals(html.includes("set to private"), false);
   },
 );
+
+Deno.test(
+  "the link email names the hidden address as text and the item it was under",
+  () => {
+    const mail = violationEmail({
+      itemType: "creator_link",
+      title: "My <b>prompt</b>",
+      category: "link_destination",
+      linkUrl: 'https://scam.example/?a="1"&b=<x>',
+    });
+    assertEquals(mail.subject, "Your link on Querino has been hidden");
+    assertStringIncludes(
+      mail.html,
+      "https://scam.example/?a=&quot;1&quot;&amp;b=&lt;x&gt;",
+    );
+    assertStringIncludes(mail.html, "My &lt;b&gt;prompt&lt;/b&gt;");
+    assertStringIncludes(mail.html, "Link to a disallowed kind of site");
+    assertEquals(mail.html.includes('href="https://scam.example'), false);
+  },
+);

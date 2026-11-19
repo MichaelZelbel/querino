@@ -146,3 +146,23 @@ export function creatorLinkStatusText(
       return "Waiting for review, not shown yet";
   }
 }
+
+/**
+ * An account younger than a week may have links on at most three items (#47).
+ * The database refuses the fourth insert with this exact message and hint
+ * (migration 20261119140000); the browser shows the message as it is.
+ */
+export const CREATOR_LINK_NEW_ACCOUNT_LIMIT = 3;
+export const CREATOR_LINK_NEW_ACCOUNT_DAYS = 7;
+export const CREATOR_LINK_LIMIT_HINT = "creator_link_new_account_limit";
+export const CREATOR_LINK_LIMIT_ERROR =
+  "New accounts can add a link to at most three items in their first seven days. You can add more once your account is a week old.";
+
+/** The plain message for a refused link write, or null when it has none. */
+export function creatorLinkErrorText(error: unknown): string | null {
+  const hint =
+    error && typeof error === "object" && "hint" in error
+      ? (error as { hint?: unknown }).hint
+      : undefined;
+  return hint === CREATOR_LINK_LIMIT_HINT ? CREATOR_LINK_LIMIT_ERROR : null;
+}
