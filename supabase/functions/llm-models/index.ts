@@ -28,7 +28,7 @@
 // limiter adds a lookup and a failure mode and prevents nothing. To block a
 // request you have to stop it in front of the function, which is point 1.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 
 const corsHeaders = {

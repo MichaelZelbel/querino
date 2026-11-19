@@ -26,8 +26,7 @@ interface RpcClient {
 
 /**
  * `serviceClient` is any supabase-js client holding the service-role key. It is
- * typed loosely because the callers pin different supabase-js versions, whose
- * generic rpc signatures TypeScript will not unify.
+ * typed loosely so that this module needs no supabase-js import of its own.
  */
 export async function readMenerioApiKey(
   serviceClient: unknown,

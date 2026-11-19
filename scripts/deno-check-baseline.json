@@ -1,9 +1,8 @@
 {
   "note": "Type errors per edge function under `deno check`. May be lowered, never raised. See scripts/deno-check.mjs.",
-  "total": 47,
+  "total": 45,
   "perFunction": {
     "backfill-embeddings": 1,
-    "ensure-token-allowance": 2,
     "github-sync-worker": 19,
     "process-menerio-sync-queue": 5,
     "render-for-menerio": 20
