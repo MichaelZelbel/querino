@@ -1,9 +1,10 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { parsePromptKitDocument } from "@/lib/promptKitParser";
+import { USER_LINK_REL } from "@/lib/creatorLink";
 
 interface PromptKitArticleViewProps {
   content: string;
@@ -12,6 +13,14 @@ interface PromptKitArticleViewProps {
 }
 
 const COLLAPSE_THRESHOLD = 700;
+
+// A link in a kit's prose was written by its author, so it carries the same
+// rel as every other user link.
+const USER_MARKDOWN_COMPONENTS: Components = {
+  a: ({ node: _node, ...props }) => (
+    <a {...props} rel={USER_LINK_REL} target="_blank" />
+  ),
+};
 
 function PromptCard({
   index,
@@ -130,7 +139,9 @@ export function PromptKitArticleView({
             key={`prose-${i}`}
             className="prose prose-sm md:prose-base dark:prose-invert max-w-none"
           >
-            <ReactMarkdown>{seg.markdown}</ReactMarkdown>
+            <ReactMarkdown components={USER_MARKDOWN_COMPONENTS}>
+              {seg.markdown}
+            </ReactMarkdown>
           </div>
         ) : (
           <PromptCard
