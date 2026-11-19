@@ -45,19 +45,17 @@ Deno.test("the other notices keep their meaning", () => {
 });
 
 Deno.test("no notice says 'access create' or 'access edit'", () => {
-  for (
-    const path of [
-      "/prompts/new",
-      "/skills/new",
-      "/workflows/new",
-      "/prompt-kits/new",
-      "/prompts/a/edit",
-      "/skills/a/edit",
-      "/workflows/a/edit",
-      "/prompt-kits/a/edit",
-      "/library/a/edit",
-    ]
-  ) {
+  for (const path of [
+    "/prompts/new",
+    "/skills/new",
+    "/workflows/new",
+    "/prompt-kits/new",
+    "/prompts/a/edit",
+    "/skills/a/edit",
+    "/workflows/a/edit",
+    "/prompt-kits/a/edit",
+    "/library/a/edit",
+  ]) {
     const sentence = signInNoticeSentence(path) ?? "";
     assertEquals(/access (create|edit)/.test(sentence), false, sentence);
   }
