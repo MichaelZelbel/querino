@@ -56,6 +56,9 @@ import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleVi
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import { ItemStatsPanel } from "@/components/stats/ItemStatsPanel";
+import { useRecordItemView } from "@/hooks/useItemStats";
+import { recordItemUse } from "@/lib/itemUsage";
 import type { PublicCreatorLink } from "@/lib/creatorLink";
 
 export interface KitWithAuthor extends PromptKit {
@@ -70,6 +73,7 @@ export interface KitWithAuthor extends PromptKit {
 export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
   const goBack = useGoBack("/discover?type=kits");
   const { user } = useAuthContext();
+  useRecordItemView("prompt_kit", kit.id);
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { teams } = useWorkspace();
   const { cloneKit, cloning } = useClonePromptKit();
@@ -151,6 +155,7 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
       // The end-of-prompt markers are for the parser, not for the reader's
       // clipboard. Downloads keep them, so a re-import still parses.
       await navigator.clipboard.writeText(stripPromptEndMarkers(kit.content));
+      recordItemUse("prompt_kit", kit.id, "copy");
       setCopiedAll(true);
       toast.success("Entire kit copied!");
       setTimeout(() => setCopiedAll(false), 2000);
@@ -162,6 +167,7 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
   const handleCopyItem = async (body: string, index: number) => {
     try {
       await navigator.clipboard.writeText(body);
+      recordItemUse("prompt_kit", kit.id, "copy");
       setCopiedIdx(index);
       toast.success(`Prompt #${index} copied!`);
       setTimeout(() => setCopiedIdx(null), 2000);
@@ -387,6 +393,9 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
                 tags={kit.tags}
                 content={kit.content}
                 size="lg"
+                onDownloaded={() =>
+                  recordItemUse("prompt_kit", kit.id, "download")
+                }
               />
               {user && (
                 <Button
@@ -465,6 +474,7 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
                     Activity
                   </TabsTrigger>
                 )}
+                {isAuthor && <TabsTrigger value="stats">Stats</TabsTrigger>}
               </TabsList>
 
               <TabsContent value="comments" className="mt-6">
@@ -496,6 +506,16 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
               {user && (
                 <TabsContent value="activity" className="mt-6">
                   <ActivitySidebar itemId={kit.id} itemType="prompt_kit" />
+                </TabsContent>
+              )}
+              {isAuthor && (
+                <TabsContent value="stats" className="mt-6">
+                  <ItemStatsPanel
+                    itemType="prompt_kit"
+                    itemId={kit.id}
+                    isPublic={!!kit.published}
+                    showSends={false}
+                  />
                 </TabsContent>
               )}
             </Tabs>

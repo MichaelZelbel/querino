@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { recordItemUse } from "@/lib/itemUsage";
 
 interface WorkflowCardProps {
   workflow: Workflow & { author?: WorkflowAuthor | null };
@@ -72,6 +73,7 @@ export function WorkflowCard({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(workflowContent);
+      recordItemUse("workflow", workflow.id, "copy");
       setCopied(true);
       toast.success("Workflow content copied!");
       setTimeout(() => setCopied(false), 2000);

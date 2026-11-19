@@ -16,6 +16,7 @@ import type { PromptKit, PromptKitAuthor } from "@/types/promptKit";
 import { LanguageBadge } from "@/components/shared/LanguageBadge";
 import { countPromptItems, stripPromptEndMarkers } from "@/lib/promptKitParser";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { recordItemUse } from "@/lib/itemUsage";
 
 interface PromptKitCardProps {
   kit: PromptKit & { author?: PromptKitAuthor | null };
@@ -47,6 +48,7 @@ export function PromptKitCard({
       // Without the editor's <!-- /prompt --> markers, which mean nothing
       // outside Querino.
       await navigator.clipboard.writeText(stripPromptEndMarkers(kit.content));
+      recordItemUse("prompt_kit", kit.id, "copy");
       setCopied(true);
       toast.success("Prompt kit copied!");
       setTimeout(() => setCopied(false), 2000);
