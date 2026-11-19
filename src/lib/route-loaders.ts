@@ -43,6 +43,8 @@ import {
   pickNameIgnoringCase,
 } from "@/lib/profileName";
 import { collectPublicIndex, type PublicIndexEntry } from "@/lib/publicIndex";
+import { ITEM_TYPE_OF_TABLE, type PublicCreatorLink } from "@/lib/creatorLink";
+import { fetchPublicCreatorLink } from "@/hooks/useCreatorLink";
 
 export interface LoadedArtefact {
   id: string;
@@ -58,6 +60,8 @@ export interface LoadedArtefact {
     display_name: string | null;
     avatar_url: string | null;
   } | null;
+  /** Only ever an approved link on a public item; read here so it is in the first response. */
+  creator_link?: PublicCreatorLink | null;
   [key: string]: unknown;
 }
 
@@ -144,6 +148,10 @@ async function loadBySlug(
     return {
       ...row,
       author: (row.profiles as LoadedArtefact["author"]) ?? null,
+      creator_link: await fetchPublicCreatorLink(
+        ITEM_TYPE_OF_TABLE[table],
+        row.id as string,
+      ),
     } as LoadedArtefact;
   }
 

@@ -55,9 +55,12 @@ import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
+import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import type { PublicCreatorLink } from "@/lib/creatorLink";
 
 export interface KitWithAuthor extends PromptKit {
   author?: PromptKitAuthor | null;
+  creator_link?: PublicCreatorLink | null;
 }
 
 // The route loader is the one source of this record (2026-10-07): on the
@@ -415,6 +418,14 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
               content={kit.content || ""}
               onCopyItem={(body, idx) => handleCopyItem(body, idx)}
               copiedIdx={copiedIdx}
+            />
+
+            <CreatorLinkSection
+              itemType="prompt_kit"
+              itemId={kit.id}
+              link={kit.creator_link}
+              isAuthor={!!isAuthor}
+              editPath={`/prompt-kits/${kit.slug}/edit`}
             />
 
             {/* Ratings & Reviews */}

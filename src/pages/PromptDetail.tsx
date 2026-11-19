@@ -63,9 +63,12 @@ import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { formatCount } from "@/components/shared/formatDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
+import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import type { PublicCreatorLink } from "@/lib/creatorLink";
 
 export interface PromptWithAuthor extends Prompt {
   author?: PromptAuthor | null;
+  creator_link?: PublicCreatorLink | null;
 }
 
 // The route loader is the one source of this record (2026-10-07). It runs on
@@ -569,6 +572,14 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
                 </pre>
               </div>
             </div>
+
+            <CreatorLinkSection
+              itemType="prompt"
+              itemId={prompt.id}
+              link={prompt.creator_link}
+              isAuthor={!!isAuthor}
+              editPath={`/library/${prompt.slug}/edit`}
+            />
 
             {/* Example Output Section */}
             {prompt.example_output && (

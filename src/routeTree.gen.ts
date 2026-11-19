@@ -30,6 +30,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as CollectionsIndexRouteImport } from './routes/collections/index'
 import { Route as CollectionsNewRouteImport } from './routes/collections/new'
+import { Route as GoIdRouteImport } from './routes/go.$id'
 import { Route as LibraryIndexRouteImport } from './routes/library/index'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as PromptKitsIndexRouteImport } from './routes/prompt-kits/index'
@@ -171,6 +172,11 @@ const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
 const CollectionsNewRoute = CollectionsNewRouteImport.update({
   id: '/collections/new',
   path: '/collections/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoIdRoute = GoIdRouteImport.update({
+  id: '/go/$id',
+  path: '/go/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryIndexRoute = LibraryIndexRouteImport.update({
@@ -379,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/collections/new': typeof CollectionsNewRoute
+  '/go/$id': typeof GoIdRoute
   '/profile/edit': typeof ProfileEditRoute
   '/prompt-kits/new': typeof PromptKitsNewRoute
   '/prompts/new': typeof PromptsNewRoute
@@ -439,6 +446,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/collections/new': typeof CollectionsNewRoute
+  '/go/$id': typeof GoIdRoute
   '/profile/edit': typeof ProfileEditRoute
   '/prompt-kits/new': typeof PromptKitsNewRoute
   '/prompts/new': typeof PromptsNewRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/collections/new': typeof CollectionsNewRoute
+  '/go/$id': typeof GoIdRoute
   '/profile/edit': typeof ProfileEditRoute
   '/prompt-kits/new': typeof PromptKitsNewRoute
   '/prompts/new': typeof PromptsNewRoute
@@ -562,6 +571,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/blog/$slug'
     | '/collections/new'
+    | '/go/$id'
     | '/profile/edit'
     | '/prompt-kits/new'
     | '/prompts/new'
@@ -622,6 +632,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/blog/$slug'
     | '/collections/new'
+    | '/go/$id'
     | '/profile/edit'
     | '/prompt-kits/new'
     | '/prompts/new'
@@ -682,6 +693,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/blog/$slug'
     | '/collections/new'
+    | '/go/$id'
     | '/profile/edit'
     | '/prompt-kits/new'
     | '/prompts/new'
@@ -743,6 +755,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   BlogSlugRoute: typeof BlogSlugRoute
   CollectionsNewRoute: typeof CollectionsNewRoute
+  GoIdRoute: typeof GoIdRoute
   ProfileEditRoute: typeof ProfileEditRoute
   PromptKitsNewRoute: typeof PromptKitsNewRoute
   PromptsNewRoute: typeof PromptsNewRoute
@@ -931,6 +944,13 @@ declare module '@tanstack/react-router' {
       path: '/collections/new'
       fullPath: '/collections/new'
       preLoaderRoute: typeof CollectionsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/go/$id': {
+      id: '/go/$id'
+      path: '/go/$id'
+      fullPath: '/go/$id'
+      preLoaderRoute: typeof GoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library/': {
@@ -1215,6 +1235,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   BlogSlugRoute: BlogSlugRoute,
   CollectionsNewRoute: CollectionsNewRoute,
+  GoIdRoute: GoIdRoute,
   ProfileEditRoute: ProfileEditRoute,
   PromptKitsNewRoute: PromptKitsNewRoute,
   PromptsNewRoute: PromptsNewRoute,
