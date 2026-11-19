@@ -678,7 +678,7 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
 
             {/* Tabbed Content Section */}
             <Tabs defaultValue="comments" className="mt-8">
-              <TabsList>
+              <TabsList className="h-auto max-w-full flex-wrap justify-start">
                 {/* Events are readable only by whoever caused them and by team
                     members, so a signed-out visitor always saw "No activity yet". */}
                 {user && <TabsTrigger value="details">Activity</TabsTrigger>}

@@ -76,27 +76,52 @@ export function AIInsightsPanel({
     return null;
   }
 
-  const openTab = (extra?: string) => (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => {
-        setIsOpen(true);
-        setOpenedByUser(true);
-      }}
-      aria-label="Open AI Insights"
-      className={cn(
-        "fixed right-0 top-1/2 -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 z-40",
-        extra,
-      )}
-    >
+  const openPanel = () => {
+    setIsOpen(true);
+    setOpenedByUser(true);
+  };
+
+  const tabIcons = (
+    <>
       <ChevronLeft className="h-4 w-4" />
       {isPremium ? (
         <Sparkles className="h-4 w-4" />
       ) : (
         <Lock className="h-4 w-4" />
       )}
+    </>
+  );
+
+  // From md up: the tab floats at the right edge of the screen, as it always has.
+  const desktopTab = (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={openPanel}
+      aria-label="Open AI Insights"
+      className="fixed right-0 top-1/2 -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 z-40 hidden md:inline-flex"
+    >
+      {tabIcons}
     </Button>
+  );
+
+  // Below md a floating tab sat over the right edge of the text (issue #40).
+  // There the tab gets a narrow column of its own beside the page's <main>
+  // (this component is <main>'s sibling in the detail pages' flex row), so the
+  // text wraps before it instead of running under it. The column eats into the
+  // page's own right padding (-ml-2), and the tab sticks to the middle of the
+  // screen only inside that row, so it never reaches the header or the footer.
+  const mobileTab = (
+    <div className="md:hidden relative -ml-2 w-9 shrink-0">
+      <Button
+        variant="outline"
+        onClick={openPanel}
+        aria-label="Open AI Insights"
+        className="sticky top-[50vh] -translate-y-1/2 h-auto w-9 flex-col gap-1.5 px-0 py-2.5 rounded-l-lg rounded-r-none border-r-0"
+      >
+        {tabIcons}
+      </Button>
+    </div>
   );
 
   const close = () => {
@@ -110,16 +135,22 @@ export function AIInsightsPanel({
     "fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-xl md:static md:z-auto md:w-80 md:max-w-none md:shadow-none border-l bg-card flex flex-col h-full",
     !openedByUser && "hidden md:flex",
   );
-  const mobileTab = openedByUser ? null : openTab("md:hidden");
+  const mobileTabUnlessOpen = openedByUser ? null : mobileTab;
 
-  // Collapsed state for free users - show lock icon
-  if (!isOpen) return openTab();
+  // Closed: the tab alone, in the form that fits the screen width.
+  if (!isOpen)
+    return (
+      <>
+        {mobileTab}
+        {desktopTab}
+      </>
+    );
 
   // Locked state for free users
   if (!isPremium) {
     return (
       <>
-        {mobileTab}
+        {mobileTabUnlessOpen}
         <div className={panelClass}>
           {/* Header */}
           <div className="p-4 border-b flex items-center justify-between">
@@ -167,7 +198,7 @@ export function AIInsightsPanel({
   // Full access for premium/team users
   return (
     <>
-      {mobileTab}
+      {mobileTabUnlessOpen}
       <div className={panelClass}>
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between">

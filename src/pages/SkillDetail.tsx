@@ -435,7 +435,7 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
 
             {/* Tabbed Content Section */}
             <Tabs defaultValue="comments" className="mt-8">
-              <TabsList>
+              <TabsList className="h-auto max-w-full flex-wrap justify-start">
                 <TabsTrigger value="details">Activity</TabsTrigger>
                 <TabsTrigger value="comments">Comments</TabsTrigger>
                 <TabsTrigger value="suggestions" className="gap-2">
