@@ -1,8 +1,16 @@
 // Failed MCP sign-ins, counted per caller address. After
 // MCP_AUTH_FAILURE_LIMIT failed token checks in one window, the address is
-// answered 429 until the window ends, before any token lookup. Tokens are long
-// random secrets, so this is about the lookup each try costs and the log it
-// fills, not about guessing (open since the 2026-09-30 audit).
+// answered 429 until the window ends. Tokens are long random secrets, so this
+// is about the lookup each try costs and the log it fills, not about guessing
+// (open since the 2026-09-30 audit).
+//
+// Issue #42 asks for two things that cannot both hold for a valid token from
+// an address over the limit: a 429 "without a token lookup", and "a request
+// with a valid token is never slowed down". The valid token wins. Over the
+// limit, a request with no token or a malformed one is answered 429 with no
+// lookup at all; a well-formed token is still looked up and let in when it is
+// valid. Otherwise a shared address (an office NAT, a proxy) or a forged one
+// would lock real people out of their assistants.
 //
 // The window starts at an address's first failure and lasts
 // MCP_AUTH_FAILURE_WINDOW_SECONDS; a failure after it has passed starts a new
@@ -63,9 +71,10 @@ export function retryAfterSeconds(
 
 /**
  * The caller's address as the platform's proxy reports it: the first entry of
- * X-Forwarded-For. A caller can put its own entries in front, so this keeps
- * honest callers apart rather than stopping a determined one; either way the
- * worst a forged address buys is what every caller had before the limit.
+ * X-Forwarded-For. A caller can put its own entries in front. Forging another
+ * address escapes the count (what every caller had before the limit) or makes
+ * that address's bad tokens 429 instead of 401 sooner; it cannot refuse a
+ * valid token, because a valid token is never refused.
  */
 export function callerAddress(req: Request): string | null {
   const first = (req.headers.get("x-forwarded-for") ?? "").split(",")[0];
@@ -98,11 +107,13 @@ export async function hashCallerAddress(
 }
 
 /**
- * authenticateMcpRequest behind the failed-sign-in limit. Every 401 counts as
- * a failure; a good token and a failed lookup (503, our fault) do not, and a
- * good token is never refused while the address is under the limit. A store
- * that cannot be read or written lets the request through to the normal check:
- * the limit saves cost, it is not what keeps anyone out.
+ * authenticateMcpRequest behind the failed-sign-in limit. Every 401 under the
+ * limit counts as a failure; a good token and a failed lookup (503, our fault)
+ * do not. Over the limit the request still goes through the plain check, which
+ * looks a token up only when it is well formed; a good token and a 503 are
+ * answered as always, every other refusal becomes a 429, and nothing more is
+ * counted. A store that cannot be read or written lets the request through to
+ * the normal check: the limit saves cost, it is not what keeps anyone out.
  */
 export async function authenticateMcpRequestWithLimit(
   req: Request,
@@ -121,6 +132,9 @@ export async function authenticateMcpRequestWithLimit(
     );
   }
   const wait = retryAfterSeconds(window, now);
+
+  const outcome = await authenticateMcpRequest(req, lookup);
+  if (outcome.ok || outcome.status === 503) return outcome;
   if (wait > 0) {
     return {
       ok: false,
@@ -131,16 +145,29 @@ export async function authenticateMcpRequestWithLimit(
       retryAfterSeconds: wait,
     };
   }
-
-  const outcome = await authenticateMcpRequest(req, lookup);
-  if (!outcome.ok && outcome.status === 401) {
-    try {
-      await store.record(addressHash, MCP_AUTH_FAILURE_WINDOW_SECONDS);
-    } catch (e) {
-      console.warn(
-        `mcp auth limit: failure not counted: ${e instanceof Error ? e.message : e}`,
-      );
-    }
+  try {
+    await store.record(addressHash, MCP_AUTH_FAILURE_WINDOW_SECONDS);
+  } catch (e) {
+    console.warn(
+      `mcp auth limit: failure not counted: ${e instanceof Error ? e.message : e}`,
+    );
   }
   return outcome;
+}
+
+export type TooManyFailures = Extract<LimitedMcpAuthOutcome, { status: 429 }>;
+
+/** The 429 answer, with the seconds left in the window as Retry-After. */
+export function tooManyFailuresResponse(
+  outcome: TooManyFailures,
+  headers: Record<string, string>,
+): Response {
+  return new Response(JSON.stringify({ error: outcome.message }), {
+    status: 429,
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+      "Retry-After": String(outcome.retryAfterSeconds),
+    },
+  });
 }

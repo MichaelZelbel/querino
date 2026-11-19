@@ -16,6 +16,7 @@ import {
   callerAddress,
   hashCallerAddress,
   type McpAuthFailureStore,
+  tooManyFailuresResponse,
 } from "../_shared/mcpAuthLimit.ts";
 import { editableTeamFilter } from "../_shared/teamScope.ts";
 
@@ -1364,9 +1365,9 @@ const mcpHandler = async (c: any) => {
   // token and tries again. A transport failure is ours too, below. Until
   // 2026-09-30 the failed lookup was answered 401 as well. The log names the
   // class only, never token material. And a fourth: an address with too many
-  // failed sign-ins is answered 429 with Retry-After before its token is
-  // looked up (_shared/mcpAuthLimit.ts). The address is stored only as an
-  // HMAC keyed with a secret this function already holds.
+  // failed sign-ins is answered 429 with Retry-After unless its token is
+  // valid (_shared/mcpAuthLimit.ts). The address is stored only as an HMAC
+  // keyed with a secret this function already holds.
   const address = callerAddress(c.req.raw);
   const outcome = await authenticateMcpRequestWithLimit(
     c.req.raw,
@@ -1381,10 +1382,7 @@ const mcpHandler = async (c: any) => {
   );
   if (!outcome.ok && outcome.status === 429) {
     console.warn(`mcp-server auth refused: ${outcome.reason}`);
-    return c.json({ error: outcome.message }, 429, {
-      ...corsHeaders,
-      "Retry-After": String(outcome.retryAfterSeconds),
-    });
+    return tooManyFailuresResponse(outcome, corsHeaders);
   }
   if (!outcome.ok) {
     if (outcome.reason === "lookup_error") {

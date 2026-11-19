@@ -11,6 +11,7 @@ import {
   MCP_AUTH_FAILURE_WINDOW_SECONDS,
   type McpAuthFailureStore,
   retryAfterSeconds,
+  tooManyFailuresResponse,
 } from "./mcpAuthLimit.ts";
 import type { TokenLookup } from "./mcpGate.ts";
 
@@ -76,22 +77,44 @@ function advance(clock: { now: Date }, seconds: number) {
   clock.now = new Date(clock.now.getTime() + seconds * 1000);
 }
 
-Deno.test(
-  "20 failures are 401, the 21st is 429 with Retry-After and no lookup",
-  async () => {
-    const { clock, attempt, lookups } = setup();
-    for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) {
-      const out = await attempt(BAD);
-      assertEquals(out.ok ? 200 : out.status, 401);
-      advance(clock, 10);
-    }
-    const before = lookups();
+Deno.test("20 failures are 401, the 21st is 429 with Retry-After", async () => {
+  const { clock, attempt } = setup();
+  for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) {
     const out = await attempt(BAD);
-    assertEquals(out.ok, false);
-    if (out.ok || out.status !== 429) throw new Error("expected 429");
-    assertEquals(out.reason, "too_many_failures");
-    assertEquals(out.retryAfterSeconds, MCP_AUTH_FAILURE_WINDOW_SECONDS - 200);
+    assertEquals(out.ok ? 200 : out.status, 401);
+    advance(clock, 10);
+  }
+  const out = await attempt(BAD);
+  assertEquals(out.ok, false);
+  if (out.ok || out.status !== 429) throw new Error("expected 429");
+  assertEquals(out.reason, "too_many_failures");
+  assertEquals(out.retryAfterSeconds, MCP_AUTH_FAILURE_WINDOW_SECONDS - 200);
+});
+
+Deno.test(
+  "over the limit, a missing or malformed token is 429 with no lookup",
+  async () => {
+    const { attempt, lookups } = setup();
+    for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) await attempt(BAD);
+    const before = lookups();
+    for (const token of [null, "eyJhbGciOi.jwt.session"]) {
+      const out = await attempt(token);
+      assertEquals(out.ok ? 200 : out.status, 429);
+    }
     assertEquals(lookups(), before);
+  },
+);
+
+Deno.test(
+  "over the limit, a good token still gets in and refusals are not counted",
+  async () => {
+    const { store, attempt } = setup();
+    for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) await attempt(BAD);
+    assertEquals(await attempt(GOOD), { ok: true, userId: "user-1" });
+    const bad = await attempt(BAD);
+    assertEquals(bad.ok ? 200 : bad.status, 429);
+    assertEquals(await attempt(GOOD), { ok: true, userId: "user-1" });
+    assertEquals((await store.read(ADDRESS))?.failures, MCP_AUTH_FAILURE_LIMIT);
   },
 );
 
@@ -115,7 +138,7 @@ Deno.test("missing and malformed tokens count as failures too", async () => {
   for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) {
     await attempt(i % 2 ? null : "eyJhbGciOi.jwt.session");
   }
-  const out = await attempt(GOOD);
+  const out = await attempt(BAD);
   assertEquals(out.ok ? 200 : out.status, 429);
 });
 
@@ -123,15 +146,14 @@ Deno.test("the limit ends when the window passes", async () => {
   const { clock, store, attempt } = setup();
   for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) await attempt(BAD);
   advance(clock, MCP_AUTH_FAILURE_WINDOW_SECONDS - 1);
-  const still = await attempt(GOOD);
+  const still = await attempt(BAD);
   assertEquals(still.ok ? 0 : still.status, 429);
   if (!still.ok && still.status === 429) {
     assertEquals(still.retryAfterSeconds, 1);
   }
 
   advance(clock, 1);
-  assertEquals(await attempt(GOOD), { ok: true, userId: "user-1" });
-  // The next failure starts a fresh window at one.
+  // The next failure is a 401 again and starts a fresh window at one.
   const out = await attempt(BAD);
   assertEquals(out.ok ? 0 : out.status, 401);
   assertEquals((await store.read(ADDRESS))?.failures, 1);
@@ -239,3 +261,24 @@ Deno.test("the stored address is a keyed hash, not the address", async () => {
   assertNotEquals(a, await hashCallerAddress("203.0.113.7", "key-2"));
   assertNotEquals(a, await sha("203.0.113.7"));
 });
+
+Deno.test(
+  "the 429 answer carries Retry-After, the error and the given headers",
+  async () => {
+    const res = tooManyFailuresResponse(
+      {
+        ok: false,
+        status: 429,
+        reason: "too_many_failures",
+        message: "Too many failed sign-ins",
+        retryAfterSeconds: 37,
+      },
+      { "Access-Control-Allow-Origin": "*" },
+    );
+    assertEquals(res.status, 429);
+    assertEquals(res.headers.get("Retry-After"), "37");
+    assertEquals(res.headers.get("Access-Control-Allow-Origin"), "*");
+    assertEquals(res.headers.get("Content-Type"), "application/json");
+    assertEquals(await res.json(), { error: "Too many failed sign-ins" });
+  },
+);

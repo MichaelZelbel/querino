@@ -1,6 +1,6 @@
 -- Failed MCP sign-ins are counted per caller address, so the MCP server can
--- answer an address with 20 failures in 10 minutes 429 before looking its
--- token up (issue #42, open since the 2026-09-30 audit). The limit and the
+-- answer an address with 20 failures in 10 minutes 429 unless its token is
+-- valid (issue #42, open since the 2026-09-30 audit). The limit and the
 -- window are in supabase/functions/_shared/mcpAuthLimit.ts; the window rule
 -- lives here, in record_mcp_auth_failure, so concurrent failures count once
 -- each.
