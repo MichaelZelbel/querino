@@ -226,13 +226,20 @@ export default function LibraryPromptEdit() {
 
   // Redirect to auth if not logged in. This page answers at both
   // /prompts/<slug>/edit and /library/<slug>/edit; sign-in returns to the one
-  // the visitor opened.
+  // the visitor opened. The prefix is read once: the location changes to
+  // /auth while this page is still mounted, and reading it live then sent
+  // the visitor to /auth?redirect=/auth.
   const { pathname } = useLocation();
+  const editBaseRef = useRef(
+    pathname.startsWith("/library/") ? "/library" : "/prompts",
+  );
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=${pathname}`, { replace: true });
+      navigate(`/auth?redirect=${editBaseRef.current}/${slug}/edit`, {
+        replace: true,
+      });
     }
-  }, [user, authLoading, navigate, pathname]);
+  }, [user, authLoading, navigate, slug]);
 
   // Fetch prompt and versions
   useEffect(() => {
