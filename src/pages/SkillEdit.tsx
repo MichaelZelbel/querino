@@ -143,7 +143,7 @@ export default function SkillEdit() {
 
   const skillId = skill?.id;
 
-  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+  const { isDirty, savedAt, markSaved, markLoaded } = useUnsavedChanges({
     data: formData,
     isSaving: isSubmitting || isSavingVersion,
     onSave: () => handleSaveChanges(),
@@ -184,7 +184,7 @@ export default function SkillEdit() {
         setDeniedBackTo(access.kind === "edit" ? null : access.backTo);
         if (access.kind !== "edit") return;
         setSkill(data);
-        // The baseline is passed explicitly: markSaved() with no argument reads
+        // The baseline is passed explicitly: markLoaded() with no argument reads
         // the form of this render, which is still empty, and that counted every
         // skill as dirty the moment it loaded.
         const loaded: SkillFormData = {
@@ -197,7 +197,7 @@ export default function SkillEdit() {
           language: data.language || DEFAULT_LANGUAGE,
         };
         setFormData(loaded);
-        markSaved(loaded);
+        markLoaded(loaded);
       } catch (err) {
         console.error("Error fetching skill:", err);
         toast.error("Failed to load skill");
