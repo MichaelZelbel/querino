@@ -187,3 +187,81 @@ Deno.test(
     assertEquals(linked.follow.asked, []);
   },
 );
+
+// #73: a /go/ address that leads nowhere answers 404 with a Querino page a
+// visitor can read and leave, not an empty body the browser replaces with its
+// own error screen.
+async function assertReadablePage(res: Response, label: string) {
+  assertEquals(res.status, 404, label);
+  assertEquals(res.headers.get("Location"), null, label);
+  assertEquals(
+    res.headers.get("Content-Type"),
+    "text/html; charset=utf-8",
+    label,
+  );
+  assertNoindex(res);
+  const body = await res.text();
+  for (const piece of [
+    '<meta name="robots" content="noindex" />',
+    '<a href="/">Querino</a>',
+    "This link is not available",
+    'href="/discover"',
+  ]) {
+    assertEquals(body.includes(piece), true, `${label}: ${piece}`);
+  }
+}
+
+Deno.test(
+  "an unknown id, an item without an approved link and a malformed id show the not-available page",
+  async () => {
+    await assertReadablePage(
+      await followCreatorLink(
+        "00000000-0000-4000-a000-000000000000",
+        stub({ data: null, error: null }).lookup,
+      ),
+      "unknown id",
+    );
+    await assertReadablePage(
+      await answerCreatorLink("GET", ITEM, lookups(null).both),
+      "no approved link",
+    );
+    await assertReadablePage(
+      await answerCreatorLink("GET", ITEM, lookups("javascript:alert(1)").both),
+      "stored address not http(s)",
+    );
+    await assertReadablePage(
+      await answerCreatorLink("GET", "nope", lookups(null).both),
+      "malformed id",
+    );
+    for (const path of ["/go/nope", "/go/https://evil.example", "/go/"]) {
+      await assertReadablePage(unfollowableGoPath(path)!, path);
+    }
+  },
+);
+
+Deno.test(
+  "a HEAD that leads nowhere gets the page's status and headers, without the page",
+  async () => {
+    for (const res of [
+      await answerCreatorLink("HEAD", ITEM, lookups(null).both),
+      await answerCreatorLink("HEAD", "nope", lookups(null).both),
+      unfollowableGoPath("/go/nope", "HEAD")!,
+      unfollowableGoPath("/go/nope", "head")!,
+    ]) {
+      assertEquals(res.status, 404);
+      assertEquals(res.headers.get("Content-Type"), "text/html; charset=utf-8");
+      assertNoindex(res);
+      assertEquals(res.body, null);
+    }
+  },
+);
+
+Deno.test("an approved link's redirect carries no page", async () => {
+  const res = await answerCreatorLink(
+    "GET",
+    ITEM,
+    lookups("https://creator.example/page").both,
+  );
+  assertEquals(res.status, 302);
+  assertEquals(res.body, null);
+});

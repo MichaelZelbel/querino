@@ -75,12 +75,17 @@ export default {
     try {
       // Before the router: it would answer /go/https://x with a redirect to
       // /go/https:/x first (see unfollowableGoPath).
-      const notALink = unfollowableGoPath(new URL(request.url).pathname);
-      if (notALink) return notALink;
-      const handler = await getServerEntry();
-      const response = await normalizeCatastrophicSsrResponse(
-        await handler.fetch(request, env, ctx),
+      const notALink = unfollowableGoPath(
+        new URL(request.url).pathname,
+        request.method,
       );
+      const handler = notALink ? null : await getServerEntry();
+      const response =
+        notALink ??
+        (await normalizeCatastrophicSsrResponse(
+          await handler!.fetch(request, env, ctx),
+        ));
+      // The /go/ page is HTML too, so it gets the same frame guard.
       return withHeaders(
         response,
         frameGuardHeaders(request.url, response.headers.get("content-type"), [
