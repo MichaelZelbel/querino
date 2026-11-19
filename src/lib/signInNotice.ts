@@ -6,13 +6,15 @@
 export interface SignInNotice {
   // What signing in lets the visitor do: "access", "create", "edit".
   verb: string;
-  // What they do it to, shown emphasised: "your dashboard", "this skill".
+  // What they do it to, shown emphasised: "your library", "this skill".
   object: string;
 }
 
 const EXACT: Record<string, SignInNotice> = {
   "/library": { verb: "access", object: "your library" },
-  "/dashboard": { verb: "access", object: "your dashboard" },
+  // /dashboard is the old name of /library and src/routes/dashboard.tsx 301s
+  // there, so it must say what /library says.
+  "/dashboard": { verb: "access", object: "your library" },
   "/settings": { verb: "access", object: "your settings" },
   "/activity": { verb: "access", object: "your activity feed" },
   "/collections": { verb: "access", object: "your collections" },
@@ -49,10 +51,20 @@ export function signInNotice(
   return { verb: "access", object: "this page" };
 }
 
-// The notice as one plain sentence: "Sign in to edit this skill."
+// The lead-in and the verb for the Sign Up tab: "Create an account to edit
+// this skill." Never says "Sign in".
+export function signInNoticeLead(mode: "signin" | "signup"): string {
+  return mode === "signup" ? "Create an account to" : "Sign in to";
+}
+
+// The notice as one plain sentence: "Sign in to edit this skill." on the Sign
+// In tab, "Create an account to edit this skill." on the Sign Up tab.
 export function signInNoticeSentence(
   redirect: string | null | undefined,
+  mode: "signin" | "signup" = "signin",
 ): string | null {
   const notice = signInNotice(redirect);
-  return notice ? `Sign in to ${notice.verb} ${notice.object}.` : null;
+  return notice
+    ? `${signInNoticeLead(mode)} ${notice.verb} ${notice.object}.`
+    : null;
 }
