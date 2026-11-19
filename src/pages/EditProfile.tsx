@@ -65,7 +65,7 @@ export default function EditProfile() {
   // clean baseline for the picture alone and leave other edits unsaved.
   const savedFormRef = useRef<ProfileForm | null>(null);
 
-  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+  const { isDirty, savedAt, markSaved, markLoaded } = useUnsavedChanges({
     data: { displayName, avatarUrl, bio, website, twitter, github },
     isSaving: saving,
     onSave: () => handleSave(),
@@ -111,7 +111,7 @@ export default function EditProfile() {
         setGithub(loaded.github);
       }
       savedFormRef.current = loaded;
-      markSaved(loaded);
+      markLoaded(loaded);
     } catch (err) {
       console.error("Error loading profile:", err);
       toast.error("Failed to load profile");

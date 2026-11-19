@@ -132,11 +132,12 @@ export default function PromptKitEdit() {
   const kitId = kit?.id;
   const items = parsePromptKitItems(formData.content);
 
-  const { isDirty, savedAt, markSaved, allowNavigationTo } = useUnsavedChanges({
-    data: formData,
-    isSaving: isSubmitting,
-    onSave: () => handleSave(),
-  });
+  const { isDirty, savedAt, markSaved, markLoaded, allowNavigationTo } =
+    useUnsavedChanges({
+      data: formData,
+      isSaving: isSubmitting,
+      onSave: () => handleSave(),
+    });
 
   const workspaceScope = currentWorkspace ?? "personal";
   const coachSessionId =
@@ -184,7 +185,7 @@ export default function PromptKitEdit() {
         if (access.kind !== "edit") return;
         setKit(data);
         setCurrentSlug(data.slug);
-        // The baseline is passed explicitly: markSaved() with no argument reads
+        // The baseline is passed explicitly: markLoaded() with no argument reads
         // the form of this render, which is still empty, and that counted every
         // kit as dirty the moment it loaded.
         const loaded: KitFormData = {
@@ -197,7 +198,7 @@ export default function PromptKitEdit() {
           language: data.language || DEFAULT_LANGUAGE,
         };
         setFormData(loaded);
-        markSaved(loaded);
+        markLoaded(loaded);
       } catch (err) {
         console.error(err);
         toast.error("Failed to load prompt kit");

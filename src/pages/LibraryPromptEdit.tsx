@@ -176,11 +176,12 @@ export default function LibraryPromptEdit() {
   };
   type PromptForm = typeof currentForm;
 
-  const { isDirty, savedAt, markSaved, allowNavigationTo } = useUnsavedChanges({
-    data: currentForm,
-    isSaving: isSaving || isSavingVersion || isPublishing,
-    onSave: () => handleSaveChanges(),
-  });
+  const { isDirty, savedAt, markSaved, markLoaded, allowNavigationTo } =
+    useUnsavedChanges({
+      data: currentForm,
+      isSaving: isSaving || isSavingVersion || isPublishing,
+      onSave: () => handleSaveChanges(),
+    });
 
   // The last form known to match the database. Unpublish writes only the
   // visibility, so its new baseline is this one with isPublic flipped, and any
@@ -192,9 +193,12 @@ export default function LibraryPromptEdit() {
   };
 
   // Put a loaded row into the form and take it as the clean baseline. The
-  // baseline is passed explicitly because markSaved() with no argument reads
-  // the state of the current render, which is still the previous form.
-  const applyPromptToForm = (loaded: Prompt) => {
+  // baseline is passed explicitly because markLoaded()/markSaved() with no
+  // argument read the state of the current render, which is still the
+  // previous form. `how` says whether a write put the row there (a restore
+  // from the version panel) or it was only read: a plain load stamps no save
+  // time, or the footer said "Saved · just now" as the page opened (#83).
+  const applyPromptToForm = (loaded: Prompt, how: "loaded" | "restored") => {
     const form = {
       title: loaded.title,
       shortDescription: loaded.description,
@@ -211,7 +215,12 @@ export default function LibraryPromptEdit() {
     setTags(form.tags);
     setIsPublic(form.isPublic);
     setLanguage(form.language);
-    markFormSaved(form);
+    if (how === "restored") {
+      markFormSaved(form);
+    } else {
+      savedFormRef.current = form;
+      markLoaded(form);
+    }
   };
 
   // slug|user of the prompt already in the form. A new user object for the
@@ -282,7 +291,7 @@ export default function LibraryPromptEdit() {
         if (access.kind !== "edit" || !typedPrompt) return;
 
         setPrompt(typedPrompt);
-        applyPromptToForm(typedPrompt);
+        applyPromptToForm(typedPrompt, "loaded");
         loadedKeyRef.current = `${slug}|${userId}`;
 
         const { data: versionsData, error: versionsError } = await supabase
@@ -323,7 +332,7 @@ export default function LibraryPromptEdit() {
     if (promptData) {
       const typedPrompt = promptData as unknown as Prompt;
       setPrompt(typedPrompt);
-      applyPromptToForm(typedPrompt);
+      applyPromptToForm(typedPrompt, "restored");
     }
 
     const { data: versionsData } = await supabase
