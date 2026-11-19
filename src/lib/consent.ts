@@ -53,9 +53,13 @@ export function saveConsent(choice: Consent) {
     // withdrawing is as easy as agreeing: drop the statistics cookie and the
     // remembered conveniences at once
     document.cookie = "session-id=; Max-Age=0; path=/; secure";
-    safeStorage.removeItem(PREFERRED_LLM_KEY);
-    forgetScrollPositions();
+    forgetConveniences();
   }
+}
+
+function forgetConveniences(): void {
+  safeStorage.removeItem(PREFERRED_LLM_KEY);
+  forgetScrollPositions();
 }
 
 export function forgetScrollPositions(): void {
@@ -78,10 +82,12 @@ export function forgetScrollPositions(): void {
 // from its own pagehide listener, registered while the router is constructed.
 // Listeners run in registration order, so calling this after createRouter
 // removes that copy in the same task unless the visitor chose "Accept all".
-export function keepScrollPositionsInMemory(): void {
+// It also removes a preferred assistant stored before the choice governed it:
+// those visitors never see the banner again, so saveConsent never runs for them.
+export function keepConveniencesInMemory(): void {
   if (typeof window === "undefined") return;
   window.addEventListener("pagehide", () => {
-    if (!mayRemember(readConsent())) forgetScrollPositions();
+    if (!mayRemember(readConsent())) forgetConveniences();
   });
 }
 

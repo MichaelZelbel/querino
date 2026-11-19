@@ -2,6 +2,7 @@ import { assertEquals } from "@std/assert";
 import {
   CONSENT_KEY,
   forgetScrollPositions,
+  keepConveniencesInMemory,
   mayRemember,
   PREFERRED_LLM_KEY,
   saveConsent,
@@ -27,17 +28,21 @@ function fakeStorage(store: Map<string, string>) {
 function withWindow(
   local: Map<string, string>,
   session: Map<string, string>,
-  run: () => void,
+  run: (pagehide: () => void) => void,
 ) {
   const g = globalThis as { window?: unknown; document?: unknown };
   const previous = { window: g.window, document: g.document };
+  const onPagehide: (() => void)[] = [];
   g.window = {
     localStorage: fakeStorage(local),
     sessionStorage: fakeStorage(session),
+    addEventListener: (type: string, listener: () => void) => {
+      if (type === "pagehide") onPagehide.push(listener);
+    },
   };
   g.document = { cookie: "" };
   try {
-    run();
+    run(() => onPagehide.forEach((listener) => listener()));
   } finally {
     g.window = previous.window;
     g.document = previous.document;
@@ -60,9 +65,8 @@ Deno.test(
     ]);
     withWindow(local, new Map(), () => {
       assertEquals(getPreferredLLM(), null);
-      local.delete(PREFERRED_LLM_KEY);
       setPreferredLLM("claude");
-      assertEquals([...local.keys()], [CONSENT_KEY]);
+      assertEquals(local.get(PREFERRED_LLM_KEY), "chatgpt");
       assertEquals(getPreferredLLM(), "claude");
     });
   },
@@ -105,5 +109,43 @@ Deno.test("choosing Just the essentials removes what Accept all kept", () => {
     saveConsent("essential");
     assertEquals([...local.entries()], [[CONSENT_KEY, "essential"]]);
     assertEquals(session.size, 0);
+  });
+});
+
+// The router writes its scroll positions on pagehide; an entry stored before
+// the choice governed the preference is still there for an earlier visitor.
+function leavePage(consent: string | null) {
+  const local = new Map([[PREFERRED_LLM_KEY, "chatgpt"]]);
+  if (consent) local.set(CONSENT_KEY, consent);
+  const session = new Map([["querino_draft_handoff", "x"]]);
+  withWindow(local, session, (pagehide) => {
+    keepConveniencesInMemory();
+    session.set("tsr-scroll-restoration-v1_3", "{}");
+    pagehide();
+  });
+  return { local: [...local.keys()], session: [...session.keys()] };
+}
+
+Deno.test(
+  "leaving the page with Just the essentials leaves only the choice",
+  () => {
+    assertEquals(leavePage("essential"), {
+      local: [CONSENT_KEY],
+      session: ["querino_draft_handoff"],
+    });
+  },
+);
+
+Deno.test("leaving the page before any choice leaves nothing", () => {
+  assertEquals(leavePage(null), {
+    local: [],
+    session: ["querino_draft_handoff"],
+  });
+});
+
+Deno.test("leaving the page with Accept all keeps both", () => {
+  assertEquals(leavePage("all"), {
+    local: [PREFERRED_LLM_KEY, CONSENT_KEY],
+    session: ["querino_draft_handoff", "tsr-scroll-restoration-v1_3"],
   });
 });
