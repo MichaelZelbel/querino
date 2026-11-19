@@ -24,7 +24,8 @@ PAUSE = ".factory/PAUSE"
 MERGING_WORKFLOWS = {"archon-merge-queue": ("required_checks", "protected_paths"),
                      "archon-loop": ("protected_paths",)}
 # The holdout fence: a Claude Code hook registered in the project's own settings, so every
-# lap's checkout carries it. Only the holdout subagents may read .factory/holdout/.
+# lap's checkout carries it. Only the holdout subagents may read the scenarios: the file the
+# launchers pass (default_inputs in pack.json) and the in-repository template in .factory/holdout/.
 FENCE_SCRIPT = ".factory/hooks/holdout_fence.py"
 FENCE_HOOKS = {"PreToolUse": "pre", "PostToolUse": "post"}
 FENCE_MATCHERS = {
@@ -231,11 +232,19 @@ def fence_report(root: Path) -> str:
     if shell is None:
         raise ValueError("No bash to run the holdout fence the way Claude Code runs hooks")
     scenarios = str(root / ".factory/holdout/HOLDOUT.md")
-    cases = [("a builder reading the scenarios", {"file_path": scenarios}, None, 2),
-             ("the verifier reading the scenarios", {"file_path": scenarios}, "holdout-verifier", 0),
-             ("a builder reading a source file", {"file_path": str(root / "README.md")}, None, 0)]
-    for name, tool_input, agent, expected in cases:
-        event = {"tool_name": "Read", "tool_input": tool_input, "cwd": str(root),
+    # The real scenarios: the file the launchers pass, outside every checkout.
+    machine = MANIFEST["default_inputs"]["archon-loop"]["holdout"]
+    machine_folder = machine.rsplit("/", 1)[0]
+    cases = [("a builder reading the scenarios", "Read", {"file_path": scenarios}, None, 2),
+             ("the verifier reading the scenarios", "Read", {"file_path": scenarios}, "holdout-verifier", 0),
+             ("a builder reading the machine's scenarios", "Read", {"file_path": machine}, None, 2),
+             ("a builder listing the machine's scenario folder", "Bash", {"command": f"cat {machine_folder}/*"}, None, 2),
+             ("a builder searching from above the machine folder", "Bash",
+              {"command": f"grep -r H-19 {machine_folder.rsplit('/', 2)[0]}"}, None, 2),
+             ("the verifier reading the machine's scenarios", "Read", {"file_path": machine}, "holdout-verifier", 0),
+             ("a builder reading a source file", "Read", {"file_path": str(root / "README.md")}, None, 0)]
+    for name, tool, tool_input, agent, expected in cases:
+        event = {"tool_name": tool, "tool_input": tool_input, "cwd": str(root),
                  **({"agent_type": agent} if agent else {})}
         result = subprocess.run([shell, "-c", fence_command("pre")], input=json.dumps(event), text=True,
                                 capture_output=True, cwd=root, timeout=60,
