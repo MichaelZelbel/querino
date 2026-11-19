@@ -106,14 +106,17 @@ Deno.test("a missing item looks exactly like a hidden one", () => {
   }
 });
 
-Deno.test("a signed-out visitor is sent to sign in, whatever the item", () => {
+Deno.test("a signed-out visitor may not edit, whatever the item", () => {
+  // The pages send a signed-out visitor to sign in before deciding; the
+  // decision itself never grants edit without a user.
   for (const table of TABLES) {
-    assertEquals(
-      decideEditAccess(table, row(table, { public: true }), null, [], false),
-      { kind: "signIn" },
-    );
+    assertEquals(decideEditAccess(table, row(table, {}), null, [], false), {
+      kind: "denied",
+      backTo: "/library",
+    });
     assertEquals(decideEditAccess(table, null, undefined, [], false), {
-      kind: "signIn",
+      kind: "denied",
+      backTo: "/library",
     });
   }
 });

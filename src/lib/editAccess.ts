@@ -45,8 +45,7 @@ export type EditPageRow = EditableArtifact & { slug: string } & Partial<
  * row the database hides from them arrives as no row at all, so it gets the
  * same Library link as a slug that never existed.
  */
-export type EditAccess =
-  { kind: "signIn" } | { kind: "edit" } | { kind: "denied"; backTo: string };
+export type EditAccess = { kind: "edit" } | { kind: "denied"; backTo: string };
 
 export const EDIT_TYPE_LABEL: Record<ArtifactListTable, string> = {
   prompts: "prompt",
@@ -62,7 +61,6 @@ export function decideEditAccess(
   teamIds: readonly string[],
   isPremium: boolean,
 ): EditAccess {
-  if (!userId) return { kind: "signIn" };
   if (row && canEditArtifact(row, userId, teamIds, isPremium)) {
     return { kind: "edit" };
   }

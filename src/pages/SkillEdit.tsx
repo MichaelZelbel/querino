@@ -80,7 +80,6 @@ import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { loadEditAccess } from "@/hooks/useCanEditArtifact";
 import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
-import type { EditAccess } from "@/lib/editAccess";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
 import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
@@ -112,7 +111,7 @@ export default function SkillEdit() {
   const busyRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [skill, setSkill] = useState<Skill | null>(null);
-  const [denied, setDenied] = useState<EditAccess | null>(null);
+  const [deniedBackTo, setDeniedBackTo] = useState<string | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [showVersionPanel, setShowVersionPanel] = useState(false);
   // skill_versions is author-only under RLS, so team editors get the editor
@@ -182,7 +181,7 @@ export default function SkillEdit() {
           error ? null : data,
           userId,
         );
-        setDenied(access.kind === "edit" ? null : access);
+        setDeniedBackTo(access.kind === "edit" ? null : access.backTo);
         if (access.kind !== "edit") return;
         setSkill(data);
         // The baseline is passed explicitly: markSaved() with no argument reads
@@ -519,8 +518,8 @@ export default function SkillEdit() {
     );
   }
 
-  if (user && denied?.kind === "denied") {
-    return <EditNotAllowed table="skills" backTo={denied.backTo} />;
+  if (deniedBackTo) {
+    return <EditNotAllowed table="skills" backTo={deniedBackTo} />;
   }
 
   if (!user || !skill) return null;

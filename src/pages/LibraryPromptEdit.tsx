@@ -84,7 +84,6 @@ import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { loadEditAccess } from "@/hooks/useCanEditArtifact";
 import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
-import type { EditAccess } from "@/lib/editAccess";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
 import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
 import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
@@ -115,7 +114,7 @@ export default function LibraryPromptEdit() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [denied, setDenied] = useState<EditAccess | null>(null);
+  const [deniedBackTo, setDeniedBackTo] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -269,7 +268,7 @@ export default function LibraryPromptEdit() {
           ? null
           : (promptData as unknown as Prompt | null);
         const access = await loadEditAccess("prompts", typedPrompt, userId);
-        setDenied(access.kind === "edit" ? null : access);
+        setDeniedBackTo(access.kind === "edit" ? null : access.backTo);
         if (access.kind !== "edit" || !typedPrompt) return;
 
         setPrompt(typedPrompt);
@@ -287,7 +286,7 @@ export default function LibraryPromptEdit() {
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setDenied({ kind: "denied", backTo: "/library" });
+        setDeniedBackTo("/library");
       } finally {
         setLoading(false);
       }
@@ -856,8 +855,8 @@ export default function LibraryPromptEdit() {
     return null;
   }
 
-  if (denied?.kind === "denied") {
-    return <EditNotAllowed table="prompts" backTo={denied.backTo} />;
+  if (deniedBackTo) {
+    return <EditNotAllowed table="prompts" backTo={deniedBackTo} />;
   }
 
   return (

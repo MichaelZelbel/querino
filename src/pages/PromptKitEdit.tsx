@@ -69,7 +69,6 @@ import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDi
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
 import { loadEditAccess } from "@/hooks/useCanEditArtifact";
 import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
-import type { EditAccess } from "@/lib/editAccess";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
 import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
@@ -102,7 +101,7 @@ export default function PromptKitEdit() {
     useState<ModerationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [kit, setKit] = useState<PromptKit | null>(null);
-  const [denied, setDenied] = useState<EditAccess | null>(null);
+  const [deniedBackTo, setDeniedBackTo] = useState<string | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   // prompt_kit_versions and update_prompt_kit_slug are author-only, so team
   // editors get the editor without the features they could not use.
@@ -181,7 +180,7 @@ export default function PromptKitEdit() {
           error ? null : data,
           userId,
         );
-        setDenied(access.kind === "edit" ? null : access);
+        setDeniedBackTo(access.kind === "edit" ? null : access.backTo);
         if (access.kind !== "edit") return;
         setKit(data);
         setCurrentSlug(data.slug);
@@ -486,8 +485,8 @@ export default function PromptKitEdit() {
       </div>
     );
   }
-  if (user && denied?.kind === "denied") {
-    return <EditNotAllowed table="prompt_kits" backTo={denied.backTo} />;
+  if (deniedBackTo) {
+    return <EditNotAllowed table="prompt_kits" backTo={deniedBackTo} />;
   }
 
   if (!user || !kit) return null;
