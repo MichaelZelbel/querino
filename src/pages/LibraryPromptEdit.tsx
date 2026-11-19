@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, Link } from "@/lib/router-compat";
+import { useNavigate, useParams, useLocation, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -224,12 +224,15 @@ export default function LibraryPromptEdit() {
   // this it reloaded every field and threw away unsaved edits.
   const assignedSlugRef = useRef<string | null>(null);
 
-  // Redirect to auth if not logged in
+  // Redirect to auth if not logged in. This page answers at both
+  // /prompts/<slug>/edit and /library/<slug>/edit; sign-in returns to the one
+  // the visitor opened.
+  const { pathname } = useLocation();
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/library/${slug}/edit`, { replace: true });
+      navigate(`/auth?redirect=${pathname}`, { replace: true });
     }
-  }, [user, authLoading, navigate, slug]);
+  }, [user, authLoading, navigate, pathname]);
 
   // Fetch prompt and versions
   useEffect(() => {
