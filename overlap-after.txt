@@ -1,0 +1,35 @@
+commit 6a212d58839620c436be13fdfe1c5042f6ec607e
+checked /prompts/summarise-a-meeting-transcript 375px light as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 375px light after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px light as opened: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px light after open and close: 7 scroll positions
+checked /workflows/weekly-research-digest 375px light as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 375px light after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px light as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px light after open and close: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px light as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px light after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px light as opened: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px light after open and close: 7 scroll positions
+checked /workflows/weekly-research-digest 414px light as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 414px light after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px light as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px light after open and close: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 375px dark as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 375px dark after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px dark as opened: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px dark after open and close: 7 scroll positions
+checked /workflows/weekly-research-digest 375px dark as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 375px dark after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px dark as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px dark after open and close: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px dark as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px dark after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px dark as opened: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px dark after open and close: 7 scroll positions
+checked /workflows/weekly-research-digest 414px dark as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 414px dark after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px dark as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px dark after open and close: 7 scroll positions
+ok: the AI Insights tab covers nothing in 216 measurements
+exit 0

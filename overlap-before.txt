@@ -1,0 +1,181 @@
+checked /prompts/summarise-a-meeting-transcript 375px light as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 375px light after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px light as opened: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px light after open and close: 7 scroll positions
+checked /workflows/weekly-research-digest 375px light as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 375px light after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px light as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px light after open and close: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px light as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px light after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px light as opened: 6 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px light after open and close: 6 scroll positions
+checked /workflows/weekly-research-digest 414px light as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 414px light after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px light as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px light after open and close: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 375px dark as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 375px dark after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px dark as opened: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 375px dark after open and close: 7 scroll positions
+checked /workflows/weekly-research-digest 375px dark as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 375px dark after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px dark as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 375px dark after open and close: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px dark as opened: 7 scroll positions
+checked /prompts/summarise-a-meeting-transcript 414px dark after open and close: 7 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px dark as opened: 6 scroll positions
+checked /skills/review-a-pull-request-for-risky-changes 414px dark after open and close: 6 scroll positions
+checked /workflows/weekly-research-digest 414px dark as opened: 6 scroll positions
+checked /workflows/weekly-research-digest 414px dark after open and close: 6 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px dark as opened: 7 scroll positions
+checked /prompt-kits/launch-week-prompt-kit 414px dark after open and close: 7 scroll positions
+FAIL /prompts/summarise-a-meeting-transcript 375px light as opened scrollY=800: tab 310,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,401 288x18
+FAIL /prompts/summarise-a-meeting-transcript 375px light as opened scrollY=2000: tab 310,382 65x36 covers <a> "All Prompt Kits" at 16,377 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light as opened scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,405 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light as opened scrollY=2158: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light as opened scrollY=2158: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light after open and close scrollY=800: tab 310,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,401 288x18
+FAIL /prompts/summarise-a-meeting-transcript 375px light after open and close scrollY=2000: tab 310,382 65x36 covers <a> "All Prompt Kits" at 16,377 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light after open and close scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,405 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light after open and close scrollY=2158: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px light after open and close scrollY=2158: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light as opened scrollY=800: tab 310,382 65x36 covers <pre> "# Review a pull request for risky change" at 41,393 288x18
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light as opened scrollY=1600: tab 310,382 65x36 covers <a> "Querino" at 16,414 343x32
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light as opened scrollY=2000: tab 310,382 65x36 covers <a> "Documentation" at 16,390 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light as opened scrollY=2059: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light as opened scrollY=2059: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light after open and close scrollY=800: tab 310,382 65x36 covers <pre> "# Review a pull request for risky change" at 41,393 288x18
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light after open and close scrollY=1600: tab 310,382 65x36 covers <a> "Querino" at 16,414 343x32
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light after open and close scrollY=2000: tab 310,382 65x36 covers <a> "Documentation" at 16,390 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light after open and close scrollY=2059: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px light after open and close scrollY=2059: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /workflows/weekly-research-digest 375px light as opened scrollY=1600: tab 310,382 65x36 covers <a> "All Prompts" at 16,378 343x20
+FAIL /workflows/weekly-research-digest 375px light as opened scrollY=1600: tab 310,382 65x36 covers <a> "All Skills" at 16,406 343x20
+FAIL /workflows/weekly-research-digest 375px light as opened scrollY=1843: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /workflows/weekly-research-digest 375px light as opened scrollY=1843: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /workflows/weekly-research-digest 375px light after open and close scrollY=1600: tab 310,382 65x36 covers <a> "All Prompts" at 16,378 343x20
+FAIL /workflows/weekly-research-digest 375px light after open and close scrollY=1600: tab 310,382 65x36 covers <a> "All Skills" at 16,406 343x20
+FAIL /workflows/weekly-research-digest 375px light after open and close scrollY=1843: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /workflows/weekly-research-digest 375px light after open and close scrollY=1843: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px light as opened scrollY=400: tab 310,382 65x36 covers <button> "Copy this prompt" at 232,405 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 375px light as opened scrollY=800: tab 310,382 65x36 covers <pre> "Read these first messages from users and" at 17,254 341x146
+FAIL /prompt-kits/launch-week-prompt-kit 375px light as opened scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,377 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px light as opened scrollY=2130: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px light as opened scrollY=2130: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px light after open and close scrollY=400: tab 310,382 65x36 covers <button> "Copy this prompt" at 232,405 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 375px light after open and close scrollY=800: tab 310,382 65x36 covers <pre> "Read these first messages from users and" at 17,254 341x146
+FAIL /prompt-kits/launch-week-prompt-kit 375px light after open and close scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,377 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px light after open and close scrollY=2130: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px light after open and close scrollY=2130: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompts/summarise-a-meeting-transcript 414px light as opened scrollY=800: tab 349,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,410 328x18
+FAIL /prompts/summarise-a-meeting-transcript 414px light as opened scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,406 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px light as opened scrollY=2075: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px light as opened scrollY=2075: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px light after open and close scrollY=800: tab 349,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,410 328x18
+FAIL /prompts/summarise-a-meeting-transcript 414px light after open and close scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,406 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px light after open and close scrollY=2075: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px light after open and close scrollY=2075: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px light as opened scrollY=1600: tab 349,382 65x36 covers <a> "Discover Prompts" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px light as opened scrollY=1908: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px light as opened scrollY=1908: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px light after open and close scrollY=1600: tab 349,382 65x36 covers <a> "Discover Prompts" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px light after open and close scrollY=1908: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px light after open and close scrollY=1908: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /workflows/weekly-research-digest 414px light as opened scrollY=400: tab 349,382 65x36 covers <button> "Workflow Content" at 16,373 382x40
+FAIL /workflows/weekly-research-digest 414px light as opened scrollY=1600: tab 349,382 65x36 covers <a> "All Prompt Kits" at 16,364 382x20
+FAIL /workflows/weekly-research-digest 414px light as opened scrollY=1600: tab 349,382 65x36 covers <a> "My Library" at 16,392 382x20
+FAIL /workflows/weekly-research-digest 414px light as opened scrollY=1745: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /workflows/weekly-research-digest 414px light as opened scrollY=1745: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /workflows/weekly-research-digest 414px light after open and close scrollY=400: tab 349,382 65x36 covers <button> "Workflow Content" at 16,373 382x40
+FAIL /workflows/weekly-research-digest 414px light after open and close scrollY=1600: tab 349,382 65x36 covers <a> "All Prompt Kits" at 16,364 382x20
+FAIL /workflows/weekly-research-digest 414px light after open and close scrollY=1600: tab 349,382 65x36 covers <a> "My Library" at 16,392 382x20
+FAIL /workflows/weekly-research-digest 414px light after open and close scrollY=1745: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /workflows/weekly-research-digest 414px light after open and close scrollY=1745: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px light as opened scrollY=400: tab 349,382 65x36 covers <button> "Copy this prompt" at 236,356 145x36
+FAIL /prompt-kits/launch-week-prompt-kit 414px light as opened scrollY=400: tab 349,382 65x36 covers <pre> "Write a short announcement of {{product}" at 17,405 380x100
+FAIL /prompt-kits/launch-week-prompt-kit 414px light as opened scrollY=800: tab 349,382 65x36 covers <button> "Copy this prompt" at 271,386 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 414px light as opened scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,400 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px light as opened scrollY=2069: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px light as opened scrollY=2069: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px light after open and close scrollY=400: tab 349,382 65x36 covers <button> "Copy this prompt" at 236,356 145x36
+FAIL /prompt-kits/launch-week-prompt-kit 414px light after open and close scrollY=400: tab 349,382 65x36 covers <pre> "Write a short announcement of {{product}" at 17,405 380x100
+FAIL /prompt-kits/launch-week-prompt-kit 414px light after open and close scrollY=800: tab 349,382 65x36 covers <button> "Copy this prompt" at 271,386 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 414px light after open and close scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,400 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px light after open and close scrollY=2069: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px light after open and close scrollY=2069: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark as opened scrollY=800: tab 310,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,401 288x18
+FAIL /prompts/summarise-a-meeting-transcript 375px dark as opened scrollY=2000: tab 310,382 65x36 covers <a> "All Prompt Kits" at 16,377 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark as opened scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,405 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark as opened scrollY=2158: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark as opened scrollY=2158: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark after open and close scrollY=800: tab 310,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,401 288x18
+FAIL /prompts/summarise-a-meeting-transcript 375px dark after open and close scrollY=2000: tab 310,382 65x36 covers <a> "All Prompt Kits" at 16,377 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark after open and close scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,405 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark after open and close scrollY=2158: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompts/summarise-a-meeting-transcript 375px dark after open and close scrollY=2158: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark as opened scrollY=800: tab 310,382 65x36 covers <pre> "# Review a pull request for risky change" at 41,393 288x18
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark as opened scrollY=1600: tab 310,382 65x36 covers <a> "Querino" at 16,414 343x32
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark as opened scrollY=2000: tab 310,382 65x36 covers <a> "Documentation" at 16,390 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark as opened scrollY=2059: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark as opened scrollY=2059: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark after open and close scrollY=800: tab 310,382 65x36 covers <pre> "# Review a pull request for risky change" at 41,393 288x18
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark after open and close scrollY=1600: tab 310,382 65x36 covers <a> "Querino" at 16,414 343x32
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark after open and close scrollY=2000: tab 310,382 65x36 covers <a> "Documentation" at 16,390 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark after open and close scrollY=2059: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /skills/review-a-pull-request-for-risky-changes 375px dark after open and close scrollY=2059: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /workflows/weekly-research-digest 375px dark as opened scrollY=1600: tab 310,382 65x36 covers <a> "All Prompts" at 16,378 343x20
+FAIL /workflows/weekly-research-digest 375px dark as opened scrollY=1600: tab 310,382 65x36 covers <a> "All Skills" at 16,406 343x20
+FAIL /workflows/weekly-research-digest 375px dark as opened scrollY=1843: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /workflows/weekly-research-digest 375px dark as opened scrollY=1843: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /workflows/weekly-research-digest 375px dark after open and close scrollY=1600: tab 310,382 65x36 covers <a> "All Prompts" at 16,378 343x20
+FAIL /workflows/weekly-research-digest 375px dark after open and close scrollY=1600: tab 310,382 65x36 covers <a> "All Skills" at 16,406 343x20
+FAIL /workflows/weekly-research-digest 375px dark after open and close scrollY=1843: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /workflows/weekly-research-digest 375px dark after open and close scrollY=1843: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark as opened scrollY=400: tab 310,382 65x36 covers <button> "Copy this prompt" at 232,405 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark as opened scrollY=800: tab 310,382 65x36 covers <pre> "Read these first messages from users and" at 17,254 341x146
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark as opened scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,377 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark as opened scrollY=2130: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark as opened scrollY=2130: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark after open and close scrollY=400: tab 310,382 65x36 covers <button> "Copy this prompt" at 232,405 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark after open and close scrollY=800: tab 310,382 65x36 covers <pre> "Read these first messages from users and" at 17,254 341x146
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark after open and close scrollY=2000: tab 310,382 65x36 covers <a> "My Library" at 16,377 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark after open and close scrollY=2130: tab 310,382 65x36 covers <a> "Support" at 16,387 343x20
+FAIL /prompt-kits/launch-week-prompt-kit 375px dark after open and close scrollY=2130: tab 310,382 65x36 covers <a> "Source Code" at 16,415 343x20
+FAIL /prompts/summarise-a-meeting-transcript 414px dark as opened scrollY=800: tab 349,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,410 328x18
+FAIL /prompts/summarise-a-meeting-transcript 414px dark as opened scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,406 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px dark as opened scrollY=2075: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px dark as opened scrollY=2075: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px dark after open and close scrollY=800: tab 349,382 65x36 covers <pre> "You are a careful note taker. Read the m" at 41,410 328x18
+FAIL /prompts/summarise-a-meeting-transcript 414px dark after open and close scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,406 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px dark after open and close scrollY=2075: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompts/summarise-a-meeting-transcript 414px dark after open and close scrollY=2075: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px dark as opened scrollY=1600: tab 349,382 65x36 covers <a> "Discover Prompts" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px dark as opened scrollY=1908: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px dark as opened scrollY=1908: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px dark after open and close scrollY=1600: tab 349,382 65x36 covers <a> "Discover Prompts" at 16,415 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px dark after open and close scrollY=1908: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /skills/review-a-pull-request-for-risky-changes 414px dark after open and close scrollY=1908: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /workflows/weekly-research-digest 414px dark as opened scrollY=400: tab 349,382 65x36 covers <button> "Workflow Content" at 16,373 382x40
+FAIL /workflows/weekly-research-digest 414px dark as opened scrollY=1600: tab 349,382 65x36 covers <a> "All Prompt Kits" at 16,364 382x20
+FAIL /workflows/weekly-research-digest 414px dark as opened scrollY=1600: tab 349,382 65x36 covers <a> "My Library" at 16,392 382x20
+FAIL /workflows/weekly-research-digest 414px dark as opened scrollY=1745: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /workflows/weekly-research-digest 414px dark as opened scrollY=1745: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /workflows/weekly-research-digest 414px dark after open and close scrollY=400: tab 349,382 65x36 covers <button> "Workflow Content" at 16,373 382x40
+FAIL /workflows/weekly-research-digest 414px dark after open and close scrollY=1600: tab 349,382 65x36 covers <a> "All Prompt Kits" at 16,364 382x20
+FAIL /workflows/weekly-research-digest 414px dark after open and close scrollY=1600: tab 349,382 65x36 covers <a> "My Library" at 16,392 382x20
+FAIL /workflows/weekly-research-digest 414px dark after open and close scrollY=1745: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /workflows/weekly-research-digest 414px dark after open and close scrollY=1745: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark as opened scrollY=400: tab 349,382 65x36 covers <button> "Copy this prompt" at 236,356 145x36
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark as opened scrollY=400: tab 349,382 65x36 covers <pre> "Write a short announcement of {{product}" at 17,405 380x100
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark as opened scrollY=800: tab 349,382 65x36 covers <button> "Copy this prompt" at 271,386 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark as opened scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,400 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark as opened scrollY=2069: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark as opened scrollY=2069: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark after open and close scrollY=400: tab 349,382 65x36 covers <button> "Copy this prompt" at 236,356 145x36
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark after open and close scrollY=400: tab 349,382 65x36 covers <pre> "Write a short announcement of {{product}" at 17,405 380x100
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark after open and close scrollY=800: tab 349,382 65x36 covers <button> "Copy this prompt" at 271,386 97x15
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark after open and close scrollY=2000: tab 349,382 65x36 covers <a> "Documentation" at 16,400 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark after open and close scrollY=2069: tab 349,382 65x36 covers <a> "Support" at 16,387 382x20
+FAIL /prompt-kits/launch-week-prompt-kit 414px dark after open and close scrollY=2069: tab 349,382 65x36 covers <a> "Source Code" at 16,415 382x20
+148 overlap(s) in 212 measurements
