@@ -10,6 +10,7 @@ import {
   ARTIFACT_TABLES,
   RSS_COLUMNS,
   rssQuery,
+  rssRows,
 } from "@/lib/publicArtifacts.ts";
 
 const ORIGIN = "https://querino.ai";
@@ -189,6 +190,56 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "each type is dated by when it went public, not when it was drafted",
+  () => {
+    const drafted = "2026-10-01T09:00:00Z";
+    const older = {
+      published_at: "2026-11-10T09:00:00Z",
+      created_at: "2026-11-09T09:00:00Z",
+    };
+    const row = (type: string, published_at: string | null) => ({
+      title: `${type} ${published_at ?? "undated"}`,
+      slug: `${type}-${published_at ? published_at.slice(11, 13) : "undated"}`,
+      team_id: null,
+      published_at,
+      created_at: drafted,
+    });
+    const list = rssItems(ORIGIN, {
+      prompts: [
+        { ...row("prompt", "2026-11-19T11:00:00Z"), is_public: true },
+        { ...row("prompt", null), is_public: true },
+        { ...row("prompt", null), ...older, slug: "p-old", is_public: true },
+      ],
+      skills: [
+        { ...row("skill", "2026-11-19T10:00:00Z"), published: true },
+        { ...row("skill", null), ...older, slug: "s-old", published: true },
+      ],
+      workflows: [
+        { ...row("workflow", "2026-11-19T09:00:00Z"), published: true },
+        { ...row("workflow", null), ...older, slug: "w-old", published: true },
+      ],
+      prompt_kits: [
+        { ...row("kit", "2026-11-19T08:00:00Z"), published: true },
+        { ...row("kit", null), ...older, slug: "k-old", published: true },
+      ],
+    });
+    assertEquals(
+      list.slice(0, 4).map((i) => [i.link, i.date.toISOString()]),
+      [
+        [`${ORIGIN}/prompts/prompt-11`, "2026-11-19T11:00:00.000Z"],
+        [`${ORIGIN}/skills/skill-10`, "2026-11-19T10:00:00.000Z"],
+        [`${ORIGIN}/workflows/workflow-09`, "2026-11-19T09:00:00.000Z"],
+        [`${ORIGIN}/prompt-kits/kit-08`, "2026-11-19T08:00:00.000Z"],
+      ],
+    );
+    // A row without the date falls back to when it was created.
+    const undated = list.find((i) => i.link.endsWith("/prompt-undated"))!;
+    assertEquals(undated.date.toISOString(), "2026-10-01T09:00:00.000Z");
+    assertEquals(list.at(-1)!.link, undated.link);
+  },
+);
+
 Deno.test("blog posts join the feed when there are published ones", () => {
   const list = rssItems(ORIGIN, {
     ...fixtures(),
@@ -283,5 +334,113 @@ Deno.test(
       [["filter", "status", "eq", "published"]],
     );
     assert(!/\bcontent\b/.test(RSS_COLUMNS.blog_posts));
+  },
+);
+
+Deno.test(
+  "the feed's query orders every artifact type by when it went public",
+  () => {
+    for (const table of ARTIFACT_TABLES) {
+      assert(/\bpublished_at\b/.test(RSS_COLUMNS[table]), table);
+      const q = rssQuery(recorder(), table, 50);
+      assertEquals(
+        q.calls.filter(([m]) => m === "order"),
+        [
+          ["order", "published_at", { ascending: false, nullsFirst: false }],
+          ["order", "created_at", { ascending: false }],
+          ["order", "id", { ascending: true }],
+        ],
+        table,
+      );
+    }
+  },
+);
+
+Deno.test(
+  "on a database without the migration, the feed asks again without published_at",
+  async () => {
+    const missing = {
+      code: "42703",
+      message: "column skills.published_at does not exist",
+    };
+    for (const table of ["skills", "workflows", "prompt_kits"] as const) {
+      const asked: boolean[] = [];
+      const rows = [{ title: "t", slug: "s", created_at: "2026-05-01" }];
+      const answer = await rssRows(table, ({ undated }) => {
+        asked.push(undated);
+        return Promise.resolve(
+          undated
+            ? { data: rows, error: null }
+            : { data: null, error: missing },
+        );
+      });
+      assertEquals(asked, [false, true], table);
+      assertEquals(answer, { data: rows, error: null }, table);
+
+      // The second question is main's: no published_at, by created_at.
+      const q = rssQuery(recorder(), table, 50, { undated: true });
+      const [, columns] = q.calls.find(([m]) => m === "select")!;
+      assert(!/\bpublished_at\b/.test(columns as string), table);
+      assert(/\bcreated_at\b/.test(columns as string), table);
+      assertEquals(
+        q.calls.filter(([m]) => m === "order"),
+        [
+          ["order", "created_at", { ascending: false }],
+          ["order", "id", { ascending: true }],
+        ],
+        table,
+      );
+      assertEquals(
+        q.calls.filter(([m]) => m === "filter"),
+        [
+          ["filter", "published", "eq", true],
+          ["filter", "team_id", "is", "null"],
+        ],
+        table,
+      );
+    }
+  },
+);
+
+Deno.test(
+  "the feed asks once when the column is there, and passes other errors on",
+  async () => {
+    const asked: boolean[] = [];
+    const ok = await rssRows("skills", ({ undated }) => {
+      asked.push(undated);
+      return Promise.resolve({ data: [], error: null });
+    });
+    assertEquals(asked, [false]);
+    assertEquals(ok.error, null);
+
+    // prompts and blog posts had published_at before #66: no retry, the 500
+    // stays a 500.
+    for (const table of ["prompts", "blog_posts"] as const) {
+      const calls: boolean[] = [];
+      const answer = await rssRows(table, ({ undated }) => {
+        calls.push(undated);
+        return Promise.resolve({
+          data: null,
+          error: { code: "42703", message: "gone" },
+        });
+      });
+      assertEquals(calls, [false], table);
+      assertEquals(answer.error?.code, "42703", table);
+    }
+
+    // Any other failure is not retried.
+    const other: boolean[] = [];
+    const denied = await rssRows("workflows", ({ undated }) => {
+      other.push(undated);
+      return Promise.resolve({
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+    });
+    assertEquals(other, [false]);
+    assertEquals(denied.error?.code, "42501");
+    // prompts never drops its date, even if asked to.
+    const p = rssQuery(recorder(), "prompts", 50, { undated: true });
+    assert(/\bpublished_at\b/.test(p.calls[0][1] as string));
   },
 );

@@ -21,6 +21,7 @@ import { SITE_ORIGIN } from "@/lib/seo";
 import {
   ARTIFACT_TABLES,
   rssQuery,
+  rssRows,
   sitemapPageQuery,
   type SitemapSource,
 } from "@/lib/publicArtifacts";
@@ -50,7 +51,9 @@ export async function buildRss(): Promise<string> {
   const tables = [...ARTIFACT_TABLES, "blog_posts"] as const;
   const results = await Promise.all(
     tables.map((table) =>
-      rssQuery(supabase.from(table), table, RSS_ITEM_LIMIT),
+      rssRows(table, (options) =>
+        rssQuery(supabase.from(table), table, RSS_ITEM_LIMIT, options),
+      ),
     ),
   );
 

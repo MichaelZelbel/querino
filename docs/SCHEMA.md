@@ -45,6 +45,7 @@ AI prompts created by users.
 | author_id | uuid | Owner (references profiles) |
 | team_id | uuid | Team ownership (optional) |
 | is_public | boolean | Public visibility |
+| published_at | timestamptz | When it first became public (set by the database, see "Rules the database enforces") |
 | slug | text | URL-friendly slug |
 | rating_avg | numeric | Average rating |
 | rating_count | integer | Number of ratings |
@@ -57,7 +58,8 @@ AI prompts created by users.
 | created_at | timestamptz | Creation timestamp |
 | updated_at | timestamptz | Last change by a person (see "Rules the database enforces") |
 
-`skills`, `workflows` and `prompt_kits` carry the same bookkeeping columns.
+`skills`, `workflows` and `prompt_kits` carry the same bookkeeping columns and
+`published_at`.
 
 ---
 
@@ -76,6 +78,7 @@ Reusable prompt frameworks and system prompts.
 | author_id | uuid | Owner (references profiles) |
 | team_id | uuid | Team ownership (optional) |
 | published | boolean | Public visibility |
+| published_at | timestamptz | When it first became public (set by the database, see "Rules the database enforces") |
 | slug | text | URL-friendly slug |
 | rating_avg | numeric | Average rating |
 | rating_count | integer | Number of ratings |
@@ -108,6 +111,7 @@ Documented automation sequences.
 | author_id | uuid | Owner (references profiles) |
 | team_id | uuid | Team ownership (optional) |
 | published | boolean | Public visibility |
+| published_at | timestamptz | When it first became public (set by the database, see "Rules the database enforces") |
 | slug | text | URL-friendly slug |
 | rating_avg | numeric | Average rating |
 | rating_count | integer | Number of ratings |
@@ -517,6 +521,15 @@ is the time a person last changed the artifact. Writes that touch only the
 bookkeeping columns (embedding, Menerio sync, ratings, copies, `fts`) keep it
 as it was (`touch_artifact_updated_at`, 2026-09-30). A machine (service role,
 cron) that sets `updated_at` itself is obeyed; the browser is not.
+
+**What `published_at` means on prompts, skills, workflows and prompt kits.**
+It is the moment the artifact first became public, however it became public
+(publish dialog, edit form, MCP server, a direct write). The database stamps it
+for every role, the service role and cron included (`stamp_published_at`,
+2026-11-19); a value a client sends is ignored. Unpublishing keeps it, and
+republishing keeps the first date. It is bookkeeping for `updated_at`: it only
+changes together with the visibility flag, which is what moves `updated_at`.
+The RSS feed dates and orders every artifact by it.
 
 **Deleting.**
 
