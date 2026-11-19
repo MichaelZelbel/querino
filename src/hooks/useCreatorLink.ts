@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ITEM_TYPE_OF_TABLE,
   type CreatorLinkForm,
   type CreatorLinkItemType,
   type OwnCreatorLink,
@@ -49,6 +50,33 @@ export function followCreatorLinkRpc(itemId: string) {
     data: string | null;
     error: { message: string } | null;
   }>;
+}
+
+const ITEM_TYPES = Object.values(ITEM_TYPE_OF_TABLE);
+
+/**
+ * /go/<item-id> for a HEAD: the stored address, or null, without counting.
+ * public_creator_link asks for the item type, which the path does not carry,
+ * so all four are asked at once; an item id is in at most one of them.
+ */
+export async function peekCreatorLinkRpc(itemId: string): Promise<{
+  data: string | null;
+  error: { message: string } | null;
+}> {
+  const answers = await Promise.all(
+    ITEM_TYPES.map((itemType) =>
+      untyped.rpc("public_creator_link", {
+        p_item_type: itemType,
+        p_item_id: itemId,
+      }),
+    ),
+  );
+  for (const { data } of answers) {
+    const row = (data as PublicCreatorLink[] | null)?.[0];
+    if (row) return { data: row.url, error: null };
+  }
+  const failed = answers.find((a) => a.error)?.error;
+  return { data: null, error: failed ? { message: failed.message } : null };
 }
 
 async function readOwnCreatorLink(
