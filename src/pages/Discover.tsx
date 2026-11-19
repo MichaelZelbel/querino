@@ -19,6 +19,7 @@ import { useSkills } from "@/hooks/useSkills";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { usePromptKits } from "@/hooks/usePromptKits";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useRestoreScrollBeforePaint } from "@/hooks/useRestoreScrollBeforePaint";
 import { Button } from "@/components/ui/button";
 import { FileText, Workflow, Sparkles, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +28,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import type { ArtifactSortOption } from "@/hooks/useArtifactList";
 
 const Discover = () => {
+  // Back from a card paints the list where the visitor left it, not at the top (#75).
+  useRestoreScrollBeforePaint();
   // Deep-linkable state: /discover?type=skills&tag=planning&q=meeting&sort=rating&category=coding
   // (see discoverParams.ts). Back from a card returns to the same list.
   const [searchParams] = useSearchParams();
