@@ -146,7 +146,7 @@ export default function WorkflowEdit() {
 
   const workflowId = workflow?.id;
 
-  const { isDirty, savedAt, markSaved } = useUnsavedChanges({
+  const { isDirty, savedAt, markSaved, markLoaded } = useUnsavedChanges({
     data: formData,
     isSaving: isSubmitting || isSavingVersion,
     onSave: () => handleSaveChanges(),
@@ -190,7 +190,7 @@ export default function WorkflowEdit() {
 
         const workflowContent = workflowText(data.content, data.json);
 
-        // The baseline is passed explicitly: markSaved() with no argument reads
+        // The baseline is passed explicitly: markLoaded() with no argument reads
         // the form of this render, which is still empty, and that counted every
         // workflow as dirty the moment it loaded.
         const loaded: WorkflowFormData = {
@@ -203,7 +203,7 @@ export default function WorkflowEdit() {
           language: data.language || DEFAULT_LANGUAGE,
         };
         setFormData(loaded);
-        markSaved(loaded);
+        markLoaded(loaded);
       } catch (err) {
         console.error("Error fetching workflow:", err);
         toast.error("Failed to load workflow");
