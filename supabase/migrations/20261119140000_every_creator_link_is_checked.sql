@@ -19,9 +19,8 @@
 --     migration). A rejected link waits for its author to change it.
 --   * An account younger than seven days can have links on at most three
 --     items. The fourth insert is refused with a message the browser shows
---     as it is (CREATOR_LINK_LIMIT_ERROR in src/lib/creatorLink.ts, which
---     tests/web/data_creatorLinkCheck_test.ts holds to this text). Changing an
---     existing link adds no item and is never refused. Two fourth links
+--     as it is, recognised by its hint (CREATOR_LINK_LIMIT_HINT in
+--     src/lib/creatorLink.ts). Changing an existing link adds no item and is never refused. Two fourth links
 --     inserted at the same instant can both pass; the extra one is still
 --     checked.
 --
