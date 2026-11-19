@@ -9,6 +9,14 @@ export interface CollectionPageHead {
 }
 
 /**
+ * Where a public collection lives: the canonical its page states, and the
+ * address the sitemap lists. One function, so the two cannot drift apart.
+ */
+export function collectionPath(id: string): string {
+  return `/collections/${id}`;
+}
+
+/**
  * What one collection's page says about itself, for pageHead().
  *
  * A public collection is a public page like a prompt's: its own title,
@@ -35,6 +43,6 @@ export function collectionPage(
     description:
       collection.description?.trim() ||
       `${collection.title}, a collection of AI prompts, skills and workflows on Querino`,
-    canonical: `/collections/${collection.id}`,
+    canonical: collectionPath(collection.id),
   };
 }
