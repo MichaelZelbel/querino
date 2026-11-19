@@ -146,16 +146,3 @@ export function creatorLinkStatusText(
       return "Waiting for review, not shown yet";
   }
 }
-
-export type CreatorLinkWrite = "none" | "insert" | "update" | "delete";
-
-export function planCreatorLinkWrite(
-  stored: CreatorLinkForm | null,
-  next: CreatorLinkForm | null,
-): CreatorLinkWrite {
-  if (!stored) return next ? "insert" : "none";
-  if (!next) return "delete";
-  return stored.url === next.url && stored.label === next.label
-    ? "none"
-    : "update";
-}

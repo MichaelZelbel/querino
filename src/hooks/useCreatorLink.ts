@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  planCreatorLinkWrite,
   type CreatorLinkForm,
   type CreatorLinkItemType,
   type OwnCreatorLink,
@@ -81,30 +80,36 @@ export function useOwnCreatorLink(
 
 /**
  * Makes the stored link match `next` (null removes it). Only the address and
- * the name are ever written; the database sets the status.
+ * the name are ever written; the database sets the status, and an update that
+ * changes neither leaves it alone. Not an upsert: PostgREST would also set
+ * item_type and item_id on conflict, which the column grants refuse.
  */
 export async function writeCreatorLink(
   itemType: CreatorLinkItemType,
   itemId: string,
   next: CreatorLinkForm | null,
 ): Promise<void> {
-  const stored = await readOwnCreatorLink(itemType, itemId);
-  const plan = planCreatorLinkWrite(stored, next);
-  if (plan === "none") return;
-
   const table = untyped.from("creator_links");
-  const { error } = !next
-    ? await table.delete().eq("item_type", itemType).eq("item_id", itemId)
-    : plan === "update"
-      ? await table
-          .update({ url: next.url, label: next.label })
-          .eq("item_type", itemType)
-          .eq("item_id", itemId)
-      : await table.insert({
-          item_type: itemType,
-          item_id: itemId,
-          url: next.url,
-          label: next.label,
-        });
+  if (!next) {
+    const { error } = await table
+      .delete()
+      .eq("item_type", itemType)
+      .eq("item_id", itemId);
+    if (error) throw error;
+    return;
+  }
+  const { data: updated, error: updateError } = await table
+    .update({ url: next.url, label: next.label })
+    .eq("item_type", itemType)
+    .eq("item_id", itemId)
+    .select("id");
+  if (updateError) throw updateError;
+  if (updated?.length) return;
+  const { error } = await table.insert({
+    item_type: itemType,
+    item_id: itemId,
+    url: next.url,
+    label: next.label,
+  });
   if (error) throw error;
 }

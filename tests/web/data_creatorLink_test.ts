@@ -10,7 +10,6 @@ import {
   creatorLinkPrefill,
   ITEM_TYPE_OF_TABLE,
   normalizeCreatorLinkUrl,
-  planCreatorLinkWrite,
   USER_LINK_REL,
   validateCreatorLink,
 } from "@/lib/creatorLink.ts";
@@ -86,15 +85,6 @@ Deno.test(
     assertEquals(creatorLinkPrefill("not a site"), { url: "", label: "" });
   },
 );
-
-Deno.test("only a change is written", () => {
-  const a = { url: "https://a.example/", label: "A" };
-  assertEquals(planCreatorLinkWrite(null, null), "none");
-  assertEquals(planCreatorLinkWrite(null, a), "insert");
-  assertEquals(planCreatorLinkWrite(a, { ...a }), "none");
-  assertEquals(planCreatorLinkWrite(a, { ...a, label: "B" }), "update");
-  assertEquals(planCreatorLinkWrite(a, null), "delete");
-});
 
 Deno.test(
   "a name counts emoji as one character each, as the database does",
