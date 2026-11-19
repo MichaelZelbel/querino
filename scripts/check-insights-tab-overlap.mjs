@@ -7,7 +7,10 @@
 // from the top of the page to its bottom (one step per half screen) it takes the
 // box of the visible "Open AI Insights" tab and fails when that box overlaps any
 // text, link, button, form field or code block of the page and the tab is the
-// one painted on top there. It does this twice
+// one painted on top there. Because a half-screen step can miss an overlap
+// that lasts only a short scroll window, it also measures the whole column the
+// tab is sticky in, once per state: anything that reaches into that column is
+// covered at some scroll position and fails (see measureColumn). It does this twice
 // per page: as the page opens, and after the panel was opened and closed again
 // (the tab is rendered by a different branch then).
 //
@@ -34,8 +37,9 @@ const args = process.argv.slice(2);
 const shotsAt = args.indexOf("--shots");
 const shotDir = shotsAt >= 0 ? args[shotsAt + 1] : null;
 const origin = (
-  args.find((a, i) => !a.startsWith("--") && i !== shotsAt + 1) ??
-  "http://127.0.0.1:8080"
+  args.find(
+    (a, i) => !a.startsWith("--") && (shotsAt < 0 || i !== shotsAt + 1),
+  ) ?? "http://127.0.0.1:8080"
 ).replace(/\/$/, "");
 
 const apiUrl = process.env.VITE_SUPABASE_URL;
@@ -174,6 +178,137 @@ function measure() {
   };
 }
 
+// Runs in the page, once per state: every readable or clickable box that
+// reaches into the tab's column. Below md the tab is sticky inside a column of
+// its own (its parent), so wherever the page is scrolled the tab is somewhere
+// in that column; anything that reaches into it can be covered at some scroll
+// position, even inside a window too short for the scroll sweep to land in
+// (a tab bar 17 px tall slid under the tab between scroll 1270 and 1340 only).
+// The column's top is where the tab can first rest (its sticky offset or the
+// column's top, then its -translate-y-1/2). Boxes are clipped to their scrolling or clipping
+// ancestors (a long line inside a <pre> that scrolls sideways is not under
+// the tab). Fixed-position layers (toasts, dialogs) are not page content and
+// are left out here; the scroll sweep still measures what they paint.
+function measureColumn() {
+  const tabEl = [
+    ...document.querySelectorAll('[aria-label="Open AI Insights"]'),
+  ].find((el) => {
+    const r = el.getBoundingClientRect();
+    return (
+      r.width > 0 && r.height > 0 && getComputedStyle(el).position === "sticky"
+    );
+  });
+  if (!tabEl) return { column: null, hits: [] };
+  const column = tabEl.parentElement;
+  const sx = window.scrollX;
+  const sy = window.scrollY;
+  const c = column.getBoundingClientRect();
+  // The tab rests at the column's top or at its sticky offset below the top
+  // of the screen, whichever is lower (the page never scrolls above 0), and
+  // stops at the column's bottom; its transform then shifts it.
+  const ts = getComputedStyle(tabEl);
+  const stickyTop = parseFloat(ts.top) || 0;
+  const shift =
+    ts.transform && ts.transform !== "none"
+      ? new DOMMatrix(ts.transform).m42
+      : 0;
+  const col = {
+    left: c.left + sx,
+    right: c.right + sx,
+    top: Math.max(c.top + sy, stickyTop) + Math.min(0, shift),
+    bottom: c.bottom + sy + Math.max(0, shift),
+  };
+  const clipCache = new Map();
+  // The part of a client rect left after every clipping ancestor, or null.
+  const clip = (el, r) => {
+    let box = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    for (let a = el; a && a !== document.body; a = a.parentElement) {
+      let info = clipCache.get(a);
+      if (!info) {
+        const cs = getComputedStyle(a);
+        info = {
+          fixed: cs.position === "fixed",
+          clipX: cs.overflowX !== "visible",
+          clipY: cs.overflowY !== "visible",
+          hidden: cs.display === "none",
+        };
+        clipCache.set(a, info);
+      }
+      if (info.fixed || info.hidden) return null;
+      if (a === el) continue;
+      if (info.clipX || info.clipY) {
+        const ar = a.getBoundingClientRect();
+        if (info.clipX) {
+          box.left = Math.max(box.left, ar.left);
+          box.right = Math.min(box.right, ar.right);
+        }
+        if (info.clipY) {
+          box.top = Math.max(box.top, ar.top);
+          box.bottom = Math.min(box.bottom, ar.bottom);
+        }
+      }
+    }
+    if (box.right - box.left < 1 || box.bottom - box.top < 1) return null;
+    return box;
+  };
+  const reaches = (el, r) => {
+    const b = clip(el, r);
+    if (!b) return null;
+    const left = Math.max(b.left + sx, col.left);
+    const right = Math.min(b.right + sx, col.right);
+    const top = Math.max(b.top + sy, col.top);
+    const bottom = Math.min(b.bottom + sy, col.bottom);
+    if (right - left < 1 || bottom - top < 1) return null;
+    return b;
+  };
+  const hits = [];
+  const seen = new Set();
+  const hit = (node, el, b) => {
+    const text = (node.textContent || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 40);
+    const d = `<${el.tagName.toLowerCase()}> "${text}"`;
+    if (seen.has(d)) return;
+    seen.add(d);
+    hits.push(
+      `${d} at page ${Math.round(b.left + sx)},${Math.round(b.top + sy)} ${Math.round(b.right - b.left)}x${Math.round(b.bottom - b.top)}`,
+    );
+  };
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const parent = n.parentElement;
+    if (!n.textContent.trim() || !parent || column.contains(parent)) continue;
+    if (["SCRIPT", "STYLE", "NOSCRIPT"].includes(parent.tagName)) continue;
+    if (getComputedStyle(parent).visibility === "hidden") continue;
+    const range = document.createRange();
+    range.selectNodeContents(n);
+    for (const r of range.getClientRects()) {
+      if (r.width <= 0 || r.height <= 0) continue;
+      const b = reaches(parent, r);
+      if (b) {
+        hit(n, parent, b);
+        break;
+      }
+    }
+  }
+  const boxes = document.querySelectorAll(
+    'a, button, input, textarea, select, pre, code, [role="button"], [role="tab"]',
+  );
+  for (const el of boxes) {
+    if (column.contains(el) || el.contains(column)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) continue;
+    if (getComputedStyle(el).visibility === "hidden") continue;
+    const b = reaches(el, r);
+    if (b) hit(el, el, b);
+  }
+  return {
+    column: `x ${Math.round(col.left)}-${Math.round(col.right)}, y ${Math.round(col.top)}-${Math.round(col.bottom)}`,
+    hits,
+  };
+}
+
 const session = await signIn();
 // CHROMIUM_PATH picks a browser when the one this Playwright release expects is not installed.
 const browser = await chromium.launch({
@@ -240,6 +375,17 @@ try {
               .first()
               .click();
             await tabLocator.first().waitFor({ timeout: 5_000 });
+          }
+          {
+            const { column, hits } = await page.evaluate(measureColumn);
+            measured++;
+            const where = `${path} ${width}px ${theme} ${state} column`;
+            if (!column)
+              failures.push(`${where}: the tab has no column of its own`);
+            for (const h of hits)
+              failures.push(
+                `${where} ${column}: reaches into the tab's column: ${h}`,
+              );
           }
           const total = await page.evaluate(
             () => document.documentElement.scrollHeight,

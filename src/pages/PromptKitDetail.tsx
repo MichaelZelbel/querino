@@ -429,7 +429,7 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
 
             {/* Tabbed Content Section */}
             <Tabs defaultValue="comments" className="mt-8">
-              <TabsList>
+              <TabsList className="h-auto max-w-full flex-wrap justify-start">
                 <TabsTrigger value="comments" className="gap-2">
                   <MessageSquare className="h-4 w-4" />
                   Comments
