@@ -1,11 +1,17 @@
 import { assertEquals } from "@std/assert";
 import {
   CREATOR_LINK_LABEL_ERROR,
+  CREATOR_LINK_LABEL_MAX,
+  CREATOR_LINK_STATUSES,
   CREATOR_LINK_URL_ERROR,
+  CREATOR_LINK_URL_MAX,
   creatorLinkDomain,
+  creatorLinkLabelLength,
   creatorLinkPrefill,
+  ITEM_TYPE_OF_TABLE,
   normalizeCreatorLinkUrl,
   planCreatorLinkWrite,
+  USER_LINK_REL,
   validateCreatorLink,
 } from "@/lib/creatorLink.ts";
 
@@ -29,7 +35,10 @@ Deno.test("an empty address is no link, whatever the name says", () => {
 });
 
 Deno.test("a bare address gets https://", () => {
-  assertEquals(normalizeCreatorLinkUrl("example.com/x"), "https://example.com/x");
+  assertEquals(
+    normalizeCreatorLinkUrl("example.com/x"),
+    "https://example.com/x",
+  );
   assertEquals(
     normalizeCreatorLinkUrl("example.com:8080/x"),
     "https://example.com:8080/x",
@@ -52,22 +61,31 @@ Deno.test("only a public web address is accepted", () => {
   });
 });
 
-Deno.test("the domain shown is the host of the stored address, not the name", () => {
-  assertEquals(creatorLinkDomain("https://www.Example.org/path?q"), "example.org");
-  const link = { label: "google.com", url: "https://shop.example.net/buy" };
-  assertEquals(creatorLinkDomain(link.url), "shop.example.net");
-  // A look-alike host stays in its xn-- form.
-  assertEquals(creatorLinkDomain("https://аpple.com/"), "xn--pple-43d.com");
-});
+Deno.test(
+  "the domain shown is the host of the stored address, not the name",
+  () => {
+    assertEquals(
+      creatorLinkDomain("https://www.Example.org/path?q"),
+      "example.org",
+    );
+    const link = { label: "google.com", url: "https://shop.example.net/buy" };
+    assertEquals(creatorLinkDomain(link.url), "shop.example.net");
+    // A look-alike host stays in its xn-- form.
+    assertEquals(creatorLinkDomain("https://аpple.com/"), "xn--pple-43d.com");
+  },
+);
 
-Deno.test("the prefill takes the profile website only when it is usable", () => {
-  assertEquals(creatorLinkPrefill("mysite.dev"), {
-    url: "https://mysite.dev/",
-    label: "",
-  });
-  assertEquals(creatorLinkPrefill(null), { url: "", label: "" });
-  assertEquals(creatorLinkPrefill("not a site"), { url: "", label: "" });
-});
+Deno.test(
+  "the prefill takes the profile website only when it is usable",
+  () => {
+    assertEquals(creatorLinkPrefill("mysite.dev"), {
+      url: "https://mysite.dev/",
+      label: "",
+    });
+    assertEquals(creatorLinkPrefill(null), { url: "", label: "" });
+    assertEquals(creatorLinkPrefill("not a site"), { url: "", label: "" });
+  },
+);
 
 Deno.test("only a change is written", () => {
   const a = { url: "https://a.example/", label: "A" };
@@ -77,3 +95,46 @@ Deno.test("only a change is written", () => {
   assertEquals(planCreatorLinkWrite(a, { ...a, label: "B" }), "update");
   assertEquals(planCreatorLinkWrite(a, null), "delete");
 });
+
+Deno.test(
+  "a name counts emoji as one character each, as the database does",
+  () => {
+    const url = "https://creator.example";
+    const label = "🚀".repeat(40);
+    assertEquals(creatorLinkLabelLength(label), 40);
+    assertEquals(validateCreatorLink({ url, label }).ok, true);
+    assertEquals(validateCreatorLink({ url, label: label + "🚀" }).ok, false);
+  },
+);
+
+Deno.test("a link a user wrote passes no ranking, opener or referrer", () => {
+  assertEquals(
+    new Set(USER_LINK_REL.split(" ")),
+    new Set(["ugc", "nofollow", "noopener", "noreferrer"]),
+  );
+});
+
+Deno.test(
+  "the form's limits and lists are the ones the table enforces",
+  async () => {
+    const sql = await Deno.readTextFile(
+      "supabase/migrations/20261119120000_a_creator_can_link_their_project.sql",
+    );
+    const inList = (column: string) =>
+      new Set(
+        sql
+          .match(new RegExp(`${column} IN \\(([^)]*)\\)`))![1]
+          .split(",")
+          .map((v) => v.trim().replace(/^'|'$/g, "")),
+      );
+    const maxOf = (column: string) =>
+      Number(sql.match(new RegExp(`char_length\\(${column}\\) <= (\\d+)`))![1]);
+    assertEquals(
+      inList("item_type"),
+      new Set(Object.values(ITEM_TYPE_OF_TABLE)),
+    );
+    assertEquals(inList("status"), new Set(CREATOR_LINK_STATUSES));
+    assertEquals(maxOf("label"), CREATOR_LINK_LABEL_MAX);
+    assertEquals(maxOf("url"), CREATOR_LINK_URL_MAX);
+  },
+);

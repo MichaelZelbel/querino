@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   CREATOR_LINK_LABEL_MAX,
+  creatorLinkLabelLength,
   type CreatorLinkForm,
 } from "@/lib/creatorLink";
 
@@ -55,13 +56,13 @@ export function CreatorLinkFields({
         <Input
           id={labelId}
           placeholder="My newsletter"
-          maxLength={CREATOR_LINK_LABEL_MAX}
           value={value.label}
           onChange={(e) => onChange({ ...value, label: e.target.value })}
           aria-invalid={!!errors?.label}
         />
         <p className="text-xs text-muted-foreground">
-          {value.label.length}/{CREATOR_LINK_LABEL_MAX} characters
+          {creatorLinkLabelLength(value.label)}/{CREATOR_LINK_LABEL_MAX}{" "}
+          characters
         </p>
         {errors?.label && (
           <p className="text-sm text-destructive">{errors.label}</p>

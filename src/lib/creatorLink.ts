@@ -38,8 +38,14 @@ export interface PublicCreatorLink {
   url: string;
 }
 
-export type CreatorLinkStatus =
-  "pending" | "approved" | "rejected" | "unreachable";
+export const CREATOR_LINK_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+  "unreachable",
+] as const;
+
+export type CreatorLinkStatus = (typeof CREATOR_LINK_STATUSES)[number];
 
 /** What the author sees of their own link. */
 export interface OwnCreatorLink extends PublicCreatorLink {
@@ -81,6 +87,14 @@ export type CreatorLinkValidation =
   | { ok: true; value: CreatorLinkForm | null }
   | { ok: false; errors: { url?: string; label?: string } };
 
+/**
+ * The name's length as the database's char_length counts it: in code points,
+ * so an emoji is one character, not the two UTF-16 units of `.length`.
+ */
+export function creatorLinkLabelLength(label: string): number {
+  return [...label.trim()].length;
+}
+
 /** An empty address means "no link", whatever the name says. */
 export function validateCreatorLink(
   form: CreatorLinkForm,
@@ -90,7 +104,7 @@ export function validateCreatorLink(
   const url = normalizeCreatorLinkUrl(form.url);
   if (!url) errors.url = CREATOR_LINK_URL_ERROR;
   const label = form.label.trim();
-  if (label.length > CREATOR_LINK_LABEL_MAX)
+  if (creatorLinkLabelLength(label) > CREATOR_LINK_LABEL_MAX)
     errors.label = CREATOR_LINK_LABEL_ERROR;
   if (!url || errors.label) return { ok: false, errors };
   return { ok: true, value: { url, label } };
