@@ -10,6 +10,7 @@ import {
   ARTIFACT_TABLES,
   RSS_COLUMNS,
   rssQuery,
+  rssRows,
 } from "@/lib/publicArtifacts.ts";
 
 const ORIGIN = "https://querino.ai";
@@ -352,5 +353,94 @@ Deno.test(
         table,
       );
     }
+  },
+);
+
+Deno.test(
+  "on a database without the migration, the feed asks again without published_at",
+  async () => {
+    const missing = {
+      code: "42703",
+      message: "column skills.published_at does not exist",
+    };
+    for (const table of ["skills", "workflows", "prompt_kits"] as const) {
+      const asked: boolean[] = [];
+      const rows = [{ title: "t", slug: "s", created_at: "2026-05-01" }];
+      const answer = await rssRows(table, ({ undated }) => {
+        asked.push(undated);
+        return Promise.resolve(
+          undated
+            ? { data: rows, error: null }
+            : { data: null, error: missing },
+        );
+      });
+      assertEquals(asked, [false, true], table);
+      assertEquals(answer, { data: rows, error: null }, table);
+
+      // The second question is main's: no published_at, by created_at.
+      const q = rssQuery(recorder(), table, 50, { undated: true });
+      const [, columns] = q.calls.find(([m]) => m === "select")!;
+      assert(!/\bpublished_at\b/.test(columns as string), table);
+      assert(/\bcreated_at\b/.test(columns as string), table);
+      assertEquals(
+        q.calls.filter(([m]) => m === "order"),
+        [
+          ["order", "created_at", { ascending: false }],
+          ["order", "id", { ascending: true }],
+        ],
+        table,
+      );
+      assertEquals(
+        q.calls.filter(([m]) => m === "filter"),
+        [
+          ["filter", "published", "eq", true],
+          ["filter", "team_id", "is", "null"],
+        ],
+        table,
+      );
+    }
+  },
+);
+
+Deno.test(
+  "the feed asks once when the column is there, and passes other errors on",
+  async () => {
+    const asked: boolean[] = [];
+    const ok = await rssRows("skills", ({ undated }) => {
+      asked.push(undated);
+      return Promise.resolve({ data: [], error: null });
+    });
+    assertEquals(asked, [false]);
+    assertEquals(ok.error, null);
+
+    // prompts and blog posts had published_at before #66: no retry, the 500
+    // stays a 500.
+    for (const table of ["prompts", "blog_posts"] as const) {
+      const calls: boolean[] = [];
+      const answer = await rssRows(table, ({ undated }) => {
+        calls.push(undated);
+        return Promise.resolve({
+          data: null,
+          error: { code: "42703", message: "gone" },
+        });
+      });
+      assertEquals(calls, [false], table);
+      assertEquals(answer.error?.code, "42703", table);
+    }
+
+    // Any other failure is not retried.
+    const other: boolean[] = [];
+    const denied = await rssRows("workflows", ({ undated }) => {
+      other.push(undated);
+      return Promise.resolve({
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+    });
+    assertEquals(other, [false]);
+    assertEquals(denied.error?.code, "42501");
+    // prompts never drops its date, even if asked to.
+    const p = rssQuery(recorder(), "prompts", 50, { undated: true });
+    assert(/\bpublished_at\b/.test(p.calls[0][1] as string));
   },
 );

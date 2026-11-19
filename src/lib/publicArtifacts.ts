@@ -113,6 +113,22 @@ export const RSS_COLUMNS: Record<SitemapTable, string> = {
 };
 
 /**
+ * The three tables that got published_at in migration 20261119160000. Until
+ * that migration is applied to a database, asking them for the column fails
+ * with Postgres 42703, and the feed asks again without it (rssRows).
+ */
+const DATED_SINCE_66: ReadonlySet<SitemapTable> = new Set([
+  "skills",
+  "workflows",
+  "prompt_kits",
+]);
+
+/** The columns the feed asked for before the database dated every type. */
+function undatedColumns(table: SitemapTable): string {
+  return RSS_COLUMNS[table].replace(" published_at,", "");
+}
+
+/**
  * The newest `limit` rows of one table for the RSS feed: public ones only, and
  * no team's rows, newest first by the date the feed shows (rssFeed.ts).
  */
@@ -120,8 +136,12 @@ export function rssQuery<Q extends PublicFilters<Q>>(
   from: PublicSource<Q>,
   table: SitemapTable,
   limit: number,
+  { undated = false }: { undated?: boolean } = {},
 ): Q {
-  const rows = from.select(RSS_COLUMNS[table]);
+  const withoutDate = undated && DATED_SINCE_66.has(table);
+  const rows = from.select(
+    withoutDate ? undatedColumns(table) : RSS_COLUMNS[table],
+  );
   if (table === "blog_posts") {
     return rows
       .filter("status", "eq", "published")
@@ -132,9 +152,36 @@ export function rssQuery<Q extends PublicFilters<Q>>(
   // The database records when each item first went public
   // (stamp_published_at); a row without that date falls back to when it was
   // created, after the dated ones.
-  return visible
-    .order("published_at", { ascending: false, nullsFirst: false })
+  const dated = withoutDate
+    ? visible
+    : visible.order("published_at", { ascending: false, nullsFirst: false });
+  return dated
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
     .limit(limit);
+}
+
+/** The part of a PostgREST answer the feed reads. */
+export interface RssAnswer {
+  data: unknown[] | null;
+  error: { code?: string; message: string } | null;
+}
+
+/**
+ * One table's rows for the feed. On a database that does not have
+ * published_at on skills, workflows or prompt kits yet (Postgres 42703,
+ * undefined column), it asks again without the column, so those items are
+ * dated by when they were created, as before #66, instead of the whole feed
+ * answering 500. Once the migration is live the second question is never
+ * asked. Any other error is returned as it came.
+ */
+export async function rssRows(
+  table: SitemapTable,
+  ask: (options: { undated: boolean }) => PromiseLike<RssAnswer>,
+): Promise<RssAnswer> {
+  const first = await ask({ undated: false });
+  if (first.error?.code !== "42703" || !DATED_SINCE_66.has(table)) {
+    return first;
+  }
+  return ask({ undated: true });
 }
