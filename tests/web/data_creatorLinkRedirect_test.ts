@@ -1,6 +1,7 @@
 import { assertEquals } from "@std/assert";
 import {
   followCreatorLink,
+  unfollowableGoPath,
   type CreatorLinkLookup,
 } from "@/lib/creatorLinkRedirect.ts";
 
@@ -76,6 +77,52 @@ Deno.test(
         stub({ data: stored, error: null }).lookup,
       );
       assertEquals(res.status, 404, stored);
+    }
+  },
+);
+
+const ADDRESS_SHAPED = [
+  "/go/https://evil.example",
+  "/go/http://evil.example",
+  "/go/https:%2F%2Fevil.example",
+  "/go/https:/evil.example",
+  "/go//evil.example",
+  "/go/%2F%2Fevil.example",
+  "/go/https://evil.example/path?x=1",
+];
+
+Deno.test(
+  "an address-shaped /go/ path answers 404 before the router, with no Location",
+  () => {
+    for (const path of ADDRESS_SHAPED) {
+      const res = unfollowableGoPath(path);
+      assertEquals(res?.status, 404, path);
+      assertEquals(res?.headers.get("Location"), null, path);
+      assertNoindex(res!);
+    }
+  },
+);
+
+Deno.test("a /go/ path that is not an id answers 404 before the router", () => {
+  for (const path of ["/go/not-an-id", "/go/", `/go/${ITEM}/extra`]) {
+    assertEquals(unfollowableGoPath(path)?.status, 404, path);
+  }
+});
+
+Deno.test(
+  "an item id, and every path outside /go/, is left to the router",
+  () => {
+    for (const path of [
+      `/go/${ITEM}`,
+      `/go/${ITEM}/`,
+      `/go/${ITEM.toUpperCase()}`,
+      "/go/00000000-0000-0000-0000-000000000000",
+      "/",
+      "/go",
+      "/prompts/https://evil.example",
+      "/gone/https://evil.example",
+    ]) {
+      assertEquals(unfollowableGoPath(path), null, path);
     }
   },
 );
