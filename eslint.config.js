@@ -11,6 +11,21 @@ export default tseslint.config(
       "dist",
       ".output",
       ".vinxi",
+      // Git-ignored folders that tools write into. Generated files are never
+      // linted: while harness/test-copy.sh has a copy up it puts a copy of the
+      // edge functions under harness/.results/, and linting those made the
+      // lint ratchet report an `any` rise on a change that touched nothing
+      // (issue #57). Keep this in step with the results folders in .gitignore;
+      // `**/.results` covers every `.results/` folder, harness/ and .factory/.
+      "**/.results",
+      "dist-ssr",
+      ".nitro",
+      ".tanstack",
+      "logs",
+      ".factory/backup",
+      "test-results",
+      "playwright-report",
+      "supabase/.temp",
       // copied verbatim from MichaelZelbel/godspeed-mission-control, where the gate is maintained
       ".github/workflows/*.mjs",
     ],
