@@ -245,7 +245,10 @@ used to serve them was removed on 2026-09-30):
 
 - `GET https://querino.ai/sitemap.xml`: every public page, prompt, skill,
   workflow and prompt kit.
-- `GET https://querino.ai/rss.xml`: the published blog posts.
+- `GET https://querino.ai/rss.xml`: the 50 newest items among the published
+  blog posts and every public prompt, skill, workflow and prompt kit. An
+  artifact is dated, and ordered, by when it first became public
+  (`published_at`).
 
 ---
 
