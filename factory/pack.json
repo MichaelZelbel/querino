@@ -5,13 +5,13 @@
   "source_directory": ".archon/workflows/sdlc",
   "default_inputs": {
     "archon-loop": {
-      "holdout": ".factory/holdout/HOLDOUT.md"
+      "holdout": "/home/godspeed-forge/holdouts/querino/HOLDOUT.md"
     },
     "archon-manager": {
-      "holdout": ".factory/holdout/HOLDOUT.md"
+      "holdout": "/home/godspeed-forge/holdouts/querino/HOLDOUT.md"
     },
     "archon-holdouts": {
-      "holdout": ".factory/holdout/HOLDOUT.md"
+      "holdout": "/home/godspeed-forge/holdouts/querino/HOLDOUT.md"
     }
   },
   "entries": {

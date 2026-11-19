@@ -22,11 +22,14 @@ first story.
 
 ## Factory-owned workflow inputs
 
-Factory supplies `holdout=.factory/holdout/HOLDOUT.md` to `archon-loop`, `archon-manager` and
-`archon-holdouts`, and the project's `protected_paths` (from `harness/harness.config.json`) to
-`archon-loop` and `archon-merge-queue`, unless the caller supplies them. The holdout scenarios are
-read only by the `holdout-verifier` and `holdout-writer` agents; `.factory/hooks/holdout_fence.py`
-refuses every other agent.
+Factory supplies `holdout=/home/godspeed-forge/holdouts/querino/HOLDOUT.md` (the default in
+`factory/pack.json`, on the factory's machine outside every checkout) to `archon-loop`,
+`archon-manager` and `archon-holdouts`, and the project's `protected_paths` (from
+`harness/harness.config.json`) to `archon-loop` and `archon-merge-queue`, unless the caller supplies
+them. `.factory/holdout/HOLDOUT.md` in the repository is only the empty template. The holdout
+scenarios are read only by the `holdout-verifier` and `holdout-writer` agents;
+`.factory/hooks/holdout_fence.py` refuses every other agent a call that names either file or its
+folder, or searches or lists from above the machine folder.
 
 ## Runtime and review evidence
 
