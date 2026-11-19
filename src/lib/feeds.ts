@@ -18,94 +18,53 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { SITE_ORIGIN } from "@/lib/seo";
-import { sitemapPageQuery, type SitemapTable } from "@/lib/publicArtifacts";
+import {
+  ARTIFACT_TABLES,
+  rssQuery,
+  sitemapPageQuery,
+  type SitemapTable,
+} from "@/lib/publicArtifacts";
+import {
+  buildRssXml,
+  escapeXml,
+  RSS_ITEM_LIMIT,
+  rssItems,
+  type RssRow,
+  type RssSource,
+} from "@/lib/rssFeed";
 
 /** How long a crawler may reuse a response. Carried over from the edge function. */
 export const FEED_CACHE_CONTROL = "public, max-age=3600";
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
 
 /** Sitemap <lastmod> wants a date, not a timestamp. */
 function formatDate(isoDate: string): string {
   return isoDate.split("T")[0];
 }
 
+/**
+ * The feed of what Querino publishes (rssFeed.ts builds the XML). Until
+ * 2026-11 it was a blog-only feed titled "Querino Blog", empty because there
+ * are no posts; the owner chose a feed of the public artifacts (#9, #44).
+ */
 export async function buildRss(): Promise<string> {
-  const siteName = "Querino Blog";
-  const siteDescription = "Articles about AI, prompts, and productivity";
+  const tables = [...ARTIFACT_TABLES, "blog_posts"] as const;
+  const results = await Promise.all(
+    tables.map((table) =>
+      rssQuery(supabase.from(table), table, RSS_ITEM_LIMIT),
+    ),
+  );
 
-  const { data: posts, error } = await supabase
-    .from("blog_posts")
-    .select(
-      `
-      title,
-      slug,
-      excerpt,
-      content,
-      published_at,
-      author:profiles!blog_posts_author_id_fkey(display_name)
-    `,
-    )
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(20);
+  const sources: Partial<Record<RssSource, RssRow[]>> = {};
+  results.forEach(({ data, error }, i) => {
+    if (error) {
+      // A feed reader retries a 500, but silently accepts an empty or short
+      // channel as "nothing new was published".
+      throw new Error(`RSS query for ${tables[i]} failed: ${error.message}`);
+    }
+    sources[tables[i]] = (data ?? []) as unknown as RssRow[];
+  });
 
-  if (error) {
-    // The edge function failed loudly here rather than serving a truncated feed, and so
-    // does this: a feed reader retries a 500, but silently accepts an empty channel as
-    // "he stopped writing".
-    throw new Error(`RSS query failed: ${error.message}`);
-  }
-
-  const items = (posts ?? [])
-    .map((post) => {
-      const pubDate = post.published_at
-        ? new Date(post.published_at).toUTCString()
-        : new Date().toUTCString();
-      const link = `${SITE_ORIGIN}/blog/${post.slug}`;
-      const author = post.author?.display_name || "Anonymous";
-      // No escapeXml here: the value is wrapped in CDATA below, and doing both
-      // encodes an ampersand twice, so readers show &amp;amp; where the post
-      // said "&".
-      // A "]]>" inside the text would end the CDATA section early and break the
-      // feed for every reader; the standard trick splits it across two sections.
-      const description = (
-        post.excerpt ||
-        post.content?.slice(0, 300) ||
-        ""
-      ).replace(/\]\]>/g, "]]]]><![CDATA[>");
-
-      return `
-    <item>
-      <title>${escapeXml(post.title)}</title>
-      <link>${link}</link>
-      <guid isPermaLink="true">${link}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <dc:creator>${escapeXml(author)}</dc:creator>
-      <description><![CDATA[${description}]]></description>
-    </item>`;
-    })
-    .join("");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>${escapeXml(siteName)}</title>
-    <link>${SITE_ORIGIN}/blog</link>
-    <description>${escapeXml(siteDescription)}</description>
-    <language>en</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_ORIGIN}/rss.xml" rel="self" type="application/rss+xml"/>
-    ${items}
-  </channel>
-</rss>`;
+  return buildRssXml(SITE_ORIGIN, rssItems(SITE_ORIGIN, sources));
 }
 
 /** One page of rows, and the cap PostgREST applies whether or not you ask. */

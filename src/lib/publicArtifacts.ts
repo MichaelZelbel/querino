@@ -22,9 +22,12 @@ export const ARTIFACT_TABLES = [
 
 /** The part of a PostgREST filter builder these queries use. */
 export interface PublicFilters<Q> {
-  filter(column: string, operator: "eq", value: boolean | string): Q;
+  filter(column: string, operator: "eq" | "is", value: boolean | string): Q;
   or(filters: string): Q;
-  order(column: string, options: { ascending: boolean }): Q;
+  order(
+    column: string,
+    options: { ascending: boolean; nullsFirst?: boolean },
+  ): Q;
   range(from: number, to: number): Q;
   limit(count: number): Q;
 }
@@ -92,4 +95,48 @@ export function publicPromptSearchQuery<Q extends PublicFilters<Q>>(
     .reduce((acc, filter) => acc.or(filter), onlyPublic(prompts, "prompts"))
     .order("rating_avg", { ascending: false })
     .limit(8);
+}
+
+const RSS_AUTHOR = "author:author_id (display_name)";
+
+/**
+ * What the RSS feed selects: the title, the summary and the date, never the
+ * artifact's text (rssFeed.ts), and the columns that prove a row is public.
+ */
+export const RSS_COLUMNS: Record<SitemapTable, string> = {
+  prompts: `title, slug, summary, description, is_public, team_id, published_at, created_at, ${RSS_AUTHOR}`,
+  skills: `title, slug, description, published, team_id, created_at, ${RSS_AUTHOR}`,
+  workflows: `title, slug, description, published, team_id, created_at, ${RSS_AUTHOR}`,
+  prompt_kits: `title, slug, description, published, team_id, created_at, ${RSS_AUTHOR}`,
+  blog_posts:
+    "title, slug, summary:excerpt, status, published_at, created_at, author:profiles!blog_posts_author_id_fkey(display_name)",
+};
+
+/**
+ * The newest `limit` rows of one table for the RSS feed: public ones only, and
+ * no team's rows, newest first by the date the feed shows (rssFeed.ts).
+ */
+export function rssQuery<Q extends PublicFilters<Q>>(
+  from: PublicSource<Q>,
+  table: SitemapTable,
+  limit: number,
+): Q {
+  const rows = from.select(RSS_COLUMNS[table]);
+  if (table === "blog_posts") {
+    return rows
+      .filter("status", "eq", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(limit);
+  }
+  const visible = onlyPublic(rows, table).filter("team_id", "is", "null");
+  // Prompts record when they went public; an old row without that date falls
+  // back to when it was created, after the dated ones.
+  const dated =
+    table === "prompts"
+      ? visible.order("published_at", { ascending: false, nullsFirst: false })
+      : visible;
+  return dated
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(limit);
 }
