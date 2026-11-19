@@ -157,14 +157,15 @@ interface GithubSyncSettings {
 export default function Library() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuthContext();
-  const { data: ownStats } = useOwnItemStats(!!user);
+  const { data: ownStats, isSuccess: ownStatsLoaded } = useOwnItemStats(!!user);
   // Only an item's author sees its numbers, so a team item someone else
-  // wrote gets no line.
+  // wrote gets no line. Until the numbers have loaded there is no line either:
+  // a zero is only true once the query has answered.
   const statsLine = (
     itemType: UsageItemType,
     item: { id: string; author_id?: string | null },
   ) =>
-    user && item.author_id === user.id ? (
+    ownStatsLoaded && user && item.author_id === user.id ? (
       <ItemStatsLine summary={ownStats?.get(itemStatsKey(itemType, item.id))} />
     ) : null;
   const { currentWorkspace, currentTeam, isTeamWorkspace } = useWorkspace();
