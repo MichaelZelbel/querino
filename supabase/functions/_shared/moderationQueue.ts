@@ -113,7 +113,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   malware: "Potentially malicious content",
   pii: "Personal information detected",
   injection: "Prompt injection attempt",
+  link_destination: "Link to a disallowed kind of site",
 };
+
+/** The plain-English name of a classifier category. */
+export function moderationCategoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] || "Content policy violation";
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -135,6 +141,8 @@ export function violationEmail(input: {
   itemType: string;
   title: string | null;
   category: string;
+  /** For a creator link: the address that was hidden. */
+  linkUrl?: string;
 }): { subject: string; html: string } {
   const title = (input.title || "Untitled").replace(/[\r\n]+/g, " ");
   const itemType = input.itemType.replace(/[\r\n]+/g, " ");
@@ -155,6 +163,26 @@ export function violationEmail(input: {
       <p>Our automated content review found that one of your comments may violate our <a href="https://querino.ai/community-guidelines">Community Guidelines</a>.</p>
       <p><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
       <p>Its text has been replaced with a note that it was removed. Replies to it are unchanged.</p>
+      <p>If you believe this is a mistake, please contact us at <a href="mailto:support@querino.ai">support@querino.ai</a> and we'll review it manually.</p>
+      <p style="color: #666; font-size: 14px; margin-top: 30px;">The Querino Team</p>
+    </div>
+  `,
+    };
+  }
+
+  // A creator link is hidden, never its item. The address is the author's
+  // and is named as text, not as a link: it is the page that failed review.
+  if (itemType === "creator_link") {
+    const url = (input.linkUrl ?? "").replace(/[\r\n]+/g, " ");
+    return {
+      subject: "Your link on Querino has been hidden",
+      html: `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1a1a1a;">Your link has been hidden</h2>
+      <p>Hi,</p>
+      <p>Our automated review found that the link <strong>${escapeHtml(url)}</strong> under your item <strong>"${t}"</strong> may violate our <a href="https://querino.ai/community-guidelines">Community Guidelines</a>.</p>
+      <p><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
+      <p>The link is no longer shown. Your item itself stays published, and you can change or remove the link on its Edit page.</p>
       <p>If you believe this is a mistake, please contact us at <a href="mailto:support@querino.ai">support@querino.ai</a> and we'll review it manually.</p>
       <p style="color: #666; font-size: 14px; margin-top: 30px;">The Querino Team</p>
     </div>

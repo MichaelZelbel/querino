@@ -10,6 +10,7 @@ import {
   writeCreatorLink,
 } from "@/hooks/useCreatorLink";
 import {
+  creatorLinkErrorText,
   creatorLinkPrefill,
   creatorLinkStatusText,
   validateCreatorLink,
@@ -59,7 +60,9 @@ export function CreatorLinkEditor({
       toast.success(done);
     } catch (error) {
       console.error("Error saving creator link:", error);
-      toast.error("Your link could not be saved");
+      toast.error(
+        creatorLinkErrorText(error) ?? "Your link could not be saved",
+      );
     } finally {
       setSaving(false);
     }
