@@ -174,6 +174,46 @@ link through `public_creator_link(item_type, item_id)` and follows one through
 `follow_creator_link(item_id)`, which counts the click and returns the stored
 address. Deleting an item deletes its link (`delete_creator_link` trigger on
 the four artifact tables), and so does deleting the account that owns it.
+`follow_creator_link` also adds the click to the day's row of
+`item_stats_daily`.
+
+### `item_stats_daily`
+
+What an item's author sees on its Stats tab and in the Library (#48): per item
+and UTC day, how often it was viewed, copied and sent. Migration
+`20261119150000`.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| item_type | text | prompt, skill, workflow, prompt_kit |
+| item_id | uuid | The item |
+| day | date | The UTC day; primary key with item_type and item_id |
+| views | integer | Page views (`record_item_view`) |
+| copies | integer | Visitors who copied it or downloaded it as .md |
+| sends_chatgpt, sends_claude, sends_gemini, sends_perplexity | integer | Visitors who sent it to that assistant |
+| clicks | integer | Clicks on the creator link through /go |
+
+Nothing about a visitor is stored here, only the item, the day and the
+counts. Only the item's author reads its rows (row-level security through
+`is_item_owner`); anon and every other person read nothing, and no browser
+role writes. Only public items are counted, and never the author's own views,
+copies and sends. `record_item_view(item_type, item_id)` refuses a missing
+user agent and known bots (the pattern is `BOT_USER_AGENT_PATTERN` in
+`src/lib/itemStats.ts`); it keeps no visitor key, so it cannot count a visitor
+once. The cron job `prune-item-stats` drops rows older than 400 days.
+Deleting an item deletes its rows (`delete_item_stats` trigger on the four
+artifact tables).
+
+### `item_use_events`
+
+One row per visitor, item, channel (copy, chatgpt, claude, gemini,
+perplexity) and day, so `record_item_use(item_type, item_id, channel)` counts
+a copy, download or send once. `visitor_key` is the HMAC of
+`prompt_copy_events`, under the day's key in `prompt_copy_salts`. No browser
+role can read it; `prune-item-stats` drops it after two days, the day its key
+goes. `record_prompt_copy(prompt_id)` goes through `record_item_use`, and
+`prompts.copies_count` still counts a copy or a send once per visitor, prompt
+and day, never a download.
 
 ---
 
