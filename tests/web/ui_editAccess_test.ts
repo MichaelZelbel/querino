@@ -1,6 +1,9 @@
 import { assertEquals } from "@std/assert";
 import { decideEditAccess, type EditPageRow } from "@/lib/editAccess.ts";
-import type { ArtifactListTable } from "@/lib/artifactListColumns.ts";
+import {
+  ARTIFACT_PUBLIC_COLUMN,
+  type ArtifactListTable,
+} from "@/lib/artifactListColumns.ts";
 
 const AUTHOR = "author-1";
 const OTHER = "other-1";
@@ -17,8 +20,7 @@ function row(
   fields: Partial<EditPageRow> & { public?: boolean },
 ): EditPageRow {
   const { public: isPublic = false, ...rest } = fields;
-  const visibility =
-    table === "prompts" ? { is_public: isPublic } : { published: isPublic };
+  const visibility = { [ARTIFACT_PUBLIC_COLUMN[table]]: isPublic };
   return {
     slug: "my-item",
     author_id: AUTHOR,

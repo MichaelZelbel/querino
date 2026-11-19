@@ -1,4 +1,8 @@
-import type { ArtifactListTable } from "@/lib/artifactListColumns.ts";
+import {
+  ARTIFACT_DETAIL_ROUTE,
+  ARTIFACT_PUBLIC_COLUMN,
+  type ArtifactListTable,
+} from "@/lib/artifactListColumns.ts";
 
 // Who may edit or delete an artifact, mirroring the row-level security on
 // prompts, skills, workflows and prompt_kits: the author, or a premium member
@@ -31,11 +35,9 @@ export function canEditArtifact(
 }
 
 /** The row an Edit page loaded, as far as deciding access needs it. */
-export interface EditPageRow extends EditableArtifact {
-  slug: string;
-  is_public?: boolean | null;
-  published?: boolean | null;
-}
+export type EditPageRow = EditableArtifact & { slug: string } & Partial<
+    Record<(typeof ARTIFACT_PUBLIC_COLUMN)[ArtifactListTable], boolean | null>
+  >;
 
 /**
  * What an Edit page shows. `denied` is one message for every case where the
@@ -45,13 +47,6 @@ export interface EditPageRow extends EditableArtifact {
  */
 export type EditAccess =
   { kind: "signIn" } | { kind: "edit" } | { kind: "denied"; backTo: string };
-
-const PUBLIC_PATH: Record<ArtifactListTable, string> = {
-  prompts: "/prompts",
-  skills: "/skills",
-  workflows: "/workflows",
-  prompt_kits: "/prompt-kits",
-};
 
 export const EDIT_TYPE_LABEL: Record<ArtifactListTable, string> = {
   prompts: "prompt",
@@ -71,9 +66,10 @@ export function decideEditAccess(
   if (row && canEditArtifact(row, userId, teamIds, isPremium)) {
     return { kind: "edit" };
   }
-  const isPublic = table === "prompts" ? row?.is_public : row?.published;
   return {
     kind: "denied",
-    backTo: row && isPublic ? `${PUBLIC_PATH[table]}/${row.slug}` : "/library",
+    backTo: row?.[ARTIFACT_PUBLIC_COLUMN[table]]
+      ? ARTIFACT_DETAIL_ROUTE[table].replace("$slug", row.slug)
+      : "/library",
   };
 }
