@@ -14,7 +14,6 @@ import {
   Check,
   ArrowLeft,
   Pencil,
-  Calendar,
   Tag,
   Package,
   History,
@@ -54,7 +53,6 @@ import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { Languages, CopyPlus } from "lucide-react";
 import { useDuplicateArtifact } from "@/hooks/useDuplicateArtifact";
 import { PromptKitArticleView } from "@/components/promptKits/PromptKitArticleView";
-import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 
@@ -248,12 +246,6 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
                     </div>
                   </Link>
                 )}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Created <LocalDate value={kit.created_at} />
-                  </span>
-                </div>
               </div>
             </div>
 

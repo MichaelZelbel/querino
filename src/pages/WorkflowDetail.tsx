@@ -24,7 +24,6 @@ import {
   Check,
   ArrowLeft,
   Pencil,
-  Calendar,
   Tag,
   Files,
   Workflow as WorkflowIcon,
@@ -54,7 +53,6 @@ import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
-import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 import { workflowText } from "@/components/workflows/workflowText";
@@ -259,13 +257,6 @@ export default function WorkflowDetail({
                     </div>
                   </Link>
                 )}
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Created <LocalDate value={workflow.created_at} />
-                  </span>
-                </div>
               </div>
             </div>
 
