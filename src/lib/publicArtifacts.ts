@@ -58,18 +58,30 @@ export function publicCountQuery<Q extends PublicFilters<Q>>(
 
 export type SitemapTable = ArtifactListTable | "blog_posts";
 
+/**
+ * Every table the sitemap lists. A collection has no slug: its page lives at
+ * its id (collectionPath in collectionHead.ts), so it is a source of the
+ * sitemap but not of the RSS feed.
+ */
+export type SitemapSource = SitemapTable | "collections";
+
 /** One page of the sitemap's rows of one table: the public ones, newest first. */
 export function sitemapPageQuery<Q extends PublicFilters<Q>>(
   from: PublicSource<Q>,
-  table: SitemapTable,
+  table: SitemapSource,
   start: number,
   end: number,
 ): Q {
-  const rows = from.select("slug, updated_at");
-  const published =
-    table === "blog_posts"
-      ? rows.filter("status", "eq", "published")
-      : onlyPublic(rows, table);
+  let published: Q;
+  if (table === "collections") {
+    published = from.select("id, updated_at").filter("is_public", "eq", true);
+  } else {
+    const rows = from.select("slug, updated_at");
+    published =
+      table === "blog_posts"
+        ? rows.filter("status", "eq", "published")
+        : onlyPublic(rows, table);
+  }
   return (
     published
       .order("updated_at", { ascending: false })
