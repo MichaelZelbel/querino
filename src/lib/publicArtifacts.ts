@@ -105,9 +105,9 @@ const RSS_AUTHOR = "author:author_id (display_name)";
  */
 export const RSS_COLUMNS: Record<SitemapTable, string> = {
   prompts: `title, slug, summary, description, is_public, team_id, published_at, created_at, ${RSS_AUTHOR}`,
-  skills: `title, slug, description, published, team_id, created_at, ${RSS_AUTHOR}`,
-  workflows: `title, slug, description, published, team_id, created_at, ${RSS_AUTHOR}`,
-  prompt_kits: `title, slug, description, published, team_id, created_at, ${RSS_AUTHOR}`,
+  skills: `title, slug, description, published, team_id, published_at, created_at, ${RSS_AUTHOR}`,
+  workflows: `title, slug, description, published, team_id, published_at, created_at, ${RSS_AUTHOR}`,
+  prompt_kits: `title, slug, description, published, team_id, published_at, created_at, ${RSS_AUTHOR}`,
   blog_posts:
     "title, slug, summary:excerpt, status, published_at, created_at, author:profiles!blog_posts_author_id_fkey(display_name)",
 };
@@ -129,13 +129,11 @@ export function rssQuery<Q extends PublicFilters<Q>>(
       .limit(limit);
   }
   const visible = onlyPublic(rows, table).filter("team_id", "is", "null");
-  // Prompts record when they went public; an old row without that date falls
-  // back to when it was created, after the dated ones.
-  const dated =
-    table === "prompts"
-      ? visible.order("published_at", { ascending: false, nullsFirst: false })
-      : visible;
-  return dated
+  // The database records when each item first went public
+  // (stamp_published_at); a row without that date falls back to when it was
+  // created, after the dated ones.
+  return visible
+    .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
     .limit(limit);

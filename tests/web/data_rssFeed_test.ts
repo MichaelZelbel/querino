@@ -189,6 +189,56 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "each type is dated by when it went public, not when it was drafted",
+  () => {
+    const drafted = "2026-10-01T09:00:00Z";
+    const older = {
+      published_at: "2026-11-10T09:00:00Z",
+      created_at: "2026-11-09T09:00:00Z",
+    };
+    const row = (type: string, published_at: string | null) => ({
+      title: `${type} ${published_at ?? "undated"}`,
+      slug: `${type}-${published_at ? published_at.slice(11, 13) : "undated"}`,
+      team_id: null,
+      published_at,
+      created_at: drafted,
+    });
+    const list = rssItems(ORIGIN, {
+      prompts: [
+        { ...row("prompt", "2026-11-19T11:00:00Z"), is_public: true },
+        { ...row("prompt", null), is_public: true },
+        { ...row("prompt", null), ...older, slug: "p-old", is_public: true },
+      ],
+      skills: [
+        { ...row("skill", "2026-11-19T10:00:00Z"), published: true },
+        { ...row("skill", null), ...older, slug: "s-old", published: true },
+      ],
+      workflows: [
+        { ...row("workflow", "2026-11-19T09:00:00Z"), published: true },
+        { ...row("workflow", null), ...older, slug: "w-old", published: true },
+      ],
+      prompt_kits: [
+        { ...row("kit", "2026-11-19T08:00:00Z"), published: true },
+        { ...row("kit", null), ...older, slug: "k-old", published: true },
+      ],
+    });
+    assertEquals(
+      list.slice(0, 4).map((i) => [i.link, i.date.toISOString()]),
+      [
+        [`${ORIGIN}/prompts/prompt-11`, "2026-11-19T11:00:00.000Z"],
+        [`${ORIGIN}/skills/skill-10`, "2026-11-19T10:00:00.000Z"],
+        [`${ORIGIN}/workflows/workflow-09`, "2026-11-19T09:00:00.000Z"],
+        [`${ORIGIN}/prompt-kits/kit-08`, "2026-11-19T08:00:00.000Z"],
+      ],
+    );
+    // A row without the date falls back to when it was created.
+    const undated = list.find((i) => i.link.endsWith("/prompt-undated"))!;
+    assertEquals(undated.date.toISOString(), "2026-10-01T09:00:00.000Z");
+    assertEquals(list.at(-1)!.link, undated.link);
+  },
+);
+
 Deno.test("blog posts join the feed when there are published ones", () => {
   const list = rssItems(ORIGIN, {
     ...fixtures(),
@@ -283,5 +333,24 @@ Deno.test(
       [["filter", "status", "eq", "published"]],
     );
     assert(!/\bcontent\b/.test(RSS_COLUMNS.blog_posts));
+  },
+);
+
+Deno.test(
+  "the feed's query orders every artifact type by when it went public",
+  () => {
+    for (const table of ARTIFACT_TABLES) {
+      assert(/\bpublished_at\b/.test(RSS_COLUMNS[table]), table);
+      const q = rssQuery(recorder(), table, 50);
+      assertEquals(
+        q.calls.filter(([m]) => m === "order"),
+        [
+          ["order", "published_at", { ascending: false, nullsFirst: false }],
+          ["order", "created_at", { ascending: false }],
+          ["order", "id", { ascending: true }],
+        ],
+        table,
+      );
+    }
   },
 );

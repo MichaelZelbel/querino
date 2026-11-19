@@ -708,12 +708,11 @@ export default function LibraryPromptEdit() {
           tags: submitted.tags.length > 0 ? submitted.tags : null,
           language: submitted.language,
           is_public: true,
-          published_at: new Date().toISOString(),
           summary: data.summary,
           example_output: data.exampleOutput || null,
         })
         .eq("id", promptId)
-        .select("id");
+        .select("id, published_at");
 
       if (error) {
         console.error("Error publishing prompt:", error);
@@ -733,7 +732,8 @@ export default function LibraryPromptEdit() {
           ? {
               ...prev,
               is_public: true,
-              published_at: new Date().toISOString(),
+              published_at:
+                published[0].published_at ?? prev.published_at ?? null,
               summary: data.summary,
               example_output: data.exampleOutput || null,
             }
