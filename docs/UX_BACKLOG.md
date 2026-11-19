@@ -202,7 +202,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Problem:** It fetches again what the loader already sent, shows no kits tab, and keeps the previous profile when you move to another.
 - **Acceptance:** First paint uses the loader data; kits are listed; switching profiles resets the page.
 
-### 26. ⬜ Unauthorised Edit pages behave differently per type · S · ★
+### 26. ✅ Unauthorised Edit pages behave differently per type · S · ★
 - **Area:** Editors
 - **Problem:** A prompt's Edit page shows a message; skills and workflows redirect with a toast.
 - **Acceptance:** One behaviour for all four types.
+- **Done (2026-11-19):** All four Edit pages decide with `decideEditAccess` (`src/lib/editAccess.ts`) and show one in-page `EditNotAllowed` state, "You can't edit this <type>.", with a link to the item's public page when it is public and to the Library otherwise. No toast, no redirect. A missing item and one the person may not read get the same message. Signed-out visitors still go to sign in and back; team editors still edit.

@@ -44,7 +44,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2,
   ArrowLeft,
-  ShieldAlert,
   Save,
   GitBranch,
   Trash2,
@@ -83,7 +82,9 @@ import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
-import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { loadEditAccess } from "@/hooks/useCanEditArtifact";
+import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
+import type { EditAccess } from "@/lib/editAccess";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
 import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
 import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
@@ -114,8 +115,7 @@ export default function LibraryPromptEdit() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [notAuthorized, setNotAuthorized] = useState(false);
+  const [denied, setDenied] = useState<EditAccess | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -259,24 +259,18 @@ export default function LibraryPromptEdit() {
 
         if (promptError) {
           console.error("Error fetching prompt:", promptError);
-          setNotFound(true);
-          return;
-        }
-
-        if (!promptData) {
-          setNotFound(true);
-          return;
         }
 
         // No admin shortcut: prompts have no admin update or delete rule, so
         // an admin on someone else's prompt got an editor whose every button
         // answered "Nothing was saved".
         // The select list is built at run time, so the row is typed here.
-        const typedPrompt = promptData as unknown as Prompt;
-        if (!(await userCanEditArtifact(typedPrompt, userId))) {
-          setNotAuthorized(true);
-          return;
-        }
+        const typedPrompt = promptError
+          ? null
+          : (promptData as unknown as Prompt | null);
+        const access = await loadEditAccess("prompts", typedPrompt, userId);
+        setDenied(access.kind === "edit" ? null : access);
+        if (access.kind !== "edit" || !typedPrompt) return;
 
         setPrompt(typedPrompt);
         applyPromptToForm(typedPrompt);
@@ -293,7 +287,7 @@ export default function LibraryPromptEdit() {
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setNotFound(true);
+        setDenied({ kind: "denied", backTo: "/library" });
       } finally {
         setLoading(false);
       }
@@ -862,59 +856,8 @@ export default function LibraryPromptEdit() {
     return null;
   }
 
-  if (notFound) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Prompt Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The prompt you're looking for doesn't exist.
-            </p>
-            <Link to="/library">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Library
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notAuthorized) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-                <ShieldAlert className="h-8 w-8 text-destructive" />
-              </div>
-            </div>
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Not Authorized
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              You don't have permission to edit this prompt.
-            </p>
-            <Link to="/library">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Library
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  if (denied?.kind === "denied") {
+    return <EditNotAllowed table="prompts" backTo={denied.backTo} />;
   }
 
   return (

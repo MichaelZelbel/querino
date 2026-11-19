@@ -67,7 +67,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { moderateContent, type ModerationResult } from "@/lib/moderateContent";
 import { ModerationBlockDialog } from "@/components/moderation/ModerationBlockDialog";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
-import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { loadEditAccess } from "@/hooks/useCanEditArtifact";
+import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
+import type { EditAccess } from "@/lib/editAccess";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
 import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
@@ -100,6 +102,7 @@ export default function PromptKitEdit() {
     useState<ModerationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [kit, setKit] = useState<PromptKit | null>(null);
+  const [denied, setDenied] = useState<EditAccess | null>(null);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   // prompt_kit_versions and update_prompt_kit_slug are author-only, so team
   // editors get the editor without the features they could not use.
@@ -173,16 +176,13 @@ export default function PromptKitEdit() {
           .eq("slug", slug)
           .maybeSingle();
 
-        if (error || !data) {
-          toast.error("Prompt kit not found");
-          navigate("/library");
-          return;
-        }
-        if (!(await userCanEditArtifact(data, userId))) {
-          toast.error("You don't have permission to edit this kit");
-          navigate("/library");
-          return;
-        }
+        const access = await loadEditAccess(
+          "prompt_kits",
+          error ? null : data,
+          userId,
+        );
+        setDenied(access.kind === "edit" ? null : access);
+        if (access.kind !== "edit") return;
         setKit(data);
         setCurrentSlug(data.slug);
         // The baseline is passed explicitly: markSaved() with no argument reads
@@ -486,6 +486,10 @@ export default function PromptKitEdit() {
       </div>
     );
   }
+  if (user && denied?.kind === "denied") {
+    return <EditNotAllowed table="prompt_kits" backTo={denied.backTo} />;
+  }
+
   if (!user || !kit) return null;
 
   const coachPanel = (

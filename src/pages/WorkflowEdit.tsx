@@ -80,7 +80,9 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
-import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { loadEditAccess } from "@/hooks/useCanEditArtifact";
+import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
+import type { EditAccess } from "@/lib/editAccess";
 import { writeOutcome } from "@/components/editors/writeOutcome";
 import { workflowText } from "@/components/workflows/workflowText";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
@@ -113,6 +115,7 @@ export default function WorkflowEdit() {
   const busyRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
+  const [denied, setDenied] = useState<EditAccess | null>(null);
   const [showCoachSheet, setShowCoachSheet] = useState(false);
   const [showVersionPanel, setShowVersionPanel] = useState(false);
   // workflow_versions is author-only under RLS, so team editors get the editor
@@ -177,16 +180,13 @@ export default function WorkflowEdit() {
           .eq("slug", slug)
           .maybeSingle();
 
-        if (error || !data) {
-          toast.error("Workflow not found");
-          navigate("/library");
-          return;
-        }
-        if (!(await userCanEditArtifact(data, userId))) {
-          toast.error("You don't have permission to edit this workflow");
-          navigate("/library");
-          return;
-        }
+        const access = await loadEditAccess(
+          "workflows",
+          error ? null : data,
+          userId,
+        );
+        setDenied(access.kind === "edit" ? null : access);
+        if (access.kind !== "edit") return;
         setWorkflow(data);
 
         const workflowContent = workflowText(data.content, data.json);
@@ -529,6 +529,10 @@ export default function WorkflowEdit() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (user && denied?.kind === "denied") {
+    return <EditNotAllowed table="workflows" backTo={denied.backTo} />;
   }
 
   if (!user || !workflow) return null;
