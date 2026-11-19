@@ -1,12 +1,14 @@
 # Journeys
 
 What a visitor does on Querino today. Each runs against the app started as `harness/RUNTIME.md`
-says: the site from the candidate commit on a local port, reading the live project's public data
-with the public visitor key. Every journey only reads. Signed-in journeys wait for a staging copy
-with its own data (`MISSION.md`, Q1), because signing in here would write to the live project.
+says: the site from the candidate commit on a local port, reading this checkout's test copy (made-up
+accounts and items, listed in `harness/test-copy/README.md`). Every journey below only reads, so it
+may also run against the live project's public data as a visitor. Signed-in journeys run on the test
+copy only, never on the live project.
 
-Measured on 2026-11-18: the public prompt list had 158 prompts, skills 8, workflows 1, and the
-sitemap 178 addresses. Those numbers grow; a journey asserts "at least one", never an exact count.
+On the live project, measured on 2026-11-18: the public prompt list had 158 prompts, skills 8,
+workflows 1, and the sitemap 178 addresses. The test copy holds four public prompts, three skills,
+three workflows and two prompt kits. A journey asserts "at least one", never an exact count.
 
 ## A visitor finds a public prompt and can copy it
 
@@ -34,7 +36,8 @@ content a visitor came for.
 ## A visitor discovers and searches
 
 1. Open `/discover`. The heading says "Discover prompts, skills, workflows and kits".
-2. Type a word that appears in public prompt titles (for example "mission") into the search box.
+2. Type a word that appears in public prompt titles (for example "meeting" on the test copy, or
+   "mission" on the live project) into the search box.
    Results come in after the page's scripts run, so wait for them.
 3. Results appear, and the first page holds at least one prompt whose title contains that word.
 

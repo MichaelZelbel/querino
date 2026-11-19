@@ -1,0 +1,41 @@
+{
+  "//": "Made-up accounts of the test copy only (harness/test-copy.sh). They exist in no other database. The .test domain is reserved and can never receive mail. The passwords are printed on purpose: they open nothing but a local copy that lives for one lap. seed.sql refers to the ids.",
+  "accounts": [
+    {
+      "key": "AUTHOR",
+      "id": "0a000000-0000-4000-a000-000000000001",
+      "email": "author@querino.test",
+      "password": "test-copy-author-pw",
+      "display_name": "test-author",
+      "created_at": "2026-01-01T09:00:00Z",
+      "what": "An established author (account from 1 January 2026) with a profile, public prompts, skills, workflows, one public prompt kit, one public collection, one private prompt and an MCP token."
+    },
+    {
+      "key": "NEW_AUTHOR",
+      "id": "0a000000-0000-4000-a000-000000000002",
+      "email": "new-author@querino.test",
+      "password": "test-copy-new-author-pw",
+      "display_name": "test-new-author",
+      "created_at": null,
+      "what": "An account created when the copy starts, so it is younger than seven days, with one public item of each type."
+    },
+    {
+      "key": "READER",
+      "id": "0a000000-0000-4000-a000-000000000003",
+      "email": "reader@querino.test",
+      "password": "test-copy-reader-pw",
+      "display_name": "test-reader",
+      "created_at": "2026-02-01T09:00:00Z",
+      "what": "An ordinary signed-in person with one private prompt and one unpublished skill, and nothing public."
+    },
+    {
+      "key": "ADMIN",
+      "id": "0a000000-0000-4000-a000-000000000004",
+      "email": "admin@querino.test",
+      "password": "test-copy-admin-pw",
+      "display_name": "test-admin",
+      "created_at": "2026-01-01T09:00:00Z",
+      "what": "An admin, for the admin panel (models, users, credits, the moderation queue)."
+    }
+  ]
+}
