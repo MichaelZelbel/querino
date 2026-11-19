@@ -20,7 +20,6 @@ import {
   ArrowLeft,
   Pencil,
   Lock,
-  Calendar,
   Tag,
   Files,
   BookOpen,
@@ -48,7 +47,6 @@ import { applySuggestionToArtifact } from "@/lib/applySuggestion";
 import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Skill, SkillAuthor } from "@/types/skill";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
-import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 
@@ -224,13 +222,6 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                     </div>
                   </Link>
                 )}
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Created <LocalDate value={skill.created_at} />
-                  </span>
-                </div>
               </div>
             </div>
 

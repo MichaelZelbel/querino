@@ -31,7 +31,6 @@ import {
   ArrowLeft,
   Pencil,
   Lock,
-  Calendar,
   Users,
   Sparkles,
   Tag,
@@ -62,7 +61,6 @@ import type { SuggestionWithAuthor } from "@/types/suggestion";
 import type { Prompt, PromptAuthor } from "@/types/prompt";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { formatCount } from "@/components/shared/formatDate";
-import { LocalDate } from "@/components/shared/LocalDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 
@@ -318,15 +316,6 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
                       <p className="text-xs text-muted-foreground">Author</p>
                     </div>
                   </Link>
-                )}
-
-                {prompt.published_at && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      Published <LocalDate value={prompt.published_at} />
-                    </span>
-                  </div>
                 )}
 
                 {(prompt.copies_count ?? 0) > 0 && (

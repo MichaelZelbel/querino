@@ -185,7 +185,8 @@ Each item: **Effort** (S/M/L), **Impact** (★1–3), **Area**, **Acceptance cri
 - **Problem:** Visiting the page without a reset token shows "this link has expired" instead of a way to request one.
 - **Acceptance:** Without a token the page offers "Send me a reset link".
 
-### 23. ⬜ Prompt pages show no date · S · ★
+### 23. 🟩 Prompt pages show no date · S · ★
+- **Decided against (evergreen pages), 2026-11-18:** the owner chose to show no date on any public prompt, skill, workflow or prompt kit page, because a visible date makes good items look outdated within months; the `datePublished` in the JSON-LD stays.
 - **Area:** Prompt detail
 - **Problem:** The page shows `published_at`, which is empty on every production row.
 - **Acceptance:** A date is shown for every public prompt (published, or else created).
