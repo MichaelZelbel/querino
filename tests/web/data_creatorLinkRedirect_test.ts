@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import {
+  answerCreatorLink,
   followCreatorLink,
   unfollowableGoPath,
   type CreatorLinkLookup,
@@ -124,5 +125,65 @@ Deno.test(
     ]) {
       assertEquals(unfollowableGoPath(path), null, path);
     }
+  },
+);
+
+// #58: a HEAD is answered from a lookup that only reads, so a link unfurler,
+// prefetcher or uptime checker is never counted as a click.
+function lookups(stored: string | null) {
+  const follow = stub({ data: stored, error: null });
+  const peek = stub({ data: stored, error: null });
+  return { follow, peek, both: { follow: follow.lookup, peek: peek.lookup } };
+}
+
+Deno.test(
+  "a HEAD answers what a GET answers, and never calls the counting lookup",
+  async () => {
+    const { follow, peek, both } = lookups("https://creator.example/page");
+    const head = await answerCreatorLink("HEAD", ITEM, both);
+    assertEquals(follow.asked, []);
+    assertEquals(peek.asked, [ITEM]);
+    assertEquals(head.status, 302);
+    assertEquals(head.headers.get("Location"), "https://creator.example/page");
+    assertNoindex(head);
+    assertEquals(head.headers.get("Referrer-Policy"), "no-referrer");
+  },
+);
+
+Deno.test("a GET is counted once, through the counting lookup", async () => {
+  const { follow, peek, both } = lookups("https://creator.example/page");
+  const get = await answerCreatorLink("GET", ITEM, both);
+  await answerCreatorLink("HEAD", ITEM, both);
+  // One GET plus one HEAD: one call to follow_creator_link, not two.
+  assertEquals(follow.asked, [ITEM]);
+  assertEquals(peek.asked, [ITEM]);
+  assertEquals(get.status, 302);
+  assertEquals(get.headers.get("Location"), "https://creator.example/page");
+  assertNoindex(get);
+  assertEquals(get.headers.get("Referrer-Policy"), "no-referrer");
+});
+
+Deno.test(
+  "a HEAD to an unknown id, a non-UUID or an item without a link answers 404 and counts nothing",
+  async () => {
+    const none = lookups(null);
+    const unknown = await answerCreatorLink(
+      "HEAD",
+      "00000000-0000-4000-8000-000000000000",
+      none.both,
+    );
+    const noLink = await answerCreatorLink("HEAD", ITEM, none.both);
+    assertEquals(unknown.status, 404);
+    assertEquals(noLink.status, 404);
+    assertEquals(noLink.headers.get("Location"), null);
+
+    const linked = lookups("https://creator.example/page");
+    const notAnId = await answerCreatorLink("HEAD", "not-an-id", linked.both);
+    assertEquals(notAnId.status, 404);
+    assertEquals(notAnId.headers.get("Location"), null);
+    assertEquals(linked.peek.asked, []);
+
+    assertEquals(none.follow.asked, []);
+    assertEquals(linked.follow.asked, []);
   },
 );

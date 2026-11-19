@@ -4,8 +4,11 @@
  *
  * The target is whatever the database stored for the item: the request is not
  * an argument, so no query string or header can choose where a visitor is sent.
- * `lookup` is follow_creator_link, which also counts the click and answers null
- * unless the link is approved and the item public.
+ * Both lookups answer null unless the link is approved and the item public.
+ * `follow` is follow_creator_link, which also counts the click; `peek` only
+ * reads. A GET is a visitor following the link and is counted. A HEAD is a link
+ * unfurler, prefetcher or uptime checker asking what is there: it gets the same
+ * answer and headers as a GET and is never counted (#58).
  */
 import { isUuid } from "@/lib/uuidRoute.ts";
 
@@ -54,6 +57,13 @@ export function unfollowableGoPath(pathname: string): Response | null {
   return isUuid(id) ? null : answer(404);
 }
 
+export type CreatorLinkLookups = {
+  /** Counts the click: follow_creator_link. */
+  follow: CreatorLinkLookup;
+  /** Reads only, counts nothing. */
+  peek: CreatorLinkLookup;
+};
+
 export async function followCreatorLink(
   itemId: string,
   lookup: CreatorLinkLookup,
@@ -68,4 +78,16 @@ export async function followCreatorLink(
   if (!target) return answer(404);
   // 302, not 301: the creator may change the address.
   return answer(302, { Location: target });
+}
+
+/** The answer of /go/<item-id> to a GET (counted) or a HEAD (never counted). */
+export function answerCreatorLink(
+  method: "GET" | "HEAD",
+  itemId: string,
+  lookups: CreatorLinkLookups,
+): Promise<Response> {
+  return followCreatorLink(
+    itemId,
+    method === "GET" ? lookups.follow : lookups.peek,
+  );
 }
