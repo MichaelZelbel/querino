@@ -189,7 +189,10 @@ export default function CollectionDetail({
     }
   };
 
-  if (loadingCollection || loadingItems) {
+  // Only the collection row decides the page: it comes from the route loader,
+  // so the server renders the heading. The items load in the browser and have
+  // their own spinner below; waiting for them here sent crawlers a spinner.
+  if (loadingCollection) {
     return <CollectionDetailSkeleton />;
   }
 
@@ -288,7 +291,7 @@ export default function CollectionDetail({
                 <Button
                   variant="outline"
                   onClick={handleCloneCollection}
-                  disabled={cloning}
+                  disabled={cloning || loadingItems}
                 >
                   {cloning ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -379,7 +382,11 @@ export default function CollectionDetail({
             ({filteredItems.length})
           </h2>
 
-          {filteredItems.length > 0 ? (
+          {loadingItems ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredItems.length > 0 ? (
             <div className="space-y-2">
               {filteredItems.map((item) => (
                 <Card

@@ -45,6 +45,7 @@ AI prompts created by users.
 | author_id | uuid | Owner (references profiles) |
 | team_id | uuid | Team ownership (optional) |
 | is_public | boolean | Public visibility |
+| published_at | timestamptz | When it first became public (set by the database, see "Rules the database enforces") |
 | slug | text | URL-friendly slug |
 | rating_avg | numeric | Average rating |
 | rating_count | integer | Number of ratings |
@@ -57,7 +58,8 @@ AI prompts created by users.
 | created_at | timestamptz | Creation timestamp |
 | updated_at | timestamptz | Last change by a person (see "Rules the database enforces") |
 
-`skills`, `workflows` and `prompt_kits` carry the same bookkeeping columns.
+`skills`, `workflows` and `prompt_kits` carry the same bookkeeping columns and
+`published_at`.
 
 ---
 
@@ -76,6 +78,7 @@ Reusable prompt frameworks and system prompts.
 | author_id | uuid | Owner (references profiles) |
 | team_id | uuid | Team ownership (optional) |
 | published | boolean | Public visibility |
+| published_at | timestamptz | When it first became public (set by the database, see "Rules the database enforces") |
 | slug | text | URL-friendly slug |
 | rating_avg | numeric | Average rating |
 | rating_count | integer | Number of ratings |
@@ -108,6 +111,7 @@ Documented automation sequences.
 | author_id | uuid | Owner (references profiles) |
 | team_id | uuid | Team ownership (optional) |
 | published | boolean | Public visibility |
+| published_at | timestamptz | When it first became public (set by the database, see "Rules the database enforces") |
 | slug | text | URL-friendly slug |
 | rating_avg | numeric | Average rating |
 | rating_count | integer | Number of ratings |
@@ -174,6 +178,46 @@ link through `public_creator_link(item_type, item_id)` and follows one through
 `follow_creator_link(item_id)`, which counts the click and returns the stored
 address. Deleting an item deletes its link (`delete_creator_link` trigger on
 the four artifact tables), and so does deleting the account that owns it.
+`follow_creator_link` also adds the click to the day's row of
+`item_stats_daily`.
+
+### `item_stats_daily`
+
+What an item's author sees on its Stats tab and in the Library (#48): per item
+and UTC day, how often it was viewed, copied and sent. Migration
+`20261119150000`.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| item_type | text | prompt, skill, workflow, prompt_kit |
+| item_id | uuid | The item |
+| day | date | The UTC day; primary key with item_type and item_id |
+| views | integer | Page views (`record_item_view`) |
+| copies | integer | Visitors who copied it or downloaded it as .md |
+| sends_chatgpt, sends_claude, sends_gemini, sends_perplexity | integer | Visitors who sent it to that assistant |
+| clicks | integer | Clicks on the creator link through /go |
+
+Nothing about a visitor is stored here, only the item, the day and the
+counts. Only the item's author reads its rows (row-level security through
+`is_item_owner`); anon and every other person read nothing, and no browser
+role writes. Only public items are counted, and never the author's own views,
+copies and sends. `record_item_view(item_type, item_id)` refuses a missing
+user agent and known bots; it keeps no visitor key, so it cannot count a visitor
+once. The cron job `prune-item-stats` drops rows older than 400 days.
+Deleting an item deletes its rows (`delete_item_stats` trigger on the four
+artifact tables).
+
+### `item_use_events`
+
+One row per visitor, item, channel (copy, chatgpt, claude, gemini,
+perplexity) and day, so `record_item_use(item_type, item_id, channel)` counts
+a copy, download or send once. `visitor_key` is the same
+day-salted HMAC `prompt_copy_events` uses, under the day's key in
+`prompt_copy_salts`; never a user id or an address. No browser
+role can read it; `prune-item-stats` drops it after two days, the day its key
+goes. `record_prompt_copy(prompt_id)` goes through `record_item_use`, and
+`prompts.copies_count` still counts a copy or a send once per visitor, prompt
+and day, never a download.
 
 ---
 
@@ -477,6 +521,15 @@ is the time a person last changed the artifact. Writes that touch only the
 bookkeeping columns (embedding, Menerio sync, ratings, copies, `fts`) keep it
 as it was (`touch_artifact_updated_at`, 2026-09-30). A machine (service role,
 cron) that sets `updated_at` itself is obeyed; the browser is not.
+
+**What `published_at` means on prompts, skills, workflows and prompt kits.**
+It is the moment the artifact first became public, however it became public
+(publish dialog, edit form, MCP server, a direct write). The database stamps it
+for every role, the service role and cron included (`stamp_published_at`,
+2026-11-19); a value a client sends is ignored. Unpublishing keeps it, and
+republishing keeps the first date. It is bookkeeping for `updated_at`: it only
+changes together with the visibility flag, which is what moves `updated_at`.
+The RSS feed dates and orders every artifact by it.
 
 **Deleting.**
 

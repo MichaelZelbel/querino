@@ -67,6 +67,14 @@ export const ARTIFACT_PUBLIC_COLUMN = {
   prompt_kits: "published",
 } as const satisfies Record<ArtifactListTable, "is_public" | "published">;
 
+/** The detail route of each table: where a public item lives. */
+export const ARTIFACT_DETAIL_ROUTE = {
+  prompts: "/prompts/$slug",
+  skills: "/skills/$slug",
+  workflows: "/workflows/$slug",
+  prompt_kits: "/prompt-kits/$slug",
+} as const satisfies Record<ArtifactListTable, string>;
+
 /**
  * A detail page reads every column a list does: the server loader writes
  * whatever it returns into the HTML as the router's page data, so a column

@@ -21,25 +21,26 @@ import { SITE_ORIGIN } from "@/lib/seo";
 import {
   ARTIFACT_TABLES,
   rssQuery,
+  rssRows,
   sitemapPageQuery,
-  type SitemapTable,
+  type SitemapSource,
 } from "@/lib/publicArtifacts";
 import {
   buildRssXml,
-  escapeXml,
   RSS_ITEM_LIMIT,
   rssItems,
   type RssRow,
   type RssSource,
 } from "@/lib/rssFeed";
+import {
+  buildSitemapXml,
+  SITEMAP_SOURCES,
+  type SitemapRow,
+  type StaticPage,
+} from "@/lib/sitemapXml";
 
 /** How long a crawler may reuse a response. Carried over from the edge function. */
 export const FEED_CACHE_CONTROL = "public, max-age=3600";
-
-/** Sitemap <lastmod> wants a date, not a timestamp. */
-function formatDate(isoDate: string): string {
-  return isoDate.split("T")[0];
-}
 
 /**
  * The feed of what Querino publishes (rssFeed.ts builds the XML). Until
@@ -50,7 +51,9 @@ export async function buildRss(): Promise<string> {
   const tables = [...ARTIFACT_TABLES, "blog_posts"] as const;
   const results = await Promise.all(
     tables.map((table) =>
-      rssQuery(supabase.from(table), table, RSS_ITEM_LIMIT),
+      rssRows(table, (options) =>
+        rssQuery(supabase.from(table), table, RSS_ITEM_LIMIT, options),
+      ),
     ),
   );
 
@@ -70,11 +73,6 @@ export async function buildRss(): Promise<string> {
 /** One page of rows, and the cap PostgREST applies whether or not you ask. */
 const SITEMAP_PAGE = 1000;
 
-interface SitemapRow {
-  slug: string | null;
-  updated_at: string | null;
-}
-
 /**
  * Every published row of one table, in pages.
  *
@@ -85,7 +83,7 @@ interface SitemapRow {
  * being crawled.
  */
 async function fetchAllRows(
-  table: SitemapTable,
+  table: SitemapSource,
 ): Promise<{ data: SitemapRow[] | null; error: { message: string } | null }> {
   const rows: SitemapRow[] = [];
 
@@ -108,7 +106,7 @@ async function fetchAllRows(
 
 export async function buildSitemap(): Promise<string> {
   // Static pages with their priorities
-  const staticPages = [
+  const staticPages: StaticPage[] = [
     { loc: "/", priority: "1.0", changefreq: "daily" },
     { loc: "/discover", priority: "0.9", changefreq: "daily" },
     // The plain link lists. They are how a crawler that ignores the sitemap still
@@ -127,14 +125,8 @@ export async function buildSitemap(): Promise<string> {
   ];
 
   // Fetch dynamic content in parallel
-  const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all(
-    [
-      fetchAllRows("blog_posts"),
-      fetchAllRows("prompts"),
-      fetchAllRows("skills"),
-      fetchAllRows("workflows"),
-      fetchAllRows("prompt_kits"),
-    ],
+  const results = await Promise.all(
+    SITEMAP_SOURCES.map(({ table }) => fetchAllRows(table)),
   );
 
   // Same reasoning as the RSS feed and as fetchAllRows: a crawler retries a
@@ -142,68 +134,20 @@ export async function buildSitemap(): Promise<string> {
   // pages from the index. Until 2026-09-16 a failed query here skipped its table
   // silently, which is exactly what the comment above fetchAllRows says must
   // not happen.
-  for (const [table, result] of [
-    ["blog_posts", blogPosts],
-    ["prompts", prompts],
-    ["skills", skills],
-    ["workflows", workflows],
-    ["prompt_kits", promptKits],
-  ] as const) {
-    if (result.error) {
-      throw new Error(
-        `Sitemap query for ${table} failed: ${result.error.message}`,
-      );
+  const rows: Partial<Record<SitemapSource, SitemapRow[]>> = {};
+  results.forEach(({ data, error }, i) => {
+    const { table } = SITEMAP_SOURCES[i];
+    if (error) {
+      throw new Error(`Sitemap query for ${table} failed: ${error.message}`);
     }
-  }
+    rows[table] = data ?? [];
+  });
 
   // /blog is only advertised once there is a published post to read; an empty
   // blog index is a thin page a crawler should not be sent to.
-  if ((blogPosts.data?.length ?? 0) > 0) {
+  if ((rows.blog_posts?.length ?? 0) > 0) {
     staticPages.push({ loc: "/blog", priority: "0.8", changefreq: "daily" });
   }
 
-  const urls: string[] = [];
-
-  for (const page of staticPages) {
-    urls.push(`
-  <url>
-    <loc>${SITE_ORIGIN}${page.loc}</loc>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>`);
-  }
-
-  // Every artefact type is the same entry with a different prefix and priority, so the
-  // five loops the edge function repeated are one loop over five sources here.
-  const collections: Array<{
-    prefix: string;
-    priority: string;
-    rows: Array<{ slug: string | null; updated_at: string | null }> | null;
-  }> = [
-    { prefix: "/blog", priority: "0.7", rows: blogPosts.data },
-    { prefix: "/prompts", priority: "0.6", rows: prompts.data },
-    { prefix: "/skills", priority: "0.6", rows: skills.data },
-    { prefix: "/workflows", priority: "0.6", rows: workflows.data },
-    { prefix: "/prompt-kits", priority: "0.6", rows: promptKits.data },
-  ];
-
-  for (const { prefix, priority, rows } of collections) {
-    for (const row of rows ?? []) {
-      if (!row.slug) continue;
-      const lastmod = row.updated_at
-        ? formatDate(row.updated_at)
-        : formatDate(new Date().toISOString());
-      urls.push(`
-  <url>
-    <loc>${SITE_ORIGIN}${prefix}/${escapeXml(row.slug)}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
-  </url>`);
-    }
-  }
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}
-</urlset>`;
+  return buildSitemapXml(SITE_ORIGIN, staticPages, rows);
 }

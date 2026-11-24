@@ -19,7 +19,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  KNOWN_UNLOADABLE,
   denoBinary,
   graphProblems,
   measure,
@@ -194,8 +193,8 @@ test("the CLI refuses to count while an import floats", () => {
   assert.doesNotMatch(run.stdout, /deno check:/);
 });
 
-test("the one known unloadable module is ignored, any other is not", () => {
-  const [specifier] = KNOWN_UNLOADABLE;
+test("a module in the graph that failed to load is a problem", () => {
+  const specifier = "https://esm.sh/y@1.0.0/dist/module/Gone";
   const entry = "file:///functions/a/index.ts";
   const info = {
     modules: [
@@ -218,8 +217,7 @@ test("the one known unloadable module is ignored, any other is not", () => {
       { specifier, error: `Module not found "${specifier}".` },
     ],
   };
-  assert.deepEqual(graphProblems(info), []);
-  assert.deepEqual(graphProblems(info, { known: new Set() }), [
+  assert.deepEqual(graphProblems(info), [
     `${specifier}: Module not found "${specifier}".`,
   ]);
 });

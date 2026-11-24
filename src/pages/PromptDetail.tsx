@@ -64,6 +64,9 @@ import { formatCount } from "@/components/shared/formatDate";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
 import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import { ItemStatsPanel } from "@/components/stats/ItemStatsPanel";
+import { useRecordItemView } from "@/hooks/useItemStats";
+import { recordItemUse } from "@/lib/itemUsage";
 import type { PublicCreatorLink } from "@/lib/creatorLink";
 
 export interface PromptWithAuthor extends Prompt {
@@ -82,6 +85,7 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
   const navigate = useNavigate();
   const goBack = useGoBack("/discover");
   const { user } = useAuthContext();
+  useRecordItemView("prompt", prompt.id);
   const { isPromptSaved, toggleSave } = useSavedPrompts();
   const { clonePrompt, cloning } = useClonePrompt();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
@@ -538,6 +542,9 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
                 description={prompt.description}
                 tags={prompt.tags}
                 content={prompt.content}
+                onDownloaded={() =>
+                  recordItemUse("prompt", prompt.id, "download")
+                }
               />
             </div>
 
@@ -694,6 +701,7 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
                     </Badge>
                   )}
                 </TabsTrigger>
+                {isAuthor && <TabsTrigger value="stats">Stats</TabsTrigger>}
               </TabsList>
 
               {user && (
@@ -730,6 +738,15 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
                   onApplySuggestion={handleApplySuggestion}
                 />
               </TabsContent>
+              {isAuthor && (
+                <TabsContent value="stats" className="mt-6">
+                  <ItemStatsPanel
+                    itemType="prompt"
+                    itemId={prompt.id}
+                    isPublic={!!prompt.is_public}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </main>

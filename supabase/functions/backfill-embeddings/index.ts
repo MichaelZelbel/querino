@@ -36,7 +36,7 @@
 // limit, a timeout) is recorded but costs no attempt, so an outage cannot
 // retire the backlog. Editing the text resets the count.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { getServiceClient } from "../_shared/llm.ts";
 import {
   isMachineCaller,
