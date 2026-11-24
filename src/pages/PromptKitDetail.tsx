@@ -45,6 +45,8 @@ import { AddToCollectionModal } from "@/components/collections/AddToCollectionMo
 import { CommentsSection } from "@/components/comments";
 import { ActivitySidebar } from "@/components/activity";
 import { AIInsightsPanel } from "@/components/insights";
+import { SimilarArtefactsSection } from "@/components/similar/SimilarArtefactsSection";
+import { useSimilarPromptKits } from "@/hooks/useSimilarArtefacts";
 import { DownloadMarkdownButton } from "@/components/markdown/DownloadMarkdownButton";
 import { TranslateModal } from "@/components/shared/TranslateModal";
 import { MenerioSyncButton } from "@/components/menerio/MenerioSyncButton";
@@ -87,6 +89,9 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [pinning, setPinning] = useState(false);
   const [translateOpen, setTranslateOpen] = useState(false);
+  const { items: similarKits, loading: loadingSimilar } = useSimilarPromptKits(
+    kit.id,
+  );
   const { hasIntegration: hasMenerio } = useMenerioIntegration(user?.id);
 
   const isAuthor = kit.author_id && user?.id === kit.author_id;
@@ -519,6 +524,12 @@ export default function PromptKitDetail({ kit }: { kit: KitWithAuthor }) {
                 </TabsContent>
               )}
             </Tabs>
+
+            <SimilarArtefactsSection
+              type="prompt-kit"
+              items={similarKits}
+              loading={loadingSimilar}
+            />
           </div>
         </main>
 

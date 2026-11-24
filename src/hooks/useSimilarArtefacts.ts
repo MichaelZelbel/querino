@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type SimilarArtefactType = "prompt" | "skill" | "workflow";
+export type SimilarArtefactType =
+  "prompt" | "skill" | "workflow" | "prompt-kit";
 
 export interface SimilarPrompt {
   id: string;
@@ -28,6 +29,16 @@ export interface SimilarSkill {
 }
 
 export interface SimilarWorkflow {
+  id: string;
+  title: string;
+  description: string | null;
+  author_id: string | null;
+  team_id: string | null;
+  tags: string[];
+  similarity: number;
+}
+
+export interface SimilarPromptKit {
   id: string;
   title: string;
   description: string | null;
@@ -159,6 +170,48 @@ export function useSimilarWorkflows(workflowId: string | undefined, limit = 6) {
 
     fetchSimilar();
   }, [workflowId, limit]);
+
+  return { items, loading };
+}
+
+export function useSimilarPromptKits(kitId: string | undefined, limit = 6) {
+  const [items, setItems] = useState<SimilarPromptKit[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!kitId) {
+      setLoading(false);
+      return;
+    }
+
+    // Captured after the guard: the async function below closes over the
+    // parameter, so the narrowing above does not reach inside it.
+    const targetId = kitId;
+
+    async function fetchSimilar() {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.rpc("get_similar_prompt_kits", {
+          target_id: targetId,
+          match_limit: limit,
+        });
+
+        if (error) {
+          console.error("Error fetching similar prompt kits:", error);
+          setItems([]);
+        } else {
+          setItems(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch similar prompt kits:", err);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchSimilar();
+  }, [kitId, limit]);
 
   return { items, loading };
 }
