@@ -17,7 +17,15 @@ import {
   DEFAULT_MODEL,
   getCallSiteMeta,
 } from "../_shared/llm-registry.ts";
-import { SYSTEM_PROMPT as systemPrompt } from "../_shared/prompts/ai-moderate-content.ts";
+import {
+  LINK_DESTINATION_PROMPT,
+  SYSTEM_PROMPT as systemPrompt,
+} from "../_shared/prompts/ai-moderate-content.ts";
+import {
+  decideLinkOutcome,
+  linkClassifierInput,
+} from "../_shared/creatorLinkCheck.ts";
+import { fetchLinkPage } from "../_shared/linkFetch.ts";
 import {
   classificationWindows,
   combineClassifications,
@@ -53,7 +61,9 @@ const BATCH_SIZE = 5;
 // for the last row started: up to 45 s of classifying (its slices run side by
 // side) and then, on a violation, up to two mails at a user lookup plus 15 s
 // each. At 90 s that last row could end near 165 s, and the kill lost its
-// mails (2026-10-07).
+// mails (2026-10-07). A creator link's row also fetches its page first, at
+// most LINK_FETCH_TIMEOUT_MS (5 s, _shared/linkFetch.ts), and sends one mail,
+// so it ends sooner than a text row.
 const CLASSIFY_TIMEOUT_MS = 45_000;
 const TICK_DEADLINE_MS = 55_000;
 const CONFIDENCE_AUTO_UNPUBLISH = 0.85;
@@ -166,7 +176,13 @@ function parseClassification(raw: string): AIClassification {
   };
 }
 
-async function classifyWindow(content: string): Promise<AIClassification> {
+// A creator link (#47) is classified with LINK_DESTINATION_PROMPT added and
+// the link_destination category allowed; without `link` the request is the
+// text moderation request, unchanged.
+async function classifyWindow(
+  content: string,
+  opts: { link?: boolean } = {},
+): Promise<AIClassification> {
   // Deliberately no credit gate. This runs from cron or an admin button, the
   // cost is the platform's, and gating it on some user's balance would mean
   // moderation stops the moment that user runs dry.
@@ -202,10 +218,17 @@ async function classifyWindow(content: string): Promise<AIClassification> {
     temperature: effective.temperature,
     maxTokens: effective.max_tokens,
     messages: [
-      { role: "system", content: effective.system_prompt ?? systemPrompt },
+      {
+        role: "system",
+        content: opts.link
+          ? `${effective.system_prompt ?? systemPrompt}\n\n${LINK_DESTINATION_PROMPT}`
+          : (effective.system_prompt ?? systemPrompt),
+      },
       {
         role: "user",
-        content: `Analyze this content for policy violations:\n\n${content}`,
+        content: opts.link
+          ? `Check this link for policy violations:\n\n${content}`
+          : `Analyze this content for policy violations:\n\n${content}`,
       },
     ],
     tools: [
@@ -224,7 +247,15 @@ async function classifyWindow(content: string): Promise<AIClassification> {
               },
               category: {
                 type: "string",
-                enum: ["none", "sexual", "hate", "malware", "pii", "injection"],
+                enum: [
+                  "none",
+                  "sexual",
+                  "hate",
+                  "malware",
+                  "pii",
+                  "injection",
+                  ...(opts.link ? ["link_destination"] : []),
+                ],
                 description: "The violation category, or 'none' if safe",
               },
               confidence: {
@@ -392,6 +423,7 @@ async function sendViolationEmail(
   title: string | null,
   category: string,
   serviceClient: SupabaseClient,
+  linkUrl?: string,
 ) {
   if (!RESEND_API_KEY) {
     console.warn("RESEND_API_KEY not configured, skipping email notification");
@@ -409,7 +441,12 @@ async function sendViolationEmail(
   }
 
   // The title is the author's own text; violationEmail escapes it.
-  const { subject, html } = violationEmail({ itemType, title, category });
+  const { subject, html } = violationEmail({
+    itemType,
+    title,
+    category,
+    linkUrl,
+  });
 
   try {
     const res = await fetch(RESEND_URL, {
@@ -440,6 +477,140 @@ async function sendViolationEmail(
   } catch (emailErr) {
     console.error("Failed to send violation email:", emailErr);
   }
+}
+
+// A creator link's queue row (item_type 'creator_link', item_id the link's
+// id, filed by enqueue_creator_link_check, 20261119140000): fetch the page
+// behind the guard, classify it, and write approved, rejected or unreachable.
+// Runs inside the loop's try, so a throw (the provider failed, a write
+// failed) sends the row down the retry path and leaves the link as it was.
+async function checkCreatorLink(
+  serviceClient: SupabaseClient,
+  item: QueueItem,
+): Promise<"reviewed" | "violation"> {
+  const reviewed = async (reason: string) => {
+    await updateQueueRow(serviceClient, item.id, {
+      status: "reviewed",
+      ai_category: "none",
+      ai_confidence: null,
+      ai_reason: reason,
+      reviewed_at: new Date().toISOString(),
+    });
+    return "reviewed" as const;
+  };
+
+  const { data: link, error: linkErr } = await serviceClient
+    .from("creator_links")
+    .select("id, item_type, item_id, url, label, check_failures")
+    .eq("id", item.item_id)
+    .maybeSingle();
+  if (linkErr) {
+    throw new Error(
+      `Failed to load creator link ${item.item_id}: ${linkErr.message}`,
+    );
+  }
+  if (!link) return reviewed("Not checked: the link was removed before review");
+
+  const owner = await loadArtifact(serviceClient, link.item_type, link.item_id);
+  if (!owner)
+    return reviewed("Not checked: the item was deleted before review");
+  if (owner.author_id !== item.user_id) {
+    return reviewed(
+      `Not enforced: queue row user ${item.user_id} is not the author of this ${link.item_type}, so the link was not checked`,
+    );
+  }
+
+  const page = await fetchLinkPage(link.url);
+  const outcome = decideLinkOutcome(
+    page.ok
+      ? {
+          reachable: true,
+          classification: await classifyWindow(
+            linkClassifierInput(link.label, page),
+            {
+              link: true,
+            },
+          ),
+        }
+      : { reachable: false, reason: page.reason },
+    link.check_failures ?? 0,
+    CONFIDENCE_AUTO_UNPUBLISH,
+    new Date(),
+  );
+  console.log(`Item ${item.id}: creator link ${link.id} ${outcome.kind}`);
+
+  // Only the link that was checked: when the author changed it meanwhile,
+  // its change trigger reset it to pending and filed a new row.
+  const { data: written, error: writeErr } = await serviceClient
+    .from("creator_links")
+    .update(outcome.link)
+    .eq("id", link.id)
+    .eq("url", link.url)
+    .eq("label", link.label)
+    .select("id");
+  if (writeErr) {
+    throw new Error(
+      `Failed to update creator link ${link.id}: ${writeErr.message}`,
+    );
+  }
+  if (!written?.length) {
+    return reviewed("Superseded: the link changed during the check");
+  }
+
+  if (!outcome.enforce) {
+    await updateQueueRow(serviceClient, item.id, {
+      ...outcome.queue,
+      reviewed_at: new Date().toISOString(),
+    });
+    return "reviewed";
+  }
+
+  const { error: eventErr } = await serviceClient
+    .from("moderation_events")
+    .insert({
+      user_id: item.user_id,
+      action: "ai_review",
+      item_type: "creator_link",
+      item_id: link.id,
+      flagged_content: `${link.label} ${link.url}`.trim().substring(0, 500),
+      matched_words: [outcome.queue.ai_reason],
+      category: outcome.queue.ai_category,
+      result: "blocked",
+      tier: "ai",
+    });
+  if (eventErr) {
+    throw new Error(`Failed to log moderation event: ${eventErr.message}`);
+  }
+
+  // Final before the strike and the email, as on the text path: a retry
+  // after this line would strike and mail again.
+  await updateQueueRow(serviceClient, item.id, {
+    ...outcome.queue,
+    reviewed_at: new Date().toISOString(),
+  });
+
+  try {
+    const strike = await incrementStrike(serviceClient, item.user_id);
+    if (strike.suspended) {
+      console.log(
+        `User ${item.user_id} suspended after ${strike.strikeCount} strikes`,
+      );
+    }
+    await sendViolationEmail(
+      item.user_id,
+      "creator_link",
+      owner.title,
+      outcome.queue.ai_category,
+      serviceClient,
+      link.url,
+    );
+  } catch (lateErr) {
+    console.error(
+      `Item ${item.id}: strike or email failed after the row was marked:`,
+      lateErr,
+    );
+  }
+  return "violation";
 }
 
 Deno.serve(async (req: Request) => {
@@ -545,6 +716,14 @@ Deno.serve(async (req: Request) => {
         await updateQueueRow(serviceClient, item.id, {
           retry_count: plan.attempt,
         });
+
+        if (item.item_type === "creator_link") {
+          if ((await checkCreatorLink(serviceClient, item)) === "violation") {
+            violations++;
+          }
+          processed++;
+          continue;
+        }
 
         // Classify what the artifact says NOW, not what the client said it
         // said. The queue row is filed by moderate-content with a snapshot
