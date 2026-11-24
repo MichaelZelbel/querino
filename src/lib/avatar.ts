@@ -41,3 +41,35 @@ export function avatarImageProps(
     height: displayPx,
   };
 }
+
+// Where a person's own picture is stored: one object per extension under
+// their own folder, "<user id>/avatar.<ext>". An upload replaces the object of
+// its own extension (upsert); a picture of another extension is left behind
+// unless it is removed.
+
+/** The storage path of a person's picture with this file name's extension. */
+export function avatarObjectPath(userId: string, fileName: string): string {
+  const dot = fileName.lastIndexOf(".");
+  const ext =
+    dot > 0 && dot < fileName.length - 1
+      ? fileName.slice(dot + 1).toLowerCase()
+      : "png";
+  return `${userId}/avatar.${ext}`;
+}
+
+/**
+ * The paths of the person's stored pictures that are no longer theirs to
+ * show: every "avatar.*" in their folder except `keepPath` (the one just
+ * uploaded; null when the picture was removed). `names` are the object names
+ * a listing of the folder returned. Anything else in the folder is left alone.
+ */
+export function staleAvatarPaths(
+  userId: string,
+  names: readonly string[],
+  keepPath: string | null,
+): string[] {
+  return names
+    .filter((name) => /^avatar\.[^/]+$/.test(name))
+    .map((name) => `${userId}/${name}`)
+    .filter((path) => path !== keepPath);
+}

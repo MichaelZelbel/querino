@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, Link } from "@/lib/router-compat";
+import { useNavigate, useParams, useLocation, Link } from "@/lib/router-compat";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +44,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2,
   ArrowLeft,
-  ShieldAlert,
   Save,
   GitBranch,
   Trash2,
@@ -83,8 +82,13 @@ import { deterministicSessionId } from "@/lib/runCanvasAI";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { SaveStateBadge } from "@/components/editors/SaveStateBadge";
 import { invalidateArtifactQueries } from "@/lib/invalidateArtifactQueries";
-import { userCanEditArtifact } from "@/hooks/useCanEditArtifact";
+import { loadEditAccess } from "@/hooks/useCanEditArtifact";
+import { EditNotAllowed } from "@/components/editors/EditNotAllowed";
 import { artifactDetailSelect } from "@/lib/artifactListColumns";
+import { CreatorLinkEditor } from "@/components/creatorLinks/CreatorLinkEditor";
+import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
+import { useOwnCreatorLink } from "@/hooks/useCreatorLink";
+import { creatorLinkPrefill, type CreatorLinkForm } from "@/lib/creatorLink";
 
 interface PromptVersion {
   id: string;
@@ -110,8 +114,7 @@ export default function LibraryPromptEdit() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [notAuthorized, setNotAuthorized] = useState(false);
+  const [deniedBackTo, setDeniedBackTo] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingVersion, setIsSavingVersion] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -155,6 +158,12 @@ export default function LibraryPromptEdit() {
 
   // Get the prompt ID for database operations
   const promptId = prompt?.id;
+  const { profile } = useAuthContext();
+  const { data: storedLink, isLoading: storedLinkLoading } = useOwnCreatorLink(
+    "prompt",
+    promptId,
+    isArtifactAuthor,
+  );
 
   const currentForm = {
     title,
@@ -167,11 +176,12 @@ export default function LibraryPromptEdit() {
   };
   type PromptForm = typeof currentForm;
 
-  const { isDirty, savedAt, markSaved, allowNavigationTo } = useUnsavedChanges({
-    data: currentForm,
-    isSaving: isSaving || isSavingVersion || isPublishing,
-    onSave: () => handleSaveChanges(),
-  });
+  const { isDirty, savedAt, markSaved, markLoaded, allowNavigationTo } =
+    useUnsavedChanges({
+      data: currentForm,
+      isSaving: isSaving || isSavingVersion || isPublishing,
+      onSave: () => handleSaveChanges(),
+    });
 
   // The last form known to match the database. Unpublish writes only the
   // visibility, so its new baseline is this one with isPublic flipped, and any
@@ -183,9 +193,12 @@ export default function LibraryPromptEdit() {
   };
 
   // Put a loaded row into the form and take it as the clean baseline. The
-  // baseline is passed explicitly because markSaved() with no argument reads
-  // the state of the current render, which is still the previous form.
-  const applyPromptToForm = (loaded: Prompt) => {
+  // baseline is passed explicitly because markLoaded()/markSaved() with no
+  // argument read the state of the current render, which is still the
+  // previous form. `how` says whether a write put the row there (a restore
+  // from the version panel) or it was only read: a plain load stamps no save
+  // time, or the footer said "Saved · just now" as the page opened (#83).
+  const applyPromptToForm = (loaded: Prompt, how: "loaded" | "restored") => {
     const form = {
       title: loaded.title,
       shortDescription: loaded.description,
@@ -202,7 +215,12 @@ export default function LibraryPromptEdit() {
     setTags(form.tags);
     setIsPublic(form.isPublic);
     setLanguage(form.language);
-    markFormSaved(form);
+    if (how === "restored") {
+      markFormSaved(form);
+    } else {
+      savedFormRef.current = form;
+      markLoaded(form);
+    }
   };
 
   // slug|user of the prompt already in the form. A new user object for the
@@ -215,10 +233,20 @@ export default function LibraryPromptEdit() {
   // this it reloaded every field and threw away unsaved edits.
   const assignedSlugRef = useRef<string | null>(null);
 
-  // Redirect to auth if not logged in
+  // Redirect to auth if not logged in. This page answers at both
+  // /prompts/<slug>/edit and /library/<slug>/edit; sign-in returns to the one
+  // the visitor opened. The prefix is read once: the location changes to
+  // /auth while this page is still mounted, and reading it live then sent
+  // the visitor to /auth?redirect=/auth.
+  const { pathname } = useLocation();
+  const editBaseRef = useRef(
+    pathname.startsWith("/library/") ? "/library" : "/prompts",
+  );
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate(`/auth?redirect=/library/${slug}/edit`, { replace: true });
+      navigate(`/auth?redirect=${editBaseRef.current}/${slug}/edit`, {
+        replace: true,
+      });
     }
   }, [user, authLoading, navigate, slug]);
 
@@ -249,27 +277,21 @@ export default function LibraryPromptEdit() {
 
         if (promptError) {
           console.error("Error fetching prompt:", promptError);
-          setNotFound(true);
-          return;
-        }
-
-        if (!promptData) {
-          setNotFound(true);
-          return;
         }
 
         // No admin shortcut: prompts have no admin update or delete rule, so
         // an admin on someone else's prompt got an editor whose every button
         // answered "Nothing was saved".
         // The select list is built at run time, so the row is typed here.
-        const typedPrompt = promptData as unknown as Prompt;
-        if (!(await userCanEditArtifact(typedPrompt, userId))) {
-          setNotAuthorized(true);
-          return;
-        }
+        const typedPrompt = promptError
+          ? null
+          : (promptData as unknown as Prompt | null);
+        const access = await loadEditAccess("prompts", typedPrompt, userId);
+        setDeniedBackTo(access.kind === "edit" ? null : access.backTo);
+        if (access.kind !== "edit" || !typedPrompt) return;
 
         setPrompt(typedPrompt);
-        applyPromptToForm(typedPrompt);
+        applyPromptToForm(typedPrompt, "loaded");
         loadedKeyRef.current = `${slug}|${userId}`;
 
         const { data: versionsData, error: versionsError } = await supabase
@@ -283,7 +305,7 @@ export default function LibraryPromptEdit() {
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setNotFound(true);
+        setDeniedBackTo("/library");
       } finally {
         setLoading(false);
       }
@@ -310,7 +332,7 @@ export default function LibraryPromptEdit() {
     if (promptData) {
       const typedPrompt = promptData as unknown as Prompt;
       setPrompt(typedPrompt);
-      applyPromptToForm(typedPrompt);
+      applyPromptToForm(typedPrompt, "restored");
     }
 
     const { data: versionsData } = await supabase
@@ -660,6 +682,7 @@ export default function LibraryPromptEdit() {
   const handlePublish = async (data: {
     summary: string;
     exampleOutput: string;
+    link: CreatorLinkForm | null;
   }) => {
     if (busyRef.current || !promptId || !user) return;
     // Publishing saves the form too. It used to write only the visibility and
@@ -694,12 +717,11 @@ export default function LibraryPromptEdit() {
           tags: submitted.tags.length > 0 ? submitted.tags : null,
           language: submitted.language,
           is_public: true,
-          published_at: new Date().toISOString(),
           summary: data.summary,
           example_output: data.exampleOutput || null,
         })
         .eq("id", promptId)
-        .select("id");
+        .select("id, published_at");
 
       if (error) {
         console.error("Error publishing prompt:", error);
@@ -719,7 +741,8 @@ export default function LibraryPromptEdit() {
           ? {
               ...prev,
               is_public: true,
-              published_at: new Date().toISOString(),
+              published_at:
+                published[0].published_at ?? prev.published_at ?? null,
               summary: data.summary,
               example_output: data.exampleOutput || null,
             }
@@ -733,6 +756,14 @@ export default function LibraryPromptEdit() {
       void invalidateArtifactQueries(queryClient, "prompt");
       setShowPublishModal(false);
       toast.success("Prompt published successfully!");
+      if (isArtifactAuthor) {
+        await saveCreatorLinkAfterPublish(
+          queryClient,
+          "prompt",
+          promptId,
+          data.link,
+        );
+      }
       navigate(`/prompts/${slug}`);
     } catch (err) {
       console.error("Error publishing:", err);
@@ -843,59 +874,8 @@ export default function LibraryPromptEdit() {
     return null;
   }
 
-  if (notFound) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Prompt Not Found
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              The prompt you're looking for doesn't exist.
-            </p>
-            <Link to="/library">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Library
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (notAuthorized) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-20">
-          <div className="container mx-auto max-w-4xl px-4 text-center">
-            <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-                <ShieldAlert className="h-8 w-8 text-destructive" />
-              </div>
-            </div>
-            <h1 className="mb-4 text-display-md font-bold text-foreground">
-              Not Authorized
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              You don't have permission to edit this prompt.
-            </p>
-            <Link to="/library">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Library
-              </Button>
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  if (deniedBackTo) {
+    return <EditNotAllowed table="prompts" backTo={deniedBackTo} />;
   }
 
   return (
@@ -964,6 +944,7 @@ export default function LibraryPromptEdit() {
                 <Button
                   variant="outline"
                   onClick={() => setShowPublishModal(true)}
+                  disabled={storedLinkLoading}
                   className="gap-2"
                 >
                   <Globe className="h-4 w-4" />
@@ -1320,6 +1301,13 @@ export default function LibraryPromptEdit() {
                         />
                       </div>
 
+                      {isArtifactAuthor && promptId && (
+                        <CreatorLinkEditor
+                          itemType="prompt"
+                          itemId={promptId}
+                        />
+                      )}
+
                       {/* Change Notes */}
                       {isArtifactAuthor && (
                         <div className="space-y-2">
@@ -1368,6 +1356,12 @@ export default function LibraryPromptEdit() {
         isPublishing={isPublishing}
         initialSummary={prompt?.summary ?? ""}
         initialExampleOutput={prompt?.example_output ?? ""}
+        showLink={isArtifactAuthor}
+        initialLink={
+          storedLink
+            ? { url: storedLink.url, label: storedLink.label }
+            : creatorLinkPrefill(profile?.website)
+        }
       />
 
       {/* Full version manager (view / compare / restore) */}

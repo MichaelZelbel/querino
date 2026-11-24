@@ -28,6 +28,7 @@ import type { BlogPost } from "@/types/blog";
 import { fetchCollection } from "@/hooks/useCollections";
 import type { CollectionWithOwner } from "@/types/collection";
 import {
+  ARTIFACT_DETAIL_ROUTE,
   ARTIFACT_PUBLIC_COLUMN,
   artifactDetailSelect,
   type ArtifactListTable,
@@ -43,6 +44,8 @@ import {
   pickNameIgnoringCase,
 } from "@/lib/profileName";
 import { collectPublicIndex, type PublicIndexEntry } from "@/lib/publicIndex";
+import { ITEM_TYPE_OF_TABLE, type PublicCreatorLink } from "@/lib/creatorLink";
+import { fetchPublicCreatorLink } from "@/hooks/useCreatorLink";
 
 export interface LoadedArtefact {
   id: string;
@@ -58,16 +61,10 @@ export interface LoadedArtefact {
     display_name: string | null;
     avatar_url: string | null;
   } | null;
+  /** Only ever an approved link on a public item; read here so it is in the first response. */
+  creator_link?: PublicCreatorLink | null;
   [key: string]: unknown;
 }
-
-// The detail route of each table, which an old address is sent on to.
-const DETAIL_ROUTE = {
-  prompts: "/prompts/$slug",
-  skills: "/skills/$slug",
-  workflows: "/workflows/$slug",
-  prompt_kits: "/prompt-kits/$slug",
-} as const satisfies Record<ArtifactListTable, string>;
 
 // Prompts and kits remember the slugs they were renamed away from. Anon may read
 // a redirect row exactly when it may read the item, so a public item's old link
@@ -113,7 +110,7 @@ async function currentSlug(
 // than keeping both.
 function movedTo(table: ArtifactListTable, slug: string) {
   return redirect({
-    to: DETAIL_ROUTE[table],
+    to: ARTIFACT_DETAIL_ROUTE[table],
     params: { slug },
     statusCode: 301,
   });
@@ -144,6 +141,10 @@ async function loadBySlug(
     return {
       ...row,
       author: (row.profiles as LoadedArtefact["author"]) ?? null,
+      creator_link: await fetchPublicCreatorLink(
+        ITEM_TYPE_OF_TABLE[table],
+        row.id as string,
+      ),
     } as LoadedArtefact;
   }
 

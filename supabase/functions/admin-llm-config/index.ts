@@ -7,7 +7,7 @@
 import {
   createClient,
   type SupabaseClient,
-} from "https://esm.sh/@supabase/supabase-js@2.45.0";
+} from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { isAdminCaller } from "../_shared/internalAuth.ts";
 import { fetchAllRows } from "../_shared/fetchAllRows.ts";
 import {

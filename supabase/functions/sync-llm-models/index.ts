@@ -12,7 +12,7 @@
 import {
   createClient,
   type SupabaseClient,
-} from "https://esm.sh/@supabase/supabase-js@2.45.0";
+} from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
 import {
   diffCatalogue,

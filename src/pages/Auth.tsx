@@ -34,37 +34,7 @@ import {
   DEFAULT_REDIRECT,
   safeRedirect,
 } from "@/components/auth/authRedirectLogic";
-
-const REDIRECT_LABELS: Record<string, string> = {
-  "/library": "your library",
-  "/dashboard": "your dashboard",
-  "/settings": "your settings",
-  "/activity": "your activity feed",
-  "/collections": "your collections",
-  "/prompts/new": "create a new prompt",
-  "/skills/new": "create a new skill",
-  "/workflows/new": "create a new workflow",
-  "/prompt-kits/new": "create a new prompt kit",
-};
-
-function getRedirectLabel(path: string): string | null {
-  if (!path || path === "/" || path === "/library") {
-    // /library is the default; only show banner when label is meaningful
-    if (path === "/library") return REDIRECT_LABELS["/library"];
-    return null;
-  }
-  if (REDIRECT_LABELS[path]) return REDIRECT_LABELS[path];
-  // Match dynamic edit paths
-  if (/^\/prompts\/[^/]+\/edit/.test(path)) return "edit this prompt";
-  if (/^\/skills\/[^/]+\/edit/.test(path)) return "edit this skill";
-  if (/^\/workflows\/[^/]+\/edit/.test(path)) return "edit this workflow";
-  if (/^\/prompt-kits\/[^/]+\/edit/.test(path)) return "edit this prompt kit";
-  // The routes are /team/<id>/settings, /team/<id>/activity and /team/join.
-  // The old check tested for "/teams", which no route ever starts with, so the
-  // team banner never appeared.
-  if (path.startsWith("/team/")) return "team workspace";
-  return "this page";
-}
+import { signInNotice, signInNoticeLead } from "@/lib/signInNotice";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 
@@ -271,10 +241,7 @@ export default function Auth() {
     );
   }
 
-  const redirectTarget = searchParams.get("redirect");
-  const redirectLabel = redirectTarget
-    ? getRedirectLabel(redirectTarget)
-    : null;
+  const notice = signInNotice(searchParams.get("redirect"));
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -282,13 +249,13 @@ export default function Auth() {
 
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-4">
-          {redirectLabel && (
+          {notice && (
             <Alert className="border-primary/30 bg-primary/5">
               <Lock className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
-                Sign in to access{" "}
+                {signInNoticeLead(activeTab)} {notice.verb}{" "}
                 <span className="font-medium text-foreground">
-                  {redirectLabel}
+                  {notice.object}
                 </span>
                 .
               </AlertDescription>

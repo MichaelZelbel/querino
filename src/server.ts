@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { frameGuardHeaders } from "./lib/securityHeaders";
+import { unfollowableGoPath } from "./lib/creatorLinkRedirect";
 
 type ServerEntry = {
   fetch: (
@@ -72,10 +73,19 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const handler = await getServerEntry();
-      const response = await normalizeCatastrophicSsrResponse(
-        await handler.fetch(request, env, ctx),
+      // Before the router: it would answer /go/https://x with a redirect to
+      // /go/https:/x first (see unfollowableGoPath).
+      const notALink = unfollowableGoPath(
+        new URL(request.url).pathname,
+        request.method,
       );
+      const handler = notALink ? null : await getServerEntry();
+      const response =
+        notALink ??
+        (await normalizeCatastrophicSsrResponse(
+          await handler!.fetch(request, env, ctx),
+        ));
+      // The /go/ page is HTML too, so it gets the same frame guard.
       return withHeaders(
         response,
         frameGuardHeaders(request.url, response.headers.get("content-type"), [

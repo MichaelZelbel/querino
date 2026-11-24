@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useBlocker } from "@tanstack/react-router";
+import {
+  baselineLoaded,
+  initialSaveState,
+  isDirtyAgainst,
+  recordSave,
+  type SaveState,
+} from "@/lib/saveState";
 
 interface Options<T> {
   data: T;
@@ -17,25 +24,24 @@ interface Result<T> {
   isDirty: boolean;
   savedAt: Date | null;
   /**
-   * Snapshot the clean baseline. Call after a successful save and once on
-   * initial load. Pass the just-loaded values explicitly when calling right
-   * after setState: the state of the current render is still the old one.
+   * Record a save: snapshot the clean baseline and stamp `savedAt`. Call after
+   * a write succeeded (save, version, publish, restore, delete). Pass the
+   * written values explicitly when calling right after setState: the state of
+   * the current render is still the old one.
    */
   markSaved: (next?: T) => void;
+  /**
+   * Take a just-loaded row as the clean baseline without recording a save, so
+   * the footer does not say "Saved" before anything was saved (#83). Same
+   * argument rules as markSaved.
+   */
+  markLoaded: (next?: T) => void;
   /**
    * Let the next navigation to this exact pathname through even while dirty.
    * For a save that renames the slug: the editor stays mounted on the new URL
    * with the edits still in it, so there is nothing to warn about.
    */
   allowNavigationTo: (pathname: string) => void;
-}
-
-function snapshot<T>(value: T): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
 }
 
 export function useUnsavedChanges<T>({
@@ -46,13 +52,12 @@ export function useUnsavedChanges<T>({
   enableBeforeUnload = true,
   enableNavigationGuard = true,
 }: Options<T>): Result<T> {
-  const baselineRef = useRef<string | null>(null);
+  // A ref, not state: markSaved/markLoaded must settle the baseline in the
+  // same tick, before a navigate() that follows them; `force` re-renders.
+  const stateRef = useRef<SaveState>(initialSaveState);
   const [, force] = useState(0);
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
 
-  const current = snapshot(data);
-  const isDirty =
-    baselineRef.current !== null && baselineRef.current !== current;
+  const isDirty = isDirtyAgainst(stateRef.current, data);
 
   // Always the latest `data`, so markSaved does not have to be recreated per
   // render and does not close over a stale form. Every editor used to call
@@ -66,8 +71,12 @@ export function useUnsavedChanges<T>({
   // Declared before markSaved so markSaved can settle it synchronously.
   const dirtyRef = useRef(false);
 
-  const markSaved = useCallback((next?: T) => {
-    baselineRef.current = snapshot(next === undefined ? dataRef.current : next);
+  const settle = useCallback((mark: "loaded" | "saved", next?: T) => {
+    const value = next === undefined ? dataRef.current : next;
+    stateRef.current =
+      mark === "saved"
+        ? recordSave(stateRef.current, value, new Date())
+        : baselineLoaded(stateRef.current, value);
     // Settle the navigation guard now, not after the next render's effect:
     // pages call navigate() straight after markSaved (a delete, a publish, a
     // slug rename), and the stale ref made the "unsaved changes" confirm fire
@@ -78,9 +87,14 @@ export function useUnsavedChanges<T>({
     // flagged dirty. What was just saved is by definition not unsaved; the
     // next render recomputes isDirty against the new baseline below.
     dirtyRef.current = false;
-    setSavedAt(new Date());
     force((n) => n + 1);
   }, []);
+
+  const markSaved = useCallback((next?: T) => settle("saved", next), [settle]);
+  const markLoaded = useCallback(
+    (next?: T) => settle("loaded", next),
+    [settle],
+  );
 
   // Keep onSave reference fresh for the keydown listener
   const onSaveRef = useRef(onSave);
@@ -158,5 +172,11 @@ export function useUnsavedChanges<T>({
     }
   }, [blocker]);
 
-  return { isDirty, savedAt, markSaved, allowNavigationTo };
+  return {
+    isDirty,
+    savedAt: stateRef.current.savedAt,
+    markSaved,
+    markLoaded,
+    allowNavigationTo,
+  };
 }

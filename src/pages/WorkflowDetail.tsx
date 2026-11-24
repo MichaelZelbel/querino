@@ -55,10 +55,16 @@ import type { Workflow, WorkflowAuthor } from "@/types/workflow";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
+import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import { ItemStatsPanel } from "@/components/stats/ItemStatsPanel";
+import { useRecordItemView } from "@/hooks/useItemStats";
+import { recordItemUse } from "@/lib/itemUsage";
+import type { PublicCreatorLink } from "@/lib/creatorLink";
 import { workflowText } from "@/components/workflows/workflowText";
 
 export interface WorkflowWithAuthor extends Workflow {
   author?: WorkflowAuthor | null;
+  creator_link?: PublicCreatorLink | null;
 }
 
 // The route loader is the one source of this record (2026-10-07): on the
@@ -72,6 +78,7 @@ export default function WorkflowDetail({
 }) {
   const goBack = useGoBack("/discover?type=workflows");
   const { user } = useAuthContext();
+  useRecordItemView("workflow", workflow.id);
   const { cloneWorkflow, cloning } = useCloneWorkflow();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   // A change this page makes to the workflow re-runs the route's loader.
@@ -128,6 +135,7 @@ export default function WorkflowDetail({
 
     try {
       await navigator.clipboard.writeText(workflowContent);
+      recordItemUse("workflow", workflow.id, "copy");
       setCopied(true);
       toast.success("Workflow content copied!");
       setTimeout(() => setCopied(false), 2000);
@@ -284,6 +292,7 @@ export default function WorkflowDetail({
               <SendToLLMButtons
                 title={workflow.title}
                 content={getWorkflowContent()}
+                item={{ type: "workflow", id: workflow.id }}
               />
 
               {canEdit && (
@@ -388,6 +397,9 @@ export default function WorkflowDetail({
                 description={workflow.description}
                 tags={workflow.tags}
                 content={workflowContent}
+                onDownloaded={() =>
+                  recordItemUse("workflow", workflow.id, "download")
+                }
               />
             </div>
 
@@ -427,6 +439,14 @@ export default function WorkflowDetail({
                 </CollapsibleContent>
               </Collapsible>
             </div>
+
+            <CreatorLinkSection
+              itemType="workflow"
+              itemId={workflow.id}
+              link={workflow.creator_link}
+              isAuthor={!!isAuthor}
+              editPath={`/workflows/${workflow.slug}/edit`}
+            />
 
             {/* Modals */}
             <AddToCollectionModal
@@ -492,6 +512,7 @@ export default function WorkflowDetail({
                     </Badge>
                   )}
                 </TabsTrigger>
+                {isAuthor && <TabsTrigger value="stats">Stats</TabsTrigger>}
               </TabsList>
 
               <TabsContent value="details" className="mt-6">
@@ -533,6 +554,15 @@ export default function WorkflowDetail({
                   onApplySuggestion={handleApplySuggestion}
                 />
               </TabsContent>
+              {isAuthor && (
+                <TabsContent value="stats" className="mt-6">
+                  <ItemStatsPanel
+                    itemType="workflow"
+                    itemId={workflow.id}
+                    isPublic={!!workflow.published}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </main>

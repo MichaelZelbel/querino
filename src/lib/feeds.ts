@@ -18,103 +18,60 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { SITE_ORIGIN } from "@/lib/seo";
-import { sitemapPageQuery, type SitemapTable } from "@/lib/publicArtifacts";
+import {
+  ARTIFACT_TABLES,
+  rssQuery,
+  rssRows,
+  sitemapPageQuery,
+  type SitemapSource,
+} from "@/lib/publicArtifacts";
+import {
+  buildRssXml,
+  RSS_ITEM_LIMIT,
+  rssItems,
+  type RssRow,
+  type RssSource,
+} from "@/lib/rssFeed";
+import {
+  buildSitemapXml,
+  SITEMAP_SOURCES,
+  type SitemapRow,
+  type StaticPage,
+} from "@/lib/sitemapXml";
 
 /** How long a crawler may reuse a response. Carried over from the edge function. */
 export const FEED_CACHE_CONTROL = "public, max-age=3600";
 
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-/** Sitemap <lastmod> wants a date, not a timestamp. */
-function formatDate(isoDate: string): string {
-  return isoDate.split("T")[0];
-}
-
+/**
+ * The feed of what Querino publishes (rssFeed.ts builds the XML). Until
+ * 2026-11 it was a blog-only feed titled "Querino Blog", empty because there
+ * are no posts; the owner chose a feed of the public artifacts (#9, #44).
+ */
 export async function buildRss(): Promise<string> {
-  const siteName = "Querino Blog";
-  const siteDescription = "Articles about AI, prompts, and productivity";
+  const tables = [...ARTIFACT_TABLES, "blog_posts"] as const;
+  const results = await Promise.all(
+    tables.map((table) =>
+      rssRows(table, (options) =>
+        rssQuery(supabase.from(table), table, RSS_ITEM_LIMIT, options),
+      ),
+    ),
+  );
 
-  const { data: posts, error } = await supabase
-    .from("blog_posts")
-    .select(
-      `
-      title,
-      slug,
-      excerpt,
-      content,
-      published_at,
-      author:profiles!blog_posts_author_id_fkey(display_name)
-    `,
-    )
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(20);
+  const sources: Partial<Record<RssSource, RssRow[]>> = {};
+  results.forEach(({ data, error }, i) => {
+    if (error) {
+      // A feed reader retries a 500, but silently accepts an empty or short
+      // channel as "nothing new was published".
+      throw new Error(`RSS query for ${tables[i]} failed: ${error.message}`);
+    }
+    sources[tables[i]] = (data ?? []) as unknown as RssRow[];
+  });
 
-  if (error) {
-    // The edge function failed loudly here rather than serving a truncated feed, and so
-    // does this: a feed reader retries a 500, but silently accepts an empty channel as
-    // "he stopped writing".
-    throw new Error(`RSS query failed: ${error.message}`);
-  }
-
-  const items = (posts ?? [])
-    .map((post) => {
-      const pubDate = post.published_at
-        ? new Date(post.published_at).toUTCString()
-        : new Date().toUTCString();
-      const link = `${SITE_ORIGIN}/blog/${post.slug}`;
-      const author = post.author?.display_name || "Anonymous";
-      // No escapeXml here: the value is wrapped in CDATA below, and doing both
-      // encodes an ampersand twice, so readers show &amp;amp; where the post
-      // said "&".
-      // A "]]>" inside the text would end the CDATA section early and break the
-      // feed for every reader; the standard trick splits it across two sections.
-      const description = (
-        post.excerpt ||
-        post.content?.slice(0, 300) ||
-        ""
-      ).replace(/\]\]>/g, "]]]]><![CDATA[>");
-
-      return `
-    <item>
-      <title>${escapeXml(post.title)}</title>
-      <link>${link}</link>
-      <guid isPermaLink="true">${link}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <dc:creator>${escapeXml(author)}</dc:creator>
-      <description><![CDATA[${description}]]></description>
-    </item>`;
-    })
-    .join("");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>${escapeXml(siteName)}</title>
-    <link>${SITE_ORIGIN}/blog</link>
-    <description>${escapeXml(siteDescription)}</description>
-    <language>en</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_ORIGIN}/rss.xml" rel="self" type="application/rss+xml"/>
-    ${items}
-  </channel>
-</rss>`;
+  return buildRssXml(SITE_ORIGIN, rssItems(SITE_ORIGIN, sources));
 }
 
 /** One page of rows, and the cap PostgREST applies whether or not you ask. */
 const SITEMAP_PAGE = 1000;
-
-interface SitemapRow {
-  slug: string | null;
-  updated_at: string | null;
-}
 
 /**
  * Every published row of one table, in pages.
@@ -126,7 +83,7 @@ interface SitemapRow {
  * being crawled.
  */
 async function fetchAllRows(
-  table: SitemapTable,
+  table: SitemapSource,
 ): Promise<{ data: SitemapRow[] | null; error: { message: string } | null }> {
   const rows: SitemapRow[] = [];
 
@@ -149,7 +106,7 @@ async function fetchAllRows(
 
 export async function buildSitemap(): Promise<string> {
   // Static pages with their priorities
-  const staticPages = [
+  const staticPages: StaticPage[] = [
     { loc: "/", priority: "1.0", changefreq: "daily" },
     { loc: "/discover", priority: "0.9", changefreq: "daily" },
     // The plain link lists. They are how a crawler that ignores the sitemap still
@@ -168,14 +125,8 @@ export async function buildSitemap(): Promise<string> {
   ];
 
   // Fetch dynamic content in parallel
-  const [blogPosts, prompts, skills, workflows, promptKits] = await Promise.all(
-    [
-      fetchAllRows("blog_posts"),
-      fetchAllRows("prompts"),
-      fetchAllRows("skills"),
-      fetchAllRows("workflows"),
-      fetchAllRows("prompt_kits"),
-    ],
+  const results = await Promise.all(
+    SITEMAP_SOURCES.map(({ table }) => fetchAllRows(table)),
   );
 
   // Same reasoning as the RSS feed and as fetchAllRows: a crawler retries a
@@ -183,68 +134,20 @@ export async function buildSitemap(): Promise<string> {
   // pages from the index. Until 2026-09-16 a failed query here skipped its table
   // silently, which is exactly what the comment above fetchAllRows says must
   // not happen.
-  for (const [table, result] of [
-    ["blog_posts", blogPosts],
-    ["prompts", prompts],
-    ["skills", skills],
-    ["workflows", workflows],
-    ["prompt_kits", promptKits],
-  ] as const) {
-    if (result.error) {
-      throw new Error(
-        `Sitemap query for ${table} failed: ${result.error.message}`,
-      );
+  const rows: Partial<Record<SitemapSource, SitemapRow[]>> = {};
+  results.forEach(({ data, error }, i) => {
+    const { table } = SITEMAP_SOURCES[i];
+    if (error) {
+      throw new Error(`Sitemap query for ${table} failed: ${error.message}`);
     }
-  }
+    rows[table] = data ?? [];
+  });
 
   // /blog is only advertised once there is a published post to read; an empty
   // blog index is a thin page a crawler should not be sent to.
-  if ((blogPosts.data?.length ?? 0) > 0) {
+  if ((rows.blog_posts?.length ?? 0) > 0) {
     staticPages.push({ loc: "/blog", priority: "0.8", changefreq: "daily" });
   }
 
-  const urls: string[] = [];
-
-  for (const page of staticPages) {
-    urls.push(`
-  <url>
-    <loc>${SITE_ORIGIN}${page.loc}</loc>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>`);
-  }
-
-  // Every artefact type is the same entry with a different prefix and priority, so the
-  // five loops the edge function repeated are one loop over five sources here.
-  const collections: Array<{
-    prefix: string;
-    priority: string;
-    rows: Array<{ slug: string | null; updated_at: string | null }> | null;
-  }> = [
-    { prefix: "/blog", priority: "0.7", rows: blogPosts.data },
-    { prefix: "/prompts", priority: "0.6", rows: prompts.data },
-    { prefix: "/skills", priority: "0.6", rows: skills.data },
-    { prefix: "/workflows", priority: "0.6", rows: workflows.data },
-    { prefix: "/prompt-kits", priority: "0.6", rows: promptKits.data },
-  ];
-
-  for (const { prefix, priority, rows } of collections) {
-    for (const row of rows ?? []) {
-      if (!row.slug) continue;
-      const lastmod = row.updated_at
-        ? formatDate(row.updated_at)
-        : formatDate(new Date().toISOString());
-      urls.push(`
-  <url>
-    <loc>${SITE_ORIGIN}${prefix}/${escapeXml(row.slug)}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
-  </url>`);
-    }
-  }
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}
-</urlset>`;
+  return buildSitemapXml(SITE_ORIGIN, staticPages, rows);
 }

@@ -55,6 +55,9 @@ import {
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateSlug } from "@/hooks/useGenerateSlug";
 import { insertWithUniqueSlug } from "@/lib/uniqueSlugInsert";
+import { CreatorLinkFields } from "@/components/creatorLinks/CreatorLinkFields";
+import { saveCreatorLinkAfterPublish } from "@/components/creatorLinks/saveCreatorLinkAfterPublish";
+import { useNewItemCreatorLink } from "@/components/creatorLinks/useNewItemCreatorLink";
 
 export default function WorkflowNew() {
   const navigate = useNavigate();
@@ -80,6 +83,7 @@ export default function WorkflowNew() {
     searchParams.get("tags")?.split(",").filter(Boolean) || [],
   );
   const [isPublic, setIsPublic] = useState(false);
+  const creatorLink = useNewItemCreatorLink();
   const [language, setLanguage] = useState(
     searchParams.get("language") || DEFAULT_LANGUAGE,
   );
@@ -224,6 +228,8 @@ export default function WorkflowNew() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!validate()) return;
+    const linkCheck = isPublic ? creatorLink.check() : null;
+    if (linkCheck && !linkCheck.ok) return;
     // Busy from the first click: moderation takes a round trip, and a second
     // click during it used to create the workflow twice.
     if (submittingRef.current) return;
@@ -285,6 +291,14 @@ export default function WorkflowNew() {
         );
       }
 
+      if (linkCheck?.ok && newWorkflow?.id) {
+        await saveCreatorLinkAfterPublish(
+          queryClient,
+          "workflow",
+          newWorkflow.id,
+          linkCheck.value,
+        );
+      }
       void invalidateArtifactQueries(queryClient, "workflow");
       toast.success("Workflow created!");
       markSaved();
@@ -538,6 +552,15 @@ export default function WorkflowNew() {
                       onCheckedChange={setIsPublic}
                     />
                   </div>
+
+                  {isPublic && (
+                    <CreatorLinkFields
+                      value={creatorLink.value}
+                      onChange={creatorLink.onChange}
+                      errors={creatorLink.errors}
+                      idPrefix="new"
+                    />
+                  )}
 
                   {/* Bottom Create Button */}
                   <Button

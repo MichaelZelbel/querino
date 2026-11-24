@@ -1,4 +1,5 @@
-import { safeStorage } from "@/lib/safeStorage";
+import { safeStorage } from "@/lib/safeStorage.ts";
+import { mayRemember, PREFERRED_LLM_KEY, readConsent } from "@/lib/consent.ts";
 
 export type LLMTarget = "chatgpt" | "claude" | "gemini" | "perplexity";
 
@@ -69,16 +70,20 @@ export function buildPromptForLLM(title: string, content: string): string {
   return `# ${title}\n\n${content}`;
 }
 
-// Preference storage
-const PREFERENCE_KEY = "querino_preferred_llm";
+// The preferred assistant lives in memory for the page visit, and in
+// localStorage only with "Accept all" (see src/lib/consent.ts).
+//
+// localStorage does not exist on the server. The public detail pages render
+// there first, and a bare localStorage read during that render threw
+// "localStorage is not defined" and replaced the whole page with an error body.
+// The server serves many visitors, so it keeps no preference either: null.
+let visitPreference: LLMTarget | null = null;
 
-// Both helpers touch localStorage, which does not exist on the server. The
-// public detail pages render there first, and a bare localStorage read during
-// that render threw "localStorage is not defined" and replaced the whole page
-// with an error body. On the server there is no preference to read, so null.
 export function getPreferredLLM(): LLMTarget | null {
   if (typeof window === "undefined") return null;
-  const stored = safeStorage.getItem(PREFERENCE_KEY);
+  if (visitPreference) return visitPreference;
+  if (!mayRemember(readConsent())) return null;
+  const stored = safeStorage.getItem(PREFERRED_LLM_KEY);
   if (stored && LLM_OPTIONS.some((opt) => opt.id === stored)) {
     return stored as LLMTarget;
   }
@@ -87,5 +92,6 @@ export function getPreferredLLM(): LLMTarget | null {
 
 export function setPreferredLLM(llm: LLMTarget): void {
   if (typeof window === "undefined") return;
-  safeStorage.setItem(PREFERENCE_KEY, llm);
+  visitPreference = llm;
+  if (mayRemember(readConsent())) safeStorage.setItem(PREFERRED_LLM_KEY, llm);
 }

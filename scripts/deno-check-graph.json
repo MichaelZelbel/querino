@@ -1,14 +1,7 @@
 {
   "note": "Every version the edge functions' module graph resolved when the baseline was recorded, below the imports the code names. A run that resolves differently does not count. See scripts/deno-check.mjs.",
   "redirects": {
-    "https://esm.sh/@supabase/node-fetch@^2.6.14?target=denonext": "https://esm.sh/@supabase/node-fetch@2.6.15?target=denonext",
-    "https://esm.sh/@types/ws@~8.18.2/index.d.mts": "https://esm.sh/@types/ws@8.18.2/index.d.mts",
     "https://esm.sh/iceberg-js@^0.8.1?target=denonext": "https://esm.sh/iceberg-js@0.8.1?target=denonext",
-    "https://esm.sh/tr46@~0.0.3?target=denonext": "https://esm.sh/tr46@0.0.3?target=denonext",
-    "https://esm.sh/webidl-conversions@^3.0.0?target=denonext": "https://esm.sh/webidl-conversions@3.0.1?target=denonext",
-    "https://esm.sh/whatwg-url@^5.0.0?target=denonext": "https://esm.sh/whatwg-url@5.0.0?target=denonext",
-    "https://esm.sh/ws@^8.14.2?target=denonext": "https://esm.sh/ws@8.23.0?target=denonext",
-    "https://esm.sh/ws@^8.18.0?target=denonext": "https://esm.sh/ws@8.23.0?target=denonext",
     "jsr:@hono/hono@4.13.19": "https://jsr.io/@hono/hono/4.13.19/src/index.ts",
     "npm:@supabase/supabase-js@2.119.0": "npm:/@supabase/supabase-js@2.119.0",
     "npm:mcp-lite@0.10.0": "npm:/mcp-lite@0.10.0",

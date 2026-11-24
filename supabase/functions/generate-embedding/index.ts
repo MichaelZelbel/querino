@@ -4,7 +4,7 @@
 // provider in _shared/embeddings.ts answers, optionally writes the embedding
 // into the artefact table directly, and logs token usage.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { corsHeadersFor } from "../_shared/cors.ts";
 import {
   assertCredits,

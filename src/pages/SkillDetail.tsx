@@ -49,9 +49,15 @@ import type { Skill, SkillAuthor } from "@/types/skill";
 import { useCanEditArtifact } from "@/hooks/useCanEditArtifact";
 import { useGoBack } from "@/components/shared/useGoBack";
 import { useReloadRouteData } from "@/hooks/useRouteLoaderData";
+import { CreatorLinkSection } from "@/components/creatorLinks/CreatorLinkSection";
+import { ItemStatsPanel } from "@/components/stats/ItemStatsPanel";
+import { useRecordItemView } from "@/hooks/useItemStats";
+import { recordItemUse } from "@/lib/itemUsage";
+import type { PublicCreatorLink } from "@/lib/creatorLink";
 
 export interface SkillWithAuthor extends Skill {
   author?: SkillAuthor | null;
+  creator_link?: PublicCreatorLink | null;
 }
 
 // The route loader is the one source of this record (2026-10-07): on the
@@ -61,6 +67,7 @@ export interface SkillWithAuthor extends Skill {
 export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
   const goBack = useGoBack("/discover?type=skills");
   const { user } = useAuthContext();
+  useRecordItemView("skill", skill.id);
   const { cloneSkill, cloning } = useCloneSkill();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   // A change this page makes to the skill re-runs the route's loader.
@@ -105,6 +112,7 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
 
     try {
       await navigator.clipboard.writeText(skill.content);
+      recordItemUse("skill", skill.id, "copy");
       setCopied(true);
       toast.success("Skill content copied!");
       setTimeout(() => setCopied(false), 2000);
@@ -246,7 +254,11 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                 )}
               </Button>
 
-              <SendToLLMButtons title={skill.title} content={skill.content} />
+              <SendToLLMButtons
+                title={skill.title}
+                content={skill.content}
+                item={{ type: "skill", id: skill.id }}
+              />
 
               {canEdit && (
                 <Link to={`/skills/${skill.slug}/edit`}>
@@ -348,6 +360,9 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                 description={skill.description}
                 tags={skill.tags}
                 content={skill.content}
+                onDownloaded={() =>
+                  recordItemUse("skill", skill.id, "download")
+                }
               />
             </div>
 
@@ -373,6 +388,14 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                 </pre>
               </div>
             </div>
+
+            <CreatorLinkSection
+              itemType="skill"
+              itemId={skill.id}
+              link={skill.creator_link}
+              isAuthor={!!isAuthor}
+              editPath={`/skills/${skill.slug}/edit`}
+            />
 
             {/* Modals */}
             <AddToCollectionModal
@@ -438,6 +461,7 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                     </Badge>
                   )}
                 </TabsTrigger>
+                {isAuthor && <TabsTrigger value="stats">Stats</TabsTrigger>}
               </TabsList>
 
               <TabsContent value="details" className="mt-6">
@@ -479,6 +503,15 @@ export default function SkillDetail({ skill }: { skill: SkillWithAuthor }) {
                   onApplySuggestion={handleApplySuggestion}
                 />
               </TabsContent>
+              {isAuthor && (
+                <TabsContent value="stats" className="mt-6">
+                  <ItemStatsPanel
+                    itemType="skill"
+                    itemId={skill.id}
+                    isPublic={!!skill.published}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </main>

@@ -15,6 +15,12 @@ dist-ssr
 .output
 .nitro
 .tanstack
+# Wrangler's working folder. The build writes .wrangler/deploy/config.json (a
+# pointer to .output/server/wrangler.json) on every run, and `wrangler dev`
+# keeps its local state in .wrangler/state and .wrangler/tmp. Nothing in it is
+# source: the pointer was committed once (2026-08-24, with a Windows path) and
+# every Linux build rewrote it, leaving the checkout dirty (#74).
+.wrangler
 *.local
 
 # Editor directories and files
