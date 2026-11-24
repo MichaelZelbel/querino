@@ -4,9 +4,8 @@
 -- public listings leave out team items (published AND team_id IS NULL, see
 -- src/lib/publicArtifacts.ts), but these four functions only checked the
 -- published flag. Each now returns nothing for a team-owned target and never
--- lists a team-owned row. Return shapes are unchanged, and CREATE OR REPLACE
--- keeps the existing grants (anon may call them); no table is created, so no
--- grant is stated here.
+-- lists a team-owned row. Return shapes are unchanged. No table is created; the
+-- execute grants (anon may call them) are restated at the end of this file.
 
 CREATE OR REPLACE FUNCTION public.get_similar_prompts(target_id uuid, match_limit integer DEFAULT 6)
  RETURNS TABLE(id uuid, title text, description text, category text, rating_avg numeric, rating_count integer, copies_count integer, author_id uuid, team_id uuid, tags text[], similarity double precision)
