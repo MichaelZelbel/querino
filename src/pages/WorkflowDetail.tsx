@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
 import { ActivitySidebar } from "@/components/activity/ActivitySidebar";
-import { SimilarWorkflowsSection } from "@/components/similar/SimilarArtefactsSection";
+import { SimilarArtefactsSection } from "@/components/similar/SimilarArtefactsSection";
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
 import { DownloadMarkdownButton } from "@/components/markdown";
@@ -516,10 +516,6 @@ export default function WorkflowDetail({
               </TabsList>
 
               <TabsContent value="details" className="mt-6">
-                <SimilarWorkflowsSection
-                  items={similarWorkflows}
-                  loading={loadingSimilar}
-                />
                 {/* Events are readable only by whoever caused them and by team
                     members, so a signed-out visitor always saw "No activity yet". */}
                 {user && (
@@ -564,6 +560,12 @@ export default function WorkflowDetail({
                 </TabsContent>
               )}
             </Tabs>
+
+            <SimilarArtefactsSection
+              type="workflow"
+              items={similarWorkflows}
+              loading={loadingSimilar}
+            />
           </div>
         </main>
 

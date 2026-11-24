@@ -20,6 +20,8 @@ import { ReviewSection } from "@/components/prompts/ReviewSection";
 
 import { CommentsSection } from "@/components/comments";
 import { AIInsightsPanel } from "@/components/insights";
+import { SimilarArtefactsSection } from "@/components/similar/SimilarArtefactsSection";
+import { useSimilarPrompts } from "@/hooks/useSimilarArtefacts";
 import { DownloadMarkdownButton } from "@/components/markdown";
 import { SuggestEditModal, SuggestionsTab } from "@/components/suggestions";
 import { CopyToTeamModal } from "@/components/prompts/CopyToTeamModal";
@@ -90,6 +92,9 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
   const { clonePrompt, cloning } = useClonePrompt();
   const { duplicateArtifact, duplicating } = useDuplicateArtifact();
   const { isPromptPinned, togglePin } = usePinnedPrompts();
+  const { items: similarPrompts, loading: loadingSimilar } = useSimilarPrompts(
+    prompt.id,
+  );
   // A change this page makes to the prompt re-runs the route's loader rather
   // than selecting the row again here.
   const reloadPrompt = useReloadRouteData();
@@ -748,6 +753,12 @@ export default function PromptDetail({ prompt }: { prompt: PromptWithAuthor }) {
                 </TabsContent>
               )}
             </Tabs>
+
+            <SimilarArtefactsSection
+              type="prompt"
+              items={similarPrompts}
+              loading={loadingSimilar}
+            />
           </div>
         </main>
 
