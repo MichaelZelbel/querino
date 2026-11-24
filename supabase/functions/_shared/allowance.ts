@@ -14,7 +14,7 @@
 // overlap constraint can refuse a bad period rather than trusting the caller
 // to have checked. Everything here is a thin caller.
 
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 
 export interface AllowanceRow {
   id: string;

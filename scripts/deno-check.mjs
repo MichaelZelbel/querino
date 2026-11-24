@@ -75,15 +75,6 @@ import { findFloatingImports } from "./floating-imports.mjs";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 
-// esm.sh rewrote an extensionless path in supabase-js@2.57.2's
-// dist/module/lib/types.d.ts, and this module answers "Module not found" on
-// every run: a fixed hole, not drift. Only ensure-token-allowance reaches it,
-// and closing it means upgrading that function's supabase-js at runtime. Any
-// other module that fails to load still stops the count.
-export const KNOWN_UNLOADABLE = new Set([
-  "https://esm.sh/@supabase/storage-js@2.99.1/dist/module/StorageClient",
-]);
-
 export function denoBinary() {
   if (process.env.DENO_BIN) return process.env.DENO_BIN;
 
@@ -172,11 +163,11 @@ const UNTYPED = new Set(["JavaScript", "Mjs", "Cjs", "Jsx"]);
 //   - a module in the graph, at any depth, that failed to load (a remote 404
 //     or timeout, a missing local file, a type file that is gone);
 //   - a remote JavaScript module we import that comes with no types at all.
-export function graphProblems(info, { known = KNOWN_UNLOADABLE } = {}) {
+export function graphProblems(info) {
   const problems = [];
   const bySpecifier = new Map(info.modules.map((m) => [m.specifier, m]));
   for (const m of info.modules) {
-    if (m.error && !known.has(m.specifier)) {
+    if (m.error) {
       problems.push(`${m.specifier}: ${m.error}`);
     }
     if (!m.specifier.startsWith("file:")) continue;

@@ -7,7 +7,7 @@
 import {
   createClient,
   type SupabaseClient,
-} from "https://esm.sh/@supabase/supabase-js@2.49.1";
+} from "https://esm.sh/@supabase/supabase-js@2.119.0";
 import { requireMachineOrAdmin } from "../_shared/internalAuth.ts";
 import { resolveConfig, type DbLike } from "../_shared/llm-config.ts";
 import { callProvider } from "../_shared/llm-providers.ts";
