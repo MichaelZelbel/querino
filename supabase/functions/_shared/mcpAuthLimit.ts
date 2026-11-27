@@ -70,16 +70,22 @@ export function retryAfterSeconds(
 }
 
 /**
- * The caller's address as the platform's proxy reports it: the first entry of
- * X-Forwarded-For. A caller can put its own entries in front. Forging another
- * address escapes the count (what every caller had before the limit) or makes
- * that address's bad tokens 429 instead of 401 sooner; it cannot refuse a
- * valid token, because a valid token is never refused.
+ * The caller's address from a header the platform's proxy writes, never from
+ * one the caller can pick: Cf-Connecting-Ip (Cloudflare overwrites a client's
+ * value), else the LAST X-Forwarded-For entry (each proxy appends the peer it
+ * saw, so a caller can only add entries to the left of it). Forging a left
+ * entry therefore does not change the key. Null when neither is present: that
+ * request is not counted. Mis-keying can at worst turn bad-token 401s into
+ * 429s sooner; a valid token is never refused.
  */
 export function callerAddress(req: Request): string | null {
-  const first = (req.headers.get("x-forwarded-for") ?? "").split(",")[0];
-  const address = first.trim();
-  return address || null;
+  const cf = (req.headers.get("cf-connecting-ip") ?? "").trim();
+  if (cf) return cf;
+  const entries = (req.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  return entries.at(-1) ?? null;
 }
 
 /**
@@ -149,7 +155,9 @@ export async function authenticateMcpRequestWithLimit(
     await store.record(addressHash, MCP_AUTH_FAILURE_WINDOW_SECONDS);
   } catch (e) {
     console.warn(
-      `mcp auth limit: failure not counted: ${e instanceof Error ? e.message : e}`,
+      `mcp auth limit: failure not counted: ${
+        e instanceof Error ? e.message : e
+      }`,
     );
   }
   return outcome;

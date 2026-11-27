@@ -242,16 +242,60 @@ Deno.test("retryAfterSeconds rounds up and is 0 outside the limit", () => {
   assertEquals(retryAfterSeconds(full, at(600_000)), 0);
 });
 
-Deno.test("the caller's address is the first X-Forwarded-For entry", () => {
-  const req = (xff?: string) =>
-    new Request("https://example.test/mcp", {
-      headers: xff === undefined ? {} : { "X-Forwarded-For": xff },
-    });
-  assertEquals(callerAddress(req("203.0.113.7, 10.0.0.1")), "203.0.113.7");
-  assertEquals(callerAddress(req(" 2001:db8::1 ")), "2001:db8::1");
-  assertEquals(callerAddress(req("")), null);
-  assertEquals(callerAddress(req()), null);
+Deno.test("the caller's address is the one the platform wrote", () => {
+  const req = (headers: Record<string, string>) =>
+    new Request("https://example.test/mcp", { headers });
+  const xff = (v: string) => req({ "X-Forwarded-For": v });
+  assertEquals(
+    callerAddress(
+      req({ "CF-Connecting-IP": "198.51.100.9", "X-Forwarded-For": "1.1.1.1" }),
+    ),
+    "198.51.100.9",
+  );
+  assertEquals(callerAddress(xff("1.1.1.1, 203.0.113.7")), "203.0.113.7");
+  assertEquals(callerAddress(xff("203.0.113.7")), "203.0.113.7");
+  assertEquals(callerAddress(xff(" 2001:db8::1 ")), "2001:db8::1");
+  assertEquals(callerAddress(xff("1.1.1.1, 203.0.113.7, ,")), "203.0.113.7");
+  assertEquals(callerAddress(xff("")), null);
+  assertEquals(callerAddress(req({})), null);
 });
+
+Deno.test(
+  "a forged X-Forwarded-For entry does not escape the 429",
+  async () => {
+    const clock = { now: new Date("2026-11-19T10:00:00Z") };
+    const store = new MemoryStore(clock);
+    const lookup: TokenLookup = async (hash) => ({
+      userId: hash === (await sha(GOOD)) ? "user-1" : null,
+      error: null,
+    });
+    const attempt = async (token: string, forged: string) => {
+      const req = new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Forwarded-For": `${forged}, 203.0.113.7`,
+        },
+      });
+      const addressHash = await hashCallerAddress(callerAddress(req)!, "key");
+      return authenticateMcpRequestWithLimit(req, lookup, {
+        store,
+        addressHash,
+        now: clock.now,
+      });
+    };
+    for (let i = 0; i < MCP_AUTH_FAILURE_LIMIT; i++) {
+      const out = await attempt(BAD, `10.0.0.${i}`);
+      assertEquals(out.ok ? 200 : out.status, 401);
+    }
+    const out = await attempt(BAD, "10.9.9.9");
+    assertEquals(out.ok ? 200 : out.status, 429);
+    assertEquals(await attempt(GOOD, "10.8.8.8"), {
+      ok: true,
+      userId: "user-1",
+    });
+  },
+);
 
 Deno.test("the stored address is a keyed hash, not the address", async () => {
   const a = await hashCallerAddress("203.0.113.7", "key-1");
