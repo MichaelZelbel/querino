@@ -326,3 +326,51 @@ Deno.test(
     assertEquals(await res.json(), { error: "Too many failed sign-ins" });
   },
 );
+
+Deno.test(
+  "a forged address header on every try (Cf-Connecting-Ip, only or last X-Forwarded-For entry) still reaches the 429",
+  async () => {
+    const clock = { now: new Date("2026-11-19T10:00:00Z") };
+    const store = new MemoryStore(clock);
+    const lookup: TokenLookup = async (hash) => ({
+      userId: hash === (await sha(GOOD)) ? "user-1" : null,
+      error: null,
+    });
+    const globalHash = await hashCallerAddress("all-callers", "key");
+    const shapes = [
+      (i: number) => ({ "CF-Connecting-IP": `10.1.0.${i}` }),
+      (i: number) => ({ "X-Forwarded-For": `10.2.0.${i}` }),
+      (i: number) => ({ "X-Forwarded-For": `1.1.1.1, 10.3.0.${i}` }),
+    ];
+    const statuses: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      const req = new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${BAD}`, ...shapes[i % 3](i) },
+      });
+      const address = callerAddress(req);
+      const out = await authenticateMcpRequestWithLimit(req, lookup, {
+        store,
+        addressHash: address ? await hashCallerAddress(address, "key") : null,
+        globalHash,
+        now: clock.now,
+      });
+      statuses.push(out.ok ? 200 : out.status);
+    }
+    assertEquals(statuses.slice(0, MCP_AUTH_FAILURE_LIMIT).every((s) => s === 401), true);
+    assertEquals(statuses.slice(MCP_AUTH_FAILURE_LIMIT).every((s) => s === 429), true);
+    const good = new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${GOOD}`, "CF-Connecting-IP": "10.9.9.9" },
+    });
+    assertEquals(
+      await authenticateMcpRequestWithLimit(good, lookup, {
+        store,
+        addressHash: await hashCallerAddress("10.9.9.9", "key"),
+        globalHash,
+        now: clock.now,
+      }),
+      { ok: true, userId: "user-1" },
+    );
+  },
+);

@@ -43,6 +43,13 @@ export type McpAuthLimiter = {
   store: McpAuthFailureStore;
   /** From hashCallerAddress; null when the caller's address is unknown. */
   addressHash: string | null;
+  /**
+   * A key every caller shares (hash of a constant). Failures are counted under
+   * it as well, because no request header is provably written by the platform:
+   * a caller who forges the address on each try still reaches the limit.
+   * Optional; when unset only the address is counted.
+   */
+  globalHash?: string | null;
   now: Date;
 };
 
@@ -126,18 +133,22 @@ export async function authenticateMcpRequestWithLimit(
   lookup: TokenLookup,
   limiter: McpAuthLimiter,
 ): Promise<LimitedMcpAuthOutcome> {
-  const { store, addressHash, now } = limiter;
-  if (!addressHash) return authenticateMcpRequest(req, lookup);
+  const { store, now } = limiter;
+  const keys = [limiter.addressHash, limiter.globalHash].filter(
+    (k): k is string => !!k,
+  );
+  if (keys.length === 0) return authenticateMcpRequest(req, lookup);
 
-  let window: FailureWindow | null = null;
-  try {
-    window = await store.read(addressHash);
-  } catch (e) {
-    console.warn(
-      `mcp auth limit: count not read: ${e instanceof Error ? e.message : e}`,
-    );
+  let wait = 0;
+  for (const key of keys) {
+    try {
+      wait = Math.max(wait, retryAfterSeconds(await store.read(key), now));
+    } catch (e) {
+      console.warn(
+        `mcp auth limit: count not read: ${e instanceof Error ? e.message : e}`,
+      );
+    }
   }
-  const wait = retryAfterSeconds(window, now);
 
   const outcome = await authenticateMcpRequest(req, lookup);
   if (outcome.ok || outcome.status === 503) return outcome;
@@ -151,12 +162,14 @@ export async function authenticateMcpRequestWithLimit(
       retryAfterSeconds: wait,
     };
   }
-  try {
-    await store.record(addressHash, MCP_AUTH_FAILURE_WINDOW_SECONDS);
-  } catch (e) {
-    console.warn(
-      `mcp auth limit: failure not counted: ${e instanceof Error ? e.message : e}`,
-    );
+  for (const key of keys) {
+    try {
+      await store.record(key, MCP_AUTH_FAILURE_WINDOW_SECONDS);
+    } catch (e) {
+      console.warn(
+        `mcp auth limit: failure not counted: ${e instanceof Error ? e.message : e}`,
+      );
+    }
   }
   return outcome;
 }

@@ -1377,6 +1377,10 @@ const mcpHandler = async (c: any) => {
       addressHash: address
         ? await hashCallerAddress(address, SUPABASE_SERVICE_ROLE_KEY)
         : null,
+      globalHash: await hashCallerAddress(
+        "all-callers",
+        SUPABASE_SERVICE_ROLE_KEY,
+      ),
       now: new Date(),
     },
   );
