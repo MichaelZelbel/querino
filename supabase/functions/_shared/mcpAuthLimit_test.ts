@@ -357,11 +357,20 @@ Deno.test(
       });
       statuses.push(out.ok ? 200 : out.status);
     }
-    assertEquals(statuses.slice(0, MCP_AUTH_FAILURE_LIMIT).every((s) => s === 401), true);
-    assertEquals(statuses.slice(MCP_AUTH_FAILURE_LIMIT).every((s) => s === 429), true);
+    assertEquals(
+      statuses.slice(0, MCP_AUTH_FAILURE_LIMIT).every((s) => s === 401),
+      true,
+    );
+    assertEquals(
+      statuses.slice(MCP_AUTH_FAILURE_LIMIT).every((s) => s === 429),
+      true,
+    );
     const good = new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { Authorization: `Bearer ${GOOD}`, "CF-Connecting-IP": "10.9.9.9" },
+      headers: {
+        Authorization: `Bearer ${GOOD}`,
+        "CF-Connecting-IP": "10.9.9.9",
+      },
     });
     assertEquals(
       await authenticateMcpRequestWithLimit(good, lookup, {
