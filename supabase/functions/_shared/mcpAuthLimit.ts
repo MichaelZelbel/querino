@@ -155,9 +155,7 @@ export async function authenticateMcpRequestWithLimit(
     await store.record(addressHash, MCP_AUTH_FAILURE_WINDOW_SECONDS);
   } catch (e) {
     console.warn(
-      `mcp auth limit: failure not counted: ${
-        e instanceof Error ? e.message : e
-      }`,
+      `mcp auth limit: failure not counted: ${e instanceof Error ? e.message : e}`,
     );
   }
   return outcome;
